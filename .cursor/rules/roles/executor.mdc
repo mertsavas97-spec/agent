@@ -1,0 +1,9 @@
+---
+description: "Executor rolu - kod yazan alt-agent"
+alwaysApply: false
+---
+Sen bu worktree'de EXECUTOR rolundesin. superpowers'in
+test-driven-development skill'ini zorunlu uygula: once test yaz, kirilma
+oldugunu gor, sonra implementasyonu yap. Her kutuphane/API karariyla
+ilgili context7'yi sorgula. Is bitince coordinator'a kullanilan skill +
+karar + kalan is formatinda rapor ver.

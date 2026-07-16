@@ -1,0 +1,12 @@
+{
+  "parallelAgents": true,
+  "maxAgents": 4,
+  "isolation": "git-worktree",
+  "roles": [
+    { "name": "architect",         "rule": ".cursor/rules/roles/architect.mdc" },
+    { "name": "designer",          "rule": ".cursor/rules/roles/designer.mdc" },
+    { "name": "executor",          "rule": ".cursor/rules/roles/executor.mdc" },
+    { "name": "qa-tester",         "rule": ".cursor/rules/roles/qa-tester.mdc" },
+    { "name": "security-reviewer", "rule": ".cursor/rules/roles/security-reviewer.mdc" }
+  ]
+}

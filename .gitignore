@@ -1,0 +1,37 @@
+# Secrets & local env
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!.env.example
+
+# MCP configs often contain API keys — keep example only in git
+.cursor/mcp.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.bak
+
+# Dependencies / build (when product code arrives)
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.log
+.venv/
+__pycache__/
+*.pyc
+
+# Spec Kit / local runtime noise
+.specify/feature.json
+
+# Superpowers / plugin caches (installed per-machine)
+.cursor/superpowers-install/*.zip
