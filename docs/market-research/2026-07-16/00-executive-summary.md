@@ -63,6 +63,7 @@ TaksitDefter’e dokunma; onu ayrı ürün olarak tut.
 | [03-idea-sinavwedge.md](./03-idea-sinavwedge.md) | Üçüncü fikir — sınav wedge |
 | [04-rejected-ideas.md](./04-rejected-ideas.md) | Ele alınan fikirler + gerekçe |
 | [05-market-context.md](./05-market-context.md) | TR pazar bağlamı ve kaynaklar |
+| [06-three-more-ideas.md](./06-three-more-ideas.md) | **Ek 3 fikir:** FaturaRadar, VizeDosyam, EvBakımCebim |
 | [../competitor-snapshots/2026-07-16/](../competitor-snapshots/2026-07-16/) | Rakip notları |
 
 ---
