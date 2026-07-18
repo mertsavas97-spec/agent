@@ -19,6 +19,8 @@ export type SolutionScreenProps = {
   imageUri?: string | null;
   solutionId?: string | null;
   onExplainAgain?: () => Promise<string>;
+  /** Natural break exit (interstitial may run in parent). */
+  onDone?: () => void;
 };
 
 export function SolutionScreen({
@@ -27,6 +29,7 @@ export function SolutionScreen({
   imageUri,
   solutionId,
   onExplainAgain,
+  onDone,
 }: SolutionScreenProps) {
   const [followUp, setFollowUp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -85,6 +88,16 @@ export function SolutionScreen({
           <Text style={styles.followTitle}>Daha sade anlatım</Text>
           <Text style={styles.stepBody}>{followUp}</Text>
         </View>
+      ) : null}
+
+      {onDone ? (
+        <Pressable
+          style={styles.doneBtn}
+          onPress={onDone}
+          testID="solution-done-btn"
+          accessibilityRole="button">
+          <Text style={styles.doneLabel}>Tamam</Text>
+        </Pressable>
       ) : null}
     </ScrollView>
   );
@@ -155,5 +168,17 @@ const styles = StyleSheet.create({
   error: {
     marginTop: space.sm,
     color: colors.danger,
+  },
+  doneBtn: {
+    marginTop: space.lg,
+    borderWidth: 1,
+    borderColor: colors.navy,
+    borderRadius: radii.md,
+    paddingVertical: space.md,
+    alignItems: 'center',
+  },
+  doneLabel: {
+    color: colors.navy,
+    fontWeight: '600',
   },
 });

@@ -14,6 +14,9 @@
 
 Freemium değişmedi: **5 soru / gün** (Europe/Istanbul gün anahtarı).
 
+**Reklam:** Haftalık / aylık / yıllık — **üç Premium plan da reklamsız**.  
+Ücretsiz reklam matrisi: `docs/product/ads-policy.md`.
+
 ## Council özeti (simülasyon)
 
 - **Hormozi / Brunson:** Önce kanca (haftalık), süreklilik aylık/yıllıkta; değeri fiyat kırmadan stack’le.

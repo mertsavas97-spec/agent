@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
@@ -14,6 +15,11 @@ import { ensureSignedIn } from '@/src/lib/auth';
 import type { SolveQuestionResponse } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space } from '@/src/theme';
+
+function billedSolvesFromQuota(result: SolveQuestionResponse): number {
+  if (result.quota.unlimited) return 0;
+  return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
+}
 
 export default function SolveFlowScreen() {
   const router = useRouter();
@@ -88,6 +94,22 @@ export default function SolveFlowScreen() {
             );
           });
         }}
+        onWatchRewarded={() => {
+          void runRewardedExtra({ freeRemainingToday: 0 }).then((outcome) => {
+            if (outcome.rewarded) {
+              Alert.alert(
+                '+1 soru hakkı',
+                'Ödüllü reklam tamam. Sunucu grant sonraki adımda bağlanacak; şimdilik sandbox onayı.',
+              );
+              return;
+            }
+            if (!outcome.offered) {
+              Alert.alert('Limit', 'Bugünkü ödüllü hak hakkın doldu veya Premium aktif.');
+              return;
+            }
+            Alert.alert('Tamamlanmadı', 'Reklam izlenmeden ekstra hak verilmedi.');
+          });
+        }}
         onDismiss={() => router.back()}
       />
     );
@@ -123,6 +145,15 @@ export default function SolveFlowScreen() {
         imageUri={typeof params.uri === 'string' ? params.uri : null}
         solutionId={result.solutionId}
         onExplainAgain={() => callExplainAgain(result.solutionId)}
+        onDone={() => {
+          void (async () => {
+            await runInterstitialIfNeeded({
+              billedSolvesToday: billedSolvesFromQuota(result),
+              atNaturalBreak: true,
+            });
+            router.back();
+          })();
+        }}
       />
     );
   }

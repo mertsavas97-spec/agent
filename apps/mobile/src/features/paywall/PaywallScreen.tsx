@@ -9,12 +9,15 @@ import { DEFAULT_PLAN_ID, PLANS, type PlanId, planById } from './pricing';
 export type PaywallScreenProps = {
   onStart: (planId: PlanId) => void;
   onDismiss: () => void;
+  /** Optional rewarded path — never replaces Premium CTA. */
+  onWatchRewarded?: () => void;
   initialPlanId?: PlanId;
 };
 
 export function PaywallScreen({
   onStart,
   onDismiss,
+  onWatchRewarded,
   initialPlanId = DEFAULT_PLAN_ID,
 }: PaywallScreenProps) {
   const [selected, setSelected] = useState<PlanId>(initialPlanId);
@@ -83,6 +86,16 @@ export function PaywallScreen({
         onPress={() => onStart(selected)}>
         <Text style={styles.ctaText}>{PAYWALL_COPY.cta}</Text>
       </Pressable>
+
+      {onWatchRewarded ? (
+        <Pressable
+          testID="paywall-rewarded"
+          accessibilityRole="button"
+          style={styles.rewarded}
+          onPress={onWatchRewarded}>
+          <Text style={styles.rewardedText}>{PAYWALL_COPY.rewardedCta}</Text>
+        </Pressable>
+      ) : null}
 
       <Pressable
         testID="paywall-dismiss"
@@ -214,6 +227,21 @@ const styles = StyleSheet.create({
     fontWeight: typography.headingWeight,
     fontSize: 17,
     color: colors.navy,
+  },
+  rewarded: {
+    marginTop: space.md,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: radii.md,
+    paddingVertical: space.md,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  rewardedText: {
+    fontFamily: typography.fontFamily,
+    fontWeight: typography.captionWeight,
+    fontSize: 15,
+    color: colors.white,
   },
   dismiss: {
     marginTop: space.md,

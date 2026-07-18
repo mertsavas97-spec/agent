@@ -49,4 +49,20 @@ describe('PaywallScreen', () => {
     fireEvent.press(screen.getByTestId('paywall-dismiss'));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
+
+  it('exposes optional rewarded CTA without replacing Premium', () => {
+    const onWatchRewarded = jest.fn();
+    render(
+      <PaywallScreen
+        onStart={jest.fn()}
+        onDismiss={jest.fn()}
+        onWatchRewarded={onWatchRewarded}
+      />,
+    );
+    expect(screen.getByTestId('paywall-rewarded')).toHaveTextContent(/Reklam izle/);
+    fireEvent.press(screen.getByTestId('paywall-rewarded'));
+    expect(onWatchRewarded).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('paywall-cta')).toHaveTextContent(/Hemen Başla/);
+  });
 });
+

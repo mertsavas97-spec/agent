@@ -48,9 +48,20 @@ Dogfood options:
    Google Play Developer API inside a future `syncSubscription` callable,
    then write `subscriptionStatus`.
 
+## Ads stub (free tier)
+
+AdMob native SDK is **not** linked yet (Expo Go). Client scaffold:
+`apps/mobile/src/features/ads/` + `docs/product/ads-policy.md`.
+
+- Free tabs show a banner **placeholder** (`ads-banner-slot`).
+- After ≥3 billed solves, leaving solution via **Tamam** may fire stub interstitial (≤1/day).
+- Paywall secondary CTA **Reklam izle · +1 soru** uses stub rewarded.
+- Premium / `EXPO_PUBLIC_PREMIUM_SANDBOX=1` ⇒ no ads.
+- Production: EAS + `react-native-google-mobile-ads` (see ads-policy).
+
 ## Verification gate
 
-- Unit tests green for quota, moderation branch, streak date logic, paywall UI
+- Unit tests green for quota, moderation, streak, paywall, ads policy
 - Contract fixtures match `contracts/*.md`
 - Manual Android device smoke on dogfood path
 
