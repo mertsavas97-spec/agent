@@ -7,15 +7,31 @@ import { getFirebase } from '@/src/lib/firebase';
 
 import type { OnboardingResult } from './OnboardingFlow';
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label}_TIMEOUT`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
 export async function fetchOnboardingStatus(): Promise<{
   done: boolean;
   examType: ExamType | null;
 }> {
-  const user = await ensureSignedIn();
+  const user = await withTimeout(ensureSignedIn(), 8000, 'AUTH');
   const { db, functions } = getFirebase();
   const ensure = httpsCallable(functions, 'ensureUser');
-  await ensure({});
-  const snap = await getDoc(doc(db, 'users', user.uid));
+  await withTimeout(ensure({}), 8000, 'ENSURE_USER');
+  const snap = await withTimeout(getDoc(doc(db, 'users', user.uid)), 8000, 'USER_DOC');
   if (!snap.exists()) return { done: false, examType: null };
   const data = snap.data();
   const examType =

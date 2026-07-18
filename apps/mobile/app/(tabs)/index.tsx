@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
+import { BannerSlot } from '@/src/features/ads';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
@@ -152,6 +153,7 @@ export default function HomeScreen() {
           )}
         />
       )}
+      <BannerSlot />
     </View>
   );
 }
