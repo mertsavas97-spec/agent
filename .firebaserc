@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "cozbil-dev"
+    "default": "cozbil-dev-f9583",
+    "dev": "cozbil-dev-f9583"
   }
 }

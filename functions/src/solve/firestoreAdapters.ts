@@ -3,6 +3,7 @@ import { getStorage } from 'firebase-admin/storage';
 
 import type { CacheStore, CachedSolution } from '../cache/solutionCache';
 import { cacheKeyFromPhash } from '../cache/phash';
+import { nextStreakCount } from '../progress/streak';
 import type { QuotaState } from '../quota/dailyQuota';
 import type { ExamType, SolveQuestionSuccess } from '../types/contracts';
 
@@ -51,7 +52,7 @@ export async function persistSolved(input: {
   examType: ExamType;
   result: SolveQuestionSuccess;
   billed: boolean;
-}): Promise<{ attemptId: string }> {
+}): Promise<{ attemptId: string; solutionId: string }> {
   const db = getFirestore();
   const attemptRef = db.collection('users').doc(input.uid).collection('attempts').doc();
   const solutionRef = db.collection('users').doc(input.uid).collection('solutions').doc();
@@ -84,13 +85,35 @@ export async function persistSolved(input: {
       createdAt: FieldValue.serverTimestamp(),
     });
     if (input.billed) {
+      const streak = nextStreakCount({
+        streakCount: Number(user.streakCount ?? 0),
+        streakLastActiveDate: (user.streakLastActiveDate as string | null) ?? null,
+        today,
+      });
       tx.set(
         userRef,
         {
           dailySolveCount: nextCount,
           dailySolveDate: today,
-          streakLastActiveDate: today,
+          streakCount: streak.streakCount,
+          streakLastActiveDate: streak.streakLastActiveDate,
           updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+    if (input.result.topicId) {
+      const statsRef = db
+        .collection('topicStats')
+        .doc(input.uid)
+        .collection('topics')
+        .doc(input.result.topicId);
+      tx.set(
+        statsRef,
+        {
+          attemptCount: FieldValue.increment(1),
+          solvedCount: FieldValue.increment(1),
+          lastAttemptAt: FieldValue.serverTimestamp(),
         },
         { merge: true },
       );
@@ -109,7 +132,7 @@ export async function persistSolved(input: {
     );
   });
 
-  return { attemptId: attemptRef.id };
+  return { attemptId: attemptRef.id, solutionId: solutionRef.id };
 }
 
 export async function persistRejected(input: {

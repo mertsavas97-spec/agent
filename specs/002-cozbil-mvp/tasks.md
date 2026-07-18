@@ -82,15 +82,15 @@
 
 ### Tests
 
-- [ ] T025 [P] [US2] Failing test `functions/tests/explainAgain.test.ts` (quota unchanged, rate limit)
-- [ ] T026 [P] [US2] Failing UI test button → shows follow-up text
+- [x] T025 [P] [US2] Failing test `functions/tests/explainAgain.test.ts` (quota unchanged, rate limit)
+- [x] T026 [P] [US2] Failing UI test button → shows follow-up text
 
 ### Implementation
 
-- [ ] T027 [US2] Callable `explainAgain` in `functions/src/solve/explainAgain.ts`
-- [ ] T028 [US2] Wire button + UI on solution screen; persist followUp under user subcollection
-- [ ] T029 [US2] Increment `topicStats.followUpCount` for weakness signal
-- [ ] T030 [US2] Pass tests T025–T026
+- [x] T027 [US2] Callable `explainAgain` in `functions/src/solve/explainAgain.ts`
+- [x] T028 [US2] Wire button + UI on solution screen; persist followUp under user subcollection
+- [x] T029 [US2] Increment `topicStats.followUpCount` for weakness signal
+- [x] T030 [US2] Pass tests T025–T026
 
 **Checkpoint**: US2 demoable on top of US1
 
@@ -104,14 +104,14 @@
 
 ### Tests
 
-- [ ] T031 [P] [US3] Failing tests for onboarding navigation + all three exam types selectable in `apps/mobile/tests/Onboarding.test.tsx`
+- [x] T031 [P] [US3] Failing tests for onboarding navigation + all three exam types selectable in `apps/mobile/tests/Onboarding.test.tsx`
 
 ### Implementation
 
-- [ ] T032 [US3] Onboarding screens 1–3 in `apps/mobile/src/features/onboarding/` (moodboard copy)
-- [ ] T033 [US3] Persist `examType: lgs|ygs|kpss` + age-appropriate consent timestamp fields
-- [ ] T034 [US3] Placeholder legal copy + TODO(legal) markers (minor vs adult paths)
-- [ ] T035 [US3] Pass T031
+- [x] T032 [US3] Onboarding screens 1–3 in `apps/mobile/src/features/onboarding/` (moodboard copy)
+- [x] T033 [US3] Persist `examType: lgs|ygs|kpss` + age-appropriate consent timestamp fields
+- [x] T034 [US3] Placeholder legal copy + TODO(legal) markers (minor vs adult paths)
+- [x] T035 [US3] Pass T031
 
 ---
 
@@ -123,14 +123,14 @@
 
 ### Tests
 
-- [ ] T036 [P] [US4] Failing tests for history filter helper + tab routes
+- [x] T036 [P] [US4] Failing tests for history filter helper + tab routes
 
 ### Implementation
 
-- [ ] T037 [US4] expo-router tabs: Home / History / Stats / Profile (moodboard)
-- [ ] T038 [US4] Home: large orange Fotoğraf Çek CTA, streak, recent attempts
-- [ ] T039 [US4] History list + subject/topic filters calling `listAttempts`
-- [ ] T040 [US4] Implement `listAttempts` function + pass T036
+- [x] T037 [US4] expo-router tabs: Home / History / Stats / Profile (moodboard)
+- [x] T038 [US4] Home: large orange Fotoğraf Çek CTA, streak, recent attempts
+- [x] T039 [US4] History list + subject/topic filters calling `listAttempts`
+- [x] T040 [US4] Implement `listAttempts` function + pass T036
 
 ---
 
@@ -142,15 +142,15 @@
 
 ### Tests
 
-- [ ] T041 [P] [US5] Failing unit tests for streak date logic `functions/tests/streak.test.ts`
-- [ ] T042 [P] [US5] Failing unit tests for weakest-topic selection
+- [x] T041 [P] [US5] Failing unit tests for streak date logic `functions/tests/streak.test.ts`
+- [x] T042 [P] [US5] Failing unit tests for weakest-topic selection
 
 ### Implementation
 
-- [ ] T043 [US5] Maintain `topicStats` on solve/follow-up
-- [ ] T044 [US5] `getProgressSummary` callable per `contracts/progress.md`
-- [ ] T045 [US5] Progress UI: bar list + weakest card + weekly series
-- [ ] T046 [US5] Pass T041–T042
+- [x] T043 [US5] Maintain `topicStats` on solve/follow-up
+- [x] T044 [US5] `getProgressSummary` callable per `contracts/progress.md`
+- [x] T045 [US5] Progress UI: bar list + weakest card + weekly series
+- [x] T046 [US5] Pass T041–T042
 
 ---
 
@@ -162,16 +162,16 @@
 
 ### Tests
 
-- [ ] T047 [P] [US6] Failing quota tests `functions/tests/quota.test.ts`
-- [ ] T048 [P] [US6] Failing paywall screen test
+- [x] T047 [P] [US6] Failing quota tests `functions/tests/quota.test.ts`
+- [x] T048 [P] [US6] Failing paywall screen test
 
 ### Implementation
 
-- [ ] T049 [US6] Daily quota enforcement in `solveQuestion` (UTC+3 day key)
-- [ ] T050 [US6] Paywall UI single-plan 49 TL messaging `apps/mobile/src/features/paywall/`
-- [ ] T051 [US6] Subscription entitlement sync stub (Play Billing integration spike + Context7); sandbox path documented in quickstart
-- [ ] T052 [US6] marketingskills pass for paywall Turkish copy tone
-- [ ] T053 [US6] Pass T047–T048
+- [x] T049 [US6] Daily quota enforcement in `solveQuestion` (UTC+3 day key)
+- [x] T050 [US6] Paywall UI plans (14,90/7g · 39/ay · 349/yıl) `apps/mobile/src/features/paywall/`
+- [x] T051 [US6] Subscription entitlement sync stub (Play Billing integration spike + Context7); sandbox path documented in quickstart
+- [x] T052 [US6] marketingskills pass for paywall Turkish copy tone
+- [x] T053 [US6] Pass T047–T048
 
 ---
 
@@ -203,6 +203,16 @@
 - [ ] T063 qa-tester full dogfood path from `quickstart.md` + write results to sprint report
 - [ ] T064 Update `README.md` / `AGENTS.md` active feature pointers if needed
 - [ ] T065 Verification-before-completion: all SC-001–SC-006 evidence noted
+
+### Mini item bank (MVP 1.0 — telifsiz)
+
+> Mimari: `docs/architecture/item-bank.md`. Kitapçık/PDF/dershane kopyası yok.
+
+- [x] T066 [P] Architecture + schema + seed skeleton in `content/item-bank/` + `docs/architecture/item-bank.md`
+- [ ] T067 Fill MVP mini pack to ~50–60 original items (LGS/YGS/KPSS math-first) with answer keys + explanationSteps; update `manifests/mvp-1.0.json`
+- [ ] T068 Wire 1–2 bank items per exam into solve few-shot prompts (T060); keep `source: original` only
+- [ ] T069 [P] Optional light UI “Örnek soru” from manifest (not full practice session)
+- [ ] T070 Guardian pass: no copyrighted stems; similarityCheck=pass on all manifest ids
 
 ---
 

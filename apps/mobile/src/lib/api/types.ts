@@ -30,6 +30,7 @@ export type SolveQuestionRequest = {
 
 export type SolveQuestionSuccess = {
   attemptId: string;
+  solutionId: string;
   status: 'solved';
   cached: boolean;
   topicId: string | null;
@@ -97,6 +98,8 @@ export type UserProfile = {
   examType: ExamType;
   ageBand?: 'under13' | '13to17' | '18plus';
   parentalConsentAt?: string | null;
+  consentAcceptedAt?: string | null;
+  onboardingCompletedAt?: string | null;
   streakCount: number;
   dailySolveCount: number;
   subscriptionStatus: 'free' | 'active' | 'grace' | 'expired';

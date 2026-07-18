@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+import { useVertexAi, vertexSolveMath } from '../ai/vertexClient';
 import type { ExamType } from '../types/contracts';
 import { parseModelSolution, type ParsedModelSolution } from './parseSolution';
 import { mathSystemPrompt } from './prompts';
@@ -13,17 +14,31 @@ export type VisionSolver = {
 };
 
 /**
- * Live Gemini when API key present; otherwise demo stub (no credit required).
- * Owner can force demo with COZBIL_DEMO_AI=1 even if a key exists.
+ * Live: Vertex AI (Startup/GCP billing) preferred; else AI Studio API key;
+ * otherwise demo stub.
  */
 export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionSolver {
   const forceDemo = process.env.COZBIL_DEMO_AI === '1';
-  if (forceDemo || !apiKey?.trim()) {
-    return createStubSolver();
+  if (forceDemo) return createStubSolver();
+
+  if (useVertexAi()) {
+    return {
+      async solve({ imageBase64, mimeType, examType }) {
+        const text = await vertexSolveMath({
+          examType,
+          systemPrompt: mathSystemPrompt(examType),
+          imageBase64,
+          mimeType: mimeType || 'image/jpeg',
+        });
+        return parseModelSolution(text);
+      },
+    };
   }
 
+  if (!apiKey?.trim()) return createStubSolver();
+
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   return {
     async solve({ imageBase64, mimeType, examType }) {

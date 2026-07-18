@@ -39,7 +39,7 @@ functions/contracts, TDD per constitution
 limit; AI maliyeti Google kredisiyle yönetilir ama yine de dedup + kota;
 Türkçe karakter tipografi; diyagram/geometri MVP dışı
 
-**Scale/Scope**: MVP ~10 moodboard ekranı; tek abonelik planı; üç sınav
+**Scale/Scope**: MVP ~10 moodboard ekranı; Premium 3 plan (hafta/ay/yıl); üç sınav
 track’i; matematik konu katalogları (LGS/YGS/KPSS) öncelikli; ilk dogfood
 <1k kullanıcı varsayımı
 
