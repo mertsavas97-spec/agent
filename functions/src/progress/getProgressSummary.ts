@@ -1,12 +1,23 @@
 import { getFirestore } from 'firebase-admin/firestore';
 
 import { ALL_TOPICS } from '../data/topics';
+import { isExamType } from '../theme/examTypes';
 import type { ProgressSummary, ProgressTopic } from '../types/contracts';
 import { displayStreakCount, istanbulDateString, previousIstanbulDate } from './streak';
 import { selectWeakestTopic } from './weakestTopic';
 
 function nameForTopic(topicId: string): string {
   return ALL_TOPICS.find((t) => t.id === topicId)?.nameTr ?? topicId;
+}
+
+/** Keep stats scoped to the active exam catalog after mid-app exam switch. */
+export function filterTopicsForExam(
+  topics: ProgressTopic[],
+  examType: string | undefined,
+): ProgressTopic[] {
+  if (!examType || !isExamType(examType)) return topics;
+  const prefix = `${examType}-`;
+  return topics.filter((t) => t.topicId.startsWith(prefix));
 }
 
 export async function getProgressSummaryForUser(uid: string): Promise<ProgressSummary> {
@@ -22,7 +33,7 @@ export async function getProgressSummaryForUser(uid: string): Promise<ProgressSu
   });
 
   const statsSnap = await db.collection('topicStats').doc(uid).collection('topics').get();
-  const topics: ProgressTopic[] = statsSnap.docs.map((d) => {
+  const allTopics: ProgressTopic[] = statsSnap.docs.map((d) => {
     const data = d.data();
     return {
       topicId: d.id,
@@ -31,6 +42,7 @@ export async function getProgressSummaryForUser(uid: string): Promise<ProgressSu
       followUpCount: Number(data.followUpCount ?? 0),
     };
   });
+  const topics = filterTopicsForExam(allTopics, user.examType as string | undefined);
 
   const weakestTopic = selectWeakestTopic(topics);
 

@@ -1,23 +1,20 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
-import { KPSS_TOPICS, LGS_TOPICS, YGS_TOPICS } from '@/src/data';
+import { topicsForExam } from '@/src/data';
+import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import type { ExamType } from '@/src/lib/api/types';
 import { colors, space } from '@/src/theme';
 
-const EXAM_LABEL: Record<ExamType, string> = {
-  lgs: 'LGS',
-  ygs: 'YGS',
-  kpss: 'KPSS',
-};
-
 export default function ProfileScreen() {
-  const topicCount = LGS_TOPICS.length + YGS_TOPICS.length + KPSS_TOPICS.length;
   const [examType, setExamType] = useState<ExamType | null>(null);
+  const [switching, setSwitching] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -40,15 +37,40 @@ export default function ProfileScreen() {
     }, []),
   );
 
+  async function onExamChange(next: ExamType) {
+    if (next === examType || switching) return;
+    setSwitching(true);
+    const previous = examType;
+    setExamType(next);
+    try {
+      await callUpdateExamType(next);
+    } catch {
+      setExamType(previous);
+      Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  const catalogCount = examType ? topicsForExam(examType).length : 0;
+
   return (
     <View style={styles.container} testID="profile-screen">
       <Text style={styles.title}>Profil</Text>
       <Text style={styles.meta} testID="profile-exam">
-        Sınav: {examType ? EXAM_LABEL[examType] : '—'} (LGS / YGS / KPSS)
+        Aktif sınav: {examType ? EXAM_LABEL[examType] : '—'}
       </Text>
-      <Text style={styles.meta}>Günlük hak: 5</Text>
+      <ExamModeSwitcher
+        value={examType}
+        onChange={(e) => void onExamChange(e)}
+        disabled={switching}
+      />
+      <Text style={styles.meta}>Günlük hak: 5 (ücretsiz)</Text>
       <Text style={styles.meta} testID="topic-catalog-count">
-        Konu kataloğu: {topicCount} başlık
+        Bu sınavın konu kataloğu: {catalogCount} başlık
+      </Text>
+      <Text style={styles.note}>
+        Sınav değiştirmek geçmiş kayıtları silmez; yeni çözümler seçili moda göre üretilir.
       </Text>
     </View>
   );
@@ -69,5 +91,11 @@ const styles = StyleSheet.create({
   meta: {
     color: colors.textSecondary,
     marginBottom: space.sm,
+  },
+  note: {
+    marginTop: space.md,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
   },
 });

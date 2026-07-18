@@ -151,10 +151,18 @@ export async function persistRejected(input: {
   };
   if (input.status === 'rejected_moderation') {
     payload.moderationLabels = { blocked: true };
-    await getFirestore()
-      .collection('users')
-      .doc(input.uid)
-      .set({ invalidImageScore: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const userRef = getFirestore().collection('users').doc(input.uid);
+    const snap = await userRef.get();
+    const prev = Number(snap.data()?.invalidImageScore ?? 0) + 1;
+    const patch: Record<string, unknown> = {
+      invalidImageScore: prev,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    // Soft restrict after threshold (30 min) — see abuse/invalidImageScore.ts
+    if (prev >= 8) {
+      patch.restrictedUntil = Date.now() + 30 * 60 * 1000;
+    }
+    await userRef.set(patch, { merge: true });
   }
   await ref.set(payload);
   return { attemptId: ref.id };

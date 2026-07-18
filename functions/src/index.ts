@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 
 import { liveBackendLabel, runtimeModeLabel } from './config/runtime';
@@ -17,7 +17,14 @@ import { createVisionClient } from './moderation/visionClient';
 import { getProgressSummaryForUser } from './progress/getProgressSummary';
 import { listAttemptsForUser } from './progress/listAttempts';
 import { ensureUserDocument } from './users/bootstrapUser';
+import {
+  INVALID_RESTRICT_THRESHOLD,
+  isTemporarilyRestricted,
+  restrictionAfterScore,
+} from './abuse/invalidImageScore';
+import { assertRateLimit } from './abuse/rateLimit';
 import { completeOnboardingDocument } from './users/completeOnboarding';
+import { updateExamTypeDocument } from './users/updateExamType';
 import { isExamType } from './theme/examTypes';
 import type { ExamType, Subject } from './types/contracts';
 
@@ -77,6 +84,22 @@ export const completeOnboarding = regional.https.onCall(async (data, context) =>
   }
 });
 
+/** US7: mid-app exam mode switch (LGS ↔ YGS ↔ KPSS) */
+export const updateExamType = regional.https.onCall(async (data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  const examType = typeof data?.examType === 'string' ? data.examType : '';
+  try {
+    return await updateExamTypeDocument({ uid: context.auth.uid, examType });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'InvalidExamError') {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz sınav türü');
+    }
+    throw err;
+  }
+});
+
 /** US1: moderate → cache → Gemini (Vertex) → stepped solution */
 export const solveQuestion = regional
   .runWith({ timeoutSeconds: 120, memory: '512MB' })
@@ -90,7 +113,8 @@ export const solveQuestion = regional
     }
 
     const userSnap = await getFirestore().collection('users').doc(context.auth.uid).get();
-    const userExam = userSnap.data()?.examType;
+    const userData = userSnap.data() ?? {};
+    const userExam = userData.examType;
     const examTypeRaw =
       typeof data?.examType === 'string' ? data.examType : userExam;
     if (!examTypeRaw || !isExamType(examTypeRaw)) {
@@ -99,6 +123,32 @@ export const solveQuestion = regional
     const examType = examTypeRaw as ExamType;
 
     try {
+      assertRateLimit(`solve:${context.auth.uid}`);
+      const invalidScore = Number(userData.invalidImageScore ?? 0);
+      const restrictedUntil =
+        typeof userData.restrictedUntil === 'number' ? userData.restrictedUntil : null;
+      if (isTemporarilyRestricted({ invalidImageScore: invalidScore, restrictedUntil })) {
+        throw new functions.https.HttpsError(
+          'resource-exhausted',
+          'Geçici kısıtlama — biraz sonra tekrar dene',
+        );
+      }
+      // Persist soft-restrict window when score already over threshold (from prior rejects)
+      if (invalidScore >= INVALID_RESTRICT_THRESHOLD && restrictedUntil == null) {
+        const next = restrictionAfterScore(invalidScore);
+        await getFirestore()
+          .collection('users')
+          .doc(context.auth.uid)
+          .set(
+            { restrictedUntil: next.restrictedUntil, updatedAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          );
+        throw new functions.https.HttpsError(
+          'resource-exhausted',
+          'Geçici kısıtlama — biraz sonra tekrar dene',
+        );
+      }
+
       console.info('solveQuestion aiBackend', liveBackendLabel());
       const imageBuffer = await downloadImageBuffer(imagePath);
       return await runSolveQuestion(
@@ -119,8 +169,12 @@ export const solveQuestion = regional
         },
       );
     } catch (err) {
+      if (err instanceof functions.https.HttpsError) throw err;
       if (err instanceof Error && err.name === 'QuotaExceededError') {
         throw new functions.https.HttpsError('resource-exhausted', 'Günlük hak bitti');
+      }
+      if (err instanceof Error && err.name === 'RateLimitError') {
+        throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı istek — biraz bekle');
       }
       console.error('solveQuestion failed', {
         uid: context.auth.uid,

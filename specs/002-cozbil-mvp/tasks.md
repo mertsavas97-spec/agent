@@ -183,15 +183,17 @@
 
 ### Tests
 
-- [ ] T054 [P] [US7] Failing tests for rate limit + restriction in `functions/tests/abuse.test.ts`
+- [x] T054 [P] [US7] Failing tests for rate limit + restriction in `functions/tests/abuse.test.ts`
 
 ### Implementation
 
-- [ ] T055 [US7] Rate limiting middleware for solve/explain callables
-- [ ] T056 [US7] invalidImageScore updates on moderation rejects; restrict threshold
+- [x] T055 [US7] Rate limiting middleware for solve/explain callables (solve wired; explain already has own limit)
+- [x] T056 [US7] invalidImageScore updates on moderation rejects; restrict threshold
+- [x] T057a [US7] Exam mode switcher (LGS/YGS/KPSS) on home + profile; `updateExamType` callable; stats filter by active exam
 - [ ] T057 [US7] Profile screen: quota, consent status, sign-out, delete-request flag
 - [ ] T058 [US7] security-reviewer checklist sign-off for abuse + child messaging
-- [ ] T059 [US7] Pass T054
+- [x] T059 [US7] Pass T054
+
 
 ---
 

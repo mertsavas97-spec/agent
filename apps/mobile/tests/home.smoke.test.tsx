@@ -29,17 +29,38 @@ jest.mock('@/src/lib/api/progressClient', () => ({
   fetchAttempts: jest.fn().mockResolvedValue({ items: [], nextCursor: null }),
 }));
 
+jest.mock('@/src/lib/auth', () => ({
+  ensureSignedIn: jest.fn().mockResolvedValue({ uid: 'test-user' }),
+}));
+
+jest.mock('@/src/lib/firebase', () => ({
+  getFirebase: () => ({ db: {} }),
+}));
+
+jest.mock('firebase/firestore', () => ({
+  doc: jest.fn(),
+  getDoc: jest.fn().mockResolvedValue({
+    exists: () => true,
+    data: () => ({ examType: 'ygs' }),
+  }),
+}));
+
+jest.mock('@/src/features/exam/updateExamClient', () => ({
+  callUpdateExamType: jest.fn().mockResolvedValue('ygs'),
+}));
+
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('renders brand and capture CTA', async () => {
+  it('renders brand, exam switcher, and capture CTA', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toBeTruthy();
-    expect(screen.getByText('LGS · YGS · KPSS')).toBeTruthy();
+    expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
     await waitFor(() => {
-      expect(screen.getByTestId('home-streak')).toHaveTextContent('Seri: 0 gün');
+      expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri: 0 gün/);
+      expect(screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected).toBe(true);
     });
   });
 });
