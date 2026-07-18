@@ -22,7 +22,7 @@ Thumbs.db
 node_modules/
 dist/
 build/
-lib/
+functions/lib/
 .next/
 .turbo/
 coverage/
