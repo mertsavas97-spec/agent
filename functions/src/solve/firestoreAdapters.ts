@@ -51,7 +51,7 @@ export async function persistSolved(input: {
   examType: ExamType;
   result: SolveQuestionSuccess;
   billed: boolean;
-}): Promise<{ attemptId: string }> {
+}): Promise<{ attemptId: string; solutionId: string }> {
   const db = getFirestore();
   const attemptRef = db.collection('users').doc(input.uid).collection('attempts').doc();
   const solutionRef = db.collection('users').doc(input.uid).collection('solutions').doc();
@@ -109,7 +109,7 @@ export async function persistSolved(input: {
     );
   });
 
-  return { attemptId: attemptRef.id };
+  return { attemptId: attemptRef.id, solutionId: solutionRef.id };
 }
 
 export async function persistRejected(input: {
