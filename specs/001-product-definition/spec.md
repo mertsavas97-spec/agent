@@ -4,9 +4,23 @@
 
 **Created**: 2026-07-16
 
-**Status**: Draft
+**Updated**: 2026-07-18
 
-**Input**: User description: "spec-kit ile projeye başla — ürün tipini, hedef kullanıcıyı ve MVP kapsamını netleştirerek implementasyon öncesi ürün tanımını kilitle"
+**Status**: Locked
+
+**Input**: Owner MVP brief (ÇözBil) resolving app-vs-game, persona, and surface.
+
+## Locked Decisions
+
+| Decision | Value |
+|----------|-------|
+| Product type | **App** (education / AI study companion) |
+| Working name | **ÇözBil** (final brand TBD) |
+| Primary job | Fotoğraflanan LGS sorusunu adım adım Türkçe açıklar; konu eksiğini öğrenciye gösterir |
+| Primary persona | LGS’ye hazırlanan 13–15 yaş öğrenci (Türkiye) |
+| Secondary (non-MVP) | Veli — ödeme yapan; hesap/rapor 1.1 |
+| Delivery surface | **Mobile**, Android-first |
+| Positioning | “Türkiye’nin sadece LGS’ye özel AI çalışma arkadaşı — çözer, anlatır, eksiğini veliye raporlar.” (veli raporu 1.1) |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -28,7 +42,7 @@ primary user job?” without ambiguity.
 
 1. **Given** no product identity is locked, **When** the owner completes
    the identity decision, **Then** the definition records product type
-   (app or game), working name, and one-sentence primary job.
+   `app`, working name `ÇözBil`, and the primary job statement above.
 2. **Given** a locked identity exists, **When** an agent starts a new
    task, **Then** it treats that identity as authoritative and does not
    re-open app-vs-game unless the owner amends the constitution/spec.
@@ -38,23 +52,24 @@ primary user job?” without ambiguity.
 ### User Story 2 - Define target user and problem (Priority: P1)
 
 As the product owner, I describe who the first user is and which painful
-problem (or fun desire, for a game) the MVP solves, so design and
-marketing skills have a concrete audience.
+problem the MVP solves, so design and marketing skills have a concrete
+audience.
 
 **Why this priority**: Without a user and problem, UI, ASO, and MVP
 scope cannot be validated.
 
 **Independent Test**: A stranger can read the definition and correctly
-restate the primary persona and the problem/desire in one sentence each.
+restate the primary persona and the problem in one sentence each.
 
 **Acceptance Scenarios**:
 
 1. **Given** product identity is chosen, **When** the owner defines the
-   primary persona, **Then** the definition includes persona name/role,
-   context of use, and the problem or desire addressed.
-2. **Given** persona and problem are defined, **When** a secondary
-   audience is mentioned, **Then** it is marked non-MVP (out of scope
-   for v1) or explicitly deferred.
+   primary persona, **Then** the definition includes LGS student 13–15,
+   homework stuck moments, and need for fast step-by-step Turkish help.
+2. **Given** persona and problem are defined, **When** parents are
+   mentioned, **Then** they are marked non-MVP for accounts/reports
+   (deferred to 1.1) while remaining the typical payer for monetization
+   messaging.
 
 ---
 
@@ -74,8 +89,8 @@ but is refused for v1.
 **Acceptance Scenarios**:
 
 1. **Given** persona and problem exist, **When** MVP outcomes are
-   listed, **Then** there are 3–7 testable user outcomes and a non-goals
-   list.
+   listed, **Then** they match `specs/002-cozbil-mvp/spec.md` in-scope
+   outcomes and an explicit non-goals list.
 2. **Given** MVP outcomes are locked, **When** someone proposes a
    feature outside that list, **Then** it is deferred to a later
    feature spec rather than silently added to v1.
@@ -88,39 +103,37 @@ but is refused for v1.
   hybrid is out of scope until a later feature amends the definition.
 - Owner changes mind after lock → MUST amend this spec (new version
   note) before any conflicting implementation continues.
-- Persona is “everyone” → MUST narrow to one primary persona for MVP.
-- No monetization decision yet → Allowed for this feature; monetization
-  is deferred unless it changes MVP outcomes.
+- Final brand differs from ÇözBil → amend working name here and in
+  constitution Locked Product Identity; do not fork naming in code/UI
+  without that amendment.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: System (project definition artifacts) MUST record a single
-  product type for v1: `app` or `game`.
-- **FR-002**: Definition MUST include a working product name and a
-  one-sentence primary job statement.
-- **FR-003**: Definition MUST describe exactly one primary persona
-  (role, context, and motivating problem or desire).
+  product type for v1: `app`.
+- **FR-002**: Definition MUST include working product name **ÇözBil** and
+  a one-sentence primary job statement.
+- **FR-003**: Definition MUST describe exactly one primary persona:
+  LGS student ages 13–15 in Türkiye, stuck on homework questions.
 - **FR-004**: Definition MUST list MVP user outcomes that are
-  independently demonstrable without naming implementation technology.
-- **FR-005**: Definition MUST list explicit non-goals for v1.
-- **FR-006**: Definition MUST state primary delivery surface for v1
-  (e.g. mobile, web, desktop) at a product level — not a tech stack.
+  independently demonstrable without naming implementation technology
+  (see `specs/002-cozbil-mvp/spec.md`).
+- **FR-005**: Definition MUST list explicit non-goals for v1 (parent
+  account/report, geometry diagrams, AI practice sessions, advanced
+  gamification, spaced repetition).
+- **FR-006**: Definition MUST state primary delivery surface for v1:
+  mobile, Android-first.
 - **FR-007**: Until FR-001–FR-006 are satisfied, agents MUST NOT start
   product implementation tasks (constitution Spec-First + Operating
   Constraints).
-- **FR-008**: Product type is [NEEDS CLARIFICATION: app mı yoksa oyun
-  mu? — v1 için tek birincil tip seçilmeli].
-- **FR-009**: Primary persona and problem/desire are
-  [NEEDS CLARIFICATION: kim için, hangi acı veya eğlence ihtiyacı?].
-- **FR-010**: Primary delivery surface is
-  [NEEDS CLARIFICATION: v1 yüzey — mobil, web, masaüstü, veya başka?].
 
 ### Key Entities
 
-- **Product Identity**: Type (app|game), working name, primary job.
-- **Primary Persona**: Who uses it first, in what context, why they care.
+- **Product Identity**: Type (app), working name (ÇözBil), primary job.
+- **Primary Persona**: LGS student 13–15, homework context, need for
+  fast Turkish step-by-step help.
 - **MVP Outcome**: A user-visible result that proves the product works.
 - **Non-Goal**: Explicitly deferred capability for later specs.
 
@@ -131,19 +144,17 @@ but is refused for v1.
 - **SC-001**: A new agent session can answer product type, name, and
   primary job correctly from the locked definition in under 1 minute.
 - **SC-002**: 100% of MVP outcomes map to at least one acceptance
-  scenario in a subsequent feature spec (no orphan outcomes).
+  scenario in `specs/002-cozbil-mvp/spec.md` (no orphan outcomes).
 - **SC-003**: Stakeholder review finds zero contradictions between
-  product type, persona, and MVP outcomes before `/speckit-plan`.
+  product type, persona, and MVP outcomes before implementation.
 - **SC-004**: After lock, zero product-implementation tasks start
-  without referencing this definition (spot-check next sprint report).
+  without referencing this definition or `002-cozbil-mvp`.
 
 ## Assumptions
 
-- This feature produces definition artifacts under Spec Kit (`specs/`),
-  not shipping product code.
-- Monetization, legal entity, and brand system are out of scope unless
-  they block MVP outcome selection.
-- Language of stakeholder-facing definition may be Turkish or English;
-  consistency within the locked doc is required.
-- After clarifications are resolved, a follow-up `/speckit-clarify` or
-  direct spec update will remove remaining ambiguity before plan.
+- Monetization freemium model is accepted for MVP messaging; exact SKU
+  IDs are implementation details in the plan.
+- Legal KVKK counsel is external; agents design consent flows but do not
+  give legal advice.
+- Language of stakeholder-facing docs may be Turkish or bilingual;
+  product UI copy is Turkish.

@@ -1,15 +1,18 @@
 <!--
 Sync Impact Report
-- Version change: (none / template) → 1.0.0
-- Modified principles: placeholders → I–V named principles below
-- Added sections: Agent Operating Constraints; Delivery Workflow
-- Removed sections: none (template placeholders replaced)
+- Version change: 1.0.0 → 1.1.0
+- Modified principles: none renamed; Operating Constraints expanded
+- Added sections: Locked Product Identity (under Operating Constraints)
+- Removed sections: none
 - Templates:
-  - .specify/templates/plan-template.md — ✅ Constitution Check gates filled
+  - .specify/templates/plan-template.md — ✅ still aligned (Constitution Check gates)
   - .specify/templates/spec-template.md — ✅ no structural change required
   - .specify/templates/tasks-template.md — ✅ no structural change required
-  - AGENTS.md — ✅ already aligned; no edit required
-- Follow-up TODOs: Product type (app vs game) and domain locked via first /speckit-specify
+  - AGENTS.md — ✅ updated product-type lock note
+  - specs/001-product-definition/ — ✅ clarifications resolved from owner MVP brief
+  - specs/002-cozbil-mvp/ — ✅ new MVP feature directory
+- Follow-up TODOs: Final brand/store name confirmation; moodboard image asset
+  handoff to designer; KVKK legal counsel outside agent scope
 -->
 
 # Agent Constitution
@@ -89,6 +92,18 @@ specs implementable.
 - Sprint memory lives in `docs/sprint-reports/`; `/sprint-report` MUST
   produce a dated report using the coordinator template.
 
+### Locked Product Identity
+
+- **Product type (v1)**: App (education / study companion) — not a game.
+- **Working name**: ÇözBil (final store/domain name TBD; agents MUST treat
+  this as the working brand until amended).
+- **Primary job**: Help LGS students solve photographed homework questions
+  with step-by-step Turkish explanations, and surface topic weaknesses.
+- **Primary persona**: LGS student ages 13–15 in Türkiye; payer is typically
+  a parent (parent account/report is post-MVP 1.1).
+- **Primary surface**: Mobile, Android-first.
+- **Authoritative MVP feature dir**: `specs/002-cozbil-mvp/`.
+
 ## Delivery Workflow
 
 1. Coordinator reads active `.specify/` + `specs/` state.
@@ -119,4 +134,4 @@ MUST be rejected and sent back to the prior phase.
 
 Runtime guidance: `AGENTS.md` and `.cursor/rules/000-coordinator.mdc`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-16 | **Last Amended**: 2026-07-16
+**Version**: 1.1.0 | **Ratified**: 2026-07-16 | **Last Amended**: 2026-07-18

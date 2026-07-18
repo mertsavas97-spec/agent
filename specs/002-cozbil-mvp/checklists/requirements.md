@@ -1,8 +1,7 @@
-# Specification Quality Checklist: Product Definition Lock
+# Specification Quality Checklist: ÇözBil MVP 1.0
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-07-16
-**Updated**: 2026-07-18
+**Created**: 2026-07-18
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -32,7 +31,7 @@
 
 ## Notes
 
-- Validation iteration 2 (2026-07-18): Owner MVP brief locked product type
-  (`app`), persona (LGS 13–15), surface (mobile Android-first). Working
-  name ÇözBil. Detailed MVP outcomes live in `specs/002-cozbil-mvp/`.
-- Status: **Locked** — ready as prerequisite for MVP planning/implement.
+- Clarification defaults encoded in Assumptions (daily quota 5, price 49 TL,
+  working name ÇözBil). Owner may amend without reopening app-vs-game.
+- Tech stack intentionally deferred to plan.md (Spec Kit separation).
+- Validation iteration 1 (2026-07-18): PASS — ready for `/speckit-plan`.

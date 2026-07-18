@@ -1,7 +1,9 @@
 # Proje Bağlamı (otomatik üretildi — setup-cursor-ajans.sh)
 
-Bu proje henüz "app mı, oyun mu" kararını içeren bir spec aşamasında
-olabilir. Karar netleşmeden implementasyona geçilmez.
+**Ürün kilidi (2026-07-18):** Bu bir **eğitim uygulaması** (oyun değil).
+Çalışma adı **ÇözBil** — LGS öğrencilerine fotoğrafla adım adım Türkçe
+soru çözümü. Detay: `specs/001-product-definition/` + `specs/002-cozbil-mvp/`.
+Karar netleşti; uygulama kodu yalnızca Spec Kit tasks üzerinden başlar.
 
 ## Zorunlu akış
 1. Her görev önce `.specify/` altındaki spec/plan/tasks durumuna bakar.
@@ -21,6 +23,11 @@ olabilir. Karar netleşmeden implementasyona geçilmez.
 ## Koordinatör
 Tüm görev dağıtımı ve raporlama `.cursor/rules/000-coordinator.mdc`
 dosyasındaki kurallara göre yürütülür. Detaylar için o dosyaya bakın.
+
+## Aktif özellik
+- `specs/001-product-definition/` — ürün tipi / persona / yüzey (**Locked**)
+- `specs/002-cozbil-mvp/` — MVP 1.0 (spec + plan + tasks hazır)
+- Owner brief arşivi: `docs/product/cozbil-mvp-1.0-brief.md`
 
 ## Sprint raporları
 `docs/sprint-reports/` klasöründe tarih damgalı olarak tutulur.

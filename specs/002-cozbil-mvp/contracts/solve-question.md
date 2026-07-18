@@ -1,0 +1,77 @@
+# Contract: Solve Question Pipeline
+
+**Service**: Firebase Callable / HTTPS Function `solveQuestion`  
+**Consumer**: `apps/mobile` solve feature  
+**Verify APIs with Context7 before implementation**
+
+## `solveQuestion`
+
+### Request
+
+```json
+{
+  "imagePath": "users/{uid}/uploads/{id}.jpg",
+  "subjectHint": "math" 
+}
+```
+
+`subjectHint` optional (`math` \| `turkish`).
+
+### Response — success
+
+```json
+{
+  "attemptId": "string",
+  "status": "solved",
+  "cached": false,
+  "topicId": "math-kesirler",
+  "subject": "math",
+  "steps": [
+    { "title": "1. Adım", "body": "..." }
+  ],
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "quota": { "remainingToday": 4, "unlimited": false }
+}
+```
+
+### Response — rejected / unsupported
+
+```json
+{
+  "attemptId": "string",
+  "status": "rejected_moderation" | "rejected_not_question" | "unsupported_type",
+  "userMessage": "Bu görselde bir soru tespit edemedik, lütfen net bir soru fotoğrafı çekin",
+  "quota": { "remainingToday": 5, "unlimited": false }
+}
+```
+
+`userMessage` MUST be neutral; MUST NOT moralize.
+
+### Errors
+
+| Code | When |
+|------|------|
+| `unauthenticated` | no auth |
+| `resource-exhausted` | daily quota or rate limit |
+| `failed-precondition` | account restricted |
+| `invalid-argument` | missing imagePath |
+| `internal` | model/storage failure after retries |
+
+## `explainAgain`
+
+### Request
+
+```json
+{ "solutionId": "string" }
+```
+
+### Response
+
+```json
+{
+  "followUpId": "string",
+  "explanation": "string"
+}
+```
+
+Does not decrement daily solve quota; subject to separate rate limit.
