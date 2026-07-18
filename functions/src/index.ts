@@ -24,6 +24,7 @@ import {
 } from './abuse/invalidImageScore';
 import { assertRateLimit } from './abuse/rateLimit';
 import { completeOnboardingDocument } from './users/completeOnboarding';
+import { requestAccountDeletionDocument } from './users/requestAccountDeletion';
 import { updateExamTypeDocument } from './users/updateExamType';
 import { isExamType } from './theme/examTypes';
 import type { ExamType, Subject } from './types/contracts';
@@ -98,6 +99,14 @@ export const updateExamType = regional.https.onCall(async (data, context) => {
     }
     throw err;
   }
+});
+
+/** US7: soft-delete / KVKK erasure request flag */
+export const requestAccountDeletion = regional.https.onCall(async (_data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  return requestAccountDeletionDocument(context.auth.uid);
 });
 
 /** US1: moderate → cache → Gemini (Vertex) → stepped solution */

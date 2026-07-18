@@ -190,8 +190,8 @@
 - [x] T055 [US7] Rate limiting middleware for solve/explain callables (solve wired; explain already has own limit)
 - [x] T056 [US7] invalidImageScore updates on moderation rejects; restrict threshold
 - [x] T057a [US7] Exam mode switcher (LGS/YGS/KPSS) on home + profile; `updateExamType` callable; stats filter by active exam
-- [ ] T057 [US7] Profile screen: quota, consent status, sign-out, delete-request flag
-- [ ] T058 [US7] security-reviewer checklist sign-off for abuse + child messaging
+- [x] T057 [US7] Profile screen: quota, consent status, sign-out, delete-request flag
+- [x] T058 [US7] security-reviewer checklist sign-off for abuse + child messaging (`docs/security/us7-abuse-child-checklist.md`)
 - [x] T059 [US7] Pass T054
 
 

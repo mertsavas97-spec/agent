@@ -101,6 +101,8 @@ export type UserDoc = {
   subscriptionStatus: 'free' | 'active' | 'grace' | 'expired';
   invalidImageScore: number;
   restrictedUntil?: unknown | null;
+  /** Soft delete / KVKK erasure request flag (MVP) */
+  deleteRequestedAt?: unknown | null;
   createdAt: unknown;
   updatedAt: unknown;
 };

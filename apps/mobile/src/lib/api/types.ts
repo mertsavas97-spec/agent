@@ -99,6 +99,7 @@ export type UserProfile = {
   ageBand?: 'under13' | '13to17' | '18plus';
   parentalConsentAt?: string | null;
   consentAcceptedAt?: string | null;
+  deleteRequestedAt?: string | null;
   onboardingCompletedAt?: string | null;
   streakCount: number;
   dailySolveCount: number;

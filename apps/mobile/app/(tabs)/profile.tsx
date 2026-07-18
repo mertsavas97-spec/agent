@@ -1,40 +1,71 @@
+import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
 import { topicsForExam } from '@/src/data';
-import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
-import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
-import { ensureSignedIn } from '@/src/lib/auth';
+import { callRequestAccountDeletion } from '@/src/features/profile/deleteRequestClient';
+import { ProfilePanel } from '@/src/features/profile/ProfilePanel';
+import {
+  consentLabel,
+  formatRemainingQuota,
+  remainingFreeSolves,
+} from '@/src/features/profile/quotaDisplay';
+import { ensureSignedIn, signOutUser } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import type { ExamType } from '@/src/lib/api/types';
-import { colors, space } from '@/src/theme';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [switching, setSwitching] = useState(false);
+  const [quotaLabel, setQuotaLabel] = useState('—');
+  const [consentText, setConsentText] = useState('—');
+  const [deleteRequested, setDeleteRequested] = useState(false);
+
+  const reload = useCallback(async () => {
+    const user = await ensureSignedIn();
+    const { db } = getFirebase();
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const et = data.examType;
+    if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+    setQuotaLabel(
+      formatRemainingQuota(
+        remainingFreeSolves({
+          dailySolveCount: Number(data.dailySolveCount ?? 0),
+          dailySolveDate: (data.dailySolveDate as string | null) ?? null,
+          subscriptionStatus: String(data.subscriptionStatus ?? 'free'),
+        }),
+      ),
+    );
+    setConsentText(
+      consentLabel({
+        consentAcceptedAt: data.consentAcceptedAt,
+        parentalConsentAt: data.parentalConsentAt,
+        ageBand: data.ageBand as string | undefined,
+      }),
+    );
+    setDeleteRequested(Boolean(data.deleteRequestedAt));
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       void (async () => {
         try {
-          const user = await ensureSignedIn();
-          const { db } = getFirebase();
-          const snap = await getDoc(doc(db, 'users', user.uid));
-          if (!alive || !snap.exists()) return;
-          const et = snap.data().examType;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+          await reload();
         } catch {
-          /* emulator / offline */
+          if (!alive) return;
         }
       })();
       return () => {
         alive = false;
       };
-    }, []),
+    }, [reload]),
   );
 
   async function onExamChange(next: ExamType) {
@@ -52,50 +83,64 @@ export default function ProfileScreen() {
     }
   }
 
+  function onSignOut() {
+    Alert.alert('Çıkış', 'Hesabından çıkmak istiyor musun?', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Çıkış yap',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            try {
+              await signOutUser();
+              router.replace('/onboarding');
+            } catch {
+              Alert.alert('Çıkış yapılamadı', 'Tekrar dener misin?');
+            }
+          })();
+        },
+      },
+    ]);
+  }
+
+  function onRequestDelete() {
+    Alert.alert(
+      'Veri silme talebi',
+      'Hesap ve çözüm verilerin için silme talebi oluşturulacak. Bu işlem geri alınamaz.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Talep et',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                await callRequestAccountDeletion();
+                setDeleteRequested(true);
+                Alert.alert('Talep alındı', 'Veri silme talebin kaydedildi.');
+              } catch {
+                Alert.alert('Talep gönderilemedi', 'Bağlantını kontrol edip tekrar dene.');
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }
+
   const catalogCount = examType ? topicsForExam(examType).length : 0;
 
   return (
-    <View style={styles.container} testID="profile-screen">
-      <Text style={styles.title}>Profil</Text>
-      <Text style={styles.meta} testID="profile-exam">
-        Aktif sınav: {examType ? EXAM_LABEL[examType] : '—'}
-      </Text>
-      <ExamModeSwitcher
-        value={examType}
-        onChange={(e) => void onExamChange(e)}
-        disabled={switching}
-      />
-      <Text style={styles.meta}>Günlük hak: 5 (ücretsiz)</Text>
-      <Text style={styles.meta} testID="topic-catalog-count">
-        Bu sınavın konu kataloğu: {catalogCount} başlık
-      </Text>
-      <Text style={styles.note}>
-        Sınav değiştirmek geçmiş kayıtları silmez; yeni çözümler seçili moda göre üretilir.
-      </Text>
-    </View>
+    <ProfilePanel
+      examType={examType}
+      onExamChange={(e) => void onExamChange(e)}
+      examSwitchDisabled={switching}
+      quotaLabel={quotaLabel}
+      consentLabel={consentText}
+      catalogCount={catalogCount}
+      deleteRequested={deleteRequested}
+      onSignOut={onSignOut}
+      onRequestDelete={onRequestDelete}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    padding: space.lg,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.navy,
-    marginBottom: space.md,
-  },
-  meta: {
-    color: colors.textSecondary,
-    marginBottom: space.sm,
-  },
-  note: {
-    marginTop: space.md,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-});

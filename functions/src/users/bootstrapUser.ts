@@ -28,6 +28,7 @@ export function buildDefaultUserDoc(input: BootstrapInput): UserDoc {
     subscriptionStatus: 'free',
     invalidImageScore: 0,
     restrictedUntil: null,
+    deleteRequestedAt: null,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };

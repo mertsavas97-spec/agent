@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient';
+import { subscribeAuth } from '@/src/lib/auth';
 import { colors } from '@/src/theme';
 
 type GateState =
@@ -12,15 +13,26 @@ type GateState =
 
 export function BootstrapGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const [uid, setUid] = useState<string | null>(null);
   const [state, setState] = useState<GateState>({ status: 'loading' });
 
   useEffect(() => {
-    // Screenshot / dogfood without Firebase: skip gate.
+    if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
+      setState({ status: 'ready' });
+      return;
+    }
+    return subscribeAuth((user) => {
+      setUid(user?.uid ?? null);
+    });
+  }, []);
+
+  useEffect(() => {
     if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
       setState({ status: 'ready' });
       return;
     }
     let alive = true;
+    setState({ status: 'loading' });
     void (async () => {
       try {
         const status = await fetchOnboardingStatus();
@@ -30,14 +42,13 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
         );
       } catch {
         if (!alive) return;
-        // Auth/emulator unavailable in unit tests — let children render.
         setState({ status: 'ready' });
       }
     })();
     return () => {
       alive = false;
     };
-  }, [pathname]);
+  }, [pathname, uid]);
 
   if (state.status === 'loading') {
     return (
