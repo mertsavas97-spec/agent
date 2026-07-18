@@ -20,16 +20,16 @@ Oku: SPRINT_STATE.md, PROJECT_BRIEF.md, docs/agent/COORDINATOR.md, docs/agent/TE
 Mod: Koordinatör. Skill map: cozbil-team-skills. QA Gate zorunlu.
 Exam: LGS+YGS+KPSS. Moodboard: docs/design/moodboard/
 
-Aktif hedef: specs/002-cozbil-mvp/tasks.md Phase 3 US1 — fotoğrafla soru çöz (T014+).
+Aktif hedef: specs/002-cozbil-mvp/tasks.md US2 — Anlamadım tekrar açıkla (T025+).
 
-İlk iş: SPRINT_STATE oku, Phase 2’nin main’de olduğunu doğrula, US1 TDD ile başla.
+İlk iş: SPRINT_STATE oku, US1’in main’de olduğunu doğrula, US2’ye başla.
 ```
 
 ## 3) Sonraki iş sırası
 
-1. ~~Phase 1 setup~~  
-2. ~~Phase 2 foundation~~  
-3. US1 fotoğrafla çöz (T014+)  
+1. ~~Phase 1–2~~  
+2. ~~US1 fotoğrafla çöz~~  
+3. US2 explainAgain · US3 onboarding  
 
 ## 4) Dokunma
 

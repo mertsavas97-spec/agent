@@ -1,19 +1,20 @@
 # Sprint State
 
-**Aktif sprint:** Phase 2 foundation — COMPLETE  
-**Hedef:** T007–T013 ✅  
-**Branch:** `cursor/cozbil-phase2-foundation-9131` (pushed to `main`)  
-**Sonraki:** Phase 3 US1 — fotoğrafla soru çöz (T014+)
+**Aktif sprint:** US1 — fotoğrafla soru çöz — COMPLETE  
+**Hedef:** T014–T024 ✅  
+**Branch:** `cursor/cozbil-us1-solve-9131` → `main`  
+**Sonraki:** US2 — Anlamadım, tekrar açıkla (T025+)
 
 ## Backlog
 
-1. ~~Phase 1 scaffold~~
-2. ~~Phase 2 foundation~~
-3. **NEXT:** US1 solve pipeline (moderation → Gemini → UI)
+1. ~~Phase 1–2~~
+2. ~~US1 solve pipeline~~
+3. **NEXT:** US2 explainAgain
+4. US3 onboarding (LGS/YGS/KPSS)
 
 ## Son QA Gate
 
 - typecheck: PASS
-- lint: N/A (eslint stub)
-- smoke: PASS (17 tests)
-- guardian / security: PASS (`docs/security/phase2-review.md`)
+- lint: N/A
+- smoke: PASS (mobile 10 + functions 19 tests)
+- guardian: PASS (neutral reject; no image bytes in logs)

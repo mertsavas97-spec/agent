@@ -54,21 +54,21 @@
 
 ### Tests (TDD)
 
-- [ ] T014 [P] [US1] Failing unit tests for moderation gate + quota-not-billed on reject in `functions/tests/moderation.test.ts`
-- [ ] T015 [P] [US1] Failing unit tests for pHash cache hit path in `functions/tests/cache.test.ts`
-- [ ] T016 [P] [US1] Failing component test for solution steps + transparency note in `apps/mobile/tests/SolutionScreen.test.tsx`
+- [x] T014 [P] [US1] Failing unit tests for moderation gate + quota-not-billed on reject in `functions/tests/moderation.test.ts`
+- [x] T015 [P] [US1] Failing unit tests for pHash cache hit path in `functions/tests/cache.test.ts`
+- [x] T016 [P] [US1] Failing component test for solution steps + transparency note in `apps/mobile/tests/SolutionScreen.test.tsx`
 
 ### Implementation
 
-- [ ] T017 [US1] Implement SafeSearch moderation module `functions/src/moderation/safeSearch.ts` (Context7 Cloud Vision)
-- [ ] T018 [US1] Implement pHash + `solutionCache` lookup/write `functions/src/cache/`
-- [ ] T019 [US1] Implement Gemini Vision solve + topic tag `functions/src/solve/geminiSolve.ts` with exam-aware math prompts (`lgs`/`ygs`/`kpss`) (Context7 Gemini)
-- [ ] T019b [US1] Loading UI with robot mascot + “Sorun analiz ediliyor…” per moodboard in `apps/mobile/src/features/solve/`
-- [ ] T020 [US1] Implement callable `solveQuestion` orchestration `functions/src/solve/solveQuestion.ts` matching contract
-- [ ] T021 [US1] Mobile: camera/gallery capture + upload to Storage `apps/mobile/src/features/solve/`
-- [ ] T022 [US1] Mobile: loading + result screens (steps, transparency) under `apps/mobile/app/`
-- [ ] T023 [US1] Unsupported geometry/diagram classifier branch + neutral copy
-- [ ] T024 [US1] Make T014–T016 pass; qa-tester smoke on Android emulator
+- [x] T017 [US1] Implement SafeSearch moderation module `functions/src/moderation/safeSearch.ts` (Context7 Cloud Vision)
+- [x] T018 [US1] Implement pHash + `solutionCache` lookup/write `functions/src/cache/`
+- [x] T019 [US1] Implement Gemini Vision solve + topic tag `functions/src/solve/geminiSolve.ts` with exam-aware math prompts (`lgs`/`ygs`/`kpss`) (Context7 Gemini)
+- [x] T019b [US1] Loading UI with robot mascot + “Sorun analiz ediliyor…” per moodboard in `apps/mobile/src/features/solve/`
+- [x] T020 [US1] Implement callable `solveQuestion` orchestration `functions/src/solve/solveQuestion.ts` matching contract
+- [x] T021 [US1] Mobile: camera/gallery capture + upload to Storage `apps/mobile/src/features/solve/`
+- [x] T022 [US1] Mobile: loading + result screens (steps, transparency) under `apps/mobile/app/`
+- [x] T023 [US1] Unsupported geometry/diagram classifier branch + neutral copy
+- [x] T024 [US1] Make T014–T016 pass; qa-tester smoke on Android emulator
 
 **Checkpoint**: US1 independently demoable
 

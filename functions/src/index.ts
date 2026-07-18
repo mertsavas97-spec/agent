@@ -1,8 +1,14 @@
 import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 
+import { createFirestoreCache, downloadImageBuffer, loadQuota, persistRejected, persistSolved } from './solve/firestoreAdapters';
+import { createGeminiSolver } from './solve/geminiSolve';
+import { runSolveQuestion } from './solve/solveQuestion';
+import { createVisionClient } from './moderation/visionClient';
 import { ensureUserDocument } from './users/bootstrapUser';
 import { isExamType } from './theme/examTypes';
+import type { ExamType } from './types/contracts';
 
 initializeApp();
 
@@ -28,3 +34,56 @@ export const ensureUser = functions.https.onCall(async (data, context) => {
     displayName: typeof data?.displayName === 'string' ? data.displayName : undefined,
   });
 });
+
+/** US1: moderate → cache → Gemini → stepped solution */
+export const solveQuestion = functions
+  .runWith({ timeoutSeconds: 120, memory: '512MB' })
+  .https.onCall(async (data, context) => {
+    if (!context.auth?.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+    }
+    const imagePath = typeof data?.imagePath === 'string' ? data.imagePath : '';
+    if (!imagePath.startsWith(`users/${context.auth.uid}/`)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz görsel yolu');
+    }
+
+    const userSnap = await getFirestore().collection('users').doc(context.auth.uid).get();
+    const userExam = userSnap.data()?.examType;
+    const examTypeRaw =
+      typeof data?.examType === 'string' ? data.examType : userExam;
+    if (!examTypeRaw || !isExamType(examTypeRaw)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Sınav türü seçilmedi');
+    }
+    const examType = examTypeRaw as ExamType;
+
+    try {
+      const imageBuffer = await downloadImageBuffer(imagePath);
+      return await runSolveQuestion(
+        {
+          uid: context.auth.uid,
+          imagePath,
+          imageBuffer,
+          examType,
+          mimeType: typeof data?.mimeType === 'string' ? data.mimeType : 'image/jpeg',
+        },
+        {
+          vision: createVisionClient(),
+          solver: createGeminiSolver(),
+          cache: createFirestoreCache(),
+          loadQuota,
+          persistSolved,
+          persistRejected,
+        },
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === 'QuotaExceededError') {
+        throw new functions.https.HttpsError('resource-exhausted', 'Günlük hak bitti');
+      }
+      console.error('solveQuestion failed', {
+        uid: context.auth.uid,
+        imagePath,
+        message: err instanceof Error ? err.message : 'unknown',
+      });
+      throw new functions.https.HttpsError('internal', 'Çözüm şu an üretilemedi');
+    }
+  });

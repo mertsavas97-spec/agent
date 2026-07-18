@@ -1,14 +1,49 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
+import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { brand, colors, radii, space } from '@/src/theme';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
+  async function openPicker(source: 'camera' | 'library') {
+    const picked =
+      source === 'camera' ? await pickFromCamera() : await pickFromLibrary();
+    if (!picked) {
+      Alert.alert(
+        'İzin gerekli',
+        source === 'camera'
+          ? SAFETY_MESSAGES.permissionCamera
+          : SAFETY_MESSAGES.permissionLibrary,
+      );
+      return;
+    }
+    router.push({
+      pathname: '/solve',
+      params: { uri: picked.uri, mimeType: picked.mimeType ?? 'image/jpeg' },
+    });
+  }
+
+  function onCapture() {
+    Alert.alert('Soru fotoğrafı', 'Nasıl devam edelim?', [
+      { text: 'Kamera', onPress: () => void openPicker('camera') },
+      { text: 'Galeri', onPress: () => void openPicker('library') },
+      { text: 'Vazgeç', style: 'cancel' },
+    ]);
+  }
+
   return (
     <View style={styles.container} testID="home-screen">
       <Text style={styles.brand}>{brand.name}</Text>
       <Text style={styles.subtitle}>Sorunun fotoğrafını çek, adım adım çöz</Text>
       <Text style={styles.streak}>Seri: 0 gün</Text>
-      <Pressable style={styles.cta} accessibilityRole="button" testID="capture-cta">
+      <Pressable
+        style={styles.cta}
+        accessibilityRole="button"
+        testID="capture-cta"
+        onPress={onCapture}>
         <Text style={styles.ctaLabel}>Fotoğraf Çek</Text>
       </Pressable>
       <Text style={styles.hint}>LGS · YGS · KPSS</Text>

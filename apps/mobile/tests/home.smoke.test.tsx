@@ -1,6 +1,15 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+}));
+
+jest.mock('@/src/features/solve/image', () => ({
+  pickFromCamera: jest.fn(),
+  pickFromLibrary: jest.fn(),
+}));
+
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
