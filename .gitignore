@@ -22,6 +22,7 @@ Thumbs.db
 node_modules/
 dist/
 build/
+lib/
 .next/
 .turbo/
 coverage/
@@ -29,6 +30,12 @@ coverage/
 .venv/
 __pycache__/
 *.pyc
+.expo/
+web-build/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+apps/mobile/.expo/
 
 # Spec Kit / local runtime noise
 .specify/feature.json

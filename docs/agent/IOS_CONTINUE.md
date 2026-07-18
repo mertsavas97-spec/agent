@@ -20,15 +20,15 @@ Oku: SPRINT_STATE.md, PROJECT_BRIEF.md, docs/agent/COORDINATOR.md, docs/agent/TE
 Mod: Koordinatör. Skill map: cozbil-team-skills. QA Gate zorunlu.
 Exam: LGS+YGS+KPSS. Moodboard: docs/design/moodboard/
 
-Aktif hedef: specs/002-cozbil-mvp/tasks.md Phase 1 — Expo + Firebase scaffold (apps/mobile + functions).
+Aktif hedef: specs/002-cozbil-mvp/tasks.md Phase 2 — Auth, rules, topic catalogs.
 
-İlk iş: SPRINT_STATE güncelle, repo özeti, Phase 1’e başla.
+İlk iş: SPRINT_STATE oku, Phase 1’in main/PR’da olduğunu doğrula, Phase 2’ye başla.
 ```
 
 ## 3) Sonraki iş sırası
 
-1. Phase 1 setup (`tasks.md` T001–T006)  
-2. Phase 2 foundation  
+1. ~~Phase 1 setup~~  
+2. Phase 2 foundation (T007–T013)  
 3. US1 fotoğrafla çöz  
 
 ## 4) Dokunma

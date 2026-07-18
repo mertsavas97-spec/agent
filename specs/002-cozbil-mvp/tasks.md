@@ -17,12 +17,12 @@
 
 **Purpose**: Repo scaffold for Expo mobile + Firebase functions
 
-- [ ] T001 Create monorepo dirs `apps/mobile/`, `functions/`, `firebase/` per plan.md
-- [ ] T002 Initialize Expo TypeScript app in `apps/mobile` with expo-router tabs shell
-- [ ] T003 [P] Initialize `functions/` TypeScript Firebase Functions project (Node 20)
-- [ ] T004 [P] Add root/workspace scripts, `.env.example`, and Firebase emulator config in `firebase/`
-- [ ] T005 [P] Configure Jest + React Native Testing Library in `apps/mobile` and Jest in `functions`
-- [ ] T006 Install ui-ux-pro-max skill/CLI if missing; designer produces tokens in `apps/mobile/src/theme/` from `docs/design/moodboard/` (navy `#1E1B4B`, orange `#F59E0B`, Poppins; ui-ux-pro-max required)
+- [x] T001 Create monorepo dirs `apps/mobile/`, `functions/`, `firebase/` per plan.md
+- [x] T002 Initialize Expo TypeScript app in `apps/mobile` with expo-router tabs shell
+- [x] T003 [P] Initialize `functions/` TypeScript Firebase Functions project (Node 20)
+- [x] T004 [P] Add root/workspace scripts, `.env.example`, and Firebase emulator config in `firebase/`
+- [x] T005 [P] Configure Jest + React Native Testing Library in `apps/mobile` and Jest in `functions`
+- [x] T006 Theme tokens in `apps/mobile/src/theme/` from moodboard (`#1E1B4B` / `#F59E0B` / Poppins); ui-ux-pro-max CLI N/A → `docs/design/tokens.md`
 
 **Checkpoint**: Empty app boots; emulators start; tests run (empty/pass)
 

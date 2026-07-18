@@ -1,33 +1,23 @@
 # Sprint State
 
-**Aktif sprint:** MVP scaffold (handoff → iOS/Cloud)  
-**Hedef:** `specs/002-cozbil-mvp/tasks.md` Phase 1 — Expo + Firebase  
-**Durum:** Spec + kit + moodboard **main’de**; uygulama kodu henüz yok  
-**Bitiş kriteri (sonraki oturum):** `apps/mobile` ayağa kalkar; typecheck/lint smoke PASS
-
-## Handoff
-
-- **Tarih:** 2026-07-18  
-- **Branch:** `main` (iOS için)  
-- **Devam:** `docs/agent/IOS_CONTINUE.md`  
-- **Opening:** `docs/agent/OPENING_PROMPT.md`
+**Aktif sprint:** Phase 1 scaffold — COMPLETE  
+**Hedef:** T001–T006 ✅  
+**Branch:** `cursor/cozbil-phase1-scaffold-9131`  
+**Sonraki:** Phase 2 foundation (T007–T013)
 
 ## Backlog
 
-1. ~~Ürün kilidi LGS+YGS+KPSS + moodboard~~
-2. ~~cursor-agent-kit + ÇözBil uyarlama~~
-3. ~~iOS/Cloud handoff (main push)~~
-4. **NEXT:** Phase 1 Expo + Firebase scaffold (T001–T006)
-5. Phase 2 foundation
-6. US1 solve pipeline
+1. ~~Phase 1 Expo + Firebase scaffold~~
+2. **NEXT:** Phase 2 — Auth, rules, topic catalogs, shared DTOs
+3. US1 solve pipeline
 
-## Son QA Gate (kit sprint)
+## Son QA Gate
 
-- typecheck: N/A  
-- lint: N/A  
-- smoke: PASS  
-- guardian: PASS  
+- typecheck: PASS
+- lint: N/A (placeholder scripts; eslint sonraki)
+- smoke: PASS (jest mobile + functions)
+- guardian: PASS (LGS+YGS+KPSS korunuyor; Gemini client’ta yok)
 
-## Son koordinatör notu
+## Koordinatör notu
 
-iOS Cursor’dan `@koordinatör devam` + `IOS_CONTINUE.md` prompt’u ile Phase 1’e geç.
+`npm run qa` yeşil. iOS/Mac: branch’i çek veya PR merge sonrası `main`.
