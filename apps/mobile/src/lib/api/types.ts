@@ -30,6 +30,7 @@ export type SolveQuestionRequest = {
 
 export type SolveQuestionSuccess = {
   attemptId: string;
+  solutionId: string;
   status: 'solved';
   cached: boolean;
   topicId: string | null;

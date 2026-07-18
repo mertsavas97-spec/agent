@@ -4,6 +4,13 @@ import * as functions from 'firebase-functions/v1';
 
 import { isDemoAiMode, runtimeModeLabel } from './config/runtime';
 import { createFirestoreCache, downloadImageBuffer, loadQuota, persistRejected, persistSolved } from './solve/firestoreAdapters';
+import {
+  assertExplainRateLimit,
+  createExplainGenerator,
+  loadSolutionForExplain,
+  persistFollowUp,
+  runExplainAgain,
+} from './solve/explainAgain';
 import { createGeminiSolver } from './solve/geminiSolve';
 import { runSolveQuestion } from './solve/solveQuestion';
 import { createVisionClient } from './moderation/visionClient';
@@ -96,3 +103,39 @@ export const solveQuestion = functions
       throw new functions.https.HttpsError('internal', 'Çözüm şu an üretilemedi');
     }
   });
+
+/** US2: simpler re-explanation — does not burn daily solve quota */
+export const explainAgain = functions.https.onCall(async (data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  const solutionId = typeof data?.solutionId === 'string' ? data.solutionId : '';
+  if (!solutionId) {
+    throw new functions.https.HttpsError('invalid-argument', 'solutionId gerekli');
+  }
+
+  try {
+    return await runExplainAgain(
+      { uid: context.auth.uid, solutionId },
+      {
+        assertExplainAllowed: assertExplainRateLimit,
+        loadSolution: loadSolutionForExplain,
+        generate: createExplainGenerator(),
+        persistFollowUp,
+      },
+    );
+  } catch (err) {
+    if (err instanceof Error && err.name === 'RateLimitError') {
+      throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı istek');
+    }
+    if (err instanceof Error && err.name === 'NotFoundError') {
+      throw new functions.https.HttpsError('not-found', 'Çözüm bulunamadı');
+    }
+    console.error('explainAgain failed', {
+      uid: context.auth.uid,
+      solutionId,
+      message: err instanceof Error ? err.message : 'unknown',
+    });
+    throw new functions.https.HttpsError('internal', 'Açıklama üretilemedi');
+  }
+});

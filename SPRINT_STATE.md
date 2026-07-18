@@ -1,23 +1,19 @@
 # Sprint State
 
-**Aktif sprint:** US1 — fotoğrafla soru çöz — COMPLETE  
-**Hedef:** T014–T024 ✅  
-**Branch:** `cursor/cozbil-us1-solve-9131` → `main`  
-**Sonraki:** US2 — Anlamadım, tekrar açıkla (T025+)  
-**AI kredileri:** ertelendi → demo AI (`docs/setup/OWNER_LATER.md`)
+**Aktif sprint:** US2 explainAgain — COMPLETE  
+**AI kredileri:** ertelendi (demo AI)  
+**Sınav stratejisi:** `docs/architecture/exam-ai-strategy.md`  
+**Sonraki:** US3 onboarding (LGS/YGS/KPSS seçimi)
 
 ## Backlog
 
-1. ~~Phase 1–2~~
-2. ~~US1 solve pipeline~~
-3. **NEXT:** US2 explainAgain (kredi gerekmez)
-4. US3 onboarding · US4–6 UI
-5. *(Sonra)* Gemini + Vision + Firebase prod keys
+1. ~~US1–US2~~
+2. **NEXT:** US3 onboarding
+3. US4–6 history / stats / paywall
+4. *(Sonra)* Gemini + Vision keys
 
 ## Son QA Gate
 
-- typecheck: PASS
-- lint: N/A
-- smoke: PASS
-- guardian: PASS
-- demo AI: varsayılan (key yok)
+- `npm run qa` — PASS (2026-07-18)
+- mobile: 7 suites / 11 tests
+- functions: 11 suites / 25 tests

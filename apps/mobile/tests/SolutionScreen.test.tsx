@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 
@@ -19,5 +19,24 @@ describe('SolutionScreen', () => {
     expect(screen.getByTestId('step-0')).toBeTruthy();
     expect(screen.getByText('Paydaları eşitle.')).toBeTruthy();
     expect(screen.getByTestId('transparency-note')).toHaveTextContent(/AI tarafından/);
+  });
+
+  it('shows follow-up text after explain again', async () => {
+    const onExplainAgain = jest.fn().mockResolvedValue('Daha sade: payları topla.');
+    render(
+      <SolutionScreen
+        steps={[{ title: '1', body: 'x' }]}
+        solutionId="sol-1"
+        onExplainAgain={onExplainAgain}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId('explain-again-btn'));
+    await waitFor(() => {
+      expect(screen.getByTestId('follow-up-text')).toHaveTextContent(
+        /Daha sade: payları topla/,
+      );
+    });
+    expect(onExplainAgain).toHaveBeenCalled();
   });
 });

@@ -82,15 +82,15 @@
 
 ### Tests
 
-- [ ] T025 [P] [US2] Failing test `functions/tests/explainAgain.test.ts` (quota unchanged, rate limit)
-- [ ] T026 [P] [US2] Failing UI test button → shows follow-up text
+- [x] T025 [P] [US2] Failing test `functions/tests/explainAgain.test.ts` (quota unchanged, rate limit)
+- [x] T026 [P] [US2] Failing UI test button → shows follow-up text
 
 ### Implementation
 
-- [ ] T027 [US2] Callable `explainAgain` in `functions/src/solve/explainAgain.ts`
-- [ ] T028 [US2] Wire button + UI on solution screen; persist followUp under user subcollection
-- [ ] T029 [US2] Increment `topicStats.followUpCount` for weakness signal
-- [ ] T030 [US2] Pass tests T025–T026
+- [x] T027 [US2] Callable `explainAgain` in `functions/src/solve/explainAgain.ts`
+- [x] T028 [US2] Wire button + UI on solution screen; persist followUp under user subcollection
+- [x] T029 [US2] Increment `topicStats.followUpCount` for weakness signal
+- [x] T030 [US2] Pass tests T025–T026
 
 **Checkpoint**: US2 demoable on top of US1
 

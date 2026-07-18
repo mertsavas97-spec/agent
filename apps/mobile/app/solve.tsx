@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
+import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -88,6 +89,8 @@ export default function SolveFlowScreen() {
         steps={result.steps}
         transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
         imageUri={typeof params.uri === 'string' ? params.uri : null}
+        solutionId={result.solutionId}
+        onExplainAgain={() => callExplainAgain(result.solutionId)}
       />
     );
   }
