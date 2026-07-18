@@ -27,9 +27,20 @@
 
 4. **Güvenlik** — Key’ler chat’te görüldü. Test bitince Console’dan **rotate/regenerate** önerilir. Repoya yazılmadı.
 
+## Firebase web (2026-07-18)
+
+| Field | Value |
+|-------|--------|
+| projectId | `cozbil-dev-f9583` |
+| projectNumber | `717206185063` |
+| storageBucket | `cozbil-dev-f9583.firebasestorage.app` |
+| authDomain | `cozbil-dev-f9583.firebaseapp.com` |
+| Billing / Blaze | linked / enabled |
+| Anonymous Auth | owner confirmed |
+| Local env | `apps/mobile/.env` (gitignored) |
+
 ## Owner next
 
-1. AI Studio → proje billing/kredi doldur **veya** Gemini key’i `cozbil-dev` + billing ile yenile  
-2. Storage + Blaze  
-3. Web app ekle → config’i (key’siz özet veya local `.env`) paylaş  
-4. “Gemini 429 gitti” yaz → deploy + US6
+1. Gemini API key’i **`cozbil-dev-f9583`** (veya aynı billing) altında yenile; 429 olmamalı  
+2. Vision key’in bu proje/billing altında olduğunu doğrula  
+3. “Gemini OK” → Functions deploy + rules + US6
