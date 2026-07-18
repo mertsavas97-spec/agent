@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
+import { useVertexAi, vertexGenerateContent } from '../ai/vertexClient';
 import { isDemoAiMode } from '../config/runtime';
 import type { ExamType } from '../types/contracts';
 import { explainAgainPrompt } from './prompts';
@@ -70,11 +71,18 @@ export function createExplainGenerator(): ExplainDeps['generate'] {
       return demoExplanation(examType, priorSteps);
     }
 
+    if (useVertexAi()) {
+      return vertexGenerateContent([
+        { text: explainAgainPrompt(examType) },
+        { text: `Önceki çözüm:\n${priorSteps}` },
+      ]);
+    }
+
     const key = process.env.GEMINI_API_KEY;
     if (!key) return demoExplanation(examType, priorSteps);
 
     const model = new GoogleGenerativeAI(key).getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
     });
     const result = await model.generateContent([
       { text: explainAgainPrompt(examType) },
