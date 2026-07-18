@@ -8,7 +8,9 @@ Mağazadaki Expo Go, projedeki **SDK 57** ile uyumsuz olabilir.
 | Platform | En kolay yol | Gereken |
 |----------|--------------|---------|
 | **Android** | `preview` profil → **APK** indir, kur | Ücretsiz Expo hesabı (Play hesabı şart değil) |
-| **iOS** | Internal / TestFlight | **Apple Developer** ($99/yıl) + Expo hesabı |
+| **iOS** | Ad hoc / TestFlight — detay: [`IOS_PHONE_BUILD.md`](./IOS_PHONE_BUILD.md) | **Apple Developer** ($99/yıl) + Expo hesabı |
+
+> Telefonun **iOS** ise doğrudan `IOS_PHONE_BUILD.md` adımlarını izle.
 
 ## 1) Expo’ya giriş (bir kez)
 

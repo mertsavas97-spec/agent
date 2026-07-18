@@ -9,7 +9,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cozbil.app"
+      "bundleIdentifier": "com.cozbil.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ÇözBil soru fotoğrafı çekmek için kameraya ihtiyaç duyar.",
+        "NSPhotoLibraryUsageDescription": "ÇözBil galeriden soru fotoğrafı seçmek için fotoğraflarına erişir."
+      }
     },
     "android": {
       "package": "com.cozbil.app",
