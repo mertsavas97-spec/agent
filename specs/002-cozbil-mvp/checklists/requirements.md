@@ -2,6 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-07-18
+**Updated**: 2026-07-18 (multi-exam + moodboard)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,7 +32,6 @@
 
 ## Notes
 
-- Clarification defaults encoded in Assumptions (daily quota 5, price 49 TL,
-  working name ÇözBil). Owner may amend without reopening app-vs-game.
-- Tech stack intentionally deferred to plan.md (Spec Kit separation).
-- Validation iteration 1 (2026-07-18): PASS — ready for `/speckit-plan`.
+- Iteration 2: LGS-only “yakında” kaldırıldı; LGS/YGS/KPSS aktif.
+- Moodboard path: `docs/design/moodboard/`.
+- Tech stack remains in plan.md only.

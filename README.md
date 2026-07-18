@@ -27,8 +27,9 @@ Detay: `AGENTS.md`, `.cursor/rules/000-coordinator.mdc`
 
 ## Aktif özellik
 
-- `specs/001-product-definition/` — ürün tipi / persona / yüzey (**Locked**: app, ÇözBil, LGS, Android-first)
+- `specs/001-product-definition/` — ürün tipi / persona / yüzey (**Locked**: app, ÇözBil, LGS+YGS+KPSS, Android-first)
 - `specs/002-cozbil-mvp/` — MVP 1.0 spec + plan + tasks (implementasyon sıradaki adım)
+- Moodboard: `docs/design/moodboard/`
 - Owner brief: `docs/product/cozbil-mvp-1.0-brief.md`
 
 ## Mobil (Cursor app)

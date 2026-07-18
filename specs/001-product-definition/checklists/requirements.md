@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-07-16
-**Updated**: 2026-07-18
+**Updated**: 2026-07-18 (multi-exam amendment)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -32,7 +32,6 @@
 
 ## Notes
 
-- Validation iteration 2 (2026-07-18): Owner MVP brief locked product type
-  (`app`), persona (LGS 13–15), surface (mobile Android-first). Working
-  name ÇözBil. Detailed MVP outcomes live in `specs/002-cozbil-mvp/`.
-- Status: **Locked** — ready as prerequisite for MVP planning/implement.
+- Validation iteration 3 (2026-07-18): Exam scope amended to **LGS + YGS + KPSS**
+  (all active). Moodboard linked under `docs/design/moodboard/`.
+- Status: **Locked**.

@@ -1,18 +1,14 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
-- Modified principles: none renamed; Operating Constraints expanded
-- Added sections: Locked Product Identity (under Operating Constraints)
+- Version change: 1.1.0 → 1.1.1
+- Modified principles: none renamed; Locked Product Identity amended
+  (multi-exam: LGS + YGS + KPSS; was LGS-only)
+- Added sections: none
 - Removed sections: none
-- Templates:
-  - .specify/templates/plan-template.md — ✅ still aligned (Constitution Check gates)
-  - .specify/templates/spec-template.md — ✅ no structural change required
-  - .specify/templates/tasks-template.md — ✅ no structural change required
-  - AGENTS.md — ✅ updated product-type lock note
-  - specs/001-product-definition/ — ✅ clarifications resolved from owner MVP brief
-  - specs/002-cozbil-mvp/ — ✅ new MVP feature directory
-- Follow-up TODOs: Final brand/store name confirmation; moodboard image asset
-  handoff to designer; KVKK legal counsel outside agent scope
+- Templates: no structural change
+- AGENTS.md / specs/001 / specs/002 / docs/design/moodboard — ✅ updated
+- Follow-up TODOs: Final brand/store name; KVKK legal counsel; per-exam
+  topic catalogs for YGS and KPSS beyond math-first MVP
 -->
 
 # Agent Constitution
@@ -97,11 +93,17 @@ specs implementable.
 - **Product type (v1)**: App (education / study companion) — not a game.
 - **Working name**: ÇözBil (final store/domain name TBD; agents MUST treat
   this as the working brand until amended).
-- **Primary job**: Help LGS students solve photographed homework questions
-  with step-by-step Turkish explanations, and surface topic weaknesses.
-- **Primary persona**: LGS student ages 13–15 in Türkiye; payer is typically
-  a parent (parent account/report is post-MVP 1.1).
+- **Primary job**: Help exam candidates in Türkiye solve photographed
+  questions with step-by-step Turkish explanations, and surface topic
+  weaknesses.
+- **Exam scope (MVP)**: **LGS, YGS, and KPSS** are all first-class selectable
+  exam tracks (not “coming soon”). Topic catalogs and prompts MUST be
+  exam-aware.
+- **Primary persona**: Sınava hazırlanan öğrenci/aday (LGS: typically 13–15;
+  YGS: lise/üniversite öncesi; KPSS: yetişkin aday). Payer may be parent
+  (esp. LGS) or the candidate; parent account/report is post-MVP 1.1.
 - **Primary surface**: Mobile, Android-first.
+- **Design reference**: `docs/design/moodboard/` (MVP moodboard + tokens).
 - **Authoritative MVP feature dir**: `specs/002-cozbil-mvp/`.
 
 ## Delivery Workflow
@@ -134,4 +136,4 @@ MUST be rejected and sent back to the prior phase.
 
 Runtime guidance: `AGENTS.md` and `.cursor/rules/000-coordinator.mdc`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-16 | **Last Amended**: 2026-07-18
+**Version**: 1.1.1 | **Ratified**: 2026-07-16 | **Last Amended**: 2026-07-18

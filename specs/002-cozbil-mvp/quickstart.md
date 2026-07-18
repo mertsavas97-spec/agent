@@ -19,7 +19,7 @@ Point mobile app at emulators via env (`EXPO_PUBLIC_USE_EMULATORS=1`).
 
 ## Dogfood path (maps to US1–US6)
 
-1. Fresh install → complete onboarding → select LGS only.
+1. Fresh install → complete onboarding → select LGS (also smoke YGS and KPSS paths).
 2. Home → capture a clear math text problem → see stepped solution + note.
 3. Tap “Anlamadım, tekrar açıkla” → second explanation.
 4. History filter by topic; Progress shows weakest topic + streak.

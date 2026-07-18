@@ -9,7 +9,7 @@
 | Field | Type | Notes |
 |-------|------|-------|
 | displayName | string | optional |
-| examType | `"lgs"` | MVP only LGS |
+| examType | `"lgs" \| "ygs" \| "kpss"` | All three active in MVP |
 | birthYear or ageBand | number / enum | consent routing |
 | parentalConsentAt | timestamp \| null | |
 | streakCount | number | |
@@ -78,7 +78,8 @@ Global cache entries MUST NOT include other users’ PII; only solution text + t
 
 ## Static catalog (not Firestore)
 
-`Topic`: `{ id, subject, nameTr, lgsGradeBand }` in repo data file.
+`Topic`: `{ id, examType, subject, nameTr, gradeBand? }` in repo data files
+per exam, e.g. `lgs-topics.ts`, `ygs-topics.ts`, `kpss-topics.ts`.
 
 ## State transitions (Attempt)
 
@@ -99,7 +100,7 @@ free of AI cost. Follow-ups never set `billed` on the parent attempt.
 
 ## Validation rules
 
-- `examType` MUST be `lgs` in MVP writes.
+- `examType` MUST be one of `lgs` | `ygs` | `kpss` in MVP writes.
 - `steps` MUST be non-empty when status is `solved`.
 - `restrictedUntil` in future → solve callable returns 429-equivalent.
 - Soft-delete / export hooks: document in privacy design; implement

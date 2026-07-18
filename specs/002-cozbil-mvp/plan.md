@@ -6,11 +6,12 @@
 
 ## Summary
 
-Android-first React Native (Expo) uygulaması: öğrenci soru fotoğrafı çeker →
-SafeSearch moderasyonu → dedup/cache → Gemini Vision ile LGS’ye özel adım
-adım Türkçe çözüm → konu etiketi + geçmiş/ilerleme/streak → freemium paywall.
+Android-first React Native (Expo) uygulaması: kullanıcı soru fotoğrafı çeker →
+SafeSearch moderasyonu → dedup/cache → Gemini Vision ile **sınav-aware**
+(LGS / YGS / KPSS) adım adım Türkçe çözüm → konu etiketi + geçmiş/istatistik/
+streak → freemium paywall. UI moodboard token’ları + robot loading maskotu.
 Backend MVP: Firebase (Auth, Firestore, Cloud Functions, FCM). Veli raporu,
-geometri ve pratik session bilinçli olarak 1.1/1.2’ye bırakılır.
+geometri diyagram render ve pratik session 1.1/1.2’ye bırakılır.
 
 ## Technical Context
 
@@ -38,8 +39,9 @@ functions/contracts, TDD per constitution
 limit; AI maliyeti Google kredisiyle yönetilir ama yine de dedup + kota;
 Türkçe karakter tipografi; diyagram/geometri MVP dışı
 
-**Scale/Scope**: MVP ~9 ekran/yüzey; tek abonelik planı; matematik konu
-katalogu öncelikli; ilk dogfood <1k kullanıcı varsayımı
+**Scale/Scope**: MVP ~10 moodboard ekranı; tek abonelik planı; üç sınav
+track’i; matematik konu katalogları (LGS/YGS/KPSS) öncelikli; ilk dogfood
+<1k kullanıcı varsayımı
 
 ## Constitution Check
 
@@ -95,7 +97,7 @@ apps/mobile/                 # Expo React Native app
 │   │   └── profile/
 │   ├── lib/                 # firebase client, analytics wrappers
 │   ├── theme/               # design tokens from designer
-│   └── data/                # static LGS topic catalog
+│   └── data/                # static LGS / YGS / KPSS topic catalogs
 ├── assets/
 └── tests/
 

@@ -22,7 +22,7 @@
 - [ ] T003 [P] Initialize `functions/` TypeScript Firebase Functions project (Node 20)
 - [ ] T004 [P] Add root/workspace scripts, `.env.example`, and Firebase emulator config in `firebase/`
 - [ ] T005 [P] Configure Jest + React Native Testing Library in `apps/mobile` and Jest in `functions`
-- [ ] T006 Install ui-ux-pro-max skill/CLI if missing; designer produces tokens in `apps/mobile/src/theme/` from brief palette (Context7 not applicable; ui-ux-pro-max required)
+- [ ] T006 Install ui-ux-pro-max skill/CLI if missing; designer produces tokens in `apps/mobile/src/theme/` from `docs/design/moodboard/` (navy `#1E1B4B`, orange `#F59E0B`, Poppins; ui-ux-pro-max required)
 
 **Checkpoint**: Empty app boots; emulators start; tests run (empty/pass)
 
@@ -36,7 +36,7 @@
 
 - [ ] T007 Add Firestore security rules + Storage rules stubs in `firebase/` (deny-by-default, user-scoped paths)
 - [ ] T008 [P] Implement Firebase Auth email/anonymous-or-social MVP choice in `apps/mobile/src/lib/auth.ts` (verify SDK via Context7)
-- [ ] T009 [P] Create static LGS math topic catalog `apps/mobile/src/data/lgs-topics.ts` and mirror types for functions
+- [ ] T009 [P] Create static math topic catalogs `apps/mobile/src/data/lgs-topics.ts`, `ygs-topics.ts`, `kpss-topics.ts` and mirror types for functions
 - [ ] T010 [P] Shared DTO types aligning to `contracts/solve-question.md` and `contracts/progress.md` in `functions/src/types/` + mobile `src/lib/api/types.ts`
 - [ ] T011 Implement user doc bootstrap on first login (`users/{uid}` defaults) in `functions/src/users/`
 - [ ] T012 [P] Wire expo-image-picker permissions helpers in `apps/mobile/src/features/solve/image.ts` (Context7 Expo docs)
@@ -62,7 +62,8 @@
 
 - [ ] T017 [US1] Implement SafeSearch moderation module `functions/src/moderation/safeSearch.ts` (Context7 Cloud Vision)
 - [ ] T018 [US1] Implement pHash + `solutionCache` lookup/write `functions/src/cache/`
-- [ ] T019 [US1] Implement Gemini Vision solve + topic tag `functions/src/solve/geminiSolve.ts` with math system prompt (Context7 Gemini)
+- [ ] T019 [US1] Implement Gemini Vision solve + topic tag `functions/src/solve/geminiSolve.ts` with exam-aware math prompts (`lgs`/`ygs`/`kpss`) (Context7 Gemini)
+- [ ] T019b [US1] Loading UI with robot mascot + “Sorun analiz ediliyor…” per moodboard in `apps/mobile/src/features/solve/`
 - [ ] T020 [US1] Implement callable `solveQuestion` orchestration `functions/src/solve/solveQuestion.ts` matching contract
 - [ ] T021 [US1] Mobile: camera/gallery capture + upload to Storage `apps/mobile/src/features/solve/`
 - [ ] T022 [US1] Mobile: loading + result screens (steps, transparency) under `apps/mobile/app/`
@@ -97,19 +98,19 @@
 
 ## Phase 5: User Story 3 - Onboarding + sınav türü (P2)
 
-**Goal**: 3-screen onboarding, LGS-only, consent skeleton
+**Goal**: 3-screen onboarding; **LGS, YGS, KPSS all selectable**; consent skeleton
 
-**Independent Test**: Fresh install reaches Home only via LGS; YKS/KPSS show “yakında”
+**Independent Test**: Fresh install can reach Home via LGS **or** YGS **or** KPSS (none disabled)
 
 ### Tests
 
-- [ ] T031 [P] [US3] Failing tests for onboarding navigation + exam gating in `apps/mobile/tests/Onboarding.test.tsx`
+- [ ] T031 [P] [US3] Failing tests for onboarding navigation + all three exam types selectable in `apps/mobile/tests/Onboarding.test.tsx`
 
 ### Implementation
 
-- [ ] T032 [US3] Onboarding screens 1–3 in `apps/mobile/src/features/onboarding/`
-- [ ] T033 [US3] Persist `examType: lgs` + parental consent timestamp fields
-- [ ] T034 [US3] Placeholder legal copy + TODO(legal) markers
+- [ ] T032 [US3] Onboarding screens 1–3 in `apps/mobile/src/features/onboarding/` (moodboard copy)
+- [ ] T033 [US3] Persist `examType: lgs|ygs|kpss` + age-appropriate consent timestamp fields
+- [ ] T034 [US3] Placeholder legal copy + TODO(legal) markers (minor vs adult paths)
 - [ ] T035 [US3] Pass T031
 
 ---
@@ -126,8 +127,8 @@
 
 ### Implementation
 
-- [ ] T037 [US4] expo-router tabs: Home / History / Progress / Profile
-- [ ] T038 [US4] Home: circular Fotoğraf Çek CTA, streak chip, recent attempts
+- [ ] T037 [US4] expo-router tabs: Home / History / Stats / Profile (moodboard)
+- [ ] T038 [US4] Home: large orange Fotoğraf Çek CTA, streak, recent attempts
 - [ ] T039 [US4] History list + subject/topic filters calling `listAttempts`
 - [ ] T040 [US4] Implement `listAttempts` function + pass T036
 
@@ -196,8 +197,8 @@
 
 ## Phase 10: Polish & Cross-Cutting
 
-- [ ] T060 [P] Math system prompt few-shots in `functions/src/solve/prompts/math.ts`
-- [ ] T061 [P] Turkish subject prompt stub `functions/src/solve/prompts/turkish.ts`
+- [ ] T060 [P] Math system prompt few-shots per exam in `functions/src/solve/prompts/math/{lgs,ygs,kpss}.ts`
+- [ ] T061 [P] Turkish subject prompt stubs per exam in `functions/src/solve/prompts/turkish/`
 - [ ] T062 App icon assets per brief (navy + amber symbol) in `apps/mobile/assets/`
 - [ ] T063 qa-tester full dogfood path from `quickstart.md` + write results to sprint report
 - [ ] T064 Update `README.md` / `AGENTS.md` active feature pointers if needed

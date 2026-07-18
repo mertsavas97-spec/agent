@@ -24,15 +24,15 @@
 - **Alternatives**: Custom Nest/FastAPI — erken ops yükü.
 - **Verify**: Context7 Firebase Admin / callable functions patterns.
 
-### D3 — Vision solve: Gemini Vision + ders-özel sistem prompt
+### D3 — Vision solve: Gemini Vision + sınav + ders-özel sistem prompt
 
-- **Decision**: Matematik (P1) ve Türkçe (P2) için ayrı sistem prompt
-  şablonları; çıktı yapılandırılmış adımlar (JSON şema veya sıkı
-  markdown bölümleri). Konu sınıflandırma aynı çağrıda veya ucuz ikinci
-  çağrı — maliyet/kalite trade-off implementasyon spike’ında ölçülür;
-  varsayılan: tek çağrıda çözüm + `topicId`.
-- **Rationale**: Owner brief; kredi AI denemesine izin veriyor.
-- **Alternatives**: Yalnız OCR + ayrı LLM — ekstra gecikme.
+- **Decision**: Prompt matrisı `examType × subject` (LGS/YGS/KPSS ×
+  matematik/Türkçe…). Matematik (P1) ve Türkçe (P2) önce. Çıktı
+  yapılandırılmış adımlar. Varsayılan: tek çağrıda çözüm + `topicId`
+  (sınav katalogundan).
+- **Rationale**: Owner amendment — üç sınav da MVP’de aktif; moodboard
+  onboarding ile uyumlu.
+- **Alternatives**: Tek genel prompt — müfredat uyumu zayıf.
 - **Verify**: Context7 / Google AI Gemini multimodal docs; SafeSearch
   ayrı Cloud Vision API.
 
@@ -60,22 +60,23 @@
   için follow-up ayrı rate limit.
 - **Rationale**: Brief bandı 3–5 ve 39–59; net varsayılanlar spec’te.
 
-### D7 — UI yönü (designer + ui-ux-pro-max)
+### D7 — UI yönü (designer + ui-ux-pro-max + moodboard)
 
-- **Decision**: Brief paleti bağlayıcı — ana `#1E1B4B`–`#312E81`, vurgu
-  `#F59E0B`–`#FBBF24`, zemin `#F8FAFC`; Manrope/Poppins tarzı yuvarlak
-  sans; kart tabanlı uygulama UI (landing kuralları değil). Tab bar 4’lü.
-- **Note**: Bu ortamda ui-ux-pro-max skill kurulu değilse designer
-  pass’inde CLI/skill kurulumu tasks’a dahil; moodboard PNG henüz yok —
-  brief metni yeterli başlangıç.
+- **Decision**: Moodboard bağlayıcı —
+  `docs/design/moodboard/cozbil-mvp-moodboard.png`. Token’lar: navy
+  `#1E1B4B`, orange `#F59E0B`, white `#FFFFFF`, font **Poppins**. Tab bar:
+  Ana Sayfa / Geçmiş / İstatistik / Profil. Loading’de robot maskot.
+- **Note**: ui-ux-pro-max kurulu değilse T006 ile kurulum; token’lar
+  moodboard README’den türetilir.
 - **Do not use** taste-skill / transitions.dev on in-app screens.
 
 ### D8 — Konu kataloğu
 
-- **Decision**: Statik JSON/TS modülü `apps/mobile/src/data/lgs-topics.ts`
-  (+ functions mirror veya tek paylaşılan kopya). Matematik LGS konuları
+- **Decision**: Sınav bazlı statik modüller:
+  `lgs-topics.ts`, `ygs-topics.ts`, `kpss-topics.ts` under
+  `apps/mobile/src/data/` (+ functions mirror). Matematik her sınavda
   önce; Türkçe ikinci dalga.
-- **Rationale**: MEB listesi yavaş değişir; MVP’de CMS gerekmez.
+- **Rationale**: Üç sınav aktif; tek LGS listesi yetersiz.
 
 ### D9 — Gizlilik / KVKK akış iskeleti
 
@@ -99,6 +100,6 @@ hukuk metni, Play Console hesabı) implementasyonu bloklamayan TODO’lar.
 ## Open owner TODOs (non-blocking for scaffold)
 
 1. Final marka + Play/domain check
-2. Moodboard görsel asset’i designer’a
-3. KVKK danışman metinleri
-4. Gemini / GCP proje + Startup kredisi bağlama
+2. KVKK danışman metinleri (yaş bandına göre LGS vs YGS/KPSS)
+3. Gemini / GCP proje + Startup kredisi bağlama
+4. YGS/KPSS matematik konu listelerinin uzman doğrulaması

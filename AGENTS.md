@@ -1,9 +1,10 @@
 # Proje Bağlamı (otomatik üretildi — setup-cursor-ajans.sh)
 
 **Ürün kilidi (2026-07-18):** Bu bir **eğitim uygulaması** (oyun değil).
-Çalışma adı **ÇözBil** — LGS öğrencilerine fotoğrafla adım adım Türkçe
-soru çözümü. Detay: `specs/001-product-definition/` + `specs/002-cozbil-mvp/`.
-Karar netleşti; uygulama kodu yalnızca Spec Kit tasks üzerinden başlar.
+Çalışma adı **ÇözBil** — **LGS, YGS, KPSS** adaylarına fotoğrafla adım adım
+Türkçe soru çözümü. Moodboard: `docs/design/moodboard/`. Detay:
+`specs/001-product-definition/` + `specs/002-cozbil-mvp/`.
+Uygulama kodu yalnızca Spec Kit tasks üzerinden başlar.
 
 ## Zorunlu akış
 1. Her görev önce `.specify/` altındaki spec/plan/tasks durumuna bakar.

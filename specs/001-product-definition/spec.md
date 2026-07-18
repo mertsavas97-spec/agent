@@ -8,7 +8,7 @@
 
 **Status**: Locked
 
-**Input**: Owner MVP brief (ÇözBil) resolving app-vs-game, persona, and surface.
+**Input**: Owner MVP brief + moodboard; multi-exam amendment (LGS + YGS + KPSS).
 
 ## Locked Decisions
 
@@ -16,11 +16,13 @@
 |----------|-------|
 | Product type | **App** (education / AI study companion) |
 | Working name | **ÇözBil** (final brand TBD) |
-| Primary job | Fotoğraflanan LGS sorusunu adım adım Türkçe açıklar; konu eksiğini öğrenciye gösterir |
-| Primary persona | LGS’ye hazırlanan 13–15 yaş öğrenci (Türkiye) |
-| Secondary (non-MVP) | Veli — ödeme yapan; hesap/rapor 1.1 |
+| Primary job | Fotoğraflanan sınav sorusunu adım adım Türkçe açıklar; konu eksiğini kullanıcıya gösterir |
+| Exam scope (MVP) | **LGS, YGS, KPSS** — üçü de seçilebilir (hiçbiri “yakında” değil) |
+| Primary persona | Sınava hazırlanan öğrenci/aday (LGS ~13–15; YGS lise/üniversite öncesi; KPSS yetişkin) |
+| Secondary (non-MVP) | Veli hesabı/rapor — 1.1 (özellikle LGS’de ödeyen veli) |
 | Delivery surface | **Mobile**, Android-first |
-| Positioning | “Türkiye’nin sadece LGS’ye özel AI çalışma arkadaşı — çözer, anlatır, eksiğini veliye raporlar.” (veli raporu 1.1) |
+| Positioning | “Türkiye’nin sınav odaklı AI çalışma arkadaşı — LGS, YGS, KPSS; çözer, anlatır, eksiğini gösterir.” |
+| Design reference | `docs/design/moodboard/` |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -35,14 +37,15 @@ empty harness and share one product identity.
 product type and MVP scope are locked. Everything else depends on this.
 
 **Independent Test**: A reviewer can open the locked definition and
-answer “app or game?”, “what is the product name?”, and “what is the
-primary user job?” without ambiguity.
+answer “app or game?”, “what is the product name?”, “which exams?”, and
+“what is the primary user job?” without ambiguity.
 
 **Acceptance Scenarios**:
 
 1. **Given** no product identity is locked, **When** the owner completes
    the identity decision, **Then** the definition records product type
-   `app`, working name `ÇözBil`, and the primary job statement above.
+   `app`, working name `ÇözBil`, exam scope LGS+YGS+KPSS, and the
+   primary job statement above.
 2. **Given** a locked identity exists, **When** an agent starts a new
    task, **Then** it treats that identity as authoritative and does not
    re-open app-vs-game unless the owner amends the constitution/spec.
@@ -59,17 +62,16 @@ audience.
 scope cannot be validated.
 
 **Independent Test**: A stranger can read the definition and correctly
-restate the primary persona and the problem in one sentence each.
+restate the persona bands (by exam) and the problem in one sentence each.
 
 **Acceptance Scenarios**:
 
 1. **Given** product identity is chosen, **When** the owner defines the
-   primary persona, **Then** the definition includes LGS student 13–15,
-   homework stuck moments, and need for fast step-by-step Turkish help.
+   primary persona, **Then** the definition covers exam candidates who
+   get stuck on questions and need fast step-by-step Turkish help.
 2. **Given** persona and problem are defined, **When** parents are
-   mentioned, **Then** they are marked non-MVP for accounts/reports
-   (deferred to 1.1) while remaining the typical payer for monetization
-   messaging.
+   mentioned, **Then** parent accounts/reports are marked non-MVP
+   (deferred to 1.1) while remaining a common payer for younger users.
 
 ---
 
@@ -99,13 +101,13 @@ but is refused for v1.
 
 ### Edge Cases
 
-- Owner wants “both app and game” → MUST pick a primary type for v1;
-  hybrid is out of scope until a later feature amends the definition.
-- Owner changes mind after lock → MUST amend this spec (new version
-  note) before any conflicting implementation continues.
+- Owner wants “both app and game” → MUST pick a primary type for v1.
+- Owner changes mind after lock → MUST amend this spec before conflicting
+  implementation continues.
 - Final brand differs from ÇözBil → amend working name here and in
-  constitution Locked Product Identity; do not fork naming in code/UI
-  without that amendment.
+  constitution Locked Product Identity.
+- Exam list changes → amend Locked Decisions + constitution exam scope
+  (do not silently drop YGS/KPSS back to “yakında”).
 
 ## Requirements *(mandatory)*
 
@@ -115,25 +117,26 @@ but is refused for v1.
   product type for v1: `app`.
 - **FR-002**: Definition MUST include working product name **ÇözBil** and
   a one-sentence primary job statement.
-- **FR-003**: Definition MUST describe exactly one primary persona:
-  LGS student ages 13–15 in Türkiye, stuck on homework questions.
+- **FR-003**: Definition MUST describe the primary persona as exam
+  candidates in Türkiye across **LGS, YGS, KPSS**.
 - **FR-004**: Definition MUST list MVP user outcomes that are
   independently demonstrable without naming implementation technology
   (see `specs/002-cozbil-mvp/spec.md`).
 - **FR-005**: Definition MUST list explicit non-goals for v1 (parent
-  account/report, geometry diagrams, AI practice sessions, advanced
+  account/report, geometry diagram render, AI practice sessions, advanced
   gamification, spaced repetition).
 - **FR-006**: Definition MUST state primary delivery surface for v1:
   mobile, Android-first.
 - **FR-007**: Until FR-001–FR-006 are satisfied, agents MUST NOT start
-  product implementation tasks (constitution Spec-First + Operating
-  Constraints).
+  product implementation tasks.
+- **FR-008**: Definition MUST record exam scope as LGS + YGS + KPSS all
+  active in MVP onboarding selection.
 
 ### Key Entities
 
-- **Product Identity**: Type (app), working name (ÇözBil), primary job.
-- **Primary Persona**: LGS student 13–15, homework context, need for
-  fast Turkish step-by-step help.
+- **Product Identity**: Type (app), working name (ÇözBil), primary job,
+  exam scope.
+- **Primary Persona**: Exam candidate by track (LGS / YGS / KPSS).
 - **MVP Outcome**: A user-visible result that proves the product works.
 - **Non-Goal**: Explicitly deferred capability for later specs.
 
@@ -141,20 +144,21 @@ but is refused for v1.
 
 ### Measurable Outcomes
 
-- **SC-001**: A new agent session can answer product type, name, and
-  primary job correctly from the locked definition in under 1 minute.
+- **SC-001**: A new agent session can answer product type, name, exam
+  scope, and primary job correctly from the locked definition in under
+  1 minute.
 - **SC-002**: 100% of MVP outcomes map to at least one acceptance
-  scenario in `specs/002-cozbil-mvp/spec.md` (no orphan outcomes).
+  scenario in `specs/002-cozbil-mvp/spec.md`.
 - **SC-003**: Stakeholder review finds zero contradictions between
-  product type, persona, and MVP outcomes before implementation.
+  product type, persona, exams, and MVP outcomes before implementation.
 - **SC-004**: After lock, zero product-implementation tasks start
   without referencing this definition or `002-cozbil-mvp`.
 
 ## Assumptions
 
-- Monetization freemium model is accepted for MVP messaging; exact SKU
-  IDs are implementation details in the plan.
-- Legal KVKK counsel is external; agents design consent flows but do not
-  give legal advice.
-- Language of stakeholder-facing docs may be Turkish or bilingual;
-  product UI copy is Turkish.
+- “YGS” is the product UI/label per owner; it denotes the university
+  entrance track (also known as YKS in official naming).
+- Monetization freemium model is accepted for MVP messaging.
+- Legal KVKK counsel is external; consent rules differ by age band
+  (minors vs adult KPSS/YGS candidates).
+- Moodboard at `docs/design/moodboard/` is the visual source of truth.

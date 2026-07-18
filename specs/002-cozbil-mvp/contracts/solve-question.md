@@ -11,11 +11,13 @@
 ```json
 {
   "imagePath": "users/{uid}/uploads/{id}.jpg",
-  "subjectHint": "math" 
+  "subjectHint": "math",
+  "examType": "lgs"
 }
 ```
 
-`subjectHint` optional (`math` \| `turkish`).
+`subjectHint` optional (`math` \| `turkish`).  
+`examType` optional override; default = `users/{uid}.examType` (`lgs` \| `ygs` \| `kpss`).
 
 ### Response — success
 
