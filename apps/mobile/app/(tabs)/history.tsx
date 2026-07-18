@@ -3,7 +3,6 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -12,7 +11,9 @@ import {
 import { filterAttempts } from '@/src/features/history/filterAttempts';
 import { fetchAttempts } from '@/src/lib/api/progressClient';
 import type { AttemptListItem, Subject } from '@/src/lib/api/types';
-import { colors, radii, space } from '@/src/theme';
+import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { EmptyState } from '@/src/ui/EmptyState';
+import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
 const SUBJECTS: { id: Subject | 'all'; label: string }[] = [
   { id: 'all', label: 'Tümü' },
@@ -59,55 +60,60 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container} testID="history-screen">
+      <Text style={styles.eyebrow}>Kütüphane</Text>
       <Text style={styles.title}>Geçmiş</Text>
+      <Text style={styles.subtitle}>Çözdüğün soruları derse ve konuya göre filtrele.</Text>
 
-      <View style={styles.filters} testID="history-subject-filters">
-        {SUBJECTS.map((s) => (
-          <Pressable
-            key={s.id}
-            testID={`filter-subject-${s.id}`}
-            style={[styles.chip, subject === s.id && styles.chipOn]}
-            onPress={() => setSubject(s.id)}>
-            <Text style={[styles.chipLabel, subject === s.id && styles.chipLabelOn]}>
-              {s.label}
-            </Text>
-          </Pressable>
-        ))}
+      <Text style={styles.filterLabel}>Ders</Text>
+      <SegmentedTabs
+        testID="history-subject-filters"
+        itemTestIDPrefix="filter-subject"
+        variant="chips"
+        value={subject}
+        onChange={setSubject}
+        items={SUBJECTS}
+      />
+
+      <Text style={[styles.filterLabel, styles.filterLabelSpaced]}>Konu</Text>
+      <SegmentedTabs
+        testID="history-topic-filters"
+        itemTestIDPrefix="filter-topic"
+        variant="chips"
+        value={topicId}
+        onChange={setTopicId}
+        items={topics.map((t) => ({
+          id: t,
+          label: t === 'all' ? 'Tüm konular' : t,
+        }))}
+      />
+
+      <View style={styles.listArea}>
+        {loading ? (
+          <ActivityIndicator color={colors.navy} style={{ marginTop: space.lg }} />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title="Henüz çözülmüş soru yok"
+            subtitle="Ana sayfadan fotoğraf çekerek ilk çözümünü kaydet."
+          />
+        ) : (
+          <FlatList
+            testID="history-list"
+            data={filtered}
+            keyExtractor={(item) => item.attemptId}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <View style={styles.row} testID={`history-item-${item.attemptId}`}>
+                <Text style={styles.rowTitle}>{item.topicId ?? 'Konu yok'}</Text>
+                <Text style={styles.rowMeta}>
+                  {item.subject === 'math' ? 'Matematik' : item.subject === 'turkish' ? 'Türkçe' : item.subject}
+                  {' · '}
+                  {item.status === 'solved' ? 'Çözüldü' : item.status}
+                </Text>
+              </View>
+            )}
+          />
+        )}
       </View>
-
-      <View style={styles.filters} testID="history-topic-filters">
-        {topics.map((t) => (
-          <Pressable
-            key={t}
-            testID={`filter-topic-${t}`}
-            style={[styles.chip, topicId === t && styles.chipOn]}
-            onPress={() => setTopicId(t)}>
-            <Text style={[styles.chipLabel, topicId === t && styles.chipLabelOn]}>
-              {t === 'all' ? 'Tüm konular' : t}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {loading ? (
-        <ActivityIndicator color={colors.navy} />
-      ) : filtered.length === 0 ? (
-        <Text style={styles.empty}>Henüz çözülmüş soru yok</Text>
-      ) : (
-        <FlatList
-          testID="history-list"
-          data={filtered}
-          keyExtractor={(item) => item.attemptId}
-          renderItem={({ item }) => (
-            <View style={styles.row} testID={`history-item-${item.attemptId}`}>
-              <Text style={styles.rowTitle}>{item.topicId ?? 'Konu yok'}</Text>
-              <Text style={styles.rowMeta}>
-                {item.subject} · {item.status}
-              </Text>
-            </View>
-          )}
-        />
-      )}
     </View>
   );
 }
@@ -116,40 +122,64 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
-    padding: space.lg,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+  },
+  eyebrow: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.orange,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 22,
+    fontFamily: typography.fontFamily,
+    fontSize: 28,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: space.md,
+    letterSpacing: -0.3,
   },
-  filters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
+  subtitle: {
+    fontFamily: typography.fontFamily,
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: space.lg,
+    lineHeight: 20,
+  },
+  filterLabel: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
     marginBottom: space.sm,
   },
-  chip: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: space.sm,
-    paddingVertical: 6,
-    backgroundColor: colors.white,
+  filterLabelSpaced: {
+    marginTop: space.md,
   },
-  chipOn: { borderColor: colors.orange, backgroundColor: '#FFFBEB' },
-  chipLabel: { color: colors.textSecondary, fontSize: 13 },
-  chipLabelOn: { color: colors.navy, fontWeight: '700' },
-  empty: { color: colors.textSecondary, marginTop: space.md },
+  listArea: { flex: 1, marginTop: space.md },
+  listContent: { paddingBottom: space.xl },
   row: {
     backgroundColor: colors.white,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: space.md,
     marginBottom: space.sm,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.soft,
   },
-  rowTitle: { fontWeight: '600', color: colors.navy },
-  rowMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  rowTitle: {
+    fontFamily: typography.fontFamily,
+    fontWeight: '600',
+    color: colors.navy,
+    fontSize: 15,
+  },
+  rowMeta: {
+    fontFamily: typography.fontFamily,
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
+  },
 });

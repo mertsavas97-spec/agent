@@ -18,9 +18,16 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tabIconSelected,
         tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
-        tabBarStyle: { backgroundColor: colors.white },
+        tabBarStyle: {
+          backgroundColor: colors.white,
+          borderTopColor: colors.border,
+          height: 88,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         headerStyle: { backgroundColor: colors.navy },
         headerTintColor: colors.white,
+        headerTitleStyle: { fontWeight: '700' },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen

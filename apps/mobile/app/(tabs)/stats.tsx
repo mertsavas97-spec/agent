@@ -10,7 +10,8 @@ import {
 
 import { fetchProgressSummary } from '@/src/lib/api/progressClient';
 import type { ProgressSummary } from '@/src/lib/api/types';
-import { colors, radii, space } from '@/src/theme';
+import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { EmptyState } from '@/src/ui/EmptyState';
 
 export default function StatsScreen() {
   const [summary, setSummary] = useState<ProgressSummary | null>(null);
@@ -43,12 +44,17 @@ export default function StatsScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       testID="stats-screen">
+      <Text style={styles.eyebrow}>İlerleme</Text>
       <Text style={styles.title}>İstatistik</Text>
+      <Text style={styles.subtitle}>Konu bazlı deneme ve seri özeti.</Text>
 
       {loading ? (
         <ActivityIndicator color={colors.navy} />
       ) : !summary || summary.topics.length === 0 ? (
-        <Text style={styles.empty}>İlerleme verisi henüz yok</Text>
+        <EmptyState
+          title="İlerleme verisi henüz yok"
+          subtitle="Birkaç soru çözdükten sonra burası dolacak."
+        />
       ) : (
         <>
           <Text style={styles.streak} testID="stats-streak">
@@ -100,25 +106,43 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: space.lg, paddingBottom: space.xl * 2 },
+  eyebrow: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.orange,
+    marginBottom: 4,
+  },
   title: {
-    fontSize: 22,
+    fontFamily: typography.fontFamily,
+    fontSize: 28,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: space.md,
+    letterSpacing: -0.3,
   },
-  empty: { color: colors.textSecondary },
+  subtitle: {
+    fontFamily: typography.fontFamily,
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: space.lg,
+  },
   streak: {
+    fontFamily: typography.fontFamily,
     fontWeight: '700',
     color: colors.navy,
     marginBottom: space.md,
   },
   weakCard: {
     backgroundColor: colors.white,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: space.md,
     borderWidth: 1,
     borderColor: colors.orange,
     marginBottom: space.lg,
+    ...shadows.soft,
   },
   weakLabel: { color: colors.orange, fontWeight: '700', marginBottom: 4 },
   weakName: { fontSize: 18, fontWeight: '700', color: colors.navy },

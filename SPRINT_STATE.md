@@ -27,6 +27,13 @@
 ## Lokal demo
 
 ```bash
-cd ~/Desktop/cozbil/apps/mobile
+cd ~/Desktop/cozbil
+git pull origin cursor/cozbil-polish-capture-loading-9131
+cd apps/mobile
 npx expo run:ios
 ```
+
+## UI polish (2026-07-18)
+- ExamModeSwitcher: “Sınavın” etiketli segmented control + Lise/Üniversite/Kamu
+- Home / Geçmiş / İstatistik premium hierarchy + EmptyState
+- Brief: `docs/design/premium-polish-brief.md`

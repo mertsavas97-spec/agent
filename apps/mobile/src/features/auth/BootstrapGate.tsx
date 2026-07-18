@@ -128,13 +128,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   banner: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.orangeSoft,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   bannerText: {
-    color: '#92400E',
+    color: colors.navy,
     fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
   },
 });

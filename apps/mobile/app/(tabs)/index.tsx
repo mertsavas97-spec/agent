@@ -5,6 +5,7 @@ import {
   Alert,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -13,6 +14,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 import { BannerSlot } from '@/src/features/ads';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
 import { fetchAttempts, fetchProgressSummary } from '@/src/lib/api/progressClient';
@@ -20,8 +22,9 @@ import type { AttemptListItem, ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
-import { brand, colors, radii, space } from '@/src/theme';
+import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { topicsForExam } from '@/src/data';
+import { EmptyState } from '@/src/ui/EmptyState';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -90,7 +93,6 @@ export default function HomeScreen() {
       );
       return;
     }
-    // Same solve pipeline for camera & gallery (upload → SafeSearch → AI).
     router.push({
       pathname: '/solve',
       params: {
@@ -107,136 +109,202 @@ export default function HomeScreen() {
       : 'Sınav seç';
 
   return (
-    <View style={styles.container} testID="home-screen">
-      <Text style={styles.brand}>{brand.name}</Text>
-      <ExamModeSwitcher value={examType} onChange={(e) => void onExamChange(e)} disabled={switching} />
-      <Text style={styles.subtitle}>Sorunun fotoğrafını çek, adım adım çöz</Text>
-      <Text style={styles.streak} testID="home-streak">
-        Seri: {streak} gün · {topicHint}
-      </Text>
-      <Pressable
-        style={styles.cta}
-        accessibilityRole="button"
-        testID="capture-cta"
-        onPress={() => void openPicker('camera')}>
-        <Text style={styles.ctaLabel}>Fotoğraf Çek</Text>
-      </Pressable>
-      <Pressable
-        style={styles.galleryCta}
-        accessibilityRole="button"
-        testID="gallery-cta"
-        onPress={() => void openPicker('library')}>
-        <Text style={styles.galleryLabel}>Galeriden Seç</Text>
-      </Pressable>
-      <Text style={styles.hint} testID="home-exam-hint">
-        Mod: {examType ? examType.toUpperCase() : '—'} — kamera ve galeri aynı filtre/pipeline
-      </Text>
+    <View style={styles.root} testID="home-screen">
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}>
+        <Text style={styles.brand}>{brand.name}</Text>
+        <Text style={styles.tagline}>Sorunun fotoğrafını çek, adım adım çöz</Text>
 
-      <Text style={styles.section}>Son çözülenler</Text>
-      {loading ? (
-        <ActivityIndicator color={colors.navy} />
-      ) : recent.length === 0 ? (
-        <Text style={styles.empty} testID="home-recent-empty">
-          Henüz soru yok — fotoğraf çekerek başla
-        </Text>
-      ) : (
-        <FlatList
-          data={recent}
-          keyExtractor={(item) => item.attemptId}
-          testID="home-recent-list"
-          style={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.recentRow}>
-              <Text style={styles.recentTopic}>{item.topicId ?? 'Konu yok'}</Text>
-              <Text style={styles.recentMeta}>{item.subject}</Text>
-            </View>
-          )}
+        <ExamModeSwitcher
+          value={examType}
+          onChange={(e) => void onExamChange(e)}
+          disabled={switching}
         />
-      )}
+
+        <View style={styles.streakRow}>
+          <View style={styles.streakChip} testID="home-streak">
+            <View style={styles.streakDot} />
+            <Text style={styles.streakText}>
+              Seri: {streak} gün
+              {examType ? ` · ${EXAM_LABEL[examType]}` : ''}
+            </Text>
+          </View>
+          <Text style={styles.topicHint}>{topicHint}</Text>
+        </View>
+
+        <View style={styles.hero}>
+          <Pressable
+            style={styles.cta}
+            accessibilityRole="button"
+            accessibilityLabel="Fotoğraf çek"
+            testID="capture-cta"
+            onPress={() => void openPicker('camera')}>
+            <Text style={styles.ctaLabel}>Fotoğraf{'\n'}Çek</Text>
+          </Pressable>
+          <Text style={styles.heroCaption}>Sorunu kadraja al, saniyeler içinde çözüm</Text>
+
+          <Pressable
+            style={styles.galleryCta}
+            accessibilityRole="button"
+            testID="gallery-cta"
+            onPress={() => void openPicker('library')}>
+            <Text style={styles.galleryLabel}>Galeriden Seç</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.section}>Son çözülenler</Text>
+        {loading ? (
+          <ActivityIndicator color={colors.navy} />
+        ) : recent.length === 0 ? (
+          <EmptyState
+            testID="home-recent-empty"
+            title="Henüz soru yok"
+            subtitle="Fotoğraf çekerek veya galeriden seçerek ilk çözümünü başlat."
+          />
+        ) : (
+          <FlatList
+            data={recent}
+            keyExtractor={(item) => item.attemptId}
+            testID="home-recent-list"
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <View style={styles.recentRow}>
+                <Text style={styles.recentTopic}>{item.topicId ?? 'Konu yok'}</Text>
+                <Text style={styles.recentMeta}>{item.subject}</Text>
+              </View>
+            )}
+          />
+        )}
+      </ScrollView>
       <BannerSlot />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.surface },
   container: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
     padding: space.lg,
-    paddingTop: space.xl,
+    paddingTop: space.lg,
+    paddingBottom: space.xl,
   },
   brand: {
-    fontSize: 32,
+    fontFamily: typography.fontFamily,
+    fontSize: 34,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: space.sm,
+    letterSpacing: -0.5,
   },
-  subtitle: {
-    fontSize: 16,
+  tagline: {
+    fontFamily: typography.fontFamily,
+    fontSize: 15,
     color: colors.textSecondary,
-    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: space.lg,
+    lineHeight: 22,
+  },
+  streakRow: {
+    marginBottom: space.lg,
+    gap: space.sm,
+  },
+  streakChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.orangeSoft,
+    borderRadius: radii.pill,
+    paddingHorizontal: space.md,
+    paddingVertical: 8,
+  },
+  streakDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.orange,
+  },
+  streakText: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  topicHint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  hero: {
+    alignItems: 'center',
     marginBottom: space.lg,
   },
-  streak: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.navy,
-    marginBottom: space.xl,
-  },
   cta: {
-    width: 160,
-    height: 160,
+    width: 168,
+    height: 168,
     borderRadius: radii.camera,
     backgroundColor: colors.orange,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.cta,
   },
   ctaLabel: {
+    fontFamily: typography.fontFamily,
     color: colors.white,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
+    lineHeight: 22,
     paddingHorizontal: space.sm,
+  },
+  heroCaption: {
+    fontFamily: typography.fontFamily,
+    marginTop: space.md,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   galleryCta: {
     marginTop: space.md,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.lg,
-    borderRadius: radii.md,
-    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: space.xl,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
     borderColor: colors.navy,
     backgroundColor: colors.white,
   },
   galleryLabel: {
+    fontFamily: typography.fontFamily,
     color: colors.navy,
     fontSize: 15,
     fontWeight: '600',
   },
-  hint: {
-    marginTop: space.lg,
-    color: colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-  },
   section: {
-    alignSelf: 'stretch',
-    marginTop: space.xl,
+    fontFamily: typography.fontFamily,
+    marginTop: space.md,
     marginBottom: space.sm,
     fontWeight: '700',
     color: colors.navy,
-    fontSize: 16,
+    fontSize: 17,
   },
-  empty: { alignSelf: 'stretch', color: colors.textSecondary },
-  list: { alignSelf: 'stretch', maxHeight: 180 },
   recentRow: {
     backgroundColor: colors.white,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: space.md,
     marginBottom: space.sm,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.soft,
   },
-  recentTopic: { fontWeight: '600', color: colors.navy },
-  recentMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  recentTopic: {
+    fontFamily: typography.fontFamily,
+    fontWeight: '600',
+    color: colors.navy,
+  },
+  recentMeta: {
+    fontFamily: typography.fontFamily,
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
 });

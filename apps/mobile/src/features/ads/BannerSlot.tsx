@@ -16,21 +16,21 @@ export function BannerSlot() {
 
   return (
     <View style={styles.wrap} testID="ads-banner-slot" accessibilityLabel="Reklam alanı">
-      <Text style={styles.label}>Reklam</Text>
-      <Text style={styles.hint}>Banner (ücretsiz) · Premium’da kapalı</Text>
+      <Text style={styles.label}>Reklam alanı</Text>
+      <Text style={styles.hint}>Ücretsiz planda görünür · Premium’da kapalı</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    minHeight: 50,
+    minHeight: 52,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: colors.navySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   label: {
     fontFamily: typography.fontFamily,
@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: typography.fontFamily,
     fontSize: 10,
-    color: '#94A3B8',
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

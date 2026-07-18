@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { ExamType } from '@/src/lib/api/types';
-import { colors, radii, space, typography } from '@/src/theme';
+import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
 import { EXAM_OPTIONS } from './examLabels';
 
@@ -12,60 +13,55 @@ export type ExamModeSwitcherProps = {
 };
 
 /**
- * Compact LGS / YGS / KPSS mode control for home header (US7).
- * Changing mode updates users.examType → solve prompts + topic catalog.
+ * Premium LGS / YGS / KPSS mode control (US7).
+ * Labeled so it’s clearly “which exam you’re studying for”.
  */
 export function ExamModeSwitcher({ value, onChange, disabled }: ExamModeSwitcherProps) {
   return (
-    <View style={styles.row} testID="exam-mode-switcher" accessibilityRole="toolbar">
-      {EXAM_OPTIONS.map((opt) => {
-        const selected = value === opt.id;
-        return (
-          <Pressable
-            key={opt.id}
-            testID={`exam-mode-${opt.id}`}
-            accessibilityRole="button"
-            accessibilityState={{ selected, disabled: Boolean(disabled) }}
-            disabled={disabled}
-            style={[styles.chip, selected && styles.chipOn]}
-            onPress={() => onChange(opt.id)}>
-            <Text style={[styles.label, selected && styles.labelOn]}>{opt.label}</Text>
-          </Pressable>
-        );
-      })}
+    <View style={styles.card} testID="exam-mode-switcher-wrap">
+      <Text style={styles.kicker}>Sınavın</Text>
+      <Text style={styles.help}>Hangi sınava hazırlanıyorsun? Konular ve çözüm dili buna göre.</Text>
+      <SegmentedTabs
+        testID="exam-mode-switcher"
+        itemTestIDPrefix="exam-mode"
+        value={value}
+        disabled={disabled}
+        onChange={onChange}
+        items={EXAM_OPTIONS.map((o) => ({
+          id: o.id,
+          label: o.label,
+          caption: o.short,
+        }))}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: space.sm,
+  card: {
     alignSelf: 'stretch',
-    justifyContent: 'center',
-    marginBottom: space.md,
-  },
-  chip: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radii.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: space.md,
+    marginBottom: space.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.white,
-    minWidth: 72,
-    alignItems: 'center',
+    ...shadows.soft,
   },
-  chipOn: {
-    borderColor: colors.orange,
-    backgroundColor: colors.navy,
-  },
-  label: {
+  kicker: {
     fontFamily: typography.fontFamily,
-    fontWeight: typography.captionWeight,
-    fontSize: 14,
-    color: colors.navy,
+    fontWeight: '700',
+    fontSize: 13,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: colors.orange,
+    marginBottom: 4,
   },
-  labelOn: {
-    color: colors.white,
+  help: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: space.md,
+    lineHeight: 18,
   },
 });
