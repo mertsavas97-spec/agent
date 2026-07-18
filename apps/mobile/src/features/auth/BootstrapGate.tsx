@@ -15,6 +15,11 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>({ status: 'loading' });
 
   useEffect(() => {
+    // Screenshot / dogfood without Firebase: skip gate.
+    if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
+      setState({ status: 'ready' });
+      return;
+    }
     let alive = true;
     void (async () => {
       try {
