@@ -1,16 +1,16 @@
 /**
  * Subscription entitlement stub (US6 / T051).
+ * Pricing SKUs: docs/product/pricing-policy.md
  *
- * Play Billing (`react-native-iap` / Google Play Billing Library) is not wired
- * in this MVP slice. Production path:
- * 1. Install billing SDK (Context7: verify current Expo-compatible package).
- * 2. Purchase product id `cozbil_premium_monthly` in Play Console license testers.
- * 3. Call Cloud Function `syncSubscription` with purchase token.
- * 4. Backend sets `users/{uid}.subscriptionStatus` to `active` | `grace` | `expired`.
+ * Play Billing not wired yet. Production path:
+ * 1. Create base plans / products in Play Console (weekly intro, monthly, yearly).
+ * 2. Purchase selected productId; verify token server-side.
+ * 3. Set users/{uid}.subscriptionStatus to active | grace | expired.
  *
- * Local sandbox: flip `EXPO_PUBLIC_PREMIUM_SANDBOX=1` to simulate entitlement
- * so solve quota is bypassed client-side for dogfood (server still authoritative).
+ * Local sandbox: EXPO_PUBLIC_PREMIUM_SANDBOX=1
  */
+
+import { planById, type PlanId, PRICING } from './pricing';
 
 export type EntitlementStatus = 'free' | 'active' | 'grace' | 'expired';
 
@@ -20,24 +20,25 @@ export type EntitlementSnapshot = {
   productId: string | null;
 };
 
-const PREMIUM_PRODUCT_ID = 'cozbil_premium_monthly';
-
 export function readLocalEntitlement(): EntitlementSnapshot {
   if (process.env.EXPO_PUBLIC_PREMIUM_SANDBOX === '1') {
-    return { status: 'active', source: 'sandbox', productId: PREMIUM_PRODUCT_ID };
+    return {
+      status: 'active',
+      source: 'sandbox',
+      productId: PRICING.monthly.productId,
+    };
   }
   return { status: 'free', source: 'stub', productId: null };
 }
 
-/** Stub purchase — returns sandbox success when env flag is on; else "not configured". */
-export async function startPremiumPurchase(): Promise<{
+export async function startPremiumPurchase(planId: PlanId = 'yearly'): Promise<{
   ok: boolean;
   reason: 'sandbox' | 'billing_not_configured';
+  productId: string;
 }> {
+  const productId = planById(planId).productId;
   if (process.env.EXPO_PUBLIC_PREMIUM_SANDBOX === '1') {
-    return { ok: true, reason: 'sandbox' };
+    return { ok: true, reason: 'sandbox', productId };
   }
-  return { ok: false, reason: 'billing_not_configured' };
+  return { ok: false, reason: 'billing_not_configured', productId };
 }
-
-export { PREMIUM_PRODUCT_ID };

@@ -12,7 +12,7 @@ describe('syncSubscriptionStub', () => {
   it('activates premium in sandbox dogfood mode', () => {
     expect(syncSubscriptionStub({ uid: 'u1', sandboxActive: true })).toEqual({
       subscriptionStatus: 'active',
-      productId: 'cozbil_premium_monthly',
+      productId: 'cozbil_premium_yearly',
       synced: true,
     });
   });

@@ -73,12 +73,12 @@ export default function SolveFlowScreen() {
   if (phase === 'paywall') {
     return (
       <PaywallScreen
-        onStart={() => {
-          void startPremiumPurchase().then((outcome) => {
+        onStart={(planId) => {
+          void startPremiumPurchase(planId).then((outcome) => {
             if (outcome.ok) {
               Alert.alert(
                 'Premium (sandbox)',
-                'Sandbox abonelik aktif. Sunucu entitlement senkronu sonraki adımda bağlanacak.',
+                `Sandbox abonelik aktif (${outcome.productId}). Sunucu entitlement senkronu sonraki adımda bağlanacak.`,
               );
               return;
             }

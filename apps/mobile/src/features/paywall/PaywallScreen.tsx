@@ -1,15 +1,25 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, space, typography } from '@/src/theme';
 
 import { PAYWALL_COPY } from './copy';
+import { DEFAULT_PLAN_ID, PLANS, type PlanId, planById } from './pricing';
 
 export type PaywallScreenProps = {
-  onStart: () => void;
+  onStart: (planId: PlanId) => void;
   onDismiss: () => void;
+  initialPlanId?: PlanId;
 };
 
-export function PaywallScreen({ onStart, onDismiss }: PaywallScreenProps) {
+export function PaywallScreen({
+  onStart,
+  onDismiss,
+  initialPlanId = DEFAULT_PLAN_ID,
+}: PaywallScreenProps) {
+  const [selected, setSelected] = useState<PlanId>(initialPlanId);
+  const selectedPlan = planById(selected);
+
   return (
     <View style={styles.root} testID="paywall-screen">
       <View style={styles.heroWash} />
@@ -33,15 +43,44 @@ export function PaywallScreen({ onStart, onDismiss }: PaywallScreenProps) {
         </Text>
       </View>
 
+      <View style={styles.plans} testID="paywall-plans">
+        {PLANS.map((plan) => {
+          const isOn = selected === plan.id;
+          return (
+            <Pressable
+              key={plan.id}
+              testID={`paywall-plan-${plan.id}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isOn }}
+              style={[styles.planRow, isOn && styles.planRowOn]}
+              onPress={() => setSelected(plan.id)}>
+              <View style={styles.planTextCol}>
+                <Text style={[styles.planPrice, isOn && styles.planPriceOn]}>
+                  {plan.priceLabel}
+                </Text>
+                {plan.effectiveMonthlyLabel ? (
+                  <Text style={styles.planMeta}>{plan.effectiveMonthlyLabel}</Text>
+                ) : null}
+              </View>
+              {plan.badge ? (
+                <Text style={styles.badge} testID={`paywall-badge-${plan.id}`}>
+                  {plan.badge}
+                </Text>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+
       <Text style={styles.price} testID="paywall-price">
-        {PAYWALL_COPY.priceLabel}
+        {selectedPlan.priceLabel}
       </Text>
 
       <Pressable
         testID="paywall-cta"
         accessibilityRole="button"
         style={styles.cta}
-        onPress={onStart}>
+        onPress={() => onStart(selected)}>
         <Text style={styles.ctaText}>{PAYWALL_COPY.cta}</Text>
       </Pressable>
 
@@ -68,7 +107,6 @@ const styles = StyleSheet.create({
   heroWash: {
     ...StyleSheet.absoluteFill,
     backgroundColor: colors.navy,
-    // Atmospheric wash (expo-linear-gradient not in MVP deps)
     borderBottomWidth: 120,
     borderBottomColor: '#2A2660',
   },
@@ -99,7 +137,7 @@ const styles = StyleSheet.create({
   },
   benefits: {
     gap: space.sm,
-    marginBottom: space.xl,
+    marginBottom: space.lg,
     zIndex: 1,
   },
   benefit: {
@@ -108,10 +146,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.white,
   },
+  plans: {
+    gap: space.sm,
+    marginBottom: space.md,
+    zIndex: 1,
+  },
+  planRow: {
+    borderWidth: 1,
+    borderColor: '#475569',
+    borderRadius: radii.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  planRowOn: {
+    borderColor: colors.orange,
+    backgroundColor: '#2A2660',
+  },
+  planTextCol: {
+    flexShrink: 1,
+  },
+  planPrice: {
+    fontFamily: typography.fontFamily,
+    fontWeight: typography.captionWeight,
+    fontSize: 15,
+    color: '#E2E8F0',
+  },
+  planPriceOn: {
+    color: colors.white,
+  },
+  planMeta: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  badge: {
+    fontFamily: typography.fontFamily,
+    fontWeight: typography.captionWeight,
+    fontSize: 11,
+    color: colors.navy,
+    backgroundColor: colors.orange,
+    overflow: 'hidden',
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
+    borderRadius: radii.sm,
+  },
   price: {
     fontFamily: typography.fontFamily,
     fontWeight: typography.headingWeight,
-    fontSize: 20,
+    fontSize: 18,
     color: colors.orange,
     marginBottom: space.md,
     zIndex: 1,

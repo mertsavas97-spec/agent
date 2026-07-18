@@ -29,8 +29,9 @@ Point mobile app at emulators via env (`EXPO_PUBLIC_USE_EMULATORS=1`).
 ## Play Billing sandbox (US6 entitlement stub)
 
 Play Billing is **not** fully wired in MVP code yet. The app shows the Premium
-paywall (49 TL / “Hemen Başla”) when `solveQuestion` returns
-`functions/resource-exhausted`. Entitlement sync lives in
+paywall (haftalık 14,90 · aylık 39 · yıllık 349 TL / “Hemen Başla”) when
+`solveQuestion` returns `functions/resource-exhausted`. Canonical policy:
+`docs/product/pricing-policy.md`. Entitlement sync lives in
 `functions/src/subscription/syncSubscriptionStub.ts` and
 `apps/mobile/src/features/paywall/entitlement.ts`.
 
@@ -39,12 +40,13 @@ Dogfood options:
 1. **Server bypass** — set `users/{uid}.subscriptionStatus` to `active` in
    Firestore Emulator / console; next solve skips the daily 5 limit.
 2. **Client sandbox flag** — `EXPO_PUBLIC_PREMIUM_SANDBOX=1` makes
-   `startPremiumPurchase()` succeed locally (UI dogfood only; server remains
+   `startPremiumPurchase(planId)` succeed locally (UI dogfood only; server remains
    authoritative until real token verification ships).
-3. **Play license testers** (production path) — create product
-   `cozbil_premium_monthly`, add license tester accounts in Play Console,
-   verify purchase token via Google Play Developer API inside a future
-   `syncSubscription` callable, then write `subscriptionStatus`.
+3. **Play license testers** (production path) — create
+   `cozbil_premium_weekly_intro`, `cozbil_premium_monthly`,
+   `cozbil_premium_yearly`; add license testers; verify purchase token via
+   Google Play Developer API inside a future `syncSubscription` callable,
+   then write `subscriptionStatus`.
 
 ## Verification gate
 

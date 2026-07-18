@@ -54,11 +54,13 @@
 
 ### D6 — Kota ve abonelik
 
-- **Decision**: Ücretsiz 5 soru/gün (UTC+3 gün sınırı); tek aylık plan
-  vitrin 49 TL; Play Billing entegrasyonu paywall story’sinde.
-  Follow-up “anlamadım” ücretsiz hakkından düşmez (öğrenme vaadi); abuse
-  için follow-up ayrı rate limit.
-- **Rationale**: Brief bandı 3–5 ve 39–59; net varsayılanlar spec’te.
+- **Decision**: Ücretsiz 5 soru/gün (UTC+3 gün sınırı); Premium paketler
+  haftalık giriş 14,90 TL / aylık 39 TL / yıllık 349 TL (kurucu kilidi +
+  council); Play Billing paywall story’sinde. Detay:
+  `docs/product/pricing-policy.md`. Follow-up “anlamadım” ücretsiz
+  hakkından düşmez; abuse için follow-up ayrı rate limit.
+- **Rationale**: Brief bandı 3–5 ve 39–59; aylık 39 tabanda; yıllık ~%26
+  indirim; 1 haftalık paid intro düşük biletli kanca.
 
 ### D7 — UI yönü (designer + ui-ux-pro-max + moodboard)
 

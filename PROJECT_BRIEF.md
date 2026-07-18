@@ -23,7 +23,8 @@ Türkçe anlatan AI çalışma arkadaşı (Android-first).
 
 ## Monetization
 
-Freemium → Premium (~49 TL/ay vitrin); günlük 5 ücretsiz soru.
+Freemium → Premium (14,90 TL/7g · 39 TL/ay · 349 TL/yıl); günlük 5 ücretsiz soru.
+Detay: `docs/product/pricing-policy.md`.
 
 ## Design north star
 

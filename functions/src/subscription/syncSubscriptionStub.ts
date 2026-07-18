@@ -23,11 +23,13 @@ export type SyncSubscriptionResult = {
   synced: boolean;
 };
 
+const DEFAULT_SANDBOX_PRODUCT = 'cozbil_premium_yearly';
+
 export function syncSubscriptionStub(input: SyncSubscriptionInput): SyncSubscriptionResult {
   if (input.sandboxActive) {
     return {
       subscriptionStatus: 'active',
-      productId: 'cozbil_premium_monthly',
+      productId: DEFAULT_SANDBOX_PRODUCT,
       synced: true,
     };
   }

@@ -3,8 +3,7 @@ export const PAYWALL_COPY = {
   brand: 'ÇözBil Premium',
   headline: 'Günlük ücretsiz hakkın bitti',
   support:
-    'Az önce çözüme dokundun. Premium ile yarın beklemeden devam et — sınırsız soru, reklamsız deneyim.',
-  priceLabel: '49 TL / ay',
+    'Az önce çözüme dokundun. 1 haftalık girişle dene veya sınırsız Premium’a geç — reklamsız, kişisel AI analizi.',
   cta: 'Hemen Başla',
   dismiss: 'Yarın tekrar dene',
   benefits: {
