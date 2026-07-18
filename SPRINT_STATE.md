@@ -1,28 +1,33 @@
 # Sprint State
 
-**Aktif sprint:** Kit bootstrap + ÇözBil uyarlama  
-**Hedef:** cursor-agent-kit kuruldu; isimler/brief/roster ÇözBil’e göre; Spec Kit korundu  
-**Bitiş kriteri:** Skills + coordinator docs yerinde; QA Gate (docs task) N/A gerekçeli PASS; Sprint Agent Raporu yazıldı
+**Aktif sprint:** MVP scaffold (handoff → iOS/Cloud)  
+**Hedef:** `specs/002-cozbil-mvp/tasks.md` Phase 1 — Expo + Firebase  
+**Durum:** Spec + kit + moodboard **main’de**; uygulama kodu henüz yok  
+**Bitiş kriteri (sonraki oturum):** `apps/mobile` ayağa kalkar; typecheck/lint smoke PASS
+
+## Handoff
+
+- **Tarih:** 2026-07-18  
+- **Branch:** `main` (iOS için)  
+- **Devam:** `docs/agent/IOS_CONTINUE.md`  
+- **Opening:** `docs/agent/OPENING_PROMPT.md`
 
 ## Backlog
 
-1. ~~cursor-agent-kit bootstrap~~
-2. ~~taksitdefter* → kaldır; cozbil-* skill’ler~~
-3. ~~PROJECT_BRIEF / TEAM_ROSTER / AGENTS uyarla~~
-4. `specs/002-cozbil-mvp/tasks.md` Phase 1 — Expo + Firebase scaffold
-5. Theme tokens from moodboard (T006)
+1. ~~Ürün kilidi LGS+YGS+KPSS + moodboard~~
+2. ~~cursor-agent-kit + ÇözBil uyarlama~~
+3. ~~iOS/Cloud handoff (main push)~~
+4. **NEXT:** Phase 1 Expo + Firebase scaffold (T001–T006)
+5. Phase 2 foundation
 6. US1 solve pipeline
 
-## Son QA Gate
+## Son QA Gate (kit sprint)
 
-- typecheck: N/A (henüz `apps/mobile` yok)
-- lint: N/A
-- smoke: PASS (kit dosya/skill sayısı + path doğrulama)
-- errors: temiz
-- guardian: PASS (scope drift yok; LGS+YGS+KPSS korundu)
+- typecheck: N/A  
+- lint: N/A  
+- smoke: PASS  
+- guardian: PASS  
 
-## Son koordinatör raporu
+## Son koordinatör notu
 
-- **Tarih:** 2026-07-18
-- **Ekipler:** product, guardian (+ kit install)
-- **Skill set:** cursor-agent-kit agents+codex; `cozbil-team-skills`
+iOS Cursor’dan `@koordinatör devam` + `IOS_CONTINUE.md` prompt’u ile Phase 1’e geç.

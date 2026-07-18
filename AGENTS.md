@@ -60,3 +60,8 @@ Spec: `specs/001-product-definition/` (Locked) + `specs/002-cozbil-mvp/`.
 
 https://github.com/mertsavas97-spec/cursor-agent-kit.git  
 Sync: `scripts/sync-cursor-agent-kit.sh`
+
+## iOS / Cloud devam
+
+Sohbet taşınmaz. Repo + `main` + `docs/agent/IOS_CONTINUE.md` kullan.
+Aktif hedef: `SPRINT_STATE.md` (Phase 1 scaffold).

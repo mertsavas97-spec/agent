@@ -2,6 +2,8 @@
 
 Cursor’da bu repo’yu açtıktan sonra **ilk mesaj** olarak gönder.
 
+**iOS / Cloud devam:** önce `docs/agent/IOS_CONTINUE.md` — oradaki hazır prompt’u yapıştır.
+
 ---
 
 ```
