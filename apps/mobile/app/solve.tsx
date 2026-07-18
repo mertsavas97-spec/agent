@@ -1,9 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
+import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
+import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
+import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
+import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -11,10 +16,17 @@ import type { SolveQuestionResponse } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space } from '@/src/theme';
 
+function billedSolvesFromQuota(result: SolveQuestionResponse): number {
+  if (result.quota.unlimited) return 0;
+  return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
+}
+
 export default function SolveFlowScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ uri?: string; mimeType?: string }>();
-  const [phase, setPhase] = useState<'analyzing' | 'result' | 'error'>('analyzing');
+  const [phase, setPhase] = useState<'analyzing' | 'result' | 'error' | 'paywall'>(
+    'analyzing',
+  );
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,8 +55,12 @@ export default function SolveFlowScreen() {
         if (cancelled) return;
         setResult(response);
         setPhase('result');
-      } catch {
+      } catch (err) {
         if (cancelled) return;
+        if (isQuotaExceededError(err)) {
+          setPhase('paywall');
+          return;
+        }
         setError('Çözüm şu an üretilemedi. Tekrar dener misin?');
         setPhase('error');
       }
@@ -58,6 +74,45 @@ export default function SolveFlowScreen() {
 
   if (phase === 'analyzing') {
     return <AnalyzingView />;
+  }
+
+  if (phase === 'paywall') {
+    return (
+      <PaywallScreen
+        onStart={(planId) => {
+          void startPremiumPurchase(planId).then((outcome) => {
+            if (outcome.ok) {
+              Alert.alert(
+                'Premium (sandbox)',
+                `Sandbox abonelik aktif (${outcome.productId}). Sunucu entitlement senkronu sonraki adımda bağlanacak.`,
+              );
+              return;
+            }
+            Alert.alert(
+              'Yakında',
+              'Google Play Billing henüz bu derlemede bağlı değil. License tester sandbox için quickstart notuna bak.',
+            );
+          });
+        }}
+        onWatchRewarded={() => {
+          void runRewardedExtra({ freeRemainingToday: 0 }).then((outcome) => {
+            if (outcome.rewarded) {
+              Alert.alert(
+                '+1 soru hakkı',
+                'Ödüllü reklam tamam. Sunucu grant sonraki adımda bağlanacak; şimdilik sandbox onayı.',
+              );
+              return;
+            }
+            if (!outcome.offered) {
+              Alert.alert('Limit', 'Bugünkü ödüllü hak hakkın doldu veya Premium aktif.');
+              return;
+            }
+            Alert.alert('Tamamlanmadı', 'Reklam izlenmeden ekstra hak verilmedi.');
+          });
+        }}
+        onDismiss={() => router.back()}
+      />
+    );
   }
 
   if (phase === 'error') {
@@ -88,6 +143,17 @@ export default function SolveFlowScreen() {
         steps={result.steps}
         transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
         imageUri={typeof params.uri === 'string' ? params.uri : null}
+        solutionId={result.solutionId}
+        onExplainAgain={() => callExplainAgain(result.solutionId)}
+        onDone={() => {
+          void (async () => {
+            await runInterstitialIfNeeded({
+              billedSolvesToday: billedSolvesFromQuota(result),
+              atNaturalBreak: true,
+            });
+            router.back();
+          })();
+        }}
       />
     );
   }
@@ -98,22 +164,24 @@ export default function SolveFlowScreen() {
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
     justifyContent: 'center',
     padding: space.lg,
+    backgroundColor: colors.surface,
   },
   error: {
-    color: colors.navy,
+    color: colors.danger,
+    marginBottom: space.md,
     textAlign: 'center',
-    marginBottom: space.lg,
-    fontSize: 16,
   },
   btn: {
-    backgroundColor: colors.orange,
+    alignSelf: 'center',
+    backgroundColor: colors.navy,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: 12,
   },
-  btnText: { color: colors.white, fontWeight: '700' },
+  btnText: {
+    color: colors.white,
+    fontWeight: '600',
+  },
 });

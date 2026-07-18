@@ -26,7 +26,7 @@ export type SolveDeps = {
     examType: ExamType;
     result: SolveQuestionSuccess;
     billed: boolean;
-  }) => Promise<{ attemptId: string }>;
+  }) => Promise<{ attemptId: string; solutionId: string }>;
   persistRejected: (input: {
     uid: string;
     imagePath: string;
@@ -77,6 +77,7 @@ export async function runSolveQuestion(
   if (cached) {
     const success: SolveQuestionSuccess = {
       attemptId: 'pending',
+      solutionId: 'pending',
       status: 'solved',
       cached: true,
       topicId: cached.topicId,
@@ -88,7 +89,7 @@ export async function runSolveQuestion(
         unlimited: remainingQuota(quotaState, today) > 1000,
       },
     };
-    const { attemptId } = await deps.persistSolved({
+    const { attemptId, solutionId } = await deps.persistSolved({
       uid: input.uid,
       phash,
       imagePath: input.imagePath,
@@ -96,7 +97,7 @@ export async function runSolveQuestion(
       result: success,
       billed: shouldBillQuota('solved'),
     });
-    return { ...success, attemptId };
+    return { ...success, attemptId, solutionId };
   }
 
   const parsed = await deps.solver.solve({
@@ -143,6 +144,7 @@ export async function runSolveQuestion(
 
   const success: SolveQuestionSuccess = {
     attemptId: 'pending',
+    solutionId: 'pending',
     status: 'solved',
     cached: false,
     topicId: parsed.topicId,
@@ -162,7 +164,7 @@ export async function runSolveQuestion(
     subject: parsed.subject,
   });
 
-  const { attemptId } = await deps.persistSolved({
+  const { attemptId, solutionId } = await deps.persistSolved({
     uid: input.uid,
     phash,
     imagePath: input.imagePath,
@@ -171,5 +173,5 @@ export async function runSolveQuestion(
     billed: shouldBillQuota('solved'),
   });
 
-  return { ...success, attemptId };
+  return { ...success, attemptId, solutionId };
 }

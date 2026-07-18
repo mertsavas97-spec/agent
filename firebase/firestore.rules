@@ -15,6 +15,7 @@ service cloud.firestore {
       allow create: if isOwner(uid)
         && request.resource.data.keys().hasOnly([
           'displayName', 'examType', 'ageBand', 'parentalConsentAt',
+          'consentAcceptedAt', 'onboardingCompletedAt',
           'streakCount', 'streakLastActiveDate', 'dailySolveCount', 'dailySolveDate',
           'subscriptionStatus', 'invalidImageScore', 'restrictedUntil',
           'createdAt', 'updatedAt', 'deleteRequestedAt'
