@@ -204,6 +204,16 @@
 - [ ] T064 Update `README.md` / `AGENTS.md` active feature pointers if needed
 - [ ] T065 Verification-before-completion: all SC-001–SC-006 evidence noted
 
+### Mini item bank (MVP 1.0 — telifsiz)
+
+> Mimari: `docs/architecture/item-bank.md`. Kitapçık/PDF/dershane kopyası yok.
+
+- [x] T066 [P] Architecture + schema + seed skeleton in `content/item-bank/` + `docs/architecture/item-bank.md`
+- [ ] T067 Fill MVP mini pack to ~50–60 original items (LGS/YGS/KPSS math-first) with answer keys + explanationSteps; update `manifests/mvp-1.0.json`
+- [ ] T068 Wire 1–2 bank items per exam into solve few-shot prompts (T060); keep `source: original` only
+- [ ] T069 [P] Optional light UI “Örnek soru” from manifest (not full practice session)
+- [ ] T070 Guardian pass: no copyrighted stems; similarityCheck=pass on all manifest ids
+
 ---
 
 ## Dependencies

@@ -43,11 +43,13 @@ Her çözülmüş sorudan:
 Bu veri **kişisel çalışma haritası** ve ileride B2B / premium plan için birikir.
 Ham görseller loglanmaz; Storage path + metin etiketleri tutulur.
 
-### C) Sonra (opsiyonel)
+### C) Özgün item bank (MVP 1.0 mini → sonra büyür)
 
-- Few-shot örnekler (lisanslı / kendi ürettiğimiz)
-- 1.2: zayıf konudan **üretim** + ikinci model doğrulama
-- Çok sonra: fine-tune / specialized model — yalnızca yeterli kaliteli etiket varsa
+- Ayrıntı: **`docs/architecture/item-bank.md`**
+- Kitapçık/PDF/dershane **kopyalanmaz**; tarz/ölçek referansı → sıfırdan madde
+- 1.0: ~50–60 madde (soru + anahtar + anlatım); seed: `content/item-bank/`
+- 1.2: pratik session bu arşivi büyütülmüş haliyle kullanır
+- Fine-tune yalnızca `license: owned` set ile
 
 ## 3) Üç sınavı nasıl “ayırıyoruz”?
 
@@ -74,10 +76,10 @@ Ayrı üç model eğitmek MVP’de maliyet/ROI olarak gereksiz.
 
 | Faz | Ne yapılır |
 |-----|------------|
-| MVP | Prompt + katalog + telemetri |
-| 1.1 | Veli raporu = toplanan etiketlerin özeti |
-| 1.2 | Üretim + kalite doğrulama; few-shot zenginleştirme |
-| Sonra | Fine-tune / eval set — ancak binlerce kaliteli, izinli örnek sonrası |
+| MVP 1.0 | Prompt + katalog + telemetri + **mini özgün item bank** |
+| 1.1 | Veli raporu; banka konu başı büyür |
+| 1.2 | Pratik session (bankadan) + kalite doğrulama |
+| Sonra | Fine-tune — yalnızca owned arşiv + telemetri |
 
 **Başarı ölçüsü şimdilik:** doğru `topicId`, kullanıcı “anladım” oranı,
 red/moderation oranı, demo→live geçişte insan örnekleme QA.
@@ -94,4 +96,4 @@ red/moderation oranı, demo→live geçişte insan örnekleme QA.
 - ❌ MVP’de LGS/YGS/KPSS için ayrı model eğitimi yok  
 - ✅ Ayrı **prompt + topic catalog + analytics** var  
 - ✅ Canlı model = Gemini (kredi gelince); şimdi demo stub  
-- ✅ Veri moat = kullanım telemetrisi, telifli banka değil  
+- ✅ Veri moat = kullanım telemetrisi + **özgün item bank** (telifli banka değil)  
