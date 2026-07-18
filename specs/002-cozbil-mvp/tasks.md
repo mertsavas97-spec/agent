@@ -162,16 +162,16 @@
 
 ### Tests
 
-- [ ] T047 [P] [US6] Failing quota tests `functions/tests/quota.test.ts`
-- [ ] T048 [P] [US6] Failing paywall screen test
+- [x] T047 [P] [US6] Failing quota tests `functions/tests/quota.test.ts`
+- [x] T048 [P] [US6] Failing paywall screen test
 
 ### Implementation
 
-- [ ] T049 [US6] Daily quota enforcement in `solveQuestion` (UTC+3 day key)
-- [ ] T050 [US6] Paywall UI single-plan 49 TL messaging `apps/mobile/src/features/paywall/`
-- [ ] T051 [US6] Subscription entitlement sync stub (Play Billing integration spike + Context7); sandbox path documented in quickstart
-- [ ] T052 [US6] marketingskills pass for paywall Turkish copy tone
-- [ ] T053 [US6] Pass T047–T048
+- [x] T049 [US6] Daily quota enforcement in `solveQuestion` (UTC+3 day key)
+- [x] T050 [US6] Paywall UI single-plan 49 TL messaging `apps/mobile/src/features/paywall/`
+- [x] T051 [US6] Subscription entitlement sync stub (Play Billing integration spike + Context7); sandbox path documented in quickstart
+- [x] T052 [US6] marketingskills pass for paywall Turkish copy tone
+- [x] T053 [US6] Pass T047–T048
 
 ---
 
