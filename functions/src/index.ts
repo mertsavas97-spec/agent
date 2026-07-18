@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 
+import { isDemoAiMode, runtimeModeLabel } from './config/runtime';
 import { createFirestoreCache, downloadImageBuffer, loadQuota, persistRejected, persistSolved } from './solve/firestoreAdapters';
 import { createGeminiSolver } from './solve/geminiSolve';
 import { runSolveQuestion } from './solve/solveQuestion';
@@ -14,7 +15,12 @@ initializeApp();
 
 /** Health check — Phase 1 scaffold. */
 export const ping = functions.https.onRequest((_req, res) => {
-  res.status(200).json({ ok: true, app: 'cozbil', exams: ['lgs', 'ygs', 'kpss'] });
+  res.status(200).json({
+    ok: true,
+    app: 'cozbil',
+    exams: ['lgs', 'ygs', 'kpss'],
+    aiMode: runtimeModeLabel(),
+  });
 });
 
 /** Creates users/{uid} defaults on first login (callable). */
@@ -57,6 +63,9 @@ export const solveQuestion = functions
     const examType = examTypeRaw as ExamType;
 
     try {
+      if (isDemoAiMode()) {
+        console.warn('solveQuestion running in DEMO AI mode (no Gemini credit required)');
+      }
       const imageBuffer = await downloadImageBuffer(imagePath);
       return await runSolveQuestion(
         {

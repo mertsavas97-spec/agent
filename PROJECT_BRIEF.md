@@ -38,3 +38,8 @@ Freemium → Premium (~49 TL/ay vitrin); günlük 5 ücretsiz soru.
 
 Koordinatör tek muhatap → `docs/agent/COORDINATOR.md`  
 Skill map → `docs/agent/TEAM_ROSTER.md` + `.agents/skills/cozbil-team-skills/`
+
+## Credentials policy
+
+Gemini / Vision / GCP kredileri **sonraya** bırakılabilir.  
+Key yokken demo AI stub çalışır → `docs/setup/OWNER_LATER.md`.

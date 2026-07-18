@@ -12,13 +12,14 @@ export type VisionSolver = {
   }): Promise<ParsedModelSolution>;
 };
 
+/**
+ * Live Gemini when API key present; otherwise demo stub (no credit required).
+ * Owner can force demo with COZBIL_DEMO_AI=1 even if a key exists.
+ */
 export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionSolver {
-  if (!apiKey) {
-    return {
-      async solve() {
-        throw new Error('GEMINI_API_KEY missing');
-      },
-    };
+  const forceDemo = process.env.COZBIL_DEMO_AI === '1';
+  if (forceDemo || !apiKey?.trim()) {
+    return createStubSolver();
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
