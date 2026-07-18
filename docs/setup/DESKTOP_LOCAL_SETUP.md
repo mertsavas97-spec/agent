@@ -98,6 +98,8 @@ Lokal devam için polish branch’i kullan; `main`’e merge sonra `main`’e ge
 
 | Belirti | Çözüm |
 |---------|--------|
+| Sarı bant “Sunucuya ulaşılamadı” / sınav değişmez | Eski build: `git pull` + `npx expo run:ios`. Profil artık Firestore ile açılır. |
+| Fotoğraf çözme 401/403 | GCP org policy `allUsers` invoker’ı engelliyor — Cloud Functions çağrılamıyor. Proje sahibinin IAM istisnası vermesi gerekir. |
 | Tab’lar yok / takılı | Son commit’te fix var — `git pull` + yeniden `run:ios` |
 | Auth AsyncStorage uyarısı | `@react-native-async-storage/async-storage` kurulu olmalı |
 | Expo Go uyumsuz | Simulator / `run:ios` kullan (SDK 57) |

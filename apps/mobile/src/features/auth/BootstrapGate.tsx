@@ -66,10 +66,15 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
         setState(
           status.done ? { status: 'ready' } : { status: 'needs_onboarding' },
         );
-      } catch {
+      } catch (err) {
         if (!alive) return;
         clearTimeout(timer);
-        setBootError('Sunucuya ulaşılamadı — offline / demo mod.');
+        const msg = err instanceof Error ? err.message : '';
+        setBootError(
+          msg.includes('AUTH')
+            ? 'Giriş yapılamadı — Anonymous Auth / internet kontrol et.'
+            : 'Profil yüklenemedi — internet veya Firestore kurallarını kontrol et.',
+        );
         setState({ status: 'ready' });
       }
     })();
