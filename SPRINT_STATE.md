@@ -1,12 +1,32 @@
 # Sprint State
 
-**Aktif:** Vertex AI live path deployed on `cozbil-dev-f9583`  
-**AI:** `COZBIL_USE_VERTEX=1` → Gemini `gemini-2.5-flash` @ `us-central1` (Startup / Cloud Billing)  
-**Functions:** `europe-west1` (ping/callables deployed)  
-**Durak / sonraki:** US6 paywall · rules UI deploy · item bank T067  
+**Aktif çalışma yeri:** Mac masaüstü (lokal) — cloud agent handoff  
+**Branch:** `cursor/cozbil-polish-capture-loading-9131`  
+**Kurulum:** `docs/setup/DESKTOP_LOCAL_SETUP.md` + `bash scripts/setup-desktop-macos.sh`
 
-## Notlar
+## Ürün / backend
 
-- Ping HTTP public invoke org policy ile engelli (`allUsers` yok) — callable’lar Auth ile çalışır  
-- Vision key Functions env’de  
-- Docs: `docs/setup/VERTEX_STARTUP.md`
+- Firebase/GCP: `cozbil-dev-f9583`
+- AI: Vertex `gemini-2.5-flash` @ `us-central1` (`COZBIL_USE_VERTEX=1`)
+- Functions: `europe-west1`
+
+## Tamamlanan (özet)
+
+- US1–US5 solve / explain / onboarding / history / progress  
+- US6 paywall + pricing (14,90 / 39 / 349) + ads policy stub  
+- US7 exam switcher, abuse gates, profil (kota/çıkış/silme talebi)  
+- Polish: galeri CTA, analyzing progress, prompt split, tab bar fix, Auth AsyncStorage  
+
+## Açık
+
+- Item bank doldurma T067+  
+- EAS iOS kota / TestFlight  
+- T062 icon, T063 dogfood raporu  
+- `main` merge  
+
+## Lokal demo
+
+```bash
+cd ~/Desktop/cozbil/apps/mobile
+npx expo run:ios
+```
