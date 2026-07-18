@@ -1,8 +1,56 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // Client may create/update limited profile fields; server (Admin) does bootstrap
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'examType', 'ageBand', 'parentalConsentAt',
+          'streakCount', 'streakLastActiveDate', 'dailySolveCount', 'dailySolveDate',
+          'subscriptionStatus', 'invalidImageScore', 'restrictedUntil',
+          'createdAt', 'updatedAt', 'deleteRequestedAt'
+        ])
+        && request.resource.data.examType in ['lgs', 'ygs', 'kpss']
+        && request.resource.data.subscriptionStatus == 'free';
+      allow update: if isOwner(uid)
+        && request.resource.data.examType in ['lgs', 'ygs', 'kpss']
+        && (!('subscriptionStatus' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.subscriptionStatus == resource.data.subscriptionStatus);
+
+      match /attempts/{attemptId} {
+        allow read: if isOwner(uid);
+        allow write: if false; // Cloud Functions only
+      }
+      match /solutions/{solutionId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+      match /followUps/{followUpId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    match /topicStats/{uid}/topics/{topicId} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Global cache is server-only
+    match /solutionCache/{cacheKey} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
-      // Phase 1 stub: deny all until Phase 2 auth rules land
       allow read, write: if false;
     }
   }

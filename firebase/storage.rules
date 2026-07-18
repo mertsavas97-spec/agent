@@ -1,8 +1,23 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnerPath(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // users/{uid}/uploads/{file}
+    match /users/{uid}/uploads/{fileName} {
+      allow read: if isOwnerPath(uid);
+      allow write: if isOwnerPath(uid)
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     match /{allPaths=**} {
-      // Phase 1 stub: deny all until Phase 2 user-scoped paths
       allow read, write: if false;
     }
   }

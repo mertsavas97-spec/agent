@@ -1,23 +1,19 @@
 # Sprint State
 
-**Aktif sprint:** Phase 1 scaffold — COMPLETE  
-**Hedef:** T001–T006 ✅  
-**Branch:** `cursor/cozbil-phase1-scaffold-9131`  
-**Sonraki:** Phase 2 foundation (T007–T013)
+**Aktif sprint:** Phase 2 foundation — COMPLETE  
+**Hedef:** T007–T013 ✅  
+**Branch:** `cursor/cozbil-phase2-foundation-9131` (pushed to `main`)  
+**Sonraki:** Phase 3 US1 — fotoğrafla soru çöz (T014+)
 
 ## Backlog
 
-1. ~~Phase 1 Expo + Firebase scaffold~~
-2. **NEXT:** Phase 2 — Auth, rules, topic catalogs, shared DTOs
-3. US1 solve pipeline
+1. ~~Phase 1 scaffold~~
+2. ~~Phase 2 foundation~~
+3. **NEXT:** US1 solve pipeline (moderation → Gemini → UI)
 
 ## Son QA Gate
 
 - typecheck: PASS
-- lint: N/A (placeholder scripts; eslint sonraki)
-- smoke: PASS (jest mobile + functions)
-- guardian: PASS (LGS+YGS+KPSS korunuyor; Gemini client’ta yok)
-
-## Koordinatör notu
-
-`npm run qa` yeşil. iOS/Mac: branch’i çek veya PR merge sonrası `main`.
+- lint: N/A (eslint stub)
+- smoke: PASS (17 tests)
+- guardian / security: PASS (`docs/security/phase2-review.md`)

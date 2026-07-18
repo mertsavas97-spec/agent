@@ -34,13 +34,13 @@
 
 **⚠️ CRITICAL**: No user story work until this phase completes
 
-- [ ] T007 Add Firestore security rules + Storage rules stubs in `firebase/` (deny-by-default, user-scoped paths)
-- [ ] T008 [P] Implement Firebase Auth email/anonymous-or-social MVP choice in `apps/mobile/src/lib/auth.ts` (verify SDK via Context7)
-- [ ] T009 [P] Create static math topic catalogs `apps/mobile/src/data/lgs-topics.ts`, `ygs-topics.ts`, `kpss-topics.ts` and mirror types for functions
-- [ ] T010 [P] Shared DTO types aligning to `contracts/solve-question.md` and `contracts/progress.md` in `functions/src/types/` + mobile `src/lib/api/types.ts`
-- [ ] T011 Implement user doc bootstrap on first login (`users/{uid}` defaults) in `functions/src/users/`
-- [ ] T012 [P] Wire expo-image-picker permissions helpers in `apps/mobile/src/features/solve/image.ts` (Context7 Expo docs)
-- [ ] T013 Security-reviewer pass on rules + child-safety messaging constants (no logging of raw sensitive images beyond Storage paths)
+- [x] T007 Add Firestore security rules + Storage rules stubs in `firebase/` (deny-by-default, user-scoped paths)
+- [x] T008 [P] Implement Firebase Auth email/anonymous-or-social MVP choice in `apps/mobile/src/lib/auth.ts` (verify SDK via Context7)
+- [x] T009 [P] Create static math topic catalogs `apps/mobile/src/data/lgs-topics.ts`, `ygs-topics.ts`, `kpss-topics.ts` and mirror types for functions
+- [x] T010 [P] Shared DTO types aligning to `contracts/solve-question.md` and `contracts/progress.md` in `functions/src/types/` + mobile `src/lib/api/types.ts`
+- [x] T011 Implement user doc bootstrap on first login (`users/{uid}` defaults) in `functions/src/users/`
+- [x] T012 [P] Wire expo-image-picker permissions helpers in `apps/mobile/src/features/solve/image.ts` (Context7 Expo docs)
+- [x] T013 Security-reviewer pass on rules + child-safety messaging constants (no logging of raw sensitive images beyond Storage paths)
 
 **Checkpoint**: Signed-in user exists in emulator; topics load; theme applied to blank screens
 
