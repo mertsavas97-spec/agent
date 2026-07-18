@@ -1,13 +1,33 @@
 import type { ExamType } from '../types/contracts';
 
+import { KPSS_MATH_FEWSHOT, KPSS_MATH_TEACHER } from './prompts/math/kpss';
+import { LGS_MATH_FEWSHOT, LGS_MATH_TEACHER } from './prompts/math/lgs';
+import { YGS_MATH_FEWSHOT, YGS_MATH_TEACHER } from './prompts/math/ygs';
+import { turkishSystemPromptStub } from './prompts/turkish/stubs';
+
 function examTeacherLine(examType: ExamType): string {
   switch (examType) {
     case 'lgs':
-      return 'Sen bir LGS (8. sınıf) matematik öğretmenisin. Dil sade, adımlar kısa olsun; ortaokul müfredatı dışına çıkma.';
+      return LGS_MATH_TEACHER;
     case 'ygs':
-      return 'Sen bir YGS/YKS hattı lise matematik öğretmenisin. Lise kazanımlarına (sayılar, denklem, fonksiyon vb.) uygun anlat.';
+      return YGS_MATH_TEACHER;
     case 'kpss':
-      return 'Sen bir KPSS genel yetenek matematik öğretmenisin. Yetişkin adaya hitap et; işlem ve problem odaklı, net adımlar kullan.';
+      return KPSS_MATH_TEACHER;
+    default: {
+      const _e: never = examType;
+      return _e;
+    }
+  }
+}
+
+function examFewShot(examType: ExamType): string {
+  switch (examType) {
+    case 'lgs':
+      return LGS_MATH_FEWSHOT;
+    case 'ygs':
+      return YGS_MATH_FEWSHOT;
+    case 'kpss':
+      return KPSS_MATH_FEWSHOT;
     default: {
       const _e: never = examType;
       return _e;
@@ -18,6 +38,7 @@ function examTeacherLine(examType: ExamType): string {
 export function mathSystemPrompt(examType: ExamType): string {
   return [
     examTeacherLine(examType),
+    examFewShot(examType),
     'Adım adım, sade Türkçe ile çöz.',
     'Diyagram çizimi veya karmaşık geometri şekli gerektiriyorsa unsupported=true yaz.',
     'Görsel bir soru değilse isQuestion=false yaz.',
@@ -42,3 +63,5 @@ export function explainAgainPrompt(examType: ExamType): string {
     'Yeni ileri konu ekleme. Sadece açıklama metni üret (düz Türkçe paragraf veya maddeler).',
   ].join('\n');
 }
+
+export { turkishSystemPromptStub };

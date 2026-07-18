@@ -199,8 +199,10 @@
 
 ## Phase 10: Polish & Cross-Cutting
 
-- [ ] T060 [P] Math system prompt few-shots per exam in `functions/src/solve/prompts/math/{lgs,ygs,kpss}.ts`
-- [ ] T061 [P] Turkish subject prompt stubs per exam in `functions/src/solve/prompts/turkish/`
+- [x] T059b [P] Home: visible **Galeriden Seç** CTA (same upload→SafeSearch→AI pipeline as camera)
+- [x] T059c [P] Solve loading UX: staged progress bar (yükleme / güvenlik / çözüm) in `AnalyzingView`
+- [x] T060 [P] Math system prompt few-shots per exam in `functions/src/solve/prompts/math/{lgs,ygs,kpss}.ts`
+- [x] T061 [P] Turkish subject prompt stubs per exam in `functions/src/solve/prompts/turkish/`
 - [ ] T062 App icon assets per brief (navy + amber symbol) in `apps/mobile/assets/`
 - [ ] T063 qa-tester full dogfood path from `quickstart.md` + write results to sprint report
 - [ ] T064 Update `README.md` / `AGENTS.md` active feature pointers if needed

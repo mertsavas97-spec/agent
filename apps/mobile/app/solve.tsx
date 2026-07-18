@@ -7,6 +7,7 @@ import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
+import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
@@ -23,10 +24,15 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
 
 export default function SolveFlowScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ uri?: string; mimeType?: string }>();
+  const params = useLocalSearchParams<{
+    uri?: string;
+    mimeType?: string;
+    source?: string;
+  }>();
   const [phase, setPhase] = useState<'analyzing' | 'result' | 'error' | 'paywall'>(
     'analyzing',
   );
+  const [analyzeStep, setAnalyzeStep] = useState<AnalyzeStepId>('upload');
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +46,8 @@ export default function SolveFlowScreen() {
         return;
       }
       try {
+        // Camera and gallery share the identical pipeline from here.
+        setAnalyzeStep('upload');
         const user = await ensureSignedIn();
         const localId = `${Date.now()}`;
         const { imagePath } = await uploadQuestionImage({
@@ -48,6 +56,15 @@ export default function SolveFlowScreen() {
           uri: params.uri,
           mimeType: params.mimeType,
         });
+        if (cancelled) return;
+
+        // Server applies SafeSearch + solve; UI shows moderate then solve stages.
+        setAnalyzeStep('moderate');
+        // Brief tick so progress bar is visible before the long AI call.
+        await new Promise((r) => setTimeout(r, 280));
+        if (cancelled) return;
+        setAnalyzeStep('solve');
+
         const response = await callSolveQuestion({
           imagePath,
           mimeType: params.mimeType,
@@ -73,7 +90,7 @@ export default function SolveFlowScreen() {
   }, [params.uri, params.mimeType]);
 
   if (phase === 'analyzing') {
-    return <AnalyzingView />;
+    return <AnalyzingView step={analyzeStep} />;
   }
 
   if (phase === 'paywall') {

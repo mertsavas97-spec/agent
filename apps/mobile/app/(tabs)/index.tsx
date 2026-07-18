@@ -89,18 +89,15 @@ export default function HomeScreen() {
       );
       return;
     }
+    // Same solve pipeline for camera & gallery (upload → SafeSearch → AI).
     router.push({
       pathname: '/solve',
-      params: { uri: picked.uri, mimeType: picked.mimeType ?? 'image/jpeg' },
+      params: {
+        uri: picked.uri,
+        mimeType: picked.mimeType ?? 'image/jpeg',
+        source,
+      },
     });
-  }
-
-  function onCapture() {
-    Alert.alert('Soru fotoğrafı', 'Nasıl devam edelim?', [
-      { text: 'Kamera', onPress: () => void openPicker('camera') },
-      { text: 'Galeri', onPress: () => void openPicker('library') },
-      { text: 'Vazgeç', style: 'cancel' },
-    ]);
   }
 
   const topicHint =
@@ -120,11 +117,18 @@ export default function HomeScreen() {
         style={styles.cta}
         accessibilityRole="button"
         testID="capture-cta"
-        onPress={onCapture}>
+        onPress={() => void openPicker('camera')}>
         <Text style={styles.ctaLabel}>Fotoğraf Çek</Text>
       </Pressable>
+      <Pressable
+        style={styles.galleryCta}
+        accessibilityRole="button"
+        testID="gallery-cta"
+        onPress={() => void openPicker('library')}>
+        <Text style={styles.galleryLabel}>Galeriden Seç</Text>
+      </Pressable>
       <Text style={styles.hint} testID="home-exam-hint">
-        Mod: {examType ? examType.toUpperCase() : '—'} — sonraki çözüm bu sınava göre
+        Mod: {examType ? examType.toUpperCase() : '—'} — kamera ve galeri aynı filtre/pipeline
       </Text>
 
       <Text style={styles.section}>Son çözülenler</Text>
@@ -193,8 +197,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: space.sm,
   },
+  galleryCta: {
+    marginTop: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.lg,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.navy,
+    backgroundColor: colors.white,
+  },
+  galleryLabel: {
+    color: colors.navy,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   hint: {
-    marginTop: space.xl,
+    marginTop: space.lg,
     color: colors.textSecondary,
     fontSize: 13,
     textAlign: 'center',

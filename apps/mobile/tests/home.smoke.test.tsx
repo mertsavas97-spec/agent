@@ -57,7 +57,9 @@ describe('HomeScreen', () => {
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toBeTruthy();
+    expect(screen.getByTestId('gallery-cta')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
+    expect(screen.getByText(/Galeriden Seç/)).toBeTruthy();
     await waitFor(() => {
       expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri: 0 gün/);
       expect(screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected).toBe(true);

@@ -21,7 +21,7 @@ Point mobile app at emulators via env (`EXPO_PUBLIC_USE_EMULATORS=1`).
 
 1. Fresh install → complete onboarding → select LGS (also smoke YGS and KPSS paths).
 1b. Home üstündeki LGS/YGS/KPSS seçici ile mod değiştir → yeni çözümlerin prompt/katalogu değişir (geçmiş silinmez). Bkz. `docs/architecture/exam-pipeline.md`.
-2. Home → capture a clear math text problem → see stepped solution + note.
+2. Home → **Fotoğraf Çek** veya **Galeriden Seç** (aynı pipeline) → analyzing progress (yükleme / güvenlik / çözüm) → stepped solution + note.
 3. Tap “Anlamadım, tekrar açıkla” → second explanation.
 4. History filter by topic; Progress shows weakest topic + streak.
 5. Exhaust 5 free solves → paywall appears.
