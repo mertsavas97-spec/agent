@@ -1,11 +1,9 @@
 # Sprint State
 
-**Aktif sprint:** US5 progress/streak — COMPLETE  
-**Durak:** Google Cloud / Gemini / Vision kredi kurulumu (owner)  
-**AI kredileri:** henüz yok — demo AI  
-**Sınav stratejisi:** `docs/architecture/exam-ai-strategy.md`  
-**Item bank:** `docs/architecture/item-bank.md` (1.0 mini arşiv — T066 seed; T067 doldurma)  
-**Kurulum rehberi:** `docs/setup/GOOGLE_CLOUD_SETUP.md`
+**Aktif sprint:** US5 COMPLETE — GCP owner setup **in progress**  
+**Durak:** Gemini kredi (429) + Firebase Web/Storage/Blaze  
+**Smoke:** `docs/setup/GCP_SMOKE_STATUS.md` (Vision OK · Gemini auth OK · generate 429)  
+**Secrets:** yalnızca gitignored `.env.local` — repo’da yok
 
 ## Backlog
 
