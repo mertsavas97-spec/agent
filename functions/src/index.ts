@@ -14,9 +14,12 @@ import {
 import { createGeminiSolver } from './solve/geminiSolve';
 import { runSolveQuestion } from './solve/solveQuestion';
 import { createVisionClient } from './moderation/visionClient';
+import { getProgressSummaryForUser } from './progress/getProgressSummary';
+import { listAttemptsForUser } from './progress/listAttempts';
 import { ensureUserDocument } from './users/bootstrapUser';
+import { completeOnboardingDocument } from './users/completeOnboarding';
 import { isExamType } from './theme/examTypes';
-import type { ExamType } from './types/contracts';
+import type { ExamType, Subject } from './types/contracts';
 
 initializeApp();
 
@@ -46,6 +49,27 @@ export const ensureUser = functions.https.onCall(async (data, context) => {
     ageBand,
     displayName: typeof data?.displayName === 'string' ? data.displayName : undefined,
   });
+});
+
+/** US3: persist examType + consent + onboardingCompletedAt */
+export const completeOnboarding = functions.https.onCall(async (data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  const examType = typeof data?.examType === 'string' ? data.examType : '';
+  try {
+    return await completeOnboardingDocument({
+      uid: context.auth.uid,
+      examType,
+      ageBand: data?.ageBand as 'under13' | '13to17' | '18plus' | undefined,
+      parentalConsent: Boolean(data?.parentalConsent),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'InvalidExamError') {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz sınav türü');
+    }
+    throw err;
+  }
 });
 
 /** US1: moderate → cache → Gemini → stepped solution */
@@ -103,6 +127,26 @@ export const solveQuestion = functions
       throw new functions.https.HttpsError('internal', 'Çözüm şu an üretilemedi');
     }
   });
+
+/** US4: history list */
+export const listAttempts = functions.https.onCall(async (data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  const subject = data?.subject as Subject | undefined;
+  const topicId = typeof data?.topicId === 'string' ? data.topicId : undefined;
+  const limit = typeof data?.limit === 'number' ? data.limit : undefined;
+  const cursor = typeof data?.cursor === 'string' ? data.cursor : null;
+  return listAttemptsForUser(context.auth.uid, { subject, topicId, limit, cursor });
+});
+
+/** US5: progress summary */
+export const getProgressSummary = functions.https.onCall(async (_data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  return getProgressSummaryForUser(context.auth.uid);
+});
 
 /** US2: simpler re-explanation — does not burn daily solve quota */
 export const explainAgain = functions.https.onCall(async (data, context) => {

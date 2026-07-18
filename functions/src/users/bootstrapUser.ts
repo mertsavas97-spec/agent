@@ -19,6 +19,8 @@ export function buildDefaultUserDoc(input: BootstrapInput): UserDoc {
     examType,
     ageBand: input.ageBand,
     parentalConsentAt: null,
+    consentAcceptedAt: null,
+    onboardingCompletedAt: null,
     streakCount: 0,
     streakLastActiveDate: null,
     dailySolveCount: 0,

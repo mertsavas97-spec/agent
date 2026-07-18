@@ -104,14 +104,14 @@
 
 ### Tests
 
-- [ ] T031 [P] [US3] Failing tests for onboarding navigation + all three exam types selectable in `apps/mobile/tests/Onboarding.test.tsx`
+- [x] T031 [P] [US3] Failing tests for onboarding navigation + all three exam types selectable in `apps/mobile/tests/Onboarding.test.tsx`
 
 ### Implementation
 
-- [ ] T032 [US3] Onboarding screens 1–3 in `apps/mobile/src/features/onboarding/` (moodboard copy)
-- [ ] T033 [US3] Persist `examType: lgs|ygs|kpss` + age-appropriate consent timestamp fields
-- [ ] T034 [US3] Placeholder legal copy + TODO(legal) markers (minor vs adult paths)
-- [ ] T035 [US3] Pass T031
+- [x] T032 [US3] Onboarding screens 1–3 in `apps/mobile/src/features/onboarding/` (moodboard copy)
+- [x] T033 [US3] Persist `examType: lgs|ygs|kpss` + age-appropriate consent timestamp fields
+- [x] T034 [US3] Placeholder legal copy + TODO(legal) markers (minor vs adult paths)
+- [x] T035 [US3] Pass T031
 
 ---
 
@@ -123,14 +123,14 @@
 
 ### Tests
 
-- [ ] T036 [P] [US4] Failing tests for history filter helper + tab routes
+- [x] T036 [P] [US4] Failing tests for history filter helper + tab routes
 
 ### Implementation
 
-- [ ] T037 [US4] expo-router tabs: Home / History / Stats / Profile (moodboard)
-- [ ] T038 [US4] Home: large orange Fotoğraf Çek CTA, streak, recent attempts
-- [ ] T039 [US4] History list + subject/topic filters calling `listAttempts`
-- [ ] T040 [US4] Implement `listAttempts` function + pass T036
+- [x] T037 [US4] expo-router tabs: Home / History / Stats / Profile (moodboard)
+- [x] T038 [US4] Home: large orange Fotoğraf Çek CTA, streak, recent attempts
+- [x] T039 [US4] History list + subject/topic filters calling `listAttempts`
+- [x] T040 [US4] Implement `listAttempts` function + pass T036
 
 ---
 
@@ -142,15 +142,15 @@
 
 ### Tests
 
-- [ ] T041 [P] [US5] Failing unit tests for streak date logic `functions/tests/streak.test.ts`
-- [ ] T042 [P] [US5] Failing unit tests for weakest-topic selection
+- [x] T041 [P] [US5] Failing unit tests for streak date logic `functions/tests/streak.test.ts`
+- [x] T042 [P] [US5] Failing unit tests for weakest-topic selection
 
 ### Implementation
 
-- [ ] T043 [US5] Maintain `topicStats` on solve/follow-up
-- [ ] T044 [US5] `getProgressSummary` callable per `contracts/progress.md`
-- [ ] T045 [US5] Progress UI: bar list + weakest card + weekly series
-- [ ] T046 [US5] Pass T041–T042
+- [x] T043 [US5] Maintain `topicStats` on solve/follow-up
+- [x] T044 [US5] `getProgressSummary` callable per `contracts/progress.md`
+- [x] T045 [US5] Progress UI: bar list + weakest card + weekly series
+- [x] T046 [US5] Pass T041–T042
 
 ---
 

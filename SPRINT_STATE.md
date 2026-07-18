@@ -1,19 +1,17 @@
 # Sprint State
 
-**Aktif sprint:** US2 explainAgain — COMPLETE  
-**AI kredileri:** ertelendi (demo AI)  
+**Aktif sprint:** US5 progress/streak — COMPLETE  
+**Durak:** Google Cloud / Gemini / Vision kredi kurulumu (owner)  
+**AI kredileri:** henüz yok — demo AI  
 **Sınav stratejisi:** `docs/architecture/exam-ai-strategy.md`  
-**Sonraki:** US3 onboarding (LGS/YGS/KPSS seçimi)
+**Kurulum rehberi:** `docs/setup/GOOGLE_CLOUD_SETUP.md`
 
 ## Backlog
 
-1. ~~US1–US2~~
-2. **NEXT:** US3 onboarding
-3. US4–6 history / stats / paywall
-4. *(Sonra)* Gemini + Vision keys
+1. ~~US1–US5~~
+2. **DUR:** Owner Google Cloud kurulumu (rehberi uygula)
+3. **Sonra:** US6 paywall · US7 profil/abuse · Polish
 
 ## Son QA Gate
 
-- `npm run qa` — PASS (2026-07-18)
-- mobile: 7 suites / 11 tests
-- functions: 11 suites / 25 tests
+- `npm run qa` — PASS (US3–US5)

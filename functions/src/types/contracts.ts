@@ -92,6 +92,8 @@ export type UserDoc = {
   examType: ExamType;
   ageBand?: 'under13' | '13to17' | '18plus';
   parentalConsentAt?: unknown | null;
+  consentAcceptedAt?: unknown | null;
+  onboardingCompletedAt?: unknown | null;
   streakCount: number;
   streakLastActiveDate: string | null;
   dailySolveCount: number;

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { BootstrapGate } from '@/src/features/auth/BootstrapGate';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -47,14 +48,24 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="solve"
-          options={{ title: 'Çözüm', headerStyle: { backgroundColor: '#1E1B4B' }, headerTintColor: '#fff' }}
-        />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
+      <BootstrapGate>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="onboarding"
+            options={{ headerShown: false, gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="solve"
+            options={{
+              title: 'Çözüm',
+              headerStyle: { backgroundColor: '#1E1B4B' },
+              headerTintColor: '#fff',
+            }}
+          />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack>
+      </BootstrapGate>
     </ThemeProvider>
   );
 }
