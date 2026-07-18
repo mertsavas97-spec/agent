@@ -55,3 +55,6 @@ export function topicsForExam(exam: ExamType): Topic[] {
   if (exam === 'ygs') return YGS_TOPICS;
   return KPSS_TOPICS;
 }
+
+export const ALL_TOPICS: Topic[] = [...LGS_TOPICS, ...YGS_TOPICS, ...KPSS_TOPICS];
+

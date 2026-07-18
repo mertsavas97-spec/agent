@@ -27,7 +27,10 @@ function deps(vision: VisionClient = cleanVision) {
         dailySolveDate: null,
         subscriptionStatus: 'free' as const,
       }),
-    persistSolved: async () => ({ attemptId: `a${(n += 1)}` }),
+    persistSolved: async () => ({
+      attemptId: `a${(n += 1)}`,
+      solutionId: `s${n}`,
+    }),
     persistRejected: async () => ({ attemptId: `r${(n += 1)}` }),
   };
 }

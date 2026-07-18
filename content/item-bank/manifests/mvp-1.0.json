@@ -1,0 +1,11 @@
+{
+  "package": "mvp-1.0",
+  "description": "Mini özgün item bank — büyütülecek taban paket",
+  "targetCount": 54,
+  "items": [
+    "lgs-math-kesirler-001",
+    "ygs-math-denklemler-001",
+    "kpss-math-yuzde-001"
+  ],
+  "notes": "Seed iskelet; hedef ~50–60 madde Polish/T066 ile doldurulur. Telifli kaynak yok."
+}

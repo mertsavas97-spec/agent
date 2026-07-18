@@ -12,6 +12,7 @@ Türkçe anlatan AI çalışma arkadaşı (Android-first).
 - Onboarding: LGS / YGS / KPSS (üçü aktif)
 - Geçmiş, istatistik/zayıflık, streak
 - Freemium (5/gün) + paywall
+- Mini özgün soru–cevap–anlatım arşivi (telifsiz; büyütülebilir) — `docs/architecture/item-bank.md`
 - Moodboard UI: navy `#1E1B4B`, orange `#F59E0B`, Poppins, robot loading
 
 ## v1 scope OUT

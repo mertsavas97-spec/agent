@@ -5,6 +5,10 @@
 **/.env
 **/.env.*
 !.env.example
+**/.secrets/
+functions/.secrets/
+*.pem
+*-vertex.json
 
 # MCP configs often contain API keys — keep example only in git
 .cursor/mcp.json

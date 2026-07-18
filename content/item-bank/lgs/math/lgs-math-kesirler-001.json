@@ -1,0 +1,41 @@
+{
+  "id": "lgs-math-kesirler-001",
+  "examType": "lgs",
+  "subject": "math",
+  "topicId": "lgs-math-kesirler",
+  "difficulty": "easy",
+  "format": "multiple_choice",
+  "stem": "Bir pastanın 3/8'i yeniyor. Kalan pastanın 1/2'si de yenilirse, pastanın başlangıçta ne kadarı kalır?",
+  "choices": {
+    "A": "1/8",
+    "B": "5/16",
+    "C": "3/16",
+    "D": "1/4",
+    "E": "5/8"
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. Adım",
+      "body": "İlk yenenden sonra kalan: 1 - 3/8 = 5/8."
+    },
+    {
+      "title": "2. Adım",
+      "body": "Kalanın yarısı yenir: (5/8) × (1/2) = 5/16 yenir; bu ikinci yemedir."
+    },
+    {
+      "title": "3. Adım",
+      "body": "Toplam yenmeyen: 5/8 - 5/16 = 10/16 - 5/16 = 5/16. Cevap 5/16."
+    }
+  ],
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "LGS tarzı kesir problemi; özgün senaryo, kitapçık metni yok",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-18",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}
