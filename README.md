@@ -1,39 +1,45 @@
-# Agent — Cursor Ajans Harness
+# ÇözBil — Agent Kit + Spec Harness
 
-Spec-kit + Superpowers + Context7 + ui-ux-pro-max + marketingskills + role
-agent’leriyle çalışan Cursor proje iskeleti.
+Android-first AI sınav çalışma arkadaşı (**LGS · YGS · KPSS**).  
+Bu repo: Spec Kit ürün kilidi + **cursor-agent-kit** koordinatör/skill paketi.
 
-## Hızlı başlangıç
+## Hızlı başlangıç (Mac Cursor)
 
 ```bash
 git clone https://github.com/mertsavas97-spec/agent.git
 cd agent
-cp .cursor/mcp.json.example .cursor/mcp.json
-# Context7 API key'ini mcp.json içine yaz (commit etme)
+git checkout cursor/cozbil-mvp-spec-9131   # veya main (PR merge sonrası)
+cp .cursor/mcp.json.example .cursor/mcp.json   # Context7 key
 ```
 
-Cursor’da klasörü aç → Superpowers plugin’inin yüklü olduğundan emin ol
-(`/add-plugin superpowers`) → Agent’a görev ver.
+Cursor’da klasörü aç → `docs/agent/OPENING_PROMPT.md` içeriğini yapıştır.
 
-## Zorunlu akış
+## Koordinatör modeli
 
-1. `.specify/` + `specs/` durumuna bak
-2. Yoksa: constitution → specify → clarify → plan → tasks
-3. Kod: Superpowers TDD + subagent-driven-development
-4. Kütüphane/API: Context7
-5. UI: ui-ux-pro-max (ürün); taste/transitions sadece landing
+Sen → **Koordinatör** → product / design / mobile / backend / growth / qa / guardian  
+Skill map: `docs/agent/TEAM_ROSTER.md` · Router: `.agents/skills/cozbil-team-skills`
 
-Detay: `AGENTS.md`, `.cursor/rules/000-coordinator.mdc`
+## Kit sync
+
+```bash
+bash scripts/sync-cursor-agent-kit.sh
+```
+
+Kaynak: https://github.com/mertsavas97-spec/cursor-agent-kit.git
 
 ## Aktif özellik
 
-- `specs/001-product-definition/` — ürün tipi / persona / yüzey (**Locked**: app, ÇözBil, LGS+YGS+KPSS, Android-first)
-- `specs/002-cozbil-mvp/` — MVP 1.0 spec + plan + tasks (implementasyon sıradaki adım)
-- Moodboard: `docs/design/moodboard/`
-- Owner brief: `docs/product/cozbil-mvp-1.0-brief.md`
+- `PROJECT_BRIEF.md` — ürün sınırları
+- `specs/001-product-definition/` — Locked
+- `specs/002-cozbil-mvp/` — MVP spec/plan/tasks
+- `docs/design/moodboard/` — UI referansı
+- `.agents/skills/` — kit domain skills + `cozbil-*`
+- `.codex/skills/` — OMX workflows (`$plan`, `$ralplan`, …)
 
-## Mobil (Cursor app)
+## Zorunlu akış
 
-Aynı Cursor hesabıyla giriş yap → Cloud Agent / repo üzerinden bu projeyi
-aç. Yerel sohbet geçmişi her zaman taşınmaz; GitHub’daki repo + Cloud Agent
-mobil devam için güvenilir yoldur.
+1. Spec Kit durumu  
+2. Skill map / SKILL.md  
+3. Implement (TDD)  
+4. **QA Gate** (typecheck + lint + smoke)  
+5. Sprint Agent Raporu  

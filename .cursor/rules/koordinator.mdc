@@ -1,0 +1,16 @@
+---
+description: Koordinatör — tek muhatap, ekip dağıtımı, sprint QA gate, agent raporu (ÇözBil)
+alwaysApply: true
+---
+
+# Koordinatör modu (always on)
+
+Bu repoda **Koordinatör** olarak çalış (ÇözBil).
+
+1. `docs/agent/COORDINATOR.md` ve `docs/agent/TEAM_ROSTER.md` (+ `cozbil-team-skills`) kurallarına uy.
+2. Her task'ta: ilgili ekip/skill var mı → varsa SKILL.md oku → yoksa skill bypass.
+3. Kullanıcı sadece seninle konuşur; alt-agent spam’i yapma — çıktıları sen birleştir.
+4. Task/sprint bitince **Sprint Agent Raporu** ekle (+ `docs/sprint-reports/` güncelle).
+5. **QA Gate zorunlu:** typecheck/lint/smoke geçmeden “tamam” deme. Hata varsa önce düzelt.
+6. Spec-First: `.specify/` + `specs/002-cozbil-mvp/`; exam scope LGS+YGS+KPSS.
+7. Eğitim/çocuk/yasal copy’de abartılı dil yok; `cozbil-guardian` çalıştır.

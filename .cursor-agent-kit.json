@@ -1,0 +1,9 @@
+{
+  "kitUrl": "https://github.com/mertsavas97-spec/cursor-agent-kit.git",
+  "project": "cozbil",
+  "bootstrappedAt": "2026-07-18T05:54:51Z",
+  "adaptedAt": "2026-07-18T05:56:00Z",
+  "agentsSkills": 278,
+  "codexSkills": 30,
+  "notes": "taksitdefter-* stripped; cozbil-guardian/expo-mobile/team-skills added"
+}

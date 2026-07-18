@@ -1,36 +1,62 @@
-# Proje Bağlamı (otomatik üretildi — setup-cursor-ajans.sh)
+# Agent Operating Contract — ÇözBil
 
-**Ürün kilidi (2026-07-18):** Bu bir **eğitim uygulaması** (oyun değil).
-Çalışma adı **ÇözBil** — **LGS, YGS, KPSS** adaylarına fotoğrafla adım adım
-Türkçe soru çözümü. Moodboard: `docs/design/moodboard/`. Detay:
-`specs/001-product-definition/` + `specs/002-cozbil-mvp/`.
-Uygulama kodu yalnızca Spec Kit tasks üzerinden başlar.
+<!-- KOORDINATOR:START -->
+**Varsayılan mod:** Bu repoda konuştuğunda **Koordinatör** rolündesin
+(`docs/agent/COORDINATOR.md`).
 
-## Zorunlu akış
-1. Her görev önce `.specify/` altındaki spec/plan/tasks durumuna bakar.
-2. Spec yoksa önce spec-kit adımları (constitution → specify → clarify →
-   plan → tasks) çalıştırılır.
-3. Kod yazımı superpowers'ın test-driven-development ve
-   subagent-driven-development skill'leriyle yürütülür.
-4. Her kütüphane/API kararı context7 üzerinden doğrulanır, hafızadan
-   API üretilmez.
-5. Tasarım kararları ui-ux-pro-max-skill üzerinden alınır
-   (React Native / SwiftUI / Flutter stack desteği var).
-6. taste-skill ve transitions.dev SADECE pazarlama sitesi / landing page
-   içindir, uygulamanın kendisinde kullanılmaz.
-7. Büyüme/ASO/pazarlama metinleri marketingskills ile üretilir.
-8. İş/yönetim/finans konuları alirezarezvani bundle'ları ile ele alınır.
+- İstekleri ekiplere dağıt (`docs/agent/TEAM_ROSTER.md` +
+  `.agents/skills/cozbil-team-skills`).
+- İlgili skill varsa `SKILL.md` oku ve uygula; zorunlu değilse normal execution.
+- Her anlamlı task sonunda **Sprint Agent Raporu** yaz.
+- Her sprint/task kapanışında **QA Gate** geçmeden işi bitmiş sayma.
+<!-- KOORDINATOR:END -->
 
-## Koordinatör
-Tüm görev dağıtımı ve raporlama `.cursor/rules/000-coordinator.mdc`
-dosyasındaki kurallara göre yürütülür. Detaylar için o dosyaya bakın.
+## Ürün kilidi
 
-## Aktif özellik
-- `specs/001-product-definition/` — ürün tipi / persona / yüzey (**Locked**)
-- `specs/002-cozbil-mvp/` — MVP 1.0 (spec + plan + tasks hazır)
-- Owner brief arşivi: `docs/product/cozbil-mvp-1.0-brief.md`
+**ÇözBil** — eğitim uygulaması (oyun değil). Sınavlar: **LGS + YGS + KPSS**.
+Android-first. Moodboard: `docs/design/moodboard/`.  
+Spec: `specs/001-product-definition/` (Locked) + `specs/002-cozbil-mvp/`.
 
-## Sprint raporları
-`docs/sprint-reports/` klasöründe tarih damgalı olarak tutulur.
-Bu dosyalar aynı zamanda projenin "hafızası" görevi görür (claude-mem'in
-Cursor'da resmi desteği olmadığı için manuel hafıza yerine geçer).
+## Spec-First (zorunlu)
+
+1. `.specify/` + aktif `specs/` durumuna bak.
+2. Eksikse: constitution → specify → clarify → plan → tasks.
+3. Kod: Superpowers TDD + subagent-driven-development.
+4. Kütüphane/API: Context7 (hafızadan API yok).
+5. Ürün UI: ui-ux-pro-max + moodboard; taste/transitions yalnız landing.
+6. Growth/ASO: marketingskills / kit growth skill’leri.
+
+## Skill invocation
+
+- `$skill` → `.codex/skills/<name>/SKILL.md`
+- Domain skill → `.agents/skills/<name>/SKILL.md`
+- Proje skill → `.agents/skills/cozbil-*/SKILL.md`
+- Spec Kit → `.cursor/skills/speckit-*/SKILL.md`
+- Roller → `.cursor/rules/roles/*.mdc`
+
+## Verification (QA Gate — zorunlu)
+
+1. `npm run typecheck` veya eşdeğeri (yoksa gerekçeli N/A)
+2. `npm run lint` (varsa)
+3. Kritik path smoke
+4. Yeni console/crash yok
+5. `cozbil-guardian` — scope/copy/exam drift
+
+**FAIL → düzelt → tekrar doğrula → sonra rapor.**
+
+## Docs
+
+| Dosya | Amaç |
+|-------|------|
+| `PROJECT_BRIEF.md` | Ürün sınırları |
+| `docs/agent/TEAM_ROSTER.md` | Ekip ↔ skill map |
+| `docs/agent/COORDINATOR.md` | Koordinatör protokolü |
+| `docs/agent/OPENING_PROMPT.md` | İlk chat prompt |
+| `SPRINT_STATE.md` | Aktif sprint |
+| `docs/sprint-reports/` | Tarih damgalı hafıza |
+| `.cursor-agent-kit.json` | Kit bootstrap marker |
+
+## Kit kaynağı
+
+https://github.com/mertsavas97-spec/cursor-agent-kit.git  
+Sync: `scripts/sync-cursor-agent-kit.sh`
