@@ -1,9 +1,3 @@
-import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from '@expo-google-fonts/poppins';
 import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -38,11 +32,10 @@ const cozbilTheme = {
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    Poppins: Poppins_400Regular,
-    'Poppins-Medium': Poppins_500Medium,
-    'Poppins-SemiBold': Poppins_600SemiBold,
-    'Poppins-Bold': Poppins_700Bold,
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Poppins: require('../assets/fonts/Poppins_400Regular.ttf'),
+    'Poppins-Medium': require('../assets/fonts/Poppins_500Medium.ttf'),
+    'Poppins-SemiBold': require('../assets/fonts/Poppins_600SemiBold.ttf'),
+    'Poppins-Bold': require('../assets/fonts/Poppins_700Bold.ttf'),
   });
 
   useEffect(() => {
