@@ -32,13 +32,14 @@ export async function callSolveQuestionViaProxy(input: {
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 35_000);
+  const timer = setTimeout(() => controller.abort(), 45_000);
   try {
     const res = await fetch(`${base}/solve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // localtunnel interstitial bypass
+        Accept: 'application/json',
+        // localtunnel interstitial bypass (harmless on cloudflare)
         'Bypass-Tunnel-Reminder': '1',
       },
       body: JSON.stringify({
@@ -50,11 +51,22 @@ export async function callSolveQuestionViaProxy(input: {
       }),
       signal: controller.signal,
     });
-    const data = (await res.json()) as SolveQuestionResponse & {
+    const text = await res.text();
+    let data: SolveQuestionResponse & {
       error?: string;
       message?: string;
       debugOcrPreview?: string;
     };
+    try {
+      data = JSON.parse(text) as typeof data;
+    } catch {
+      throw Object.assign(
+        new Error(
+          `proxy_non_json (${res.status}): ${text.slice(0, 80).replace(/\s+/g, ' ')}`,
+        ),
+        { code: 'functions/unavailable' },
+      );
+    }
     if (!res.ok) {
       throw Object.assign(new Error(data.message || data.error || 'proxy_error'), {
         code: 'functions/internal',
@@ -65,7 +77,6 @@ export async function callSolveQuestionViaProxy(input: {
       data.status === 'unsupported_type' ||
       (typeof data.status === 'string' && data.status.startsWith('rejected'))
     ) {
-      // Strip debug fields from client-facing payload
       const { debugOcrPreview: _d, error: _e, message: _m, ...rest } = data;
       return rest as SolveQuestionResponse;
     }
