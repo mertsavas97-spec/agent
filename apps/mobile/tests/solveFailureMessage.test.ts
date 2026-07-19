@@ -14,4 +14,12 @@ describe('solveFailureMessage', () => {
   it('detects 403 in plain Error message', () => {
     expect(solveFailureMessage(new Error('403 Forbidden'))).toMatch(/403/);
   });
+
+  it('maps SOLVE_TIMEOUT to deploy hint', () => {
+    expect(
+      solveFailureMessage(
+        Object.assign(new Error('SOLVE_TIMEOUT'), { code: 'functions/deadline-exceeded' }),
+      ),
+    ).toMatch(/deploy-firestore-solve|zaman aşımı/i);
+  });
 });

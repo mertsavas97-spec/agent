@@ -29,6 +29,12 @@ export function solveFailureMessage(err: unknown): string {
   if (code === 'functions/internal' || code === 'functions/unknown') {
     return 'Sunucu hatası. Network veya Functions loglarına bak.';
   }
+  if (
+    code === 'functions/deadline-exceeded' ||
+    /SOLVE_TIMEOUT/i.test(message)
+  ) {
+    return 'Çözüm zaman aşımı. Mac’te deploy-firestore-solve.sh çalıştır (onSolveUploadFinalized), sonra tekrar dene.';
+  }
   if (/403|Forbidden|permission/i.test(message) || /403|Forbidden|permission/i.test(code)) {
     return 'Sunucu erişim engeli (403). Cloud Functions IAM / org policy.';
   }

@@ -47,12 +47,14 @@ echo "==> Build functions"
 echo "==> 1/2 Deploy firestore:rules"
 "$FIREBASE_BIN" deploy --project "$PROJECT" --only firestore:rules
 
-echo "==> 2/2 Deploy onSolveRequestCreatedV2 (+ solveQuestion)"
+echo "==> 2/2 Deploy Storage+Firestore solve triggers (+ solveQuestion)"
 "$FIREBASE_BIN" deploy \
   --project "$PROJECT" \
-  --only functions:onSolveRequestCreatedV2,functions:solveQuestion
+  --only functions:onSolveUploadFinalized,functions:onSolveRequestCreatedV2,functions:solveQuestion
 
 echo ""
 echo "✓ Deploy bitti."
+echo "  Birincil: onSolveUploadFinalized (Storage)"
+echo "  Yedek:    onSolveRequestCreatedV2 (Firestore)"
 echo "  Telefonda: bash scripts/phone-dev-build.sh metro"
 echo "  Sonra soru fotoğrafı dene."

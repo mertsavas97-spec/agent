@@ -19,10 +19,11 @@ function isInvokerBlocked(err: unknown): boolean {
 }
 
 /**
- * Prefer Firestore trigger path (works under Domain Restricted Sharing).
+ * Prefer Storage/Firestore trigger path (works under Domain Restricted Sharing).
+ * `requestId` must match the upload filename stem.
  */
 export async function callSolveQuestion(
-  request: SolveQuestionRequest & { mimeType?: string },
+  request: SolveQuestionRequest & { mimeType?: string; requestId: string },
 ): Promise<SolveQuestionResponse> {
   try {
     return await callSolveQuestionViaFirestore(request);
@@ -49,13 +50,14 @@ export async function callSolveQuestion(
     try {
       const { functions } = getFirebase();
       const callable = httpsCallable(functions, 'solveQuestion');
-      const result = await callable(request);
+      const { requestId: _requestId, ...callablePayload } = request;
+      const result = await callable(callablePayload);
       return result.data as SolveQuestionResponse;
     } catch (callableErr) {
       if (isInvokerBlocked(callableErr)) {
         throw Object.assign(
           new Error(
-            'Callable 403 + Firestore solve başarısız. Önce deploy-firestore-solve.sh çalıştır.',
+            'Callable 403 + trigger solve başarısız. Mac’te: bash scripts/deploy-firestore-solve.sh (onSolveUploadFinalized)',
           ),
           { code: 'functions/permission-denied' },
         );

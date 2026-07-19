@@ -68,11 +68,20 @@ export default function SolveFlowScreen() {
           /* optional */
         }
         const localId = `${Date.now()}`;
+        const hintRaw = typeof params.subjectHint === 'string' ? params.subjectHint : '';
+        const subjectHint: Subject | undefined =
+          isKnownSubject(hintRaw) && subjectsForExam(resolvedExam).includes(hintRaw)
+            ? hintRaw
+            : undefined;
+
+        // Upload first (tags cozbilSolve=1) → Storage Gen2 trigger solves.
         const { imagePath } = await uploadQuestionImage({
           uid: user.uid,
           localId,
           uri: params.uri,
           mimeType: params.mimeType,
+          examType: resolvedExam,
+          subjectHint,
         });
         if (cancelled) return;
 
@@ -83,17 +92,12 @@ export default function SolveFlowScreen() {
         if (cancelled) return;
         setAnalyzeStep('solve');
 
-        const hintRaw = typeof params.subjectHint === 'string' ? params.subjectHint : '';
-        const subjectHint: Subject | undefined =
-          isKnownSubject(hintRaw) && subjectsForExam(resolvedExam).includes(hintRaw)
-            ? hintRaw
-            : undefined;
-
         const response = await callSolveQuestion({
           imagePath,
           mimeType: params.mimeType,
           examType: resolvedExam,
           subjectHint,
+          requestId: localId,
         });
         if (cancelled) return;
         setResult(response);

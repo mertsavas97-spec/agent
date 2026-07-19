@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase-admin/app';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
 import { liveBackendLabel, runtimeModeLabel } from './config/runtime';
 import {
@@ -12,6 +13,11 @@ import {
   runExplainAgain,
 } from './solve/explainAgain';
 import { executeSolvePipeline, SolvePipelineError } from './solve/executeSolve';
+import { parseSolveUploadPath } from './solve/parseUploadPath';
+import {
+  processSolveRequest,
+  storageObjectExists,
+} from './solve/processSolveRequest';
 import { getProgressSummaryForUser } from './progress/getProgressSummary';
 import { listAttemptsForUser } from './progress/listAttempts';
 import { ensureUserDocument } from './users/bootstrapUser';
@@ -131,7 +137,7 @@ export const solveQuestion = regional
 /**
  * Org-policy safe path (Gen2 — Gen1 cannot attach to Firestore eur3).
  * Named V2 because a failed Gen1 stub blocked same-name upgrade.
- * Mobile writes users/{uid}/solveRequests/{id} → Admin SDK runs here.
+ * Prefer Storage finalize trigger when Eventarc/Firestore lag; this is backup.
  */
 export const onSolveRequestCreatedV2 = onDocumentCreated(
   {
@@ -145,48 +151,70 @@ export const onSolveRequestCreatedV2 = onDocumentCreated(
     if (!snap) return;
     const uid = event.params.uid;
     const data = snap.data() ?? {};
-    const ref = snap.ref;
+    const imagePath = typeof data.imagePath === 'string' ? data.imagePath : '';
+    if (!imagePath) return;
 
-    await ref.set(
-      { status: 'running', updatedAt: FieldValue.serverTimestamp() },
-      { merge: true },
-    );
-
-    try {
-      const response = await executeSolvePipeline({
-        uid,
-        imagePath: typeof data.imagePath === 'string' ? data.imagePath : '',
-        examType: typeof data.examType === 'string' ? data.examType : undefined,
-        mimeType: typeof data.mimeType === 'string' ? data.mimeType : undefined,
-        subjectHint: typeof data.subjectHint === 'string' ? data.subjectHint : undefined,
-      });
-      await ref.set(
-        {
-          status: 'done',
-          response,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
-    } catch (err) {
-      const code = err instanceof SolvePipelineError ? err.code : 'internal';
-      const message =
-        err instanceof SolvePipelineError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Çözüm şu an üretilemedi';
-      console.error('onSolveRequestCreatedV2 failed', { uid, code, message });
-      await ref.set(
-        {
-          status: 'error',
-          errorCode: code,
-          errorMessage: message,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
+    // Upload may still be in flight if client creates the doc first.
+    if (!(await storageObjectExists(imagePath))) {
+      console.info('onSolveRequestCreatedV2: image not ready yet', { uid, imagePath });
+      return;
     }
+
+    await processSolveRequest({
+      ref: snap.ref,
+      uid,
+      imagePath,
+      examType: typeof data.examType === 'string' ? data.examType : undefined,
+      mimeType: typeof data.mimeType === 'string' ? data.mimeType : undefined,
+      subjectHint: typeof data.subjectHint === 'string' ? data.subjectHint : undefined,
+      source: 'firestore',
+    });
+  },
+);
+
+/**
+ * Primary org-policy safe path: Storage finalize is reliable on Gen2.
+ * Object name users/{uid}/uploads/{localId}.jpg → solveRequests/{localId}.
+ * Custom metadata: examType, subjectHint, mimeType, cozbilSolve=1.
+ */
+export const onSolveUploadFinalized = onObjectFinalized(
+  {
+    region: 'europe-west1',
+    timeoutSeconds: 120,
+    memory: '512MiB',
+  },
+  async (event) => {
+    const objectName = event.data.name;
+    const parsed = parseSolveUploadPath(objectName);
+    if (!parsed) return;
+
+    const meta = event.data.metadata ?? {};
+    // Only process uploads tagged by the mobile solve flow (ignore stray files).
+    if (meta.cozbilSolve !== '1' && meta.cozbilSolve !== 'true') {
+      console.info('onSolveUploadFinalized: skip untagged object', { objectName });
+      return;
+    }
+
+    const ref = getFirestore()
+      .collection('users')
+      .doc(parsed.uid)
+      .collection('solveRequests')
+      .doc(parsed.localId);
+
+    const mimeType =
+      typeof meta.mimeType === 'string' && meta.mimeType
+        ? meta.mimeType
+        : event.data.contentType || 'image/jpeg';
+
+    await processSolveRequest({
+      ref,
+      uid: parsed.uid,
+      imagePath: parsed.imagePath,
+      examType: typeof meta.examType === 'string' ? meta.examType : undefined,
+      mimeType,
+      subjectHint: typeof meta.subjectHint === 'string' ? meta.subjectHint : undefined,
+      source: 'storage',
+    });
   },
 );
 

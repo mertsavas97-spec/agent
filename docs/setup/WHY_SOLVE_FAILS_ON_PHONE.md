@@ -8,7 +8,9 @@ Kanıt: `allUsers is not in permitted organization`.
 
 ## Çözüm (kod)
 
-Firestore trigger path: `onSolveRequestCreated` — detay [`ORG_POLICY_SOLVE_BYPASS.md`](./ORG_POLICY_SOLVE_BYPASS.md)
+Storage trigger (birincil): `onSolveUploadFinalized`  
+Firestore yedek: `onSolveRequestCreatedV2`  
+Detay: [`ORG_POLICY_SOLVE_BYPASS.md`](./ORG_POLICY_SOLVE_BYPASS.md)
 
 ```bash
 bash scripts/deploy-firestore-solve.sh
