@@ -207,6 +207,8 @@
 - [ ] T063 qa-tester full dogfood path from `quickstart.md` + write results to sprint report
 - [ ] T064 Update `README.md` / `AGENTS.md` active feature pointers if needed
 - [ ] T065 Verification-before-completion: all SC-001–SC-006 evidence noted
+- [x] T071 [P] Verbal OCR: anlam ilgisi → amaç-sonuç (ve benzeri) cevap hero + `kpss/ygs/lgs-turkish-anlam` konu anlatımı
+- [x] T072 [P] Exam mismatch gate: profil KPSS + yüksek soru no / YGS kitapçığı → `ExamMismatchSheet` + topic remap
 
 ### Mini item bank (MVP 1.0 — telifsiz)
 

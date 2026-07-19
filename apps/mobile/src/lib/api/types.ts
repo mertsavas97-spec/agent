@@ -60,6 +60,14 @@ export type SubjectClassificationMeta = {
   alternatives?: { subject: string; score: number }[];
 };
 
+export type ExamHintMeta = {
+  suggested: ExamType | null;
+  confidence: 'high' | 'medium' | 'low';
+  reason?: string | null;
+  questionNumber?: number | null;
+  mismatchesProfile: boolean;
+};
+
 export type SolveQuestionSuccess = {
   attemptId: string;
   solutionId: string;
@@ -74,6 +82,8 @@ export type SolveQuestionSuccess = {
   answer?: SolutionAnswer;
   /** Dogfood / proxy: when needsConfirm, UI asks user before showing result */
   classification?: SubjectClassificationMeta;
+  /** Profile exam vs OCR booklet mismatch */
+  examHint?: ExamHintMeta;
 };
 
 export type SolveQuestionRejected = {

@@ -40,6 +40,13 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
     return { text: anlatim[1].trim() };
   }
 
+  const anlamIlgisi = body.match(
+    /Anlam ilgisi\s*[:：]\s*([a-zA-ZçğıöşüÇĞİÖŞÜ0-9\-]+)/i,
+  );
+  if (anlamIlgisi) {
+    return { text: anlamIlgisi[1].trim() };
+  }
+
   const sonuc = body.match(/Sonuç\s*[:：]?\s*([0-9]+(?:\/[0-9]+)?)/i);
   if (sonuc) {
     return { text: sonuc[1] };

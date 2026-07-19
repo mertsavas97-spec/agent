@@ -80,6 +80,36 @@ const LESSONS: TopicLesson[] = [
     tip: 'Anlatım biçimi sorusunda önce eylem/zaman mı, yoksa sıfat/duyu mu baskın bak.',
   },
   {
+    topicId: 'kpss-turkish-anlam',
+    headline: 'Anlam ilgisi (cümlede anlam)',
+    bullets: [
+      'Amaç-sonuç: “…mek / …mak için” → amaç; ardından gelen eylem sonuç.',
+      'Neden-sonuç: çünkü, -den dolayı, yüzünden → sebep bağlar.',
+      'Koşul-sonuç: eğer, -se/-sa; karşıtlık: oysa, fakat, rağmen.',
+    ],
+    tip: 'Önce bağ sözcüğünü bul (“için”, “çünkü”…), sonra şıklara götür.',
+  },
+  {
+    topicId: 'ygs-turkish-anlam',
+    headline: 'Anlam bilgisi / anlam ilgisi',
+    bullets: [
+      'Amaç-sonuç ile neden-sonuç karışmasın: “yapmak için” çoğunlukla amaçtır.',
+      'Şıkları metne götür; ezber etiket seçme.',
+      'Uzun cümlede önce fiili, sonra bağı ayır.',
+    ],
+    tip: '“için” görürsen önce amaç mı sebep mi diye cümleyi sesli oku.',
+  },
+  {
+    topicId: 'lgs-turkish-anlam',
+    headline: 'Sözcükte / cümlede anlam',
+    bullets: [
+      'Anlam ilgisi: amaç, neden, koşul, karşıtlık bağlarını ayırt et.',
+      '“…mek için” → amaç-sonuç; “çünkü / -den dolayı” → neden-sonuç.',
+      'Şıkkı cümleye geri koyup dene.',
+    ],
+    tip: 'Bağlacı değiştirince anlam bozuluyorsa doğru ilgiyi bulmuşsundur.',
+  },
+  {
     topicId: 'ygs-turkish-paragraf',
     headline: 'Paragraf (TYT)',
     bullets: [

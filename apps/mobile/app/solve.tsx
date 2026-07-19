@@ -9,6 +9,7 @@ import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
+import { ExamMismatchSheet } from '@/src/features/solve/ExamMismatchSheet';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
@@ -17,7 +18,9 @@ import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import {
+  applyExamOverride,
   applySubjectOverride,
+  shouldConfirmExamMismatch,
   shouldConfirmSubject,
   type SolvedWithClassification,
 } from '@/src/features/solve/subjectClassification';
@@ -31,11 +34,18 @@ import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space, typography } from '@/src/theme';
 
 function billedSolvesFromQuota(result: SolveQuestionResponse): number {
+  if (result.status !== 'solved') return 0;
   if (result.quota.unlimited) return 0;
   return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
 }
 
-type Phase = 'analyzing' | 'confirmSubject' | 'result' | 'error' | 'paywall';
+type Phase =
+  | 'analyzing'
+  | 'confirmExam'
+  | 'confirmSubject'
+  | 'result'
+  | 'error'
+  | 'paywall';
 
 export default function SolveFlowScreen() {
   const router = useRouter();
@@ -50,8 +60,12 @@ export default function SolveFlowScreen() {
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [examType, setExamType] = useState<ExamType>('lgs');
+  const [profileExam, setProfileExam] = useState<ExamType>('lgs');
   const [selectedSubject, setSelectedSubject] =
     useState<Exclude<Subject, 'unknown'>>('turkish');
+  const [pendingSubjectHint, setPendingSubjectHint] = useState<
+    Exclude<Subject, 'unknown'> | undefined
+  >();
 
   useEffect(() => {
     let cancelled = false;
@@ -72,16 +86,18 @@ export default function SolveFlowScreen() {
           if (et === 'lgs' || et === 'ygs' || et === 'kpss') {
             resolvedExam = et;
             setExamType(et);
+            setProfileExam(et);
           }
         } catch {
           /* optional */
         }
         const localId = `${Date.now()}`;
         const hintRaw = typeof params.subjectHint === 'string' ? params.subjectHint : '';
-        const subjectHint: Subject | undefined =
+        const subjectHint: Exclude<Subject, 'unknown'> | undefined =
           isKnownSubject(hintRaw) && subjectsForExam(resolvedExam).includes(hintRaw)
             ? hintRaw
             : undefined;
+        setPendingSubjectHint(subjectHint);
 
         const { imagePath, downloadUrl } = await uploadQuestionImage({
           uid: user.uid,
@@ -118,14 +134,23 @@ export default function SolveFlowScreen() {
 
         if (response.status === 'solved') {
           const solved = response as SolvedWithClassification;
+          const examForSubject = shouldConfirmExamMismatch(solved.examHint, resolvedExam)
+            ? solved.examHint?.suggested ?? resolvedExam
+            : resolvedExam;
           const suggested =
             solved.subject !== 'unknown' &&
-            subjectsForExam(resolvedExam).includes(solved.subject as Exclude<Subject, 'unknown'>)
+            subjectsForExam(examForSubject).includes(
+              solved.subject as Exclude<Subject, 'unknown'>,
+            )
               ? (solved.subject as Exclude<Subject, 'unknown'>)
-              : subjectsForExam(resolvedExam)[0];
+              : subjectsForExam(examForSubject)[0];
           setSelectedSubject(suggested);
           setResult(solved);
 
+          if (shouldConfirmExamMismatch(solved.examHint, resolvedExam)) {
+            setPhase('confirmExam');
+            return;
+          }
           if (shouldConfirmSubject(solved, { subjectHint, examType: resolvedExam })) {
             setPhase('confirmSubject');
             return;
@@ -154,6 +179,27 @@ export default function SolveFlowScreen() {
     };
   }, [params.uri, params.mimeType, params.subjectHint]);
 
+  function continueAfterExam(nextExam: ExamType) {
+    if (!result || result.status !== 'solved') return;
+    let next = applyExamOverride(result, profileExam, nextExam);
+    setExamType(nextExam);
+    if (pendingSubjectHint && subjectsForExam(nextExam).includes(pendingSubjectHint)) {
+      next = applySubjectOverride(next, nextExam, pendingSubjectHint);
+    }
+    const suggested =
+      next.subject !== 'unknown' &&
+      subjectsForExam(nextExam).includes(next.subject as Exclude<Subject, 'unknown'>)
+        ? (next.subject as Exclude<Subject, 'unknown'>)
+        : subjectsForExam(nextExam)[0];
+    setSelectedSubject(suggested);
+    setResult(next);
+    if (shouldConfirmSubject(next, { subjectHint: pendingSubjectHint, examType: nextExam })) {
+      setPhase('confirmSubject');
+      return;
+    }
+    setPhase('result');
+  }
+
   const suggestedSubject = useMemo(() => {
     if (result && result.status === 'solved' && result.subject !== 'unknown') {
       if (subjectsForExam(examType).includes(result.subject as Exclude<Subject, 'unknown'>)) {
@@ -168,6 +214,25 @@ export default function SolveFlowScreen() {
       <>
         <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
         <AnalyzingView step={analyzeStep} />
+      </>
+    );
+  }
+
+  if (phase === 'confirmExam' && result && result.status === 'solved' && result.examHint) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
+        <AnalyzingView step="solve" />
+        <ExamMismatchSheet
+          visible
+          profileExam={profileExam}
+          hint={result.examHint}
+          onKeepProfile={() => continueAfterExam(profileExam)}
+          onSwitchSuggested={() => {
+            const suggested = result.examHint?.suggested;
+            if (suggested) continueAfterExam(suggested);
+          }}
+        />
       </>
     );
   }

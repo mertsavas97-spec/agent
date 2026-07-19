@@ -8,6 +8,7 @@
 import http from 'node:http';
 import { evaluateExpression, buildStepsFromEval } from './arithSolve.mjs';
 import { classifyOcr, topicIdFor } from './classifyOcr.mjs';
+import { detectExamHint } from './examHint.mjs';
 import { ocrImageBase64 } from './visionOcr.mjs';
 import { tryVerbalSolve } from './verbalSolve.mjs';
 
@@ -34,6 +35,7 @@ function solvedPayload({
   note,
   classification,
   answer,
+  examHint,
 }) {
   const payload = {
     status: 'solved',
@@ -62,6 +64,9 @@ function solvedPayload({
       text: String(answer.text),
       ...(answer.label ? { label: String(answer.label) } : {}),
     };
+  }
+  if (examHint) {
+    payload.examHint = examHint;
   }
   return payload;
 }
@@ -134,6 +139,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     const ocrText = await ocrImageBase64(imageBase64, mimeType);
+    const examHint = detectExamHint(ocrText, examType);
+    // Classify against profile exam; client may switch after examHint confirm.
     const classified = classifyOcr(ocrText, examType);
     const topicId = topicIdFor(examType, classified.subject, classified.topicKey);
 
@@ -156,6 +163,7 @@ const server = http.createServer(async (req, res) => {
             answer: verbal.answerText
               ? { text: verbal.answerText, label: verbal.answerLabel }
               : undefined,
+            examHint,
           }),
         );
         return;
@@ -202,6 +210,7 @@ const server = http.createServer(async (req, res) => {
           ocrText,
           classification: mathClass,
           answer: mathAnswer,
+          examHint,
         }),
       );
       return;

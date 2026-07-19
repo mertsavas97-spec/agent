@@ -32,6 +32,14 @@ describe('solutionAnswer', () => {
     ).toEqual({ text: 'öyküleme' });
   });
 
+  it('extracts anlam ilgisi label', () => {
+    expect(
+      extractAnswerFromSteps([
+        { title: 'Cevap', body: 'Anlam ilgisi: Amaç-sonuç' },
+      ]),
+    ).toEqual({ text: 'Amaç-sonuç' });
+  });
+
   it('drops Cevap step from reasoning list', () => {
     const steps = [
       { title: '1. Soru ne istiyor?', body: 'a' },

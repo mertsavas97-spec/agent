@@ -8,7 +8,7 @@ const MATH_STEM =
 const MATH_OPS = /[÷×·√∫]|[0-9]\s*[+\-*/]\s*[0-9]|[0-9].*[÷×/].*[0-9]/;
 
 const TURKISH_STEM =
-  /anlatım biçimi|anlatim bicimi|paragraf|ana düşünce|ana dusunce|ana fikir|cümlede anlam|cumlede anlam|sözcükte|sozcukte|dil bilgisi|fiilims|özne|nesne|yüklem|anlamca|hangisi çıkarılamaz|çıkarılabilecek|anlatımında|düşünceyi geliştirme|yazım yanlışı|noktalama/i;
+  /anlatım biçimi|anlatim bicimi|paragraf|ana düşünce|ana dusunce|ana fikir|cümlede anlam|cumlede anlam|anlam ilgisi|anlam ilişkisi|sözcükte|sozcukte|dil bilgisi|fiilims|özne|nesne|yüklem|anlamca|hangisi çıkarılamaz|çıkarılabilecek|anlatımında|düşünceyi geliştirme|yazım yanlışı|noktalama/i;
 
 const SCIENCE_STEM =
   /fotosentez|hücre|atom|molekül|kuvvet|ivme|enerji|asit|baz|element|dolaşım|solunum|bitki|canlı|basınç|elektrik/i;
@@ -23,6 +23,7 @@ function topicKeyFor(subject, t) {
   const lower = t.toLowerCase();
   if (subject === 'turkish') {
     if (/anlatım biçimi|anlatim bicimi|anlatımında/i.test(t)) return 'anlatim';
+    if (/anlam ilgisi|anlam ilişkisi|cümlede anlam|cumlede anlam/i.test(t)) return 'anlam';
     if (/dil bilgisi|fiilims|özne|nesne|yüklem|yazım|noktalama/i.test(t)) return 'dilbilgisi';
     if (/sözcük|sozcuk|anlamca|eş anlamlı|zıt/i.test(t)) return 'anlam';
     return 'paragraf';

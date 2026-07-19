@@ -1,5 +1,8 @@
 import {
+  applyExamOverride,
   applySubjectOverride,
+  remapTopicIdForExam,
+  shouldConfirmExamMismatch,
   shouldConfirmSubject,
 } from '@/src/features/solve/subjectClassification';
 import type { SolveQuestionSuccess } from '@/src/lib/api/types';
@@ -59,6 +62,66 @@ describe('shouldConfirmSubject', () => {
         examType: 'lgs',
       }),
     ).toBe(true);
+  });
+});
+
+describe('shouldConfirmExamMismatch', () => {
+  it('prompts when KPSS profile gets a high-Q YGS-like booklet hint', () => {
+    expect(
+      shouldConfirmExamMismatch(
+        {
+          suggested: 'ygs',
+          confidence: 'high',
+          reason: 'question_number_vs_kpss',
+          questionNumber: 97,
+          mismatchesProfile: true,
+        },
+        'kpss',
+      ),
+    ).toBe(true);
+  });
+
+  it('skips when profile already matches suggestion', () => {
+    expect(
+      shouldConfirmExamMismatch(
+        {
+          suggested: 'ygs',
+          confidence: 'high',
+          mismatchesProfile: false,
+          questionNumber: 97,
+        },
+        'ygs',
+      ),
+    ).toBe(false);
+  });
+
+  it('skips low-confidence noise', () => {
+    expect(
+      shouldConfirmExamMismatch(
+        {
+          suggested: 'ygs',
+          confidence: 'low',
+          mismatchesProfile: true,
+          questionNumber: 42,
+        },
+        'kpss',
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('applyExamOverride', () => {
+  it('remaps topic prefix kpss → ygs', () => {
+    expect(remapTopicIdForExam('kpss-turkish-anlam', 'kpss', 'ygs')).toBe(
+      'ygs-turkish-anlam',
+    );
+    const out = applyExamOverride(
+      baseSolved({ topicId: 'kpss-turkish-anlam' }),
+      'kpss',
+      'ygs',
+    );
+    expect(out.topicId).toBe('ygs-turkish-anlam');
+    expect(out.examHint?.mismatchesProfile).toBeFalsy();
   });
 });
 
