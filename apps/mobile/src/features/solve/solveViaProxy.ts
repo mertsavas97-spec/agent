@@ -15,7 +15,8 @@ export function isSolveProxyConfigured(): boolean {
 }
 
 export async function callSolveQuestionViaProxy(input: {
-  imageUrl: string;
+  imageUrl?: string;
+  imageBase64?: string;
   mimeType?: string;
   examType?: ExamType;
   subjectHint?: Subject;
@@ -27,8 +28,10 @@ export async function callSolveQuestionViaProxy(input: {
       code: 'functions/unavailable',
     });
   }
-  if (!input.imageUrl) {
-    throw Object.assign(new Error('imageUrl gerekli'), { code: 'functions/invalid-argument' });
+  if (!input.imageUrl && !input.imageBase64) {
+    throw Object.assign(new Error('imageUrl veya imageBase64 gerekli'), {
+      code: 'functions/invalid-argument',
+    });
   }
 
   const controller = new AbortController();
@@ -44,6 +47,7 @@ export async function callSolveQuestionViaProxy(input: {
       },
       body: JSON.stringify({
         imageUrl: input.imageUrl,
+        imageBase64: input.imageBase64,
         mimeType: input.mimeType ?? 'image/jpeg',
         examType: input.examType,
         subjectHint: input.subjectHint,

@@ -8,6 +8,8 @@ export function buildLocalSolveFallback(input: {
   examType?: ExamType;
   subjectHint?: Subject;
   requestId: string;
+  /** Why we fell back — tweaks user-facing transparency copy */
+  reason?: 'unavailable' | 'unsupported';
 }): SolveQuestionResponse {
   const examType = input.examType ?? 'lgs';
   const subject: Subject =
@@ -19,6 +21,11 @@ export function buildLocalSolveFallback(input: {
       : examType === 'ygs'
         ? 'ygs-math-temel-kavramlar'
         : 'lgs-math-kesirler';
+
+  const transparencyNote =
+    input.reason === 'unsupported'
+      ? 'Bu kadrajdaki işlem otomatik çözülemedi. Daha net bir fotoğraf dene; soru ve şıklar tam görünsün.'
+      : 'Şu an otomatik çözüme ulaşılamadı; genel hatırlatma gösteriyoruz. Biraz sonra tekrar dener misin?';
 
   return {
     attemptId: `local-${input.requestId}`,
@@ -44,8 +51,7 @@ export function buildLocalSolveFallback(input: {
         body: 'Sonucu yerine koyarak veya şıkları eleyerek doğrula.',
       },
     ],
-    transparencyNote:
-      'Şu an canlı çözüm sunucusuna ulaşılamadı; genel hatırlatma gösteriyoruz. Biraz sonra tekrar dener misin?',
+    transparencyNote,
     quota: { remainingToday: 5, unlimited: false },
   };
 }

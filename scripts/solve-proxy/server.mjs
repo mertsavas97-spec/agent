@@ -94,12 +94,17 @@ const server = http.createServer(async (req, res) => {
     const ocrText = await ocrImageBase64(imageBase64, mimeType);
     const evaluated = evaluateExpression(ocrText);
     if (!evaluated) {
+      console.warn(
+        'solve-proxy unsupported_type OCR preview:',
+        JSON.stringify(ocrText.slice(0, 400)),
+      );
       send(res, 200, {
         status: 'unsupported_type',
         attemptId: `proxy-${requestId}`,
         userMessage:
-          'Bu görseldeki işlem şu an otomatik çözülemedi. Daha net bir kadraj dene veya canlı AI deploy’unu bekle.',
+          'Bu görseldeki işlem şu an otomatik çözülemedi. Soruyu ve şıkları daha net kadraja alıp tekrar dene.',
         quota: { remainingToday: 5, unlimited: false },
+        debugOcrPreview: ocrText.slice(0, 240),
       });
       return;
     }

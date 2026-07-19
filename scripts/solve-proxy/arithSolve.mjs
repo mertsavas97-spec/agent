@@ -1,6 +1,6 @@
 /**
  * Extract & evaluate exam-style arithmetic from OCR text.
- * Handles fractions, parentheses, ·/×/÷, stacked fraction via "/" lines.
+ * Handles fractions, parentheses, ·/×/÷, stacked / vertical exam layouts.
  */
 
 function toAsciiMath(s) {
@@ -98,8 +98,7 @@ function nearlyInt(n) {
 function formatNum(n) {
   if (!Number.isFinite(n)) return String(n);
   if (nearlyInt(n)) return String(Math.round(n));
-  // simple fraction approx for halves/quarters
-  for (const den of [2, 3, 4, 5, 8, 10, 16]) {
+  for (const den of [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 21, 24, 28]) {
     const num = Math.round(n * den);
     if (Math.abs(n - num / den) < 1e-9) {
       const g = gcd(Math.abs(num), den);
@@ -113,54 +112,226 @@ function gcd(a, b) {
   return b === 0 ? a : gcd(b, a % b);
 }
 
+function isFluffLine(l) {
+  return (
+    /^[A-E]\)/i.test(l) ||
+    /sonucu|kaçtır|hangisidir|aşağıda|soru|cevap|\?/.test(l.toLowerCase()) ||
+    /^=+$/.test(l)
+  );
+}
+
+function isBarLine(l) {
+  return /^[─—–\-_/=\s]{1,12}$/.test(l) && /[─—–\-_/=]/.test(l);
+}
+
+function isOpLine(l) {
+  return /^[÷·×*+\-:]$/.test(l) || /^(÷|x|×|:)$/i.test(l);
+}
+
+/**
+ * Rebuild vertical exam layouts:
+ *   1        1/3
+ *   —   or    ÷
+ *   3        1/7
+ *   ÷
+ *   1
+ *   —
+ *   7
+ * → (1/3)/(1/7)
+ */
+export function reconstructVerticalMath(ocrText) {
+  const lines = ocrText
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter((l) => !isFluffLine(l));
+
+  /** @type {{ kind: string, v?: string }[]} */
+  const tokens = [];
+  for (const l of lines) {
+    if (isBarLine(l)) {
+      tokens.push({ kind: 'bar' });
+      continue;
+    }
+    if (isOpLine(l)) {
+      tokens.push({ kind: 'op', v: toAsciiMath(l) || '/' });
+      continue;
+    }
+    if (/^\d+(?:[.,]\d+)?$/.test(l)) {
+      tokens.push({ kind: 'num', v: l.replace(',', '.') });
+      continue;
+    }
+    if (/^\d+\s*\/\s*\d+$/.test(l)) {
+      tokens.push({ kind: 'frac', v: l.replace(/\s+/g, '') });
+      continue;
+    }
+    // Inline math line — keep as expression atom
+    if (/[0-9]/.test(l) && /[+\-−*/·×÷()/]/.test(l)) {
+      tokens.push({ kind: 'expr', v: normalizeExpr(l) });
+    }
+  }
+
+  // Collapse num (+ optional bar) + num → fraction
+  /** @type {{ kind: string, v?: string }[]} */
+  const collapsed = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const t = tokens[i];
+    if (t.kind === 'num') {
+      const next = tokens[i + 1];
+      const next2 = tokens[i + 2];
+      if (next?.kind === 'bar' && next2?.kind === 'num') {
+        collapsed.push({ kind: 'frac', v: `${t.v}/${next2.v}` });
+        i += 2;
+        continue;
+      }
+      if (next?.kind === 'num' && (next2?.kind === 'op' || next2 == null || tokens[i + 1 + 1]?.kind === 'op')) {
+        // Two stacked numbers without a drawn bar (common OCR miss)
+        // Only pair when followed by op or end-of-left-side before op
+        const afterPair = tokens[i + 2];
+        if (!afterPair || afterPair.kind === 'op' || afterPair.kind === 'bar') {
+          collapsed.push({ kind: 'frac', v: `${t.v}/${next.v}` });
+          i += 1;
+          continue;
+        }
+      }
+      // Lone number between ops may still be a whole number operand
+      collapsed.push(t);
+      continue;
+    }
+    if (t.kind === 'bar') continue;
+    collapsed.push(t);
+  }
+
+  // Second pass: num num with op between groups already handled; merge adjacent nums before/after op
+  /** @type {{ kind: string, v?: string }[]} */
+  const merged = [];
+  for (let i = 0; i < collapsed.length; i += 1) {
+    const t = collapsed[i];
+    if (
+      t.kind === 'num' &&
+      collapsed[i + 1]?.kind === 'num' &&
+      (collapsed[i + 2]?.kind === 'op' || i === 0)
+    ) {
+      merged.push({ kind: 'frac', v: `${t.v}/${collapsed[i + 1].v}` });
+      i += 1;
+      continue;
+    }
+    merged.push(t);
+  }
+
+  const atoms = merged.filter((t) => t.kind !== 'bar');
+  if (atoms.length < 3) return null;
+
+  // Pattern: atom op atom (op atom)*
+  let expr = atomToExpr(atoms[0]);
+  if (!expr) return null;
+  for (let i = 1; i + 1 < atoms.length; i += 2) {
+    const op = atoms[i];
+    const right = atoms[i + 1];
+    if (op.kind !== 'op' || !right) return null;
+    const r = atomToExpr(right);
+    if (!r) return null;
+    const o = op.v === '*' ? '*' : op.v === '+' ? '+' : op.v === '-' ? '-' : '/';
+    expr = `(${expr})${o}(${r})`;
+  }
+  // Must have consumed all atoms as atom (op atom)+
+  if (atoms.length % 2 === 0) return null;
+  if (!/[*/+-]/.test(expr)) return null;
+  return expr;
+}
+
+function atomToExpr(atom) {
+  if (!atom) return null;
+  if (atom.kind === 'frac' || atom.kind === 'expr') return atom.v;
+  if (atom.kind === 'num') return atom.v;
+  return null;
+}
+
 function extractCandidateExprs(ocrText) {
   const text = ocrText.replace(/\r/g, '\n');
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
   const joined = lines.join(' ');
   const candidates = new Set();
 
-  // Full-line math-ish
+  const vertical = reconstructVerticalMath(ocrText);
+  if (vertical) candidates.add(vertical);
+
   for (const line of lines) {
-    if (/[0-9]/.test(line) && /[+\-−*/·×÷()/]/.test(line)) {
+    if (/[0-9]/.test(line) && /[+\-−*/·×÷()/]/.test(line) && !/^[A-E]\)/i.test(line)) {
       candidates.add(line);
     }
   }
 
-  // Capture patterns like 5(2-3/5) / 2(3-5/2)
   const stacked = joined.match(
-    /([0-9().+\-−*/·×÷\s]{5,80})\s*(?:\/|:)\s*([0-9().+\-−*/·×÷\s]{5,80})/,
+    /([0-9().+\-−*/·×÷\s]{3,80})\s*(?:\/|:|÷)\s*([0-9().+\-−*/·×÷\s]{3,80})/,
   );
   if (stacked) {
     candidates.add(`(${stacked[1]})/(${stacked[2]})`);
   }
 
-  // Also try whole blob without Turkish words
-  const stripped = joined
+  // Spaced fractions: "1 / 3 ÷ 1 / 7"
+  const spaced = joined
     .replace(/işleminin sonucu kaçtır\??/gi, '')
-    .replace(/[A-Ea-e]\)\s*[0-9./]+/g, '')
-    .replace(/[^0-9().+\-−*/·×÷\s]/g, ' ');
-  if (/[0-9]/.test(stripped)) candidates.add(stripped);
+    .replace(/[A-Ea-e]\)\s*[0-9./]+/g, '');
+  const spacedFrac = spaced.match(
+    /(\d+)\s*\/\s*(\d+)\s*([÷:\/·×*+\-])\s*(\d+)\s*\/\s*(\d+)/,
+  );
+  if (spacedFrac) {
+    const op = toAsciiMath(spacedFrac[3]) || '/';
+    candidates.add(`(${spacedFrac[1]}/${spacedFrac[2]})${op}(${spacedFrac[4]}/${spacedFrac[5]})`);
+  }
+
+  const stripped = spaced.replace(/[^0-9().+\-−*/·×÷\s]/g, ' ');
+  if (/[0-9]/.test(stripped) && /[+\-−*/·×÷/]/.test(stripped)) {
+    // Preserve fraction slashes: turn "1 3 ÷ 1 7" via vertical already;
+    // for "1 / 3 ÷ 1 / 7" keep slashes when normalizing later
+    candidates.add(stripped);
+  }
 
   return [...candidates];
 }
 
 function normalizeExpr(raw) {
-  let s = toAsciiMath(raw);
-  // insert * between number/) and (
+  let s = String(raw)
+    .replace(/[·•∙]/g, '*')
+    .replace(/[×xX]/g, '*')
+    .replace(/[÷:]/g, '/')
+    .replace(/−/g, '-');
+  // Keep intentional spaces around / only long enough to detect a/b — then strip
+  s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1/$2');
+  s = s.replace(/\s+/g, '');
   s = s.replace(/(\d|\))\(/g, '$1*(');
   s = s.replace(/\)(\d)/g, ')*$1');
-  // collapse
   s = s.replace(/[^0-9+\-*/().]/g, '');
   return s;
 }
 
 /**
- * @returns {{ expr: string, value: number, choice?: string, ocr: string } | null}
+ * @returns {{ expr: string, value: number, choice?: string, ocr: string, num?: number, den?: number } | null}
  */
 export function evaluateExpression(ocrText) {
   const choices = parseChoices(ocrText);
 
-  // Prefer stacked fraction (pay / payda on separate lines) — common in exam scans.
+  // Prefer explicit vertical reconstruction (avoids "1\\n3÷1\\n7" → 13/17)
+  const verticalExpr = reconstructVerticalMath(ocrText);
+  if (verticalExpr) {
+    const fromVertical = pickBestVariant(exprVariants(verticalExpr), choices, (expr) => {
+      const value = evalArith(expr);
+      // Expose num/den for stacked division of two groups
+      const m = expr.match(/^\((.+)\)\/\((.+)\)$/);
+      if (m) {
+        try {
+          return { value, num: evalArith(m[1]), den: evalArith(m[2]) };
+        } catch {
+          return { value };
+        }
+      }
+      return { value };
+    });
+    if (fromVertical) return { ...fromVertical, ocr: ocrText };
+  }
+
   const lines = ocrText.split('\n').map((l) => l.trim()).filter(Boolean);
   const mathLines = lines.filter(
     (l) => /[0-9]/.test(l) && /[()+\-−*/·×÷/]/.test(l) && !/^[A-E]\)/i.test(l),
@@ -217,7 +388,13 @@ function pickBestVariant(items, choices, evalItem) {
       const { value, num, den } = evalItem(typeof item === 'string' ? item : item);
       if (!Number.isFinite(value)) continue;
       const choice = matchChoice(value, choices);
-      const score = (choice ? 100 : 0) + (expr.includes('*') ? 2 : 0);
+      const score =
+        (choice ? 100 : 0) +
+        (expr.includes('(') ? 3 : 0) +
+        (expr.includes('/') ? 1 : 0) +
+        (expr.includes('*') ? 1 : 0) -
+        // Penalize glued multi-digit mistakes like 13/17 from vertical 1,3,1,7
+        (/\d{2,}/.test(expr) && Object.keys(choices).length ? 5 : 0);
       const row = { expr, value, choice, num, den, score };
       if (!best || row.score > best.score) best = row;
     } catch {
@@ -254,6 +431,11 @@ function matchChoice(value, choices) {
     } catch {
       /* */
     }
+  }
+  // Also match formatted fraction string equality loosely
+  const formatted = formatNum(value);
+  for (const [k, v] of Object.entries(choices)) {
+    if (v === formatted) return k;
   }
   return undefined;
 }

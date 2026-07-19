@@ -28,6 +28,8 @@ export type SolveClientRequest = SolveQuestionRequest & {
   requestId: string;
   /** Public download URL for dogfood OCR proxy */
   imageUrl?: string;
+  /** Local image bytes — preferred by proxy (avoids Storage fetch flakiness) */
+  imageBase64?: string;
 };
 
 /**
@@ -40,17 +42,32 @@ export type SolveClientRequest = SolveQuestionRequest & {
 export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
+  let proxyUnsupported = false;
+
   // Prefer OCR proxy first — avoids 5–8s pending wait when triggers are undeployed.
-  if (isSolveProxyConfigured() && request.imageUrl) {
+  if (isSolveProxyConfigured() && (request.imageUrl || request.imageBase64)) {
     try {
       console.info('solve: OCR proxy');
-      return await callSolveQuestionViaProxy({
+      const proxy = await callSolveQuestionViaProxy({
         imageUrl: request.imageUrl,
+        imageBase64: request.imageBase64,
         mimeType: request.mimeType,
         examType: request.examType,
         subjectHint: request.subjectHint,
         requestId: request.requestId,
       });
+      // Parse/OCR miss — skip hard-reject UI; soft local steps instead.
+      if (proxy.status === 'unsupported_type') {
+        proxyUnsupported = true;
+        console.warn('solve proxy unsupported_type → local fallback');
+        return buildLocalSolveFallback({
+          examType: request.examType,
+          subjectHint: request.subjectHint,
+          requestId: request.requestId,
+          reason: 'unsupported',
+        });
+      }
+      return proxy;
     } catch (proxyErr) {
       console.warn('solve proxy failed, trying Firebase paths', proxyErr);
     }
@@ -64,7 +81,12 @@ export async function callSolveQuestion(
     try {
       const { functions } = getFirebase();
       const callable = httpsCallable(functions, 'solveQuestion');
-      const { requestId: _requestId, imageUrl: _imageUrl, ...callablePayload } = request;
+      const {
+        requestId: _requestId,
+        imageUrl: _imageUrl,
+        imageBase64: _imageBase64,
+        ...callablePayload
+      } = request;
       const result = await callable(callablePayload);
       return result.data as SolveQuestionResponse;
     } catch (callableErr) {
@@ -79,6 +101,7 @@ export async function callSolveQuestion(
           examType: request.examType,
           subjectHint: request.subjectHint,
           requestId: request.requestId,
+          reason: proxyUnsupported ? 'unsupported' : 'unavailable',
         });
       }
       throw callableErr;

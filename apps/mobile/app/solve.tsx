@@ -12,6 +12,7 @@ import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
+import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
@@ -86,6 +87,10 @@ export default function SolveFlowScreen() {
         });
         if (cancelled) return;
 
+        // Prefer bytes from the phone — Storage download from the proxy can flake.
+        const imageBase64 = await uriToBase64(params.uri);
+        if (cancelled) return;
+
         // Server applies SafeSearch + solve; UI shows moderate then solve stages.
         setAnalyzeStep('moderate');
         // Brief tick so progress bar is visible before the long AI call.
@@ -100,6 +105,7 @@ export default function SolveFlowScreen() {
           subjectHint,
           requestId: localId,
           imageUrl: downloadUrl,
+          imageBase64: imageBase64 ?? undefined,
         });
         if (cancelled) return;
         setResult(response);
@@ -183,10 +189,13 @@ export default function SolveFlowScreen() {
   }
 
   if (result && result.status !== 'solved') {
+    const rejectMsg =
+      result.userMessage?.replace(/canlı AI deploy[’']?unu bekle\.?/gi, '').trim() ||
+      'Bu görseldeki işlem şu an otomatik çözülemedi. Daha net bir kadraj dene.';
     return (
       <View style={styles.center} testID="solve-rejected">
         <Text style={styles.errorTitle}>Bu görsel işlenemedi</Text>
-        <Text style={styles.error}>{result.userMessage}</Text>
+        <Text style={styles.error}>{rejectMsg}</Text>
         <Pressable onPress={() => router.back()} style={styles.btn}>
           <Text style={styles.btnText}>Ana sayfaya dön</Text>
         </Pressable>
