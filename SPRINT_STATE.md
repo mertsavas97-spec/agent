@@ -55,3 +55,9 @@ Doc: `docs/architecture/PIPELINE_AI_AUDIT_2026-07-19.md` — dogfood **evet**; P
 - Net wording (kitap/defter sorusu); sınav seçili state + varsayılan LGS
 - **Konular** tab (T069): örnek soru + adım adım anlatım (`app/sample/[id]`)
 - Brief: `docs/design/home-konular-brief.md`
+
+## MVP audit sprint (2026-07-19 akşam)
+- Timeout kök neden: Cloud’da Vertex `K_SERVICE` ile zorla açılıyordu → fix
+- Loading: tip + pulse; Poppins; progress Firestore fallback
+- Rapor: `docs/sprint-reports/2026-07-19-mvp-audit.md`
+- Redeploy: `functions:onSolveRequestCreatedV2` (Vertex env yoksa hızlı stub)
