@@ -120,34 +120,36 @@ export function tryVerbalSolve(ocrText, classification) {
   if (/anlatım biçimi|anlatim bicimi/.test(stemL) || /anlatım biçimi/.test(ocrText)) {
     const { answer, scores } = scoreAnlatim(passage || ocrText);
     const choice = matchChoice(answer, choices);
+    const why =
+      answer === 'öyküleme'
+        ? 'Olaylar zaman içinde aktarılıyor: her sabah, ilgilenir, konuşurdu… Bu zincir öykülemeyi gösterir.'
+        : answer === 'betimleme'
+          ? 'Varlık/ortam duyusal ayrıntılarla resmediliyor — bu betimleme.'
+          : answer === 'açıklama'
+            ? 'Bilgi ve tanım ağırlıklı ilerliyor — bu açıklama.'
+            : 'Kanı / savunma ağırlıklı — bu tartışma.';
+
     const steps = [
       {
-        title: '1. Soru kökünü belirle',
-        body: 'İstenen: parçanın anlatım biçimi (öyküleme, betimleme, açıklama, tartışma…).',
+        title: '1. Soru ne istiyor?',
+        body: 'Anlatım biçimini bul: öyküleme, betimleme, açıklama veya tartışma.',
       },
       {
-        title: '2. Parçadaki ipuçları',
+        title: '2. Metinde ne var?',
         body:
           passage.length > 20
-            ? `Metin eylem ve zaman ekseninde ilerliyor: “${passage.slice(0, 160)}${passage.length > 160 ? '…' : ''}”`
-            : 'Metinde olay/zaman bildiren eylemler anlatım biçimini ele verir.',
+            ? `“${passage.slice(0, 160)}${passage.length > 160 ? '…' : ''}”`
+            : 'Metindeki eylem ve zaman ifadelerine bak.',
       },
       {
-        title: '3. Biçimi seç',
-        body:
-          answer === 'öyküleme'
-            ? 'Olaylar zaman içinde aktarılıyor (her sabah, ilgilenir, konuşurdu…) → öyküleme.'
-            : answer === 'betimleme'
-              ? 'Varlık/ortam duyusal ayrıntılarla resmediliyor → betimleme.'
-              : answer === 'açıklama'
-                ? 'Bilgi ve tanım ağırlıklı → açıklama.'
-                : 'Kanı/savunma ağırlıklı → tartışma.',
+        title: '3. Neden bu biçim?',
+        body: why,
       },
       {
         title: 'Cevap',
         body: choice
           ? `Doğru şık: ${choice}) ${choices[choice]}`
-          : `En uygun anlatım biçimi: ${answer}.${Object.keys(choices).length ? ' Şıklarla eşleştir.' : ' Şıklar kadrajda değilse kitapçuktaki seçeneklerle kontrol et.'}`,
+          : `En uygun anlatım biçimi: ${answer}`,
       },
     ];
     return { steps, answerLabel: choice, answerText: answer, debugScores: scores };

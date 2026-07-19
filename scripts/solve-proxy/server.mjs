@@ -25,8 +25,17 @@ function send(res, status, body) {
   res.end(json);
 }
 
-function solvedPayload({ requestId, topicId, subject, steps, ocrText, note, classification }) {
-  return {
+function solvedPayload({
+  requestId,
+  topicId,
+  subject,
+  steps,
+  ocrText,
+  note,
+  classification,
+  answer,
+}) {
+  const payload = {
     status: 'solved',
     attemptId: `proxy-${requestId}`,
     solutionId: `proxy-sol-${requestId}`,
@@ -48,6 +57,13 @@ function solvedPayload({ requestId, topicId, subject, steps, ocrText, note, clas
       alternatives: classification.alternatives,
     },
   };
+  if (answer?.text) {
+    payload.answer = {
+      text: String(answer.text),
+      ...(answer.label ? { label: String(answer.label) } : {}),
+    };
+  }
+  return payload;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -135,8 +151,11 @@ const server = http.createServer(async (req, res) => {
             steps: verbal.steps,
             ocrText,
             note:
-              'Metinden okunarak adım adım çözüldü (sözel). Sonucu şıklarla kontrol etmeni öneririz.',
+              'Metinden okunarak çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
             classification: classified,
+            answer: verbal.answerText
+              ? { text: verbal.answerText, label: verbal.answerLabel }
+              : undefined,
           }),
         );
         return;
@@ -157,6 +176,18 @@ const server = http.createServer(async (req, res) => {
               score: Math.max(classified.score || 0, 8),
               alternatives: classified.alternatives || [],
             };
+      const mathSteps = buildStepsFromEval(evaluated);
+      const cevap = mathSteps.find((s) => s.title === 'Cevap');
+      const mathAnswer = { text: String(evaluated.value), label: evaluated.choice };
+      const choiceMatch = cevap?.body?.match(/Doğru şık:\s*([A-E])\)\s*(.+?)\./);
+      if (choiceMatch) {
+        mathAnswer.label = choiceMatch[1];
+        mathAnswer.text = choiceMatch[2].trim();
+      } else if (cevap?.body) {
+        const m = cevap.body.match(/Sonuç\s+([0-9]+(?:\/[0-9]+)?)/);
+        if (m) mathAnswer.text = m[1];
+      }
+
       send(
         res,
         200,
@@ -167,9 +198,10 @@ const server = http.createServer(async (req, res) => {
               ? topicIdFor(examType, 'math', mathClass.topicKey || 'temel')
               : topicId,
           subject: 'math',
-          steps: buildStepsFromEval(evaluated),
+          steps: mathSteps,
           ocrText,
           classification: mathClass,
+          answer: mathAnswer,
         }),
       );
       return;

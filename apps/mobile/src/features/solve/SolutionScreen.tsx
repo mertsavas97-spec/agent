@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -11,12 +11,25 @@ import {
 
 import { subjectLabel } from '@/src/data';
 import type { TopicLesson } from '@/src/data/topicLessons';
-import type { ExamType, SolutionStep, Subject } from '@/src/lib/api/types';
+import type {
+  ExamType,
+  SolutionAnswer,
+  SolutionStep,
+  Subject,
+} from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, radii, space, typography } from '@/src/theme';
 
+import {
+  buildShortSummary,
+  formatAnswerDisplay,
+  reasoningSteps,
+  resolveSolutionAnswer,
+} from './solutionAnswer';
+
 export type SolutionScreenProps = {
   steps: SolutionStep[];
+  answer?: SolutionAnswer | null;
   transparencyNote?: string;
   imageUri?: string | null;
   solutionId?: string | null;
@@ -38,6 +51,7 @@ type TabId = 'steps' | 'short' | 'lesson';
 
 export function SolutionScreen({
   steps,
+  answer: answerProp,
   transparencyNote = SAFETY_MESSAGES.transparency,
   imageUri,
   solutionId,
@@ -53,6 +67,16 @@ export function SolutionScreen({
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('steps');
 
+  const answer = useMemo(
+    () => resolveSolutionAnswer(answerProp, steps),
+    [answerProp, steps],
+  );
+  const stepsOnly = useMemo(() => reasoningSteps(steps), [steps]);
+  const shortBody = useMemo(
+    () => followUp ?? buildShortSummary(answer, steps),
+    [followUp, answer, steps],
+  );
+
   async function handleExplain() {
     if (!onExplainAgain) return;
     setLoading(true);
@@ -66,12 +90,6 @@ export function SolutionScreen({
       setLoading(false);
     }
   }
-
-  const shortBody =
-    followUp ??
-    (steps.length > 0
-      ? steps.map((s, i) => `${i + 1}) ${s.body}`).join('\n\n')
-      : 'Özet henüz yok — adım adım sekmeye bak.');
 
   const tabs: { id: TabId; label: string; testID: string }[] = [
     { id: 'steps', label: 'Adım adım', testID: 'tab-steps' },
@@ -105,6 +123,15 @@ export function SolutionScreen({
         />
       ) : null}
 
+      {answer ? (
+        <View style={styles.answerHero} testID="answer-hero">
+          <Text style={styles.answerEyebrow}>Doğru cevap</Text>
+          <Text style={styles.answerText} accessibilityRole="header">
+            {formatAnswerDisplay(answer)}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.tabs} testID="solution-tabs">
         {tabs.map((t) => (
           <Pressable
@@ -120,48 +147,78 @@ export function SolutionScreen({
       </View>
 
       {tab === 'steps' ? (
-        steps.map((step, index) => (
-          <View key={`${index}-${step.title ?? ''}`} style={styles.card} testID={`step-${index}`}>
-            <Text style={styles.stepTitle}>{step.title ?? `${index + 1}. Adım`}</Text>
-            <Text style={styles.stepBody}>{step.body}</Text>
-          </View>
-        ))
+        <>
+          <Text style={styles.tabLead} testID="steps-lead">
+            Nasıl bulduk — gerekçe
+          </Text>
+          {stepsOnly.map((step, index) => (
+            <View
+              key={`${index}-${step.title ?? ''}`}
+              style={styles.card}
+              testID={`step-${index}`}>
+              <Text style={styles.stepTitle}>{step.title ?? `${index + 1}. Adım`}</Text>
+              <Text style={styles.stepBody}>{step.body}</Text>
+            </View>
+          ))}
+        </>
       ) : null}
 
       {tab === 'short' ? (
-        <View style={styles.card} testID="short-summary">
-          <Text style={styles.stepBody}>{shortBody}</Text>
-        </View>
+        <>
+          <Text style={styles.tabLead} testID="short-lead">
+            Tek bakışta özet
+          </Text>
+          <View style={styles.card} testID="short-summary">
+            {answer ? (
+              <Text style={styles.shortAnswer}>{formatAnswerDisplay(answer)}</Text>
+            ) : null}
+            <Text style={styles.stepBody}>{shortBody.replace(/^Cevap:[^\n]+\n*/i, '')}</Text>
+          </View>
+        </>
       ) : null}
 
       {tab === 'lesson' ? (
-        <View style={styles.lessonCard} testID="topic-lesson">
-          {topicLesson ? (
-            <>
-              <Text style={styles.lessonHeadline}>{topicLesson.headline}</Text>
-              {topicLesson.bullets.map((b, i) => (
-                <View key={i} style={styles.bulletRow}>
-                  <Text style={styles.bulletDot}>•</Text>
-                  <Text style={styles.stepBody}>{b}</Text>
+        <>
+          <Text style={styles.tabLead} testID="lesson-lead">
+            Bu konuyu hatırla
+          </Text>
+          <View style={styles.lessonCard} testID="topic-lesson">
+            {topicLesson ? (
+              <>
+                <Text style={styles.lessonHeadline}>{topicLesson.headline}</Text>
+                {topicLesson.bullets.map((b, i) => {
+                  const highlight =
+                    !!answer?.text &&
+                    b.toLocaleLowerCase('tr-TR').includes(answer.text.toLocaleLowerCase('tr-TR'));
+                  return (
+                    <View
+                      key={i}
+                      style={[styles.bulletRow, highlight && styles.bulletHighlight]}>
+                      <Text style={styles.bulletDot}>•</Text>
+                      <Text style={[styles.stepBody, highlight && styles.bulletHighlightText]}>
+                        {b}
+                      </Text>
+                    </View>
+                  );
+                })}
+                <View style={styles.tipBox}>
+                  <Text style={styles.tipLabel}>İpucu</Text>
+                  <Text style={styles.stepBody}>{topicLesson.tip}</Text>
                 </View>
-              ))}
-              <View style={styles.tipBox}>
-                <Text style={styles.tipLabel}>İpucu</Text>
-                <Text style={styles.stepBody}>{topicLesson.tip}</Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={styles.lessonHeadline}>
-                {topicName ? `${topicName} — kısa hatırlatma` : 'Konu anlatımı'}
-              </Text>
-              <Text style={styles.stepBody}>
-                Bu soru için konu özeti henüz bağlanmadı. Adım adım çözümü oku; takılıran
-                “Anlamadım” ile daha sade anlatım iste.
-              </Text>
-            </>
-          )}
-        </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.lessonHeadline}>
+                  {topicName ? `${topicName} — kısa hatırlatma` : 'Konu anlatımı'}
+                </Text>
+                <Text style={styles.stepBody}>
+                  Bu soru için konu özeti henüz bağlanmadı. Adım adım gerekçeyi oku; takılırsan
+                  “Anlamadım” ile daha sade anlatım iste.
+                </Text>
+              </>
+            )}
+          </View>
+        </>
       ) : null}
 
       <Text style={styles.note} testID="transparency-note">
@@ -207,7 +264,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: space.lg, paddingBottom: space.xl * 2 },
   heading: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontSize: 24,
     fontWeight: '700',
     color: colors.navy,
@@ -221,7 +278,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaExam: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontSize: 12,
     fontWeight: '700',
     color: colors.orange,
@@ -229,7 +286,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   metaSubject: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontSize: 16,
     fontWeight: '700',
     color: colors.navy,
@@ -241,17 +298,40 @@ const styles = StyleSheet.create({
   },
   thumb: {
     width: '100%',
-    height: 220,
+    height: 200,
     borderRadius: radii.md,
     marginBottom: space.md,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  answerHero: {
+    backgroundColor: colors.navy,
+    borderRadius: radii.lg,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    marginBottom: space.md,
+  },
+  answerEyebrow: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.orange,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  answerText: {
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 26,
+    fontWeight: '700',
+    color: colors.white,
+    lineHeight: 32,
+  },
   tabs: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   tab: {
     flex: 1,
@@ -268,12 +348,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.orangeSoft,
   },
   tabLabel: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilyMedium,
     fontSize: 11,
     fontWeight: '600',
     color: colors.textSecondary,
   },
-  tabLabelOn: { color: colors.navy, fontWeight: '700' },
+  tabLabelOn: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.navy,
+    fontWeight: '700',
+  },
+  tabLead: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: space.sm,
+  },
   card: {
     backgroundColor: colors.white,
     borderRadius: radii.md,
@@ -281,6 +371,14 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  shortAnswer: {
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.navy,
+    marginBottom: space.sm,
+    lineHeight: 26,
   },
   lessonCard: {
     backgroundColor: colors.white,
@@ -302,6 +400,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: space.sm,
+    borderRadius: radii.sm,
+    paddingVertical: 2,
+  },
+  bulletHighlight: {
+    backgroundColor: colors.orangeSoft,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.sm,
+    marginHorizontal: -space.sm,
+  },
+  bulletHighlightText: {
+    color: colors.navy,
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '700',
   },
   bulletDot: {
     fontFamily: typography.fontFamily,
@@ -326,7 +437,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   stepTitle: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontWeight: '700',
     color: colors.navy,
     marginBottom: 4,
@@ -353,7 +464,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   explainLabel: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     color: colors.white,
     fontWeight: '700',
   },
@@ -365,7 +476,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   followTitle: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontWeight: '700',
     color: colors.navy,
     marginBottom: 4,
@@ -379,7 +490,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   doneLabel: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontWeight: '700',
     color: colors.navy,
   },

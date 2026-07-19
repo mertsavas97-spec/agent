@@ -34,6 +34,12 @@ export type SolutionStep = {
   body: string;
 };
 
+/** Highlighted final answer for result UI (choice letter optional). */
+export type SolutionAnswer = {
+  label?: string;
+  text: string;
+};
+
 export type QuotaInfo = {
   remainingToday: number;
   unlimited: boolean;
@@ -64,6 +70,8 @@ export type SolveQuestionSuccess = {
   steps: SolutionStep[];
   transparencyNote: string;
   quota: QuotaInfo;
+  /** Preferred display answer — result screen hero */
+  answer?: SolutionAnswer;
   /** Dogfood / proxy: when needsConfirm, UI asks user before showing result */
   classification?: SubjectClassificationMeta;
 };

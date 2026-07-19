@@ -4,27 +4,54 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 
 describe('SolutionScreen', () => {
-  it('renders numbered steps, meta band, and transparency note', () => {
+  it('renders answer hero prominently above tabs', () => {
+    render(
+      <SolutionScreen
+        steps={[
+          { title: '1. Soru ne istiyor?', body: 'Anlatım biçimi.' },
+          { title: 'Cevap', body: 'En uygun anlatım biçimi: öyküleme' },
+        ]}
+        answer={{ text: 'öyküleme' }}
+        examType="kpss"
+        subject="turkish"
+        topicName="Paragraf"
+        transparencyNote="Metinden okunarak çözüldü."
+      />,
+    );
+
+    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/öyküleme/);
+    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/Doğru cevap/);
+    expect(screen.getByTestId('solution-meta')).toHaveTextContent(/Türkçe/);
+    // Cevap card should not duplicate in steps tab
+    expect(screen.queryByText('En uygun anlatım biçimi: öyküleme')).toBeNull();
+    expect(screen.getByTestId('step-0')).toHaveTextContent(/Anlatım biçimi/);
+  });
+
+  it('falls back to extracting answer from steps when answer prop missing', () => {
     render(
       <SolutionScreen
         steps={[
           { title: '1. Adım', body: 'Paydaları eşitle.' },
-          { title: '2. Adım', body: 'Topla.' },
+          { title: 'Cevap', body: 'Doğru şık: E) 7.' },
         ]}
-        examType="lgs"
-        subject="math"
-        topicName="Kesirler"
-        transparencyNote="AI tarafından üretilmiştir, kontrol etmeni öneririz."
       />,
     );
+    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/E\) 7/);
+  });
 
-    expect(screen.getByTestId('solution-screen')).toBeTruthy();
-    expect(screen.getByTestId('solution-meta')).toHaveTextContent(/LGS/);
-    expect(screen.getByTestId('solution-meta')).toHaveTextContent(/Matematik/);
-    expect(screen.getByTestId('solution-meta')).toHaveTextContent(/Kesirler/);
-    expect(screen.getByTestId('step-0')).toBeTruthy();
-    expect(screen.getByText('Paydaları eşitle.')).toBeTruthy();
-    expect(screen.getByTestId('transparency-note')).toHaveTextContent(/AI tarafından/);
+  it('short tab leads with bold answer', () => {
+    render(
+      <SolutionScreen
+        steps={[
+          { title: '3. Neden', body: 'Zaman zinciri.' },
+          { title: 'Cevap', body: 'En uygun anlatım biçimi: öyküleme' },
+        ]}
+        answer={{ text: 'öyküleme' }}
+      />,
+    );
+    fireEvent.press(screen.getByTestId('tab-short'));
+    expect(screen.getByTestId('short-summary')).toHaveTextContent(/öyküleme/);
+    expect(screen.getByTestId('short-summary')).toHaveTextContent(/Zaman zinciri/);
   });
 
   it('shows follow-up text after explain again', async () => {
@@ -46,21 +73,24 @@ describe('SolutionScreen', () => {
     expect(onExplainAgain).toHaveBeenCalled();
   });
 
-  it('shows konu anlatımı tab with lesson content', () => {
+  it('highlights matching lesson bullet for the answer', () => {
     render(
       <SolutionScreen
         steps={[{ title: '1', body: 'x' }]}
-        topicName="Kesirler"
+        answer={{ text: 'öyküleme' }}
         topicLesson={{
-          topicId: 'lgs-math-kesirler',
-          headline: 'Kesirler: bütünü parçalara ayırmak',
-          bullets: ['Pay = alınan parça.'],
-          tip: 'Pastayı çiz.',
+          topicId: 'kpss-turkish-paragraf',
+          headline: 'Paragraf ve anlatım biçimleri',
+          bullets: [
+            'Öyküleme: olayları zaman içinde anlatır.',
+            'Betimleme: duyularla resmeder.',
+          ],
+          tip: 'Eylem/zaman mı bak.',
         }}
       />,
     );
     fireEvent.press(screen.getByTestId('tab-lesson'));
-    expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Kesirler/);
-    expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Pastayı çiz/);
+    expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Öyküleme/);
+    expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/İpucu|İPUCU/i);
   });
 });

@@ -74,6 +74,7 @@ export function applySubjectOverride(
     subject,
     topicId: remapped.topicId,
     steps: keepSteps ? result.steps : remapped.steps,
+    answer: keepSteps ? result.answer : undefined,
     transparencyNote: keepSteps
       ? result.transparencyNote
       : `Ders güncellendi. Adımlar ${subject} için yeniden düzenlendi.`,

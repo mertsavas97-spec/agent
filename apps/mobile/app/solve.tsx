@@ -286,6 +286,7 @@ export default function SolveFlowScreen() {
         <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
         <SolutionScreen
           steps={result.steps}
+          answer={result.answer ?? null}
           transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
           imageUri={typeof params.uri === 'string' ? params.uri : null}
           solutionId={canExplain ? result.solutionId : null}
