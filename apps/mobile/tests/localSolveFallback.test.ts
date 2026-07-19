@@ -12,8 +12,17 @@ describe('localSolveFallback', () => {
     });
     expect(res.status).toBe('solved');
     expect(res.steps.length).toBeGreaterThanOrEqual(3);
-    expect(res.transparencyNote).toMatch(/Yerel yedek|deploy/i);
+    expect(res.transparencyNote).toMatch(/canlı çözüm|tekrar/i);
+    expect(res.transparencyNote).not.toMatch(/deploy-firestore|bash/i);
     expect(res.topicId).toBe('lgs-math-kesirler');
+  });
+
+  it('uses temel işlemler topic for KPSS fallback', () => {
+    const res = buildLocalSolveFallback({
+      examType: 'kpss',
+      requestId: '9',
+    });
+    expect(res.topicId).toBe('kpss-math-temel-islemler');
   });
 
   it('detects server unavailable errors', () => {

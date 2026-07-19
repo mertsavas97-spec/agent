@@ -1,6 +1,7 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
@@ -10,18 +11,17 @@ import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
+import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
-import { findTopic } from '@/src/data';
+import { findTopic, isKnownSubject, subjectsForExam } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { ensureSignedIn } from '@/src/lib/auth';
-import { isKnownSubject, subjectsForExam } from '@/src/data';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space, typography } from '@/src/theme';
-import { doc, getDoc } from 'firebase/firestore';
 
 function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   if (result.quota.unlimited) return 0;
@@ -76,7 +76,7 @@ export default function SolveFlowScreen() {
             : undefined;
 
         // Upload first (tags cozbilSolve=1) → Storage Gen2 trigger solves.
-        const { imagePath } = await uploadQuestionImage({
+        const { imagePath, downloadUrl } = await uploadQuestionImage({
           uid: user.uid,
           localId,
           uri: params.uri,
@@ -99,6 +99,7 @@ export default function SolveFlowScreen() {
           examType: resolvedExam,
           subjectHint,
           requestId: localId,
+          imageUrl: downloadUrl,
         });
         if (cancelled) return;
         setResult(response);
@@ -122,7 +123,12 @@ export default function SolveFlowScreen() {
   }, [params.uri, params.mimeType]);
 
   if (phase === 'analyzing') {
-    return <AnalyzingView step={analyzeStep} />;
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
+        <AnalyzingView step={analyzeStep} />
+      </>
+    );
   }
 
   if (phase === 'paywall') {
@@ -207,27 +213,33 @@ export default function SolveFlowScreen() {
                 }
               : undefined,
         );
+        const canExplain = !isOfflineSolutionId(result.solutionId);
         return (
-          <SolutionScreen
-            steps={result.steps}
-            transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
-            imageUri={typeof params.uri === 'string' ? params.uri : null}
-            solutionId={result.solutionId}
-            examType={examType}
-            subject={result.subject}
-            topicName={topicName}
-            topicLesson={topicLesson}
-            onExplainAgain={() => callExplainAgain(result.solutionId)}
-            onDone={() => {
-              void (async () => {
-                await runInterstitialIfNeeded({
-                  billedSolvesToday: billedSolvesFromQuota(result),
-                  atNaturalBreak: true,
-                });
-                router.back();
-              })();
-            }}
-          />
+          <>
+            <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
+            <SolutionScreen
+              steps={result.steps}
+              transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
+              imageUri={typeof params.uri === 'string' ? params.uri : null}
+              solutionId={canExplain ? result.solutionId : null}
+              examType={examType}
+              subject={result.subject}
+              topicName={topicName}
+              topicLesson={topicLesson}
+              onExplainAgain={
+                canExplain ? () => callExplainAgain(result.solutionId) : undefined
+              }
+              onDone={() => {
+                void (async () => {
+                  await runInterstitialIfNeeded({
+                    billedSolvesToday: billedSolvesFromQuota(result),
+                    atNaturalBreak: true,
+                  });
+                  router.back();
+                })();
+              }}
+            />
+          </>
         );
   }
 

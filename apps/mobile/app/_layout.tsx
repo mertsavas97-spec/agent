@@ -69,6 +69,7 @@ function RootLayoutNav() {
             name="solve"
             options={{
               title: 'Çözüm',
+              headerBackTitle: 'Geri',
               headerStyle: { backgroundColor: colors.navy },
               headerTintColor: '#fff',
               headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
@@ -78,6 +79,7 @@ function RootLayoutNav() {
             name="sample/[id]"
             options={{
               title: 'Örnek anlatım',
+              headerBackTitle: 'Geri',
               headerStyle: { backgroundColor: colors.navy },
               headerTintColor: '#fff',
               headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
@@ -87,6 +89,7 @@ function RootLayoutNav() {
             name="topic/[id]"
             options={{
               title: 'Konu anlatımı',
+              headerBackTitle: 'Geri',
               headerStyle: { backgroundColor: colors.navy },
               headerTintColor: '#fff',
               headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },

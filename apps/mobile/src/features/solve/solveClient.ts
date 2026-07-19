@@ -8,6 +8,7 @@ import {
   isServerSolveUnavailable,
 } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
+import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -22,55 +23,56 @@ function isInvokerBlocked(err: unknown): boolean {
   );
 }
 
+export type SolveClientRequest = SolveQuestionRequest & {
+  mimeType?: string;
+  requestId: string;
+  /** Public download URL for dogfood OCR proxy */
+  imageUrl?: string;
+};
+
 /**
- * 1) Firestore/Storage trigger path (org-policy safe)
- * 2) Callable solveQuestion (often 403 under Domain Restricted Sharing)
- * 3) Local dogfood fallback — always returns a usable solution when server is blocked
+ * 1) Firestore/Storage trigger
+ * 2) Callable (often 403)
+ * 3) Vision OCR proxy (dogfood)
+ * 4) Local generic fallback (last resort)
  */
 export async function callSolveQuestion(
-  request: SolveQuestionRequest & { mimeType?: string; requestId: string },
+  request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
   try {
     return await callSolveQuestionViaFirestore(request);
   } catch (firestoreErr) {
     console.warn('solveViaFirestore failed, trying callable', firestoreErr);
 
-    const fsCode =
-      firestoreErr &&
-      typeof firestoreErr === 'object' &&
-      'code' in firestoreErr &&
-      typeof (firestoreErr as { code: unknown }).code === 'string'
-        ? (firestoreErr as { code: string }).code
-        : '';
-
-    if (fsCode === 'permission-denied') {
-      console.warn('Firestore create denied — using local fallback');
-      return buildLocalSolveFallback({
-        examType: request.examType,
-        subjectHint: request.subjectHint,
-        requestId: request.requestId,
-      });
-    }
-
     try {
       const { functions } = getFirebase();
       const callable = httpsCallable(functions, 'solveQuestion');
-      const { requestId: _requestId, ...callablePayload } = request;
+      const { requestId: _requestId, imageUrl: _imageUrl, ...callablePayload } = request;
       const result = await callable(callablePayload);
       return result.data as SolveQuestionResponse;
     } catch (callableErr) {
-      if (isInvokerBlocked(callableErr) || isServerSolveUnavailable(firestoreErr)) {
-        console.warn(
-          'Server solve unavailable (403/timeout) — local dogfood fallback',
-          { firestoreErr, callableErr },
-        );
-        return buildLocalSolveFallback({
-          examType: request.examType,
-          subjectHint: request.subjectHint,
-          requestId: request.requestId,
-        });
+      console.warn('callable solve failed', callableErr);
+
+      if (isSolveProxyConfigured() && request.imageUrl) {
+        try {
+          console.warn('trying solve proxy (OCR)');
+          return await callSolveQuestionViaProxy({
+            imageUrl: request.imageUrl,
+            mimeType: request.mimeType,
+            examType: request.examType,
+            subjectHint: request.subjectHint,
+            requestId: request.requestId,
+          });
+        } catch (proxyErr) {
+          console.warn('solve proxy failed', proxyErr);
+        }
       }
-      if (isServerSolveUnavailable(callableErr)) {
+
+      if (
+        isInvokerBlocked(callableErr) ||
+        isServerSolveUnavailable(firestoreErr) ||
+        isServerSolveUnavailable(callableErr)
+      ) {
         return buildLocalSolveFallback({
           examType: request.examType,
           subjectHint: request.subjectHint,

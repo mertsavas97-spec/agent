@@ -97,7 +97,12 @@ export function SolutionScreen({
       )}
 
       {imageUri ? (
-        <Image source={{ uri: imageUri }} style={styles.thumb} resizeMode="cover" />
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.thumb}
+          resizeMode="contain"
+          accessibilityLabel="Soru görseli"
+        />
       ) : null}
 
       <View style={styles.tabs} testID="solution-tabs">
@@ -236,10 +241,12 @@ const styles = StyleSheet.create({
   },
   thumb: {
     width: '100%',
-    height: 140,
+    height: 220,
     borderRadius: radii.md,
     marginBottom: space.md,
-    backgroundColor: colors.border,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   tabs: {
     flexDirection: 'row',

@@ -100,6 +100,26 @@ const LESSONS: TopicLesson[] = [
     tip: 'İşaret hatalarının çoğu öncelik unutulmasından gelir.',
   },
   {
+    topicId: 'kpss-math-temel-islemler',
+    headline: 'Temel işlemler ve kesirler',
+    bullets: [
+      'İşlem önceliği: parantez → çarpma/bölme → toplama/çıkarma.',
+      'Kesirli parantezlerde önce içi bitir, sonra dıştaki çarpanı uygula.',
+      'Pay/payda biçimindeki büyük kesirlerde üstü ve altı ayrı hesapla, sonra böl.',
+    ],
+    tip: 'Şık varsa sonucu şıklara götür — hız kazandırır.',
+  },
+  {
+    topicId: 'kpss-math-kesirler',
+    headline: 'Kesir işlemleri (KPSS)',
+    bullets: [
+      'Toplama/çıkarmada payda eşitle; çarpma pay×pay / payda×payda.',
+      'Bileşik kesir: (a/b)÷(c/d) = (a/b)×(d/c).',
+      'Parantezli ifadelerde önce içteki kesri sadeleştir.',
+    ],
+    tip: 'Sonucu en sade hâle getir, sonra şıklarla eşleştir.',
+  },
+  {
     topicId: 'kpss-math-yuzde',
     headline: 'Yüzde problemleri (KPSS)',
     bullets: [

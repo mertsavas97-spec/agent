@@ -14,7 +14,7 @@ import { getFirebase } from '@/src/lib/firebase';
 /** Hard stop — if trigger never writes, fail fast to local fallback. */
 const SOLVE_TIMEOUT_MS = 28_000;
 /** If still `pending` (trigger never claimed), bail sooner. */
-const PENDING_STUCK_MS = 8_000;
+const PENDING_STUCK_MS = 5_000;
 
 type SolveRequestDoc = {
   status: 'pending' | 'running' | 'done' | 'error';
