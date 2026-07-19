@@ -200,12 +200,18 @@ const CURATED_SEED: ItemBankItem[] = [
   },
 ];
 
-const curatedTopicIds = new Set(CURATED_SEED.map((i) => i.topicId));
+const curatedCounts = (() => {
+  const m = new Map<string, number>();
+  for (const item of CURATED_SEED) {
+    m.set(item.topicId, (m.get(item.topicId) ?? 0) + 1);
+  }
+  return m;
+})();
 
-/** Full bank: curated + one demo sample per remaining catalog topic. */
+/** Full bank: curated + demo pads so every topic has ≥3 samples. */
 export const ITEM_BANK_SEED: ItemBankItem[] = [
   ...CURATED_SEED,
-  ...buildCoverageSamples(curatedTopicIds),
+  ...buildCoverageSamples(curatedCounts),
 ];
 
 export function itemsForExam(exam: ExamType): ItemBankItem[] {
