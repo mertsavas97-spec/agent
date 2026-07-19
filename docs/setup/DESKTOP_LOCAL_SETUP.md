@@ -64,15 +64,18 @@ Sonraki hot reload:
 npx expo start --ios
 ```
 
-## 4) Fiziksel iPhone (isteğe bağlı)
+## 4) Fiziksel telefon (önerilen dogfood)
 
-EAS free iOS kotası doluysa lokal:
+Expo Go kullanma. **Development build** bir kez kur, sonra Metro ile güncelle:
+
+→ Tam rehber: [`PHONE_NATIVE_BUILD.md`](./PHONE_NATIVE_BUILD.md)
 
 ```bash
-npx expo run:ios --device
+cd ~/Desktop/cozbil
+bash scripts/phone-dev-build.sh android   # veya ios
+# sonraki günler:
+bash scripts/phone-dev-build.sh metro
 ```
-
-(USB + Developer Mode + Trust)
 
 ## 5) Functions (isteğe bağlı lokal)
 

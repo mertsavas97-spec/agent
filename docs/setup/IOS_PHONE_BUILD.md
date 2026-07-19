@@ -1,6 +1,11 @@
 # iPhone’a ÇözBil kur (Expo Go değil)
 
-Mağaza Expo Go, SDK 57 ile uyumsuz olabilir. iPhone’da **kendi .ipa build’in** gerekir.
+**Önerilen (ücretsiz Apple ID ile lokal):** [`PHONE_NATIVE_BUILD.md`](./PHONE_NATIVE_BUILD.md)  
+→ `bash scripts/phone-dev-build.sh ios` sonra günlük `metro`.
+
+Aşağıdaki EAS / TestFlight yolu App Store dağıtımı veya Mac’siz cloud build içindir.
+
+Mağaza Expo Go, SDK 57 ile uyumsuz olabilir. iPhone’da **kendi native build’in** gerekir.
 
 ## Gerekenler (zorunlu)
 

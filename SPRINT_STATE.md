@@ -24,14 +24,19 @@
 - T062 icon, T063 dogfood raporu  
 - `main` merge  
 
-## Lokal demo
+## Lokal demo / kişisel telefon
+
+Expo Go yok → development build + Metro:
 
 ```bash
 cd ~/Desktop/cozbil
 git pull origin cursor/cozbil-polish-capture-loading-9131
-cd apps/mobile
-npx expo run:ios
+bash scripts/phone-dev-build.sh android   # veya ios (USB)
+# günlük:
+bash scripts/phone-dev-build.sh metro
 ```
+
+Rehber: `docs/setup/PHONE_NATIVE_BUILD.md`
 
 ## Exam subject tree (2026-07-19)
 Araştırma + katalog: `docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md`  
