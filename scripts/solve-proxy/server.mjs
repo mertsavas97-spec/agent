@@ -58,13 +58,32 @@ const server = http.createServer(async (req, res) => {
     const requestId = typeof input.requestId === 'string' ? input.requestId : `${Date.now()}`;
 
     if ((!imageBase64 || imageBase64.length < 80) && imageUrl) {
-      const imgRes = await fetch(imageUrl);
-      if (!imgRes.ok) {
-        send(res, 400, { error: 'image_fetch_failed', status: imgRes.status });
+      try {
+        const imgRes = await fetch(imageUrl, {
+          redirect: 'follow',
+          headers: { 'User-Agent': 'cozbil-solve-proxy/1' },
+        });
+        if (!imgRes.ok) {
+          send(res, 400, {
+            error: 'image_fetch_failed',
+            status: imgRes.status,
+            message: `Görsel indirilemedi (${imgRes.status})`,
+          });
+          return;
+        }
+        const buf = Buffer.from(await imgRes.arrayBuffer());
+        if (buf.length < 80) {
+          send(res, 400, { error: 'image_empty' });
+          return;
+        }
+        imageBase64 = buf.toString('base64');
+      } catch (fetchErr) {
+        send(res, 400, {
+          error: 'image_fetch_failed',
+          message: fetchErr instanceof Error ? fetchErr.message : 'fetch_error',
+        });
         return;
       }
-      const buf = Buffer.from(await imgRes.arrayBuffer());
-      imageBase64 = buf.toString('base64');
     }
 
     if (!imageBase64 || imageBase64.length < 80) {
