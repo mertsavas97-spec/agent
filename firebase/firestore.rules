@@ -65,6 +65,22 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow write: if false;
       }
+
+      // Org-policy bypass: client creates pending request; only Admin trigger writes result
+      match /solveRequests/{requestId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.status == 'pending'
+          && request.resource.data.imagePath is string
+          && request.resource.data.imagePath.matches('users/' + uid + '/.*')
+          && request.resource.data.keys().hasOnly([
+            'imagePath', 'examType', 'mimeType', 'subjectHint',
+            'status', 'createdAt', 'updatedAt'
+          ])
+          && (!('examType' in request.resource.data)
+              || request.resource.data.examType in ['lgs', 'ygs', 'kpss']);
+        allow update, delete: if false;
+      }
     }
 
     match /topicStats/{uid}/topics/{topicId} {

@@ -1,15 +1,8 @@
 import { initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 
-import {
-  assertDemoAiAllowedInRuntime,
-  assertVisionConfiguredForLive,
-  isDemoAiMode,
-  liveBackendLabel,
-  runtimeModeLabel,
-} from './config/runtime';
-import { createFirestoreCache, downloadImageBuffer, loadQuota, persistRejected, persistSolved } from './solve/firestoreAdapters';
+import { liveBackendLabel, runtimeModeLabel } from './config/runtime';
 import {
   assertExplainRateLimit,
   createExplainGenerator,
@@ -17,25 +10,15 @@ import {
   persistFollowUp,
   runExplainAgain,
 } from './solve/explainAgain';
-import { createGeminiSolver } from './solve/geminiSolve';
-import { runSolveQuestion } from './solve/solveQuestion';
-import { createVisionClient } from './moderation/visionClient';
+import { executeSolvePipeline, SolvePipelineError } from './solve/executeSolve';
 import { getProgressSummaryForUser } from './progress/getProgressSummary';
 import { listAttemptsForUser } from './progress/listAttempts';
 import { ensureUserDocument } from './users/bootstrapUser';
-import {
-  INVALID_RESTRICT_THRESHOLD,
-  isTemporarilyRestricted,
-  restrictionAfterScore,
-} from './abuse/invalidImageScore';
-import { assertRateLimit } from './abuse/rateLimit';
-import { assertPersistentRateLimit } from './abuse/persistentRateLimit';
-import { isKnownSubject, subjectsForExam } from './data/subjects';
 import { completeOnboardingDocument } from './users/completeOnboarding';
 import { requestAccountDeletionDocument } from './users/requestAccountDeletion';
 import { updateExamTypeDocument } from './users/updateExamType';
 import { isExamType } from './theme/examTypes';
-import type { ExamType, Subject } from './types/contracts';
+import type { Subject } from './types/contracts';
 
 initializeApp();
 
@@ -117,110 +100,84 @@ export const requestAccountDeletion = regional.https.onCall(async (_data, contex
   return requestAccountDeletionDocument(context.auth.uid);
 });
 
-/** US1: moderate → cache → Gemini (Vertex) → stepped solution */
+/** US1: moderate → cache → Gemini (Vertex) → stepped solution (HTTP callable) */
 export const solveQuestion = regional
   .runWith({ timeoutSeconds: 120, memory: '512MB' })
   .https.onCall(async (data, context) => {
     if (!context.auth?.uid) {
       throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
     }
-    const imagePath = typeof data?.imagePath === 'string' ? data.imagePath : '';
-    if (!imagePath.startsWith(`users/${context.auth.uid}/`)) {
-      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz görsel yolu');
-    }
-
-    const userSnap = await getFirestore().collection('users').doc(context.auth.uid).get();
-    const userData = userSnap.data() ?? {};
-    const userExam = userData.examType;
-    const examTypeRaw =
-      typeof data?.examType === 'string' ? data.examType : userExam;
-    if (!examTypeRaw || !isExamType(examTypeRaw)) {
-      throw new functions.https.HttpsError('failed-precondition', 'Sınav türü seçilmedi');
-    }
-    const examType = examTypeRaw as ExamType;
-
     try {
-      const rateKey = `solve:${context.auth.uid}`;
-      assertRateLimit(rateKey);
-      await assertPersistentRateLimit(rateKey, { db: getFirestore() });
-      const invalidScore = Number(userData.invalidImageScore ?? 0);
-      const restrictedUntil =
-        typeof userData.restrictedUntil === 'number' ? userData.restrictedUntil : null;
-      if (isTemporarilyRestricted({ invalidImageScore: invalidScore, restrictedUntil })) {
-        throw new functions.https.HttpsError(
-          'resource-exhausted',
-          'Geçici kısıtlama — biraz sonra tekrar dene',
-        );
-      }
-      // Persist soft-restrict window when score already over threshold (from prior rejects)
-      if (invalidScore >= INVALID_RESTRICT_THRESHOLD && restrictedUntil == null) {
-        const next = restrictionAfterScore(invalidScore);
-        await getFirestore()
-          .collection('users')
-          .doc(context.auth.uid)
-          .set(
-            { restrictedUntil: next.restrictedUntil, updatedAt: FieldValue.serverTimestamp() },
-            { merge: true },
-          );
-        throw new functions.https.HttpsError(
-          'resource-exhausted',
-          'Geçici kısıtlama — biraz sonra tekrar dene',
-        );
-      }
-
-      assertDemoAiAllowedInRuntime();
-      assertVisionConfiguredForLive();
-      console.info('solveQuestion aiBackend', liveBackendLabel());
-      const imageBuffer = await downloadImageBuffer(imagePath);
-      const subjectHintRaw = data?.subjectHint;
-      const allowedSubjects = subjectsForExam(examType);
-      const subjectHint =
-        typeof subjectHintRaw === 'string' &&
-        isKnownSubject(subjectHintRaw) &&
-        allowedSubjects.includes(subjectHintRaw)
-          ? subjectHintRaw
-          : undefined;
-      const solver = createGeminiSolver();
-      return await runSolveQuestion(
-        {
-          uid: context.auth.uid,
-          imagePath,
-          imageBuffer,
-          examType,
-          mimeType: typeof data?.mimeType === 'string' ? data.mimeType : 'image/jpeg',
-          subjectHint,
-        },
-        {
-          vision: createVisionClient(),
-          solver,
-          cache: createFirestoreCache(),
-          // Demo/stub çözümleri cache'e yazma (zehirlenmeyi önle)
-          writeCacheEnabled: !isDemoAiMode() && solver.source === 'live',
-          loadQuota,
-          persistSolved,
-          persistRejected,
-        },
-      );
+      return await executeSolvePipeline({
+        uid: context.auth.uid,
+        imagePath: typeof data?.imagePath === 'string' ? data.imagePath : '',
+        examType: typeof data?.examType === 'string' ? data.examType : undefined,
+        mimeType: typeof data?.mimeType === 'string' ? data.mimeType : undefined,
+        subjectHint: typeof data?.subjectHint === 'string' ? data.subjectHint : undefined,
+      });
     } catch (err) {
-      if (err instanceof functions.https.HttpsError) throw err;
-      if (err instanceof Error && err.name === 'DemoAiBlockedError') {
-        throw new functions.https.HttpsError('failed-precondition', err.message);
-      }
-      if (err instanceof Error && err.name === 'VisionConfigError') {
-        throw new functions.https.HttpsError('failed-precondition', err.message);
-      }
-      if (err instanceof Error && err.name === 'QuotaExceededError') {
-        throw new functions.https.HttpsError('resource-exhausted', 'Günlük hak bitti');
-      }
-      if (err instanceof Error && err.name === 'RateLimitError') {
-        throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı istek — biraz bekle');
+      if (err instanceof SolvePipelineError) {
+        throw new functions.https.HttpsError(err.code, err.message);
       }
       console.error('solveQuestion failed', {
         uid: context.auth.uid,
-        imagePath,
         message: err instanceof Error ? err.message : 'unknown',
       });
       throw new functions.https.HttpsError('internal', 'Çözüm şu an üretilemedi');
+    }
+  });
+
+/**
+ * Org-policy safe path: no public HTTP invoker.
+ * Mobile writes users/{uid}/solveRequests/{id} → this trigger runs Admin SDK.
+ */
+export const onSolveRequestCreated = regional
+  .runWith({ timeoutSeconds: 120, memory: '512MB' })
+  .firestore.document('users/{uid}/solveRequests/{requestId}')
+  .onCreate(async (snap, context) => {
+    const uid = context.params.uid;
+    const data = snap.data() ?? {};
+    const ref = snap.ref;
+
+    await ref.set(
+      { status: 'running', updatedAt: FieldValue.serverTimestamp() },
+      { merge: true },
+    );
+
+    try {
+      const response = await executeSolvePipeline({
+        uid,
+        imagePath: typeof data.imagePath === 'string' ? data.imagePath : '',
+        examType: typeof data.examType === 'string' ? data.examType : undefined,
+        mimeType: typeof data.mimeType === 'string' ? data.mimeType : undefined,
+        subjectHint: typeof data.subjectHint === 'string' ? data.subjectHint : undefined,
+      });
+      await ref.set(
+        {
+          status: 'done',
+          response,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    } catch (err) {
+      const code = err instanceof SolvePipelineError ? err.code : 'internal';
+      const message =
+        err instanceof SolvePipelineError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Çözüm şu an üretilemedi';
+      console.error('onSolveRequestCreated failed', { uid, code, message });
+      await ref.set(
+        {
+          status: 'error',
+          errorCode: code,
+          errorMessage: message,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
     }
   });
 
