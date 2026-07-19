@@ -11,6 +11,7 @@ import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
+import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { findTopic } from '@/src/data';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -103,7 +104,8 @@ export default function SolveFlowScreen() {
           setPhase('paywall');
           return;
         }
-        setError('Çözüm şu an üretilemedi. Tekrar dener misin?');
+        console.error('solve flow failed', err);
+        setError(solveFailureMessage(err));
         setPhase('error');
       }
     }
