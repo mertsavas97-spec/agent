@@ -1,32 +1,54 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { fetchProgressSummary } from '@/src/lib/api/progressClient';
 import type { ProgressSummary } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
 
+const WEEKDAY_TR = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+
+function weekdayLabel(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  return WEEKDAY_TR[utc.getUTCDay()] ?? isoDate.slice(5);
+}
+
+function streakBlurb(n: number): string {
+  if (n <= 0) return 'Seriyi başlat — bugün bir soru yeter.';
+  if (n === 1) return 'İlk günü yakaladın. Yarın da gel, seri büyüsün.';
+  return 'Serin devam ediyor. Bir gün koparsa sıfırlanır — bugün bir soru yeter.';
+}
+
 export default function StatsScreen() {
+  const router = useRouter();
   const [summary, setSummary] = useState<ProgressSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       void (async () => {
         setLoading(true);
+        setError(null);
         try {
           const data = await fetchProgressSummary();
           if (alive) setSummary(data);
         } catch {
-          if (alive) setSummary(null);
+          if (alive) {
+            setSummary(null);
+            setError('İstatistik yüklenemedi. Bağlantını kontrol edip tekrar dene.');
+          }
         } finally {
           if (alive) setLoading(false);
         }
@@ -37,7 +59,25 @@ export default function StatsScreen() {
     }, []),
   );
 
-  const maxAttempts = Math.max(1, ...(summary?.topics.map((t) => t.attemptCount) ?? [1]));
+  const maxAttempts = Math.max(
+    1,
+    ...(summary?.topics.map((t) => t.attemptCount) ?? [1]),
+  );
+  const maxWeekly = Math.max(
+    1,
+    ...(summary?.weekly.map((w) => w.solvedCount) ?? [1]),
+  );
+  const topTopics = useMemo(
+    () => (summary?.topics ?? []).slice(0, 5),
+    [summary?.topics],
+  );
+  const hasData =
+    !!summary &&
+    ((summary.totalSolved ?? 0) > 0 ||
+      summary.topics.length > 0 ||
+      summary.weekly.some((w) => w.solvedCount > 0));
+
+  const examLabel = summary?.examType ? EXAM_LABEL[summary.examType] : null;
 
   return (
     <ScrollView
@@ -46,57 +86,161 @@ export default function StatsScreen() {
       testID="stats-screen">
       <Text style={styles.eyebrow}>İlerleme</Text>
       <Text style={styles.title}>İstatistik</Text>
-      <Text style={styles.subtitle}>Konu bazlı deneme ve seri özeti.</Text>
+      <Text style={styles.subtitle}>
+        {examLabel
+          ? `${examLabel} çalışma haritan — seri, ritim ve odak.`
+          : 'Çalışma haritan — seri, ritim ve odak.'}
+      </Text>
 
       {loading ? (
-        <ActivityIndicator color={colors.navy} />
-      ) : !summary || summary.topics.length === 0 ? (
-        <EmptyState
-          title="İlerleme verisi henüz yok"
-          subtitle="Birkaç soru çözdükten sonra burası dolacak."
-        />
+        <ActivityIndicator color={colors.navy} style={{ marginTop: space.lg }} />
+      ) : error ? (
+        <EmptyState title="Yüklenemedi" subtitle={error} />
+      ) : !hasData ? (
+        <View style={styles.emptyBlock} testID="stats-empty">
+          <View style={styles.streakHeroMuted}>
+            <View style={styles.streakRingMuted}>
+              <Text style={styles.streakNumMuted}>0</Text>
+              <Text style={styles.streakUnitMuted}>gün</Text>
+            </View>
+            <Text style={styles.streakHint}>Henüz iz yok.</Text>
+          </View>
+          <EmptyState
+            title="Haritan boş"
+            subtitle="Bir soru çöz, seri ve ders bar’ların dolsun."
+          />
+          <Pressable
+            style={styles.primaryCta}
+            testID="stats-empty-cta"
+            onPress={() => router.push('/(tabs)')}>
+            <Text style={styles.primaryCtaText}>Fotoğraf çek / galeri</Text>
+          </Pressable>
+        </View>
       ) : (
         <>
-          <Text style={styles.streak} testID="stats-streak">
-            Seri: {summary.streakCount} gün
-          </Text>
-
-          {summary.weakestTopic ? (
-            <View style={styles.weakCard} testID="weakest-topic">
-              <Text style={styles.weakLabel}>Zayıf alan</Text>
-              <Text style={styles.weakName}>{summary.weakestTopic.nameTr}</Text>
-              <Text style={styles.weakMeta}>
-                Anlamadım: {summary.weakestTopic.followUpCount} · Deneme:{' '}
-                {summary.weakestTopic.attemptCount}
+          {/* Hero streak */}
+          <View style={styles.streakHero} testID="stats-streak">
+            <View style={styles.streakRing}>
+              <Text style={styles.streakNum}>{summary!.streakCount}</Text>
+              <Text style={styles.streakUnit}>gün seri</Text>
+            </View>
+            <Text style={styles.streakHint}>{streakBlurb(summary!.streakCount)}</Text>
+            {(summary!.totalSolved ?? 0) > 0 ? (
+              <Text style={styles.totalSolved}>
+                Toplam {summary!.totalSolved} çözüm
+                {examLabel ? ` · ${examLabel}` : ''}
               </Text>
+            ) : null}
+          </View>
+
+          {/* Weekly activity */}
+          {summary!.weekly.length > 0 ? (
+            <View style={styles.sectionBlock}>
+              <Text style={styles.section}>Bu hafta</Text>
+              <Text style={styles.sectionSub}>Hangi günler ateşlendin?</Text>
+              <View style={styles.weekly} testID="weekly-series">
+                {summary!.weekly.map((w) => {
+                  const h = Math.max(
+                    8,
+                    Math.round((w.solvedCount / maxWeekly) * 56),
+                  );
+                  const on = w.solvedCount > 0;
+                  return (
+                    <View key={w.date} style={styles.weekCol}>
+                      <View style={styles.weekBarTrack}>
+                        <View
+                          style={[
+                            styles.weekBarFill,
+                            {
+                              height: on ? h : 8,
+                              backgroundColor: on ? colors.orange : colors.border,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.weekDay, on && styles.weekDayOn]}>
+                        {weekdayLabel(w.date)}
+                      </Text>
+                      <Text style={styles.weekCount}>{w.solvedCount}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           ) : null}
 
-          <Text style={styles.section}>Konular</Text>
-          {summary.topics.map((t) => (
-            <View key={t.topicId} style={styles.barRow} testID={`topic-bar-${t.topicId}`}>
-              <Text style={styles.barLabel}>{t.nameTr}</Text>
-              <View style={styles.barTrack}>
-                <View
-                  style={[
-                    styles.barFill,
-                    { width: `${Math.round((t.attemptCount / maxAttempts) * 100)}%` },
-                  ]}
-                />
+          {/* Subject mix */}
+          {summary!.subjectMix && summary!.subjectMix.length > 0 ? (
+            <View style={styles.sectionBlock}>
+              <Text style={styles.section}>Derslerin</Text>
+              <Text style={styles.sectionSub}>Nereye ağırlık verdin?</Text>
+              <View style={styles.mixRow} testID="subject-mix">
+                {summary!.subjectMix.map((s) => (
+                  <View key={s.subject} style={styles.mixChip}>
+                    <View style={styles.mixTrack}>
+                      <View
+                        style={[styles.mixFill, { width: `${Math.max(8, s.pct)}%` }]}
+                      />
+                    </View>
+                    <Text style={styles.mixLabel}>
+                      {s.label} · %{s.pct}
+                    </Text>
+                  </View>
+                ))}
               </View>
-              <Text style={styles.barCount}>{t.attemptCount}</Text>
             </View>
-          ))}
+          ) : null}
 
-          <Text style={styles.section}>Son 7 gün</Text>
-          <View style={styles.weekly} testID="weekly-series">
-            {summary.weekly.map((w) => (
-              <View key={w.date} style={styles.weekCell}>
-                <Text style={styles.weekCount}>{w.solvedCount}</Text>
-                <Text style={styles.weekDate}>{w.date.slice(5)}</Text>
-              </View>
-            ))}
-          </View>
+          {/* Topic bars */}
+          {topTopics.length > 0 ? (
+            <View style={styles.sectionBlock}>
+              <Text style={styles.section}>Konular</Text>
+              <Text style={styles.sectionSub}>Derinleştiğin yerler</Text>
+              {topTopics.map((t) => (
+                <View key={t.topicId} style={styles.barRow} testID={`topic-bar-${t.topicId}`}>
+                  <View style={styles.barHead}>
+                    <Text style={styles.barLabel} numberOfLines={1}>
+                      {t.nameTr}
+                    </Text>
+                    <Text style={styles.barCount}>{t.attemptCount}</Text>
+                  </View>
+                  <View style={styles.barTrack}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        {
+                          width: `${Math.round((t.attemptCount / maxAttempts) * 100)}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Focus / weakest */}
+          {summary!.weakestTopic ? (
+            <View style={styles.focusCard} testID="weakest-topic">
+              <Text style={styles.focusEyebrow}>Bugünkü odak</Text>
+              <Text style={styles.focusName}>{summary!.weakestTopic.nameTr}</Text>
+              <Text style={styles.focusHint}>
+                {summary!.focusHint ??
+                  'En zayıf halkayı bugün kırmaya değer.'}
+              </Text>
+              <Pressable
+                style={styles.focusCta}
+                testID="stats-focus-cta"
+                onPress={() =>
+                  router.push({
+                    pathname: '/topic/[id]',
+                    params: { id: summary!.weakestTopic!.topicId },
+                  })
+                }>
+                <Text style={styles.focusCtaText}>Konu anlatımına git →</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </>
       )}
     </ScrollView>
@@ -128,47 +272,239 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     marginBottom: space.lg,
+    lineHeight: 20,
   },
-  streak: {
-    fontFamily: typography.fontFamily,
-    fontWeight: '700',
-    color: colors.navy,
+  emptyBlock: { marginTop: space.sm },
+  streakHero: {
+    alignItems: 'center',
+    marginBottom: space.lg,
+  },
+  streakHeroMuted: {
+    alignItems: 'center',
     marginBottom: space.md,
   },
-  weakCard: {
+  streakRing: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    borderWidth: 6,
+    borderColor: colors.orange,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.soft,
+  },
+  streakRingMuted: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 5,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakNum: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 40,
+    fontWeight: '700',
+    color: colors.navy,
+    lineHeight: 44,
+  },
+  streakNumMuted: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  streakUnit: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.orange,
+    marginTop: 2,
+  },
+  streakUnitMuted: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  streakHint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: space.md,
+    lineHeight: 19,
+    paddingHorizontal: space.md,
+  },
+  totalSolved: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginTop: space.sm,
+  },
+  sectionBlock: { marginBottom: space.lg },
+  section: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '700',
+    fontSize: 17,
+    color: colors.navy,
+  },
+  sectionSub: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+    marginBottom: space.md,
+  },
+  weekly: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
+  },
+  weekCol: { alignItems: 'center', flex: 1 },
+  weekBarTrack: {
+    height: 56,
+    justifyContent: 'flex-end',
+    marginBottom: 6,
+  },
+  weekBarFill: {
+    width: 14,
+    borderRadius: 7,
+    alignSelf: 'center',
+  },
+  weekDay: {
+    fontFamily: typography.fontFamily,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  weekDayOn: {
+    color: colors.navy,
+    fontWeight: '700',
+  },
+  weekCount: {
+    fontFamily: typography.fontFamily,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  mixRow: { gap: space.sm },
+  mixChip: {
     backgroundColor: colors.white,
     borderRadius: radii.lg,
     padding: space.md,
     borderWidth: 1,
-    borderColor: colors.orange,
-    marginBottom: space.lg,
-    ...shadows.soft,
+    borderColor: colors.border,
   },
-  weakLabel: { color: colors.orange, fontWeight: '700', marginBottom: 4 },
-  weakName: { fontSize: 18, fontWeight: '700', color: colors.navy },
-  weakMeta: { color: colors.textSecondary, marginTop: 4 },
-  section: {
-    fontWeight: '700',
+  mixTrack: {
+    height: 8,
+    backgroundColor: colors.navySoft,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  mixFill: {
+    height: '100%',
+    backgroundColor: colors.navy,
+    borderRadius: 4,
+  },
+  mixLabel: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
     color: colors.navy,
-    marginBottom: space.sm,
-    marginTop: space.sm,
   },
-  barRow: { marginBottom: space.sm },
-  barLabel: { color: colors.textPrimary, marginBottom: 4, fontSize: 13 },
+  barRow: { marginBottom: space.md },
+  barHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  barLabel: {
+    flex: 1,
+    fontFamily: typography.fontFamily,
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+    marginRight: space.sm,
+  },
   barTrack: {
     height: 10,
-    backgroundColor: colors.border,
+    backgroundColor: colors.navySoft,
     borderRadius: 6,
     overflow: 'hidden',
   },
-  barFill: { height: '100%', backgroundColor: colors.navy },
-  barCount: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
-  weekly: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: space.sm,
+  barFill: {
+    height: '100%',
+    backgroundColor: colors.orange,
+    borderRadius: 6,
   },
-  weekCell: { alignItems: 'center', flex: 1 },
-  weekCount: { fontWeight: '700', color: colors.navy },
-  weekDate: { fontSize: 10, color: colors.textSecondary },
+  barCount: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  focusCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: space.lg,
+    borderWidth: 1.5,
+    borderColor: colors.orange,
+    ...shadows.soft,
+  },
+  focusEyebrow: {
+    fontFamily: typography.fontFamily,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.orange,
+    marginBottom: 6,
+  },
+  focusName: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  focusHint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 6,
+    lineHeight: 19,
+  },
+  focusCta: {
+    marginTop: space.md,
+    alignSelf: 'flex-start',
+  },
+  focusCtaText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  primaryCta: {
+    marginTop: space.md,
+    backgroundColor: colors.navy,
+    borderRadius: radii.xl,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  primaryCtaText: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 15,
+  },
 });

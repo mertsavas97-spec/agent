@@ -15,8 +15,13 @@ import {
   listLocalHistory,
   toAttemptListItem,
 } from '@/src/features/history/localHistoryStore';
+import {
+  buildProgressFromAttempts,
+  mergeProgressSummaries,
+} from '@/src/features/stats/buildProgressFromAttempts';
 import type {
   AttemptListItem,
+  ExamType,
   ListAttemptsRequest,
   ListAttemptsResponse,
   ProgressSummary,
@@ -33,13 +38,27 @@ function isCallableBlocked(err: unknown): boolean {
   return /permission-denied|unauthenticated|not-found|internal|unavailable/i.test(code);
 }
 
-async function progressFromFirestore(uid: string): Promise<ProgressSummary> {
+async function readProfileExam(uid: string): Promise<ExamType | null> {
+  try {
+    const snap = await getDoc(doc(getFirebase().db, 'users', uid));
+    const et = snap.data()?.examType;
+    if (et === 'lgs' || et === 'ygs' || et === 'kpss') return et;
+  } catch {
+    /* optional */
+  }
+  return null;
+}
+
+async function progressFromFirestore(
+  uid: string,
+  examType: ExamType | null,
+): Promise<ProgressSummary> {
   const { db } = getFirebase();
   const userSnap = await getDoc(doc(db, 'users', uid));
   const streakCount = Number(userSnap.data()?.streakCount ?? 0);
 
   const statsSnap = await getDocs(collection(db, 'topicStats', uid, 'topics'));
-  const topics = statsSnap.docs.map((d) => {
+  let topics = statsSnap.docs.map((d) => {
     const data = d.data();
     const topicId = d.id;
     const attemptCount = Number(data.attemptCount ?? 0);
@@ -47,6 +66,10 @@ async function progressFromFirestore(uid: string): Promise<ProgressSummary> {
     const nameTr = findTopic(topicId)?.nameTr ?? topicId;
     return { topicId, nameTr, attemptCount, followUpCount };
   });
+
+  if (examType) {
+    topics = topics.filter((t) => t.topicId.startsWith(`${examType}-`));
+  }
 
   const weakest =
     topics.length === 0
@@ -62,6 +85,13 @@ async function progressFromFirestore(uid: string): Promise<ProgressSummary> {
     weakestTopic: weakest,
     topics,
     weekly: [],
+    examType: examType ?? undefined,
+    totalSolved: topics.reduce((n, t) => n + t.attemptCount, 0),
+    focusHint: weakest
+      ? weakest.followUpCount > 0
+        ? '“Anlamadım” sinyali yüksek — bugün bu konuya dön.'
+        : 'En az denenen konu — dengeni buradan kur.'
+      : null,
   };
 }
 
@@ -74,13 +104,19 @@ async function attemptsFromFirestore(
   const lim = Math.min(req.limit ?? 20, 50);
   let q = query(col, orderBy('createdAt', 'desc'), fsLimit(lim));
   if (req.subject) {
-    q = query(col, where('subject', '==', req.subject), orderBy('createdAt', 'desc'), fsLimit(lim));
+    q = query(
+      col,
+      where('subject', '==', req.subject),
+      orderBy('createdAt', 'desc'),
+      fsLimit(lim),
+    );
   }
   const snap = await getDocs(q);
   const items: AttemptListItem[] = snap.docs
     .map((d) => {
       const data = d.data();
-      const createdAt = data.createdAt?.toDate?.()?.toISOString?.() ?? new Date().toISOString();
+      const createdAt =
+        data.createdAt?.toDate?.()?.toISOString?.() ?? new Date().toISOString();
       return {
         attemptId: d.id,
         createdAt,
@@ -110,24 +146,66 @@ function mergeAttempts(
     .slice(0, lim);
 }
 
+async function localProgress(examType: ExamType | null): Promise<ProgressSummary> {
+  const local = (await listLocalHistory(80)).map(toAttemptListItem);
+  return buildProgressFromAttempts(local, examType);
+}
+
 export async function fetchProgressSummary(): Promise<ProgressSummary> {
-  if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
-    return {
-      streakCount: 3,
-      weakestTopic: null,
-      topics: [],
-      weekly: [],
-    };
-  }
   const user = await ensureSignedIn();
+  const examType = await readProfileExam(user.uid);
+  const fromLocal = await localProgress(examType);
+
+  if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
+    return mergeProgressSummaries(
+      {
+        streakCount: 3,
+        weakestTopic: {
+          topicId: 'lgs-math-kesirler',
+          nameTr: 'Kesirler',
+          attemptCount: 2,
+          followUpCount: 1,
+        },
+        topics: [
+          {
+            topicId: 'lgs-math-kesirler',
+            nameTr: 'Kesirler',
+            attemptCount: 4,
+            followUpCount: 1,
+          },
+          {
+            topicId: 'lgs-turkish-paragraf',
+            nameTr: 'Paragraf',
+            attemptCount: 2,
+            followUpCount: 0,
+          },
+        ],
+        weekly: fromLocal.weekly,
+        examType: 'lgs',
+        totalSolved: 6,
+        subjectMix: [
+          { subject: 'math', label: 'Matematik', count: 4, pct: 67 },
+          { subject: 'turkish', label: 'Türkçe', count: 2, pct: 33 },
+        ],
+        focusHint: '“Anlamadım” sinyali yüksek — bugün bu konuya dön.',
+      },
+      fromLocal,
+    );
+  }
+
   try {
     const { functions } = getFirebase();
     const callable = httpsCallable(functions, 'getProgressSummary');
     const result = await callable({});
-    return result.data as ProgressSummary;
+    const remote = result.data as ProgressSummary;
+    return mergeProgressSummaries(
+      { ...remote, examType: remote.examType ?? examType ?? undefined },
+      fromLocal,
+    );
   } catch (err) {
     if (!isCallableBlocked(err)) throw err;
-    return progressFromFirestore(user.uid);
+    const fromFs = await progressFromFirestore(user.uid, examType);
+    return mergeProgressSummaries(fromFs, fromLocal);
   }
 }
 

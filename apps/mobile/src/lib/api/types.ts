@@ -111,11 +111,24 @@ export type ProgressTopic = {
   followUpCount: number;
 };
 
+export type ProgressSubjectMix = {
+  subject: Subject;
+  label: string;
+  count: number;
+  pct: number;
+};
+
 export type ProgressSummary = {
   streakCount: number;
   weakestTopic: (ProgressTopic & { followUpCount: number }) | null;
   topics: ProgressTopic[];
   weekly: { date: string; solvedCount: number }[];
+  /** Active exam scope when known */
+  examType?: ExamType;
+  totalSolved?: number;
+  subjectMix?: ProgressSubjectMix[];
+  /** Why the focus card picked this topic */
+  focusHint?: string | null;
 };
 
 export type ListAttemptsRequest = {
