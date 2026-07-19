@@ -33,7 +33,11 @@ cd apps/mobile
 npx expo run:ios
 ```
 
-## UI polish (2026-07-19)
+## Audit (2026-07-19)
+Pipeline + AI audit: `docs/architecture/PIPELINE_AI_AUDIT_2026-07-19.md`  
+Verdict: dogfood Borderline; public Play hayır. P0: fail-closed Vision, rules kilidi, topicId clamp.
+
+## UI polish (2026-07-19) — durduruldu
 - Home: daire CTA kaldırıldı → tam genişlik “Soru fotoğrafı çek / Galeriden soru seç”
 - Net wording (kitap/defter sorusu); sınav seçili state + varsayılan LGS
 - **Konular** tab (T069): örnek soru + adım adım anlatım (`app/sample/[id]`)
