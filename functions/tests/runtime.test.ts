@@ -29,6 +29,19 @@ describe('runtime demo mode', () => {
     expect(liveBackendLabel()).toBe('ai_studio');
   });
 
+  it('does not enable Vertex merely because Cloud Functions env is set', () => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.COZBIL_DEMO_AI;
+    delete process.env.COZBIL_USE_VERTEX;
+    process.env.K_SERVICE = 'onSolveRequestCreatedV2';
+    process.env.FUNCTION_TARGET = 'onSolveRequestCreatedV2';
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { isDemoAiMode, liveBackendLabel, useVertexAi } = require('../src/config/runtime');
+    expect(useVertexAi()).toBe(false);
+    expect(isDemoAiMode()).toBe(true);
+    expect(liveBackendLabel()).toBe('demo');
+  });
+
   it('uses Vertex when COZBIL_USE_VERTEX=1', () => {
     delete process.env.GEMINI_API_KEY;
     process.env.COZBIL_USE_VERTEX = '1';

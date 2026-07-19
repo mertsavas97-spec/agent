@@ -1,31 +1,50 @@
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from '@expo-google-fonts/poppins';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
 import { BootstrapGate } from '@/src/features/auth/BootstrapGate';
+import { colors } from '@/src/theme';
 
 export {
-  // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+const cozbilTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.navy,
+    background: colors.surface,
+    card: colors.white,
+    text: colors.navy,
+    border: colors.border,
+    notification: colors.orange,
+  },
+};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
+    Poppins: Poppins_400Regular,
+    'Poppins-Medium': Poppins_500Medium,
+    'Poppins-SemiBold': Poppins_600SemiBold,
+    'Poppins-Bold': Poppins_700Bold,
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -44,10 +63,8 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={cozbilTheme}>
       <BootstrapGate>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -59,16 +76,18 @@ function RootLayoutNav() {
             name="solve"
             options={{
               title: 'Çözüm',
-              headerStyle: { backgroundColor: '#1E1B4B' },
+              headerStyle: { backgroundColor: colors.navy },
               headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
             }}
           />
           <Stack.Screen
             name="sample/[id]"
             options={{
               title: 'Örnek anlatım',
-              headerStyle: { backgroundColor: '#1E1B4B' },
+              headerStyle: { backgroundColor: colors.navy },
               headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
             }}
           />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />

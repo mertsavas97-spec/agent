@@ -19,7 +19,7 @@ import { isKnownSubject, subjectsForExam } from '@/src/data';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
-import { colors, space } from '@/src/theme';
+import { colors, space, typography } from '@/src/theme';
 import { doc, getDoc } from 'firebase/firestore';
 
 function billedSolvesFromQuota(result: SolveQuestionResponse): number {
@@ -162,9 +162,10 @@ export default function SolveFlowScreen() {
   if (phase === 'error') {
     return (
       <View style={styles.center}>
+        <Text style={styles.errorTitle}>Çözüm alınamadı</Text>
         <Text style={styles.error}>{error}</Text>
         <Pressable onPress={() => router.back()} style={styles.btn}>
-          <Text style={styles.btnText}>Geri</Text>
+          <Text style={styles.btnText}>Ana sayfaya dön</Text>
         </Pressable>
       </View>
     );
@@ -173,9 +174,10 @@ export default function SolveFlowScreen() {
   if (result && result.status !== 'solved') {
     return (
       <View style={styles.center} testID="solve-rejected">
+        <Text style={styles.errorTitle}>Bu görsel işlenemedi</Text>
         <Text style={styles.error}>{result.userMessage}</Text>
         <Pressable onPress={() => router.back()} style={styles.btn}>
-          <Text style={styles.btnText}>Tamam</Text>
+          <Text style={styles.btnText}>Ana sayfaya dön</Text>
         </Pressable>
       </View>
     );
@@ -217,8 +219,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   error: {
-    color: colors.danger,
+    color: colors.textSecondary,
     marginBottom: space.md,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily,
+    lineHeight: 20,
+  },
+  errorTitle: {
+    color: colors.navy,
+    fontSize: 18,
+    fontFamily: typography.fontFamilySemiBold,
+    marginBottom: space.sm,
     textAlign: 'center',
   },
   btn: {
@@ -231,5 +242,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: colors.white,
     fontWeight: '600',
+    fontFamily: typography.fontFamilySemiBold,
   },
 });

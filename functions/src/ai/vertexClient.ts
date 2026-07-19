@@ -23,16 +23,9 @@ export function vertexModel(): string {
   return process.env.VERTEX_MODEL || DEFAULT_MODEL;
 }
 
-/** True when Vertex path should be used (GCP Startup / Cloud Billing). */
+/** True only when explicitly opted into Vertex (GCP Startup / billing). */
 export function useVertexAi(): boolean {
-  if (process.env.COZBIL_USE_VERTEX === '0') return false;
-  if (process.env.COZBIL_USE_VERTEX === '1') return true;
-  // Default on in Cloud Functions / when project explicitly set for Vertex
-  return Boolean(
-    process.env.FUNCTION_TARGET ||
-      process.env.K_SERVICE ||
-      process.env.COZBIL_USE_VERTEX,
-  );
+  return process.env.COZBIL_USE_VERTEX === '1';
 }
 
 async function accessToken(): Promise<string> {
@@ -61,16 +54,29 @@ export async function vertexGenerateContent(parts: Part[]): Promise<string> {
     `/locations/${location}/publishers/google/models/${model}:generateContent`;
 
   const token = await accessToken();
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts }],
-    }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Vertex timeout (20s)');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const body = await res.text();

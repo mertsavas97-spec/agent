@@ -16,9 +16,9 @@ export type ExamModeSwitcherProps = {
 export function ExamModeSwitcher({ value, onChange, disabled }: ExamModeSwitcherProps) {
   return (
     <View style={styles.card} testID="exam-mode-switcher-wrap">
-      <Text style={styles.kicker}>Sınavını seç</Text>
+      <Text style={styles.kicker}>Sınavın</Text>
       <Text style={styles.help}>
-        Hangi sınava hazırlanıyorsun? Çözüm dili, konular ve örnek sorular buna göre ayarlanır.
+        LGS, YGS veya KPSS — çözüm dili ve konular buna göre ayarlanır.
       </Text>
       <SegmentedTabs
         testID="exam-mode-switcher"

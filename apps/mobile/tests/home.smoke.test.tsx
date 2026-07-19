@@ -56,7 +56,7 @@ describe('HomeScreen', () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.getByText('Sınavını seç')).toBeTruthy();
+    expect(screen.getByText('Sınavın')).toBeTruthy();
     expect(screen.getByText(/sorunun fotoğrafını çek/i)).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toBeTruthy();
     expect(screen.getByText('Soru fotoğrafı çek')).toBeTruthy();

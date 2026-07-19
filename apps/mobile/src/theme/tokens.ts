@@ -19,6 +19,9 @@ export const colors = {
 
 export const typography = {
   fontFamily: 'Poppins',
+  fontFamilyMedium: 'Poppins-Medium',
+  fontFamilySemiBold: 'Poppins-SemiBold',
+  fontFamilyBold: 'Poppins-Bold',
   headingWeight: '600' as const,
   bodyWeight: '400' as const,
   captionWeight: '500' as const,

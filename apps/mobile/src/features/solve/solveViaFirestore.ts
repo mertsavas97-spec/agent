@@ -11,7 +11,7 @@ import type { SolveQuestionRequest, SolveQuestionResponse } from '@/src/lib/api/
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
-const SOLVE_TIMEOUT_MS = 120_000;
+const SOLVE_TIMEOUT_MS = 55_000;
 
 type SolveRequestDoc = {
   status: 'pending' | 'running' | 'done' | 'error';

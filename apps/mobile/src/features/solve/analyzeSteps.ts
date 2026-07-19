@@ -9,9 +9,9 @@ export type AnalyzeStep = {
 };
 
 export const ANALYZE_STEPS: AnalyzeStep[] = [
-  { id: 'upload', label: 'Görsel yükleniyor', progress: 0.25 },
-  { id: 'moderate', label: 'Güvenlik kontrolü', progress: 0.55 },
-  { id: 'solve', label: 'Adım adım çözülüyor', progress: 0.9 },
+  { id: 'upload', label: 'Görsel yükleniyor', progress: 0.22 },
+  { id: 'moderate', label: 'Güvenlik kontrolü', progress: 0.48 },
+  { id: 'solve', label: 'Adım adım çözülüyor', progress: 0.86 },
 ];
 
 export function progressForStep(stepId: AnalyzeStepId): number {

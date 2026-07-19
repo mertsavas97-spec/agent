@@ -65,10 +65,9 @@ export function SolutionScreen({
 
   const shortBody =
     followUp ??
-    steps
-      .map((s) => s.body)
-      .join(' ')
-      .slice(0, 280);
+    (steps.length > 0
+      ? steps[steps.length - 1]?.body ?? ''
+      : 'Özet henüz yok — adım adım sekmeye bak.');
 
   return (
     <ScrollView

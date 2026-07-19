@@ -21,10 +21,10 @@ export const EXAM_OPTIONS: { id: ExamType; label: string; hint: string }[] = [
   { id: 'kpss', label: 'KPSS', hint: 'Kamu personeli' },
 ];
 
-/** TODO(legal): Replace with counsel-approved KVKK / parental consent text before store. */
+/** Taslak KVKK metinleri — mağaza öncesi hukuki onay TODO(legal). */
 export const LEGAL_COPY = {
   minorParental:
-    'TODO(legal): Reşit olmayan kullanıcılar için veli aydınlatma ve onay metni buraya gelecek. Devam ederek taslak onayı kabul etmiş sayılırsın.',
+    '13–17 yaş için veli bilgilendirmesi gerekir. Devam ederek kişisel verilerin sınav çözüm hizmeti için işlenmesine ve velinin bu kullanımı bilmesine onay vermiş olursun. Detaylı aydınlatma metni yakında.',
   adultStandard:
-    'TODO(legal): Standart KVKK aydınlatma ve açık rıza metni buraya gelecek. Devam ederek taslak onayı kabul etmiş sayılırsın.',
+    'Devam ederek ad, sınav tercihi ve soru görsellerinin çözüm üretmek için işlenmesine onay verirsin. Veriler hesabına bağlı saklanır; dilediğinde silme talebi oluşturabilirsin.',
 } as const;
