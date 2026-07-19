@@ -63,6 +63,14 @@ function RootLayoutNav() {
               headerTintColor: '#fff',
             }}
           />
+          <Stack.Screen
+            name="sample/[id]"
+            options={{
+              title: 'Örnek anlatım',
+              headerStyle: { backgroundColor: '#1E1B4B' },
+              headerTintColor: '#fff',
+            }}
+          />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </BootstrapGate>

@@ -60,9 +60,11 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container} testID="history-screen">
-      <Text style={styles.eyebrow}>Kütüphane</Text>
+      <Text style={styles.eyebrow}>Kayıtlar</Text>
       <Text style={styles.title}>Geçmiş</Text>
-      <Text style={styles.subtitle}>Çözdüğün soruları derse ve konuya göre filtrele.</Text>
+      <Text style={styles.subtitle}>
+        Fotoğrafla çözdüğün sorular burada. Derse veya konuya göre süz.
+      </Text>
 
       <Text style={styles.filterLabel}>Ders</Text>
       <SegmentedTabs

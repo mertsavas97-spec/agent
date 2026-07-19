@@ -33,7 +33,8 @@ cd apps/mobile
 npx expo run:ios
 ```
 
-## UI polish (2026-07-18)
-- ExamModeSwitcher: “Sınavın” etiketli segmented control + Lise/Üniversite/Kamu
-- Home / Geçmiş / İstatistik premium hierarchy + EmptyState
-- Brief: `docs/design/premium-polish-brief.md`
+## UI polish (2026-07-19)
+- Home: daire CTA kaldırıldı → tam genişlik “Soru fotoğrafı çek / Galeriden soru seç”
+- Net wording (kitap/defter sorusu); sınav seçili state + varsayılan LGS
+- **Konular** tab (T069): örnek soru + adım adım anlatım (`app/sample/[id]`)
+- Brief: `docs/design/home-konular-brief.md`

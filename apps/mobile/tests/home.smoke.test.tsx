@@ -52,15 +52,18 @@ jest.mock('@/src/features/exam/updateExamClient', () => ({
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('renders brand, exam switcher, and capture CTA', async () => {
+  it('renders clear photo CTAs, exam switcher, and topics entry', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.getByText('Sınavın')).toBeTruthy();
+    expect(screen.getByText('Sınavını seç')).toBeTruthy();
+    expect(screen.getByText(/sorunun fotoğrafını çek/i)).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toBeTruthy();
+    expect(screen.getByText('Soru fotoğrafı çek')).toBeTruthy();
     expect(screen.getByTestId('gallery-cta')).toBeTruthy();
+    expect(screen.getByText('Galeriden soru seç')).toBeTruthy();
+    expect(screen.getByTestId('home-topics-link')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
-    expect(screen.getByText(/Galeriden Seç/)).toBeTruthy();
     await waitFor(() => {
       expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri: 0 gün/);
       expect(screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected).toBe(true);
