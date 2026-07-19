@@ -130,9 +130,10 @@ export const solveQuestion = regional
 
 /**
  * Org-policy safe path (Gen2 — Gen1 cannot attach to Firestore eur3).
+ * Named V2 because a failed Gen1 stub blocked same-name upgrade.
  * Mobile writes users/{uid}/solveRequests/{id} → Admin SDK runs here.
  */
-export const onSolveRequestCreated = onDocumentCreated(
+export const onSolveRequestCreatedV2 = onDocumentCreated(
   {
     document: 'users/{uid}/solveRequests/{requestId}',
     region: 'europe-west1',
@@ -175,7 +176,7 @@ export const onSolveRequestCreated = onDocumentCreated(
           : err instanceof Error
             ? err.message
             : 'Çözüm şu an üretilemedi';
-      console.error('onSolveRequestCreated failed', { uid, code, message });
+      console.error('onSolveRequestCreatedV2 failed', { uid, code, message });
       await ref.set(
         {
           status: 'error',

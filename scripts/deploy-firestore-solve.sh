@@ -50,7 +50,7 @@ echo "==> 1/2 Deploy firestore:rules"
 echo "==> 2/2 Deploy onSolveRequestCreated (+ solveQuestion)"
 "$FIREBASE_BIN" deploy \
   --project "$PROJECT" \
-  --only functions:onSolveRequestCreated,functions:solveQuestion
+  --only functions:onSolveRequestCreatedV2,functions:solveQuestion
 
 echo ""
 echo "✓ Deploy bitti."
