@@ -17,15 +17,17 @@ export const SUBJECT_LABEL: Record<Exclude<Subject, 'unknown'>, string> = {
   geometry: 'Geometri',
   civics: 'Vatandaşlık',
   current: 'Güncel Bilgiler',
+  traffic: 'Trafik ve Çevre',
+  vehicle: 'Araç Tekniği',
+  firstaid: 'İlk Yardım',
 };
 
-/** Ordered subject categories per exam (2020–2026 oturum yapısı). */
+/** Ordered subject categories per exam. */
 export function subjectsForExam(exam: ExamType): Exclude<Subject, 'unknown'>[] {
   switch (exam) {
     case 'lgs':
       return ['turkish', 'math', 'science', 'history', 'religion', 'english'];
     case 'ygs':
-      // YKS TYT/AYT ağacı (ürün etiketi YGS)
       return [
         'turkish',
         'literature',
@@ -40,6 +42,8 @@ export function subjectsForExam(exam: ExamType): Exclude<Subject, 'unknown'>[] {
       ];
     case 'kpss':
       return ['turkish', 'math', 'geometry', 'history', 'geography', 'civics', 'current'];
+    case 'trafik':
+      return ['traffic', 'vehicle', 'firstaid'];
     default: {
       const _e: never = exam;
       return _e;

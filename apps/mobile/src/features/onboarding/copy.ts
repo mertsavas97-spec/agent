@@ -11,7 +11,7 @@ export const ONBOARDING_STEPS = [
   },
   {
     title: 'Hangi sınava hazırlanıyorsun?',
-    body: 'LGS, YGS ve KPSS aktif. Seçimin çözüm dilini ve konu kataloğunu belirler.',
+    body: 'LGS, YGS, KPSS ve Trafik (ehliyet) aktif. Seçimin çözüm dilini ve konu kataloğunu belirler.',
   },
 ] as const;
 
@@ -19,6 +19,7 @@ export const EXAM_OPTIONS: { id: ExamType; label: string; hint: string }[] = [
   { id: 'lgs', label: 'LGS', hint: 'Lise giriş' },
   { id: 'ygs', label: 'YGS', hint: 'Yükseköğretime geçiş' },
   { id: 'kpss', label: 'KPSS', hint: 'Kamu personeli' },
+  { id: 'trafik', label: 'Trafik', hint: 'Ehliyet / MTS' },
 ];
 
 /** Taslak KVKK metinleri — mağaza öncesi hukuki onay TODO(legal). */

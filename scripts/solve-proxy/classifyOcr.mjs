@@ -19,6 +19,13 @@ const HISTORY_STEM =
 const GEO_STEM = /coğrafya|iklim|nüfus|akarsu|dağ|ova|bölge|maden|tarım/i;
 const CIVICS_STEM = /anayasa|tbmm|vatandaş|temel hak|seçim|cumhurbaşkan/i;
 
+const TRAFFIC_STEM =
+  /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|işaret|dur işareti|yol çizgi|yerleşim yeri/i;
+const VEHICLE_STEM =
+  /abs|esp|fren|süspansiyon|motor|debriyaj|şanzıman|akü|far|silecek|emniyet kemeri|hava yastığı/i;
+const FIRSTAID_STEM =
+  /ilk yardım|kanama|şok|kırık|yanık|bilinç|abc|solunum|kalp masajı|kazazede/i;
+
 function topicKeyFor(subject, t) {
   const lower = t.toLowerCase();
   if (subject === 'turkish') {
@@ -35,10 +42,34 @@ function topicKeyFor(subject, t) {
     if (/denklem/.test(lower)) return 'denklem';
     return 'temel';
   }
+  if (subject === 'traffic') {
+    if (/hız|mesafe/.test(lower)) return 'hiz-mesafe';
+    if (/kavşak|geçiş/.test(lower)) return 'kavsak';
+    if (/uyarı/.test(lower)) return 'isaretler-uyari';
+    if (/yasak/.test(lower)) return 'isaretler-yasak';
+    if (/bilgi|çizgi/.test(lower)) return 'isaretler-bilgi';
+    if (/çevre/.test(lower)) return 'cevre';
+    return 'kurallar';
+  }
+  if (subject === 'vehicle') {
+    if (/fren|süspansiyon/.test(lower)) return 'fren-suspansiyon';
+    if (/elektrik|far|akü/.test(lower)) return 'elektrik';
+    if (/abs|esp|kemer|yastık|güvenlik/.test(lower)) return 'guvenlik';
+    return 'motor';
+  }
+  if (subject === 'firstaid') {
+    if (/kanama|şok/.test(lower)) return 'kanama';
+    if (/kırık|yanık/.test(lower)) return 'kirik-yanik';
+    if (/abc|bilinç|solunum/.test(lower)) return 'abc';
+    return 'temel';
+  }
   return 'genel';
 }
 
 function allowedSubjects(examType) {
+  if (examType === 'trafik') {
+    return ['traffic', 'vehicle', 'firstaid'];
+  }
   if (examType === 'kpss') {
     return ['turkish', 'math', 'geometry', 'history', 'geography', 'civics', 'current'];
   }
@@ -84,6 +115,9 @@ export function classifyOcr(ocrText, examType = 'lgs') {
     geography: 0,
     civics: 0,
     geometry: 0,
+    traffic: 0,
+    vehicle: 0,
+    firstaid: 0,
   };
 
   if (TURKISH_STEM.test(t)) scores.turkish += 6;
@@ -94,12 +128,17 @@ export function classifyOcr(ocrText, examType = 'lgs') {
   if (GEO_STEM.test(t)) scores.geography += 4;
   if (CIVICS_STEM.test(t)) scores.civics += 4;
   if (/üçgen|doğru|açı|çember|alan|hacim|geometri/i.test(t)) scores.geometry += 4;
+  if (TRAFFIC_STEM.test(t)) scores.traffic += 6;
+  if (VEHICLE_STEM.test(t)) scores.vehicle += 6;
+  if (FIRSTAID_STEM.test(t)) scores.firstaid += 6;
 
-  if (wordCount >= 18 && scores.math < 3) scores.turkish += 3;
-  if (choiceVerbal) scores.turkish += 2;
-  if (choiceNumeric) scores.math += 2;
-  if (digitCount >= 6 && wordCount < 20) scores.math += 2;
-  if (digitCount <= 2 && wordCount >= 12) scores.turkish += 1;
+  if (examType !== 'trafik') {
+    if (wordCount >= 18 && scores.math < 3) scores.turkish += 3;
+    if (choiceVerbal) scores.turkish += 2;
+    if (choiceNumeric) scores.math += 2;
+    if (digitCount >= 6 && wordCount < 20) scores.math += 2;
+    if (digitCount <= 2 && wordCount >= 12) scores.turkish += 1;
+  }
 
   const allowed = new Set(allowedSubjects(examType));
   // Map science→biology-ish not in kpss: keep science only for lgs
@@ -116,8 +155,13 @@ export function classifyOcr(ocrText, examType = 'lgs') {
 
   if (!subject) {
     // No signal — do NOT silently prefer math
-    subject = wordCount >= 12 ? 'turkish' : 'math';
-    score = 1;
+    if (examType === 'trafik') {
+      subject = 'traffic';
+      score = 1;
+    } else {
+      subject = wordCount >= 12 ? 'turkish' : 'math';
+      score = 1;
+    }
   }
 
   const gap = score - second;
@@ -127,14 +171,36 @@ export function classifyOcr(ocrText, examType = 'lgs') {
   else if (score >= 6 && gap >= 2) confidence = 'high';
   else confidence = score >= 3 ? 'medium' : 'low';
 
-  // Strong single-stem overrides
-  if (TURKISH_STEM.test(t) && !MATH_STEM.test(t) && !MATH_OPS.test(t)) {
+  // Strong single-stem overrides (only when subject is allowed for exam)
+  if (
+    allowed.has('turkish') &&
+    TURKISH_STEM.test(t) &&
+    !MATH_STEM.test(t) &&
+    !MATH_OPS.test(t)
+  ) {
     subject = 'turkish';
     confidence = 'high';
     score = Math.max(score, 8);
-  } else if ((MATH_STEM.test(t) || MATH_OPS.test(t)) && !TURKISH_STEM.test(t) && wordCount < 30) {
-    subject = allowed.has('math') ? 'math' : subject;
-    if (subject === 'math') {
+  } else if (
+    allowed.has('math') &&
+    (MATH_STEM.test(t) || MATH_OPS.test(t)) &&
+    !TURKISH_STEM.test(t) &&
+    wordCount < 30
+  ) {
+    subject = 'math';
+    confidence = 'high';
+    score = Math.max(score, 8);
+  } else if (examType === 'trafik') {
+    if (FIRSTAID_STEM.test(t) && allowed.has('firstaid')) {
+      subject = 'firstaid';
+      confidence = 'high';
+      score = Math.max(score, 8);
+    } else if (VEHICLE_STEM.test(t) && allowed.has('vehicle')) {
+      subject = 'vehicle';
+      confidence = 'high';
+      score = Math.max(score, 8);
+    } else if (TRAFFIC_STEM.test(t) && allowed.has('traffic')) {
+      subject = 'traffic';
       confidence = 'high';
       score = Math.max(score, 8);
     }
@@ -153,7 +219,22 @@ export function classifyOcr(ocrText, examType = 'lgs') {
 }
 
 export function topicIdFor(examType, subject, topicKey) {
-  const exam = ['lgs', 'ygs', 'kpss'].includes(examType) ? examType : 'lgs';
+  const exam = ['lgs', 'ygs', 'kpss', 'trafik'].includes(examType)
+    ? examType
+    : 'lgs';
+
+  if (subject === 'traffic') {
+    const slug = topicKey || 'kurallar';
+    return `trafik-traffic-${slug}`;
+  }
+  if (subject === 'vehicle') {
+    const slug = topicKey || 'motor';
+    return `trafik-vehicle-${slug}`;
+  }
+  if (subject === 'firstaid') {
+    const slug = topicKey || 'temel';
+    return `trafik-firstaid-${slug}`;
+  }
 
   if (subject === 'turkish' || subject === 'literature') {
     if (topicKey === 'dilbilgisi') return `${exam}-turkish-dilbilgisi`;

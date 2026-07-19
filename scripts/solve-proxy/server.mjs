@@ -101,7 +101,9 @@ const server = http.createServer(async (req, res) => {
     let imageBase64 = typeof input.imageBase64 === 'string' ? input.imageBase64 : '';
     const imageUrl = typeof input.imageUrl === 'string' ? input.imageUrl : '';
     const mimeType = typeof input.mimeType === 'string' ? input.mimeType : 'image/jpeg';
-    const examType = ['lgs', 'ygs', 'kpss'].includes(input.examType) ? input.examType : 'lgs';
+    const examType = ['lgs', 'ygs', 'kpss', 'trafik'].includes(input.examType)
+      ? input.examType
+      : 'lgs';
     const requestId = typeof input.requestId === 'string' ? input.requestId : `${Date.now()}`;
 
     if ((!imageBase64 || imageBase64.length < 80) && imageUrl) {

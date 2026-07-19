@@ -143,7 +143,12 @@ export async function loadSolutionForExplain(uid: string, solutionId: string) {
       .get();
     if (attempt.exists) {
       const a = attempt.data()!;
-      if (a.examType === 'ygs' || a.examType === 'kpss' || a.examType === 'lgs') {
+      if (
+        a.examType === 'ygs' ||
+        a.examType === 'kpss' ||
+        a.examType === 'lgs' ||
+        a.examType === 'trafik'
+      ) {
         examType = a.examType;
       }
       topicId = typeof a.topicId === 'string' ? a.topicId : null;

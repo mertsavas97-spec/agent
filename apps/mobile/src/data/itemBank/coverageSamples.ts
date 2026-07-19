@@ -32,7 +32,13 @@ function base(
 function buildSample(topic: Topic): ItemBankItem {
   const name = topic.nameTr;
   const exam =
-    topic.examType === 'lgs' ? 'LGS' : topic.examType === 'ygs' ? 'YGS' : 'KPSS';
+    topic.examType === 'lgs'
+      ? 'LGS'
+      : topic.examType === 'ygs'
+        ? 'YGS'
+        : topic.examType === 'trafik'
+          ? 'Trafik'
+          : 'KPSS';
 
   switch (topic.subject as Subject) {
     case 'math':
@@ -212,6 +218,69 @@ function buildSample(topic: Topic): ItemBankItem {
           },
         ],
       );
+    case 'traffic':
+      return base(
+        topic,
+        `${name}: Yerleşim yerinde aksini gösteren bir işaret yoksa azami hız sınırı genelde kaç km/s’dir?`,
+        { A: '30', B: '50', C: '70', D: '90', E: '120' },
+        'B',
+        [
+          {
+            title: '1. Kural',
+            body: 'Yerleşim yeri içinde genel azami hız çoğu durumda 50 km/s’tir (aksi işaret yoksa).',
+          },
+          {
+            title: '2. Bağla',
+            body: `${exam} · ${name} mini kontrol. Cevap B.`,
+          },
+        ],
+      );
+    case 'vehicle':
+      return base(
+        topic,
+        `${name}: Araçta ABS’nin temel amacı nedir?`,
+        {
+          A: 'Yakıt tüketimini artırmak',
+          B: 'Frenlemede tekerleklerin kilitlenmesini önlemek',
+          C: 'Farları otomatik açmak',
+          D: 'Klima çalıştırmak',
+          E: 'Camları indirmek',
+        },
+        'B',
+        [
+          {
+            title: '1. Kavram',
+            body: 'ABS, ani frenlemede tekerlek kilitlenmesini engelleyerek yön kontrolünü korur.',
+          },
+          {
+            title: '2. Sonuç',
+            body: `${name}. Cevap B.`,
+          },
+        ],
+      );
+    case 'firstaid':
+      return base(
+        topic,
+        `${name}: Bilinci kapalı kazazedede ilk kontrol sırası hangisidir?`,
+        {
+          A: 'Nabız → solunum → hava yolu',
+          B: 'Hava yolu → solunum → dolaşım (ABC)',
+          C: 'İlaç vermek',
+          D: 'Hemen taşımak',
+          E: 'Su içirmek',
+        },
+        'B',
+        [
+          {
+            title: '1. ABC',
+            body: 'Temel yaşam desteğinde hava yolu, solunum ve dolaşım sırası izlenir.',
+          },
+          {
+            title: '2. Sonuç',
+            body: `${name}. Cevap B.`,
+          },
+        ],
+      );
     default:
       return base(
         topic,
@@ -243,7 +312,7 @@ function buildSample(topic: Topic): ItemBankItem {
  * Hand-authored seeds (…-001 without -demo-) take precedence via merge.
  */
 export function buildCoverageSamples(existingTopicIds: Set<string>): ItemBankItem[] {
-  const exams: ExamType[] = ['lgs', 'ygs', 'kpss'];
+  const exams: ExamType[] = ['lgs', 'ygs', 'kpss', 'trafik'];
   const out: ItemBankItem[] = [];
   for (const exam of exams) {
     for (const topic of topicsForExam(exam)) {

@@ -6,7 +6,7 @@ import { itemBankFewShot } from './prompts/fewshots';
 import { teacherLineForSubject } from './subjectTeacher';
 
 const SUBJECT_ENUM =
-  '"math"|"turkish"|"science"|"physics"|"chemistry"|"biology"|"history"|"geography"|"philosophy"|"literature"|"religion"|"english"|"geometry"|"civics"|"current"|"unknown"';
+  '"math"|"turkish"|"science"|"physics"|"chemistry"|"biology"|"history"|"geography"|"philosophy"|"literature"|"religion"|"english"|"geometry"|"civics"|"current"|"traffic"|"vehicle"|"firstaid"|"unknown"';
 
 function examAudience(examType: ExamType): string {
   switch (examType) {
@@ -16,6 +16,8 @@ function examAudience(examType: ExamType): string {
       return 'YGS ürün etiketi = YKS TYT/AYT hattı (eski LYS alanları AYT ile). Türkçe/Edebiyat, Matematik, Fizik, Kimya, Biyoloji, Tarih, Coğrafya, Felsefe, Din.';
     case 'kpss':
       return 'KPSS GY–GK: Türkçe, Matematik, Geometri, Tarih, Coğrafya, Vatandaşlık, Güncel.';
+    case 'trafik':
+      return 'Trafik / ehliyet (MTS): Trafik ve çevre, işaretler, araç tekniği, ilk yardım.';
     default: {
       const _e: never = examType;
       return _e;

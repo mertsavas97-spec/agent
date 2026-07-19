@@ -46,6 +46,9 @@ function asSubject(value: unknown): Subject | undefined {
     'geometry',
     'civics',
     'current',
+    'traffic',
+    'vehicle',
+    'firstaid',
     'unknown',
   ];
   return allowed.includes(value as Subject) ? (value as Subject) : undefined;

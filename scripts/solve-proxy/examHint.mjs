@@ -5,7 +5,7 @@
 
 /**
  * @returns {{
- *   suggested: 'lgs' | 'ygs' | 'kpss' | null,
+ *   suggested: 'lgs' | 'ygs' | 'kpss' | 'trafik' | null,
  *   confidence: 'high' | 'medium' | 'low',
  *   reason: string | null,
  *   questionNumber: number | null,
@@ -14,7 +14,9 @@
  */
 export function detectExamHint(ocrText, profileExam = 'lgs') {
   const t = String(ocrText || '');
-  const profile = ['lgs', 'ygs', 'kpss'].includes(profileExam) ? profileExam : 'lgs';
+  const profile = ['lgs', 'ygs', 'kpss', 'trafik'].includes(profileExam)
+    ? profileExam
+    : 'lgs';
 
   let suggested = null;
   let confidence = 'low';
@@ -32,6 +34,13 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
     suggested = 'lgs';
     confidence = 'high';
     reason = 'ocr_keyword_lgs';
+  } else if (
+    /\b(?:ehliyet|MTS|trafik levha|azami hız|geçiş üstünlüğü)\b/i.test(t) ||
+    /\bilk\s*yardım\b/i.test(t)
+  ) {
+    suggested = 'trafik';
+    confidence = 'high';
+    reason = 'ocr_keyword_trafik';
   }
 
   const qMatch = t.match(/(?:^|\n)\s*(\d{1,3})\.\s+\S/);

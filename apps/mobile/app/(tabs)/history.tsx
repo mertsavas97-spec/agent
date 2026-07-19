@@ -57,7 +57,7 @@ export default function HistoryScreen() {
           try {
             const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
             const et = snap.data()?.examType;
-            if (et === 'lgs' || et === 'ygs' || et === 'kpss') {
+            if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') {
               setProfileExam(et);
               if (!examSeededRef.current) {
                 setExamType(et);

@@ -199,6 +199,56 @@ const LESSONS: TopicLesson[] = [
     ],
     tip: 'Önce “ne arıyorum?” cümlesini yaz.',
   },
+  {
+    topicId: 'trafik-traffic-kurallar',
+    headline: 'Trafik kuralları — genel çerçeve',
+    bullets: [
+      'Önce sahneyi kur: yerleşim yeri mi, kavşak mı, tek yön mü?',
+      '“Aksi işaret yoksa” genel kuralı uygula; levha varsa levha üstündür.',
+      'Geçiş üstünlüğü ve emniyet mesafesi çoğu sorunun anahtarıdır.',
+    ],
+    tip: 'Ezber etiket değil — “güvenli davranış hangisi?” diye sor.',
+  },
+  {
+    topicId: 'trafik-traffic-hiz-mesafe',
+    headline: 'Hız ve takip mesafesi',
+    bullets: [
+      'Yerleşim yeri azami hız (aksi işaret yoksa) 50 km/s.',
+      'Takip mesafesi hız ve yol koşullarına göre artar.',
+      'Yağış / görüş düşüklüğünde hızı düşür, mesafeyi aç.',
+    ],
+    tip: 'Soruda “aksi işaret” var mı diye ilk bak.',
+  },
+  {
+    topicId: 'trafik-traffic-isaretler-uyari',
+    headline: 'Uyarı işaretleri',
+    bullets: [
+      'Üçgen çerçeve = uyarı: tehlikeyi önceden bildirir.',
+      'İşaret neyi haber veriyor? Dönüş, yokuş, yaya…',
+      'Uyarıyı görünce hızı ayarla; yasakla karıştırma.',
+    ],
+    tip: 'Şekil + renk ailesini ezberle, sonra içeriği oku.',
+  },
+  {
+    topicId: 'trafik-vehicle-guvenlik',
+    headline: 'Araç güvenlik sistemleri',
+    bullets: [
+      'ABS: kilitlenmeyi önler, yön kontrolünü korur.',
+      'ESP / hava yastığı / emniyet kemeri birbirinin yerine geçmez.',
+      'Arıza ışığı yanıyorsa ilgili sistemi düşün.',
+    ],
+    tip: '“Ne işe yarar?” sorusunu sor — şıklar netleşir.',
+  },
+  {
+    topicId: 'trafik-firstaid-temel',
+    headline: 'Temel ilk yardım',
+    bullets: [
+      'Önce kendi güvenliğin, sonra olay yeri güvenliği.',
+      'ABC: hava yolu, solunum, dolaşım sırası.',
+      'Yapılmaması gerekenleri (su içirmek, zorla kaldırmak) ele.',
+    ],
+    tip: 'Adımları sırayla yaz; “önce şunu” tuzağına düşme.',
+  },
 ];
 
 const BY_ID = new Map(LESSONS.map((l) => [l.topicId, l]));
@@ -269,6 +319,24 @@ function subjectBullets(
         'Özne–fiil uyumuna bak; bağlamdan kelime çıkar.',
         'Şıkları cümleye geri koy.',
       ];
+    case 'traffic':
+      return [
+        `${nameTr}: kuralı işaret / hız / geçiş üstünlüğü bağlamında oku.`,
+        '“Aksi işaret yoksa” ifadelerine dikkat et.',
+        'Şıkları sahne kurarak ele — ezber etiket seçme.',
+      ];
+    case 'vehicle':
+      return [
+        `${nameTr}: sistemin görevi nedir diye sor (fren, ABS, aydınlatma…).`,
+        'Arıza belirtisi ↔ bileşen eşlemesi yap.',
+        'Güvenlikle ilgili şıkları önceliklendir.',
+      ];
+    case 'firstaid':
+      return [
+        `${nameTr}: önce kendi güvenliğin, sonra ABC.`,
+        'Yapılmaması gerekeni (su içirmek, zorla taşımak) ele.',
+        'Adımları sırayla yaz.',
+      ];
     default:
       return [
         `${nameTr}: ${examVoice} sorulur; ezber değil mantık kur.`,
@@ -290,7 +358,9 @@ export function buildFallbackLesson(input: {
       ? 'ortaokul dilinde'
       : input.examType === 'ygs'
         ? 'lise seviyesinde'
-        : 'aday dilinde';
+        : input.examType === 'trafik'
+          ? 'ehliyet adayı dilinde'
+          : 'aday dilinde';
   return {
     topicId: input.topicId,
     headline: `${input.nameTr} — kısa anlatım`,

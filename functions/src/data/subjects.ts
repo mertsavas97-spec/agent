@@ -16,6 +16,9 @@ export const SUBJECT_LABEL: Record<Exclude<Subject, 'unknown'>, string> = {
   geometry: 'Geometri',
   civics: 'Vatandaşlık',
   current: 'Güncel Bilgiler',
+  traffic: 'Trafik ve Çevre',
+  vehicle: 'Araç Tekniği',
+  firstaid: 'İlk Yardım',
 };
 
 export function subjectsForExam(exam: ExamType): Exclude<Subject, 'unknown'>[] {
@@ -37,6 +40,8 @@ export function subjectsForExam(exam: ExamType): Exclude<Subject, 'unknown'>[] {
       ];
     case 'kpss':
       return ['turkish', 'math', 'geometry', 'history', 'geography', 'civics', 'current'];
+    case 'trafik':
+      return ['traffic', 'vehicle', 'firstaid'];
     default: {
       const _e: never = exam;
       return _e;

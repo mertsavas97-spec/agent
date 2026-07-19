@@ -32,7 +32,7 @@ export default function ProfileScreen() {
     if (!snap.exists()) return;
     const data = snap.data();
     const et = data.examType;
-    if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+    if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') setExamType(et);
     setQuotaLabel(
       formatRemainingQuota(
         remainingFreeSolves({

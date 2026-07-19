@@ -3,20 +3,15 @@ import type { ExamType } from '@/src/lib/api/types';
 import { EXAM_LABEL, EXAM_SHORT } from './examLabels';
 
 /**
- * Per-exam accent palette — makes “which exam am I in?” obvious on Home.
- * Keeps brand navy for chrome; each exam owns a solid + soft pair.
+ * Per-exam accent palette — makes “which exam am I in?” obvious.
  */
 export type ExamTheme = {
   id: ExamType;
   label: string;
   short: string;
-  /** Selected control fill */
   solid: string;
-  /** Soft surface / card wash */
   soft: string;
-  /** Border / underline accent */
   accent: string;
-  /** Prominent mode chip, e.g. MOD: YGS */
   modeChip: string;
 };
 
@@ -47,6 +42,15 @@ export const EXAM_THEME: Record<ExamType, ExamTheme> = {
     soft: '#DBEAFE',
     accent: '#3B82F6',
     modeChip: 'MOD: KPSS',
+  },
+  trafik: {
+    id: 'trafik',
+    label: EXAM_LABEL.trafik,
+    short: EXAM_SHORT.trafik,
+    solid: '#B91C1C',
+    soft: '#FEE2E2',
+    accent: '#EF4444',
+    modeChip: 'MOD: TRAFİK',
   },
 };
 

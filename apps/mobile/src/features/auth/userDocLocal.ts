@@ -15,10 +15,10 @@ import { getFirebase } from '@/src/lib/firebase';
 
 export type AgeBand = 'under13' | '13to17' | '18plus';
 
-const EXAMS: ExamType[] = ['lgs', 'ygs', 'kpss'];
+const EXAMS: ExamType[] = ['lgs', 'ygs', 'kpss', 'trafik'];
 
 export function isExamType(v: unknown): v is ExamType {
-  return v === 'lgs' || v === 'ygs' || v === 'kpss';
+  return v === 'lgs' || v === 'ygs' || v === 'kpss' || v === 'trafik';
 }
 
 /** Default profile fields matching firestore.rules create allow-list. */

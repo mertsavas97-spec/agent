@@ -69,7 +69,7 @@ export default function HomeScreen() {
           setStreak(progress.streakCount ?? 0);
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
           const et = userSnap.data()?.examType;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss') {
+          if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') {
             setExamType(et);
           } else {
             // Ensure a visible selected exam (bootstrap default).

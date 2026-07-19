@@ -63,5 +63,5 @@ export const shadows = {
 
 export const brand = {
   name: 'ÇözBil',
-  exams: ['lgs', 'ygs', 'kpss'] as const,
+  exams: ['lgs', 'ygs', 'kpss', 'trafik'] as const,
 };

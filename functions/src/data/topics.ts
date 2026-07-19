@@ -115,13 +115,47 @@ export const KPSS_TOPICS: Topic[] = [
   { id: tid('kpss', 'current', 'gundem'), examType: 'kpss', subject: 'current', nameTr: 'Gündem / Kurumlar' },
 ];
 
+export const TRAFIK_TOPICS: Topic[] = [
+  { id: tid('trafik', 'traffic', 'kurallar'), examType: 'trafik', subject: 'traffic', nameTr: 'Trafik Kuralları' },
+  { id: tid('trafik', 'traffic', 'hiz-mesafe'), examType: 'trafik', subject: 'traffic', nameTr: 'Hız ve Mesafe' },
+  { id: tid('trafik', 'traffic', 'kavsak'), examType: 'trafik', subject: 'traffic', nameTr: 'Kavşak ve Geçiş Üstünlüğü' },
+  { id: tid('trafik', 'traffic', 'cevre'), examType: 'trafik', subject: 'traffic', nameTr: 'Trafik ve Çevre' },
+  { id: tid('trafik', 'traffic', 'isaretler-uyari'), examType: 'trafik', subject: 'traffic', nameTr: 'Uyarı İşaretleri' },
+  { id: tid('trafik', 'traffic', 'isaretler-yasak'), examType: 'trafik', subject: 'traffic', nameTr: 'Yasaklama İşaretleri' },
+  { id: tid('trafik', 'traffic', 'isaretler-bilgi'), examType: 'trafik', subject: 'traffic', nameTr: 'Bilgi ve Yol Çizgileri' },
+  { id: tid('trafik', 'vehicle', 'motor'), examType: 'trafik', subject: 'vehicle', nameTr: 'Motor ve Güç Aktarma' },
+  { id: tid('trafik', 'vehicle', 'fren-suspansiyon'), examType: 'trafik', subject: 'vehicle', nameTr: 'Fren ve Süspansiyon' },
+  { id: tid('trafik', 'vehicle', 'elektrik'), examType: 'trafik', subject: 'vehicle', nameTr: 'Elektrik ve Aydınlatma' },
+  { id: tid('trafik', 'vehicle', 'guvenlik'), examType: 'trafik', subject: 'vehicle', nameTr: 'Araç Güvenlik Sistemleri' },
+  { id: tid('trafik', 'firstaid', 'temel'), examType: 'trafik', subject: 'firstaid', nameTr: 'Temel İlk Yardım' },
+  { id: tid('trafik', 'firstaid', 'kanama'), examType: 'trafik', subject: 'firstaid', nameTr: 'Kanama ve Şok' },
+  { id: tid('trafik', 'firstaid', 'kirik-yanik'), examType: 'trafik', subject: 'firstaid', nameTr: 'Kırık / Yanık' },
+  { id: tid('trafik', 'firstaid', 'abc'), examType: 'trafik', subject: 'firstaid', nameTr: 'ABC ve Bilinç Kontrolü' },
+];
+
 export function topicsForExam(exam: ExamType): Topic[] {
-  if (exam === 'lgs') return LGS_TOPICS;
-  if (exam === 'ygs') return YGS_TOPICS;
-  return KPSS_TOPICS;
+  switch (exam) {
+    case 'lgs':
+      return LGS_TOPICS;
+    case 'ygs':
+      return YGS_TOPICS;
+    case 'kpss':
+      return KPSS_TOPICS;
+    case 'trafik':
+      return TRAFIK_TOPICS;
+    default: {
+      const _e: never = exam;
+      return _e;
+    }
+  }
 }
 
-export const ALL_TOPICS: Topic[] = [...LGS_TOPICS, ...YGS_TOPICS, ...KPSS_TOPICS];
+export const ALL_TOPICS: Topic[] = [
+  ...LGS_TOPICS,
+  ...YGS_TOPICS,
+  ...KPSS_TOPICS,
+  ...TRAFIK_TOPICS,
+];
 
 export function findTopic(topicId: string): Topic | undefined {
   return ALL_TOPICS.find((t) => t.id === topicId);

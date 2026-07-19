@@ -42,7 +42,7 @@ async function readProfileExam(uid: string): Promise<ExamType | null> {
   try {
     const snap = await getDoc(doc(getFirebase().db, 'users', uid));
     const et = snap.data()?.examType;
-    if (et === 'lgs' || et === 'ygs' || et === 'kpss') return et;
+    if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') return et;
   } catch {
     /* optional */
   }

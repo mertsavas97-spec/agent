@@ -24,6 +24,10 @@ function defaultTopicId(examType: ExamType, subject: Subject): string | null {
   }
   if (subject === 'geometry') return 'kpss-geometry-ucgen';
   if (subject === 'civics') return 'kpss-civics-anayasa';
+  if (subject === 'traffic') return 'trafik-traffic-kurallar';
+  if (subject === 'vehicle') return 'trafik-vehicle-guvenlik';
+  if (subject === 'firstaid') return 'trafik-firstaid-temel';
+  if (examType === 'trafik') return 'trafik-traffic-kurallar';
   if (examType === 'kpss') return 'kpss-math-temel-islemler';
   if (examType === 'ygs') return 'ygs-math-temel-kavramlar';
   return 'lgs-math-kesirler';
@@ -55,6 +59,8 @@ export function buildLocalSolveFallback(input: {
       ? input.topicId
       : defaultTopicId(examType, subject);
   const isVerbal = subject === 'turkish' || subject === 'literature';
+  const isTrafik =
+    subject === 'traffic' || subject === 'vehicle' || subject === 'firstaid';
   const isUnknown = subject === 'unknown';
 
   const transparencyNote =
@@ -86,38 +92,53 @@ export function buildLocalSolveFallback(input: {
             body: 'Ders netleşince adımlar o derse göre düzenlenir.',
           },
         ]
-      : isVerbal
+      : isTrafik
         ? [
             {
-              title: '1. Soru kökünü bul',
-              body: 'Ana fikir, anlatım biçimi, çıkarım veya dil bilgisi mi isteniyor? Kök cümleyi ayır.',
+              title: '1. Kökü ayır',
+              body: 'Kural, işaret, araç sistemi veya ilk yardım mı isteniyor? Anahtar kelimeyi bul.',
             },
             {
-              title: '2. Metni tara',
-              body: 'Şıkları kendi bilginle değil metne götürerek ele; dayanağı olmayanı çıkar.',
+              title: '2. Sahneyi kur',
+              body: 'Hız, kavşak, levha veya kazazede durumunu zihninde canlandır; şıkları buna göre ele.',
             },
             {
-              title: '3. Kontrol et',
-              body: 'Seçtiğin şık metindeki bir cümleyle desteklenebiliyor mu? Destek yoksa eler.',
+              title: '3. Güvenliği seç',
+              body: 'Trafik ve ilk yardımda “önce güvenlik” ilkesine uymayan şıkkı eler.',
             },
           ]
-        : [
-            {
-              title: '1. Soruyu oku',
-              body: 'Verilenleri ve isteneni ayır. Şıklar ve işlem tamamen kadrajda olsun.',
-            },
-            {
-              title: '2. İşlemi kur',
-              body:
-                subject === 'math' || subject === 'geometry'
-                  ? 'Parantez → çarpma/bölme → toplama/çıkarma sırasıyla ilerle. Kesirlerde paydaları dikkat et.'
-                  : 'Verilenleri maddele; soru köküne göre eleme yap.',
-            },
-            {
-              title: '3. Kontrol et',
-              body: 'Sonucu yerine koyarak veya şıkları eleyerek doğrula.',
-            },
-          ],
+        : isVerbal
+          ? [
+              {
+                title: '1. Soru kökünü bul',
+                body: 'Ana fikir, anlatım biçimi, çıkarım veya dil bilgisi mi isteniyor? Kök cümleyi ayır.',
+              },
+              {
+                title: '2. Metni tara',
+                body: 'Şıkları kendi bilginle değil metne götürerek ele; dayanağı olmayanı çıkar.',
+              },
+              {
+                title: '3. Kontrol et',
+                body: 'Seçtiğin şık metindeki bir cümleyle desteklenebiliyor mu? Destek yoksa eler.',
+              },
+            ]
+          : [
+              {
+                title: '1. Soruyu oku',
+                body: 'Verilenleri ve isteneni ayır. Şıklar ve işlem tamamen kadrajda olsun.',
+              },
+              {
+                title: '2. İşlemi kur',
+                body:
+                  subject === 'math' || subject === 'geometry'
+                    ? 'Parantez → çarpma/bölme → toplama/çıkarma sırasıyla ilerle. Kesirlerde paydaları dikkat et.'
+                    : 'Verilenleri maddele; soru köküne göre eleme yap.',
+              },
+              {
+                title: '3. Kontrol et',
+                body: 'Sonucu yerine koyarak veya şıkları eleyerek doğrula.',
+              },
+            ],
     transparencyNote,
     quota: { remainingToday: 5, unlimited: false },
   };

@@ -9,8 +9,8 @@ import type {
 } from '@/src/lib/api/types';
 
 import {
+  currentIstanbulWeekMondayToSunday,
   istanbulDateKey,
-  lastIstanbulDays,
   streakFromActiveDates,
 } from './istanbulDates';
 
@@ -116,7 +116,7 @@ export function buildProgressFromAttempts(
     (a, b) => b.attemptCount - a.attemptCount,
   );
   const { topic: weakestTopic, focusHint } = selectWeakest(topics);
-  const weekDays = lastIstanbulDays(7, today);
+  const weekDays = currentIstanbulWeekMondayToSunday(today);
   const weekly = weekDays.map((date) => ({
     date,
     solvedCount: scoped.filter(

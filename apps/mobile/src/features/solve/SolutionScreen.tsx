@@ -12,6 +12,7 @@ import {
 
 import { subjectLabel } from '@/src/data';
 import type { TopicLesson } from '@/src/data/topicLessons';
+import { examThemeFor } from '@/src/features/exam/examTheme';
 import type {
   ExamType,
   SolutionAnswer,
@@ -47,6 +48,7 @@ const EXAM_TITLE: Record<ExamType, string> = {
   lgs: 'LGS',
   ygs: 'YGS (YKS)',
   kpss: 'KPSS',
+  trafik: 'Trafik',
 };
 
 type TabId = 'steps' | 'short' | 'lesson';
@@ -101,6 +103,8 @@ export function SolutionScreen({
     { id: 'lesson', label: 'Konu anlatımı', testID: 'tab-lesson' },
   ];
 
+  const examTheme = examThemeFor(examType);
+
   return (
     <ScrollView
       style={styles.container}
@@ -109,10 +113,30 @@ export function SolutionScreen({
       <Text style={styles.heading}>Çözüm</Text>
 
       {(examType || subject || topicName) && (
-        <View style={styles.metaBand} testID="solution-meta">
-          {examType ? <Text style={styles.metaExam}>{EXAM_TITLE[examType]}</Text> : null}
+        <View
+          style={[
+            styles.metaBand,
+            examTheme ? { backgroundColor: examTheme.soft } : null,
+          ]}
+          testID="solution-meta">
+          {examType ? (
+            <Text
+              style={[
+                styles.metaExam,
+                examTheme ? { color: examTheme.solid } : null,
+              ]}>
+              {EXAM_TITLE[examType]}
+              {examTheme ? ` · ${examTheme.modeChip}` : ''}
+            </Text>
+          ) : null}
           {subject && subject !== 'unknown' ? (
-            <Text style={styles.metaSubject}>{subjectLabel(subject)}</Text>
+            <Text
+              style={[
+                styles.metaSubject,
+                examTheme ? { color: examTheme.solid } : null,
+              ]}>
+              {subjectLabel(subject)}
+            </Text>
           ) : null}
           {topicName ? <Text style={styles.metaTopic}>{topicName}</Text> : null}
         </View>

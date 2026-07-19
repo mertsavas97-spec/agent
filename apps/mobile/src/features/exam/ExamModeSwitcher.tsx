@@ -13,7 +13,7 @@ export type ExamModeSwitcherProps = {
   disabled?: boolean;
 };
 
-/** LGS / YGS / KPSS — labeled exam mode with per-exam color + MOD chip. */
+/** LGS / YGS / KPSS / Trafik — labeled exam mode with per-exam color + MOD chip. */
 export function ExamModeSwitcher({ value, onChange, disabled }: ExamModeSwitcherProps) {
   const theme = examThemeFor(value);
 

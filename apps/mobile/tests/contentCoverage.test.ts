@@ -3,7 +3,7 @@ import { itemsForTopic } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import type { ExamType } from '@/src/lib/api/types';
 
-const EXAMS: ExamType[] = ['lgs', 'ygs', 'kpss'];
+const EXAMS: ExamType[] = ['lgs', 'ygs', 'kpss', 'trafik'];
 
 describe('catalog content coverage', () => {
   it('every topic has a lesson (curated or subject-aware fallback)', () => {

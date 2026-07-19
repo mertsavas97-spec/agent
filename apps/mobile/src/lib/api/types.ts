@@ -1,6 +1,6 @@
 /** Shared client DTOs — mirror `specs/002-cozbil-mvp/contracts/` */
 
-export type ExamType = 'lgs' | 'ygs' | 'kpss';
+export type ExamType = 'lgs' | 'ygs' | 'kpss' | 'trafik';
 /** Exam branch / ders — see docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md */
 export type Subject =
   | 'math'
@@ -18,6 +18,9 @@ export type Subject =
   | 'geometry'
   | 'civics'
   | 'current'
+  | 'traffic'
+  | 'vehicle'
+  | 'firstaid'
   | 'unknown';
 
 export type AttemptStatus =

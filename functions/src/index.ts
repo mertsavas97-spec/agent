@@ -37,7 +37,7 @@ export const ping = regional.https.onRequest((_req, res) => {
   res.status(200).json({
     ok: true,
     app: 'cozbil',
-    exams: ['lgs', 'ygs', 'kpss'],
+    exams: ['lgs', 'ygs', 'kpss', 'trafik'],
     aiMode: runtimeModeLabel(),
     aiBackend: liveBackendLabel(),
     projectId: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT_ID || null,

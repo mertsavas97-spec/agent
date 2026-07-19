@@ -57,6 +57,13 @@ const KPSS_TURKISH = [
   '3. Adım: Şıkları bağlamla eşleştir. topicId: kpss-turkish-anlam',
 ].join('\n');
 
+const TRAFIK_KURAL = [
+  'Örnek (trafik hız): Yerleşim yerinde aksi işaret yoksa azami hız?',
+  '1. Adım: Genel kuralı hatırla — yerleşim yeri 50 km/s.',
+  '2. Adım: “Aksi işaret” yoksa istisna arama.',
+  '3. Adım: Cevabı güvenlik bağlamında doğrula. topicId: trafik-traffic-hiz-mesafe',
+].join('\n');
+
 function mathFewShot(examType: ExamType): string {
   switch (examType) {
     case 'lgs':
@@ -65,6 +72,8 @@ function mathFewShot(examType: ExamType): string {
       return YGS_DENKLEM;
     case 'kpss':
       return KPSS_YUZDE;
+    case 'trafik':
+      return TRAFIK_KURAL;
     default: {
       const _e: never = examType;
       return _e;
@@ -80,6 +89,8 @@ function turkishFewShot(examType: ExamType): string {
       return YGS_TURKISH;
     case 'kpss':
       return KPSS_TURKISH;
+    case 'trafik':
+      return TRAFIK_KURAL;
     default: {
       const _e: never = examType;
       return _e;
@@ -95,6 +106,14 @@ export function itemBankFewShot(
   examType: ExamType,
   subject?: Subject | null,
 ): string {
+  if (
+    examType === 'trafik' ||
+    subject === 'traffic' ||
+    subject === 'vehicle' ||
+    subject === 'firstaid'
+  ) {
+    return TRAFIK_KURAL;
+  }
   if (subject === 'turkish') return turkishFewShot(examType);
   if (subject === 'math' || subject === 'geometry' || !subject || subject === 'unknown') {
     return mathFewShot(examType);

@@ -73,6 +73,8 @@ export function SegmentedTabs<T extends string>({
     );
   }
 
+  const compact = items.length >= 4;
+
   return (
     <View style={styles.track} testID={testID} accessibilityRole="toolbar">
       {items.map((item) => {
@@ -86,6 +88,7 @@ export function SegmentedTabs<T extends string>({
             disabled={disabled}
             style={[
               styles.segment,
+              compact && styles.segmentCompact,
               selected ? styles.segmentOn : styles.segmentOff,
               selected && {
                 backgroundColor: activeColor,
@@ -93,12 +96,24 @@ export function SegmentedTabs<T extends string>({
               },
             ]}
             onPress={() => onChange(item.id)}>
-            <Text style={[styles.segmentLabel, selected && styles.segmentLabelOn]}>
+            <Text
+              style={[
+                styles.segmentLabel,
+                compact && styles.segmentLabelCompact,
+                selected && styles.segmentLabelOn,
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}>
               {item.label}
             </Text>
             {item.caption ? (
               <Text
-                style={[styles.segmentCaption, selected && styles.segmentCaptionOn]}
+                style={[
+                  styles.segmentCaption,
+                  compact && styles.segmentCaptionCompact,
+                  selected && styles.segmentCaptionOn,
+                ]}
                 numberOfLines={1}>
                 {item.caption}
               </Text>
@@ -132,6 +147,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
+  segmentCompact: {
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+    minHeight: 54,
+  },
   segmentOff: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -148,6 +168,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.navy,
   },
+  segmentLabelCompact: {
+    fontSize: 12,
+  },
   segmentLabelOn: {
     color: colors.white,
   },
@@ -157,6 +180,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  segmentCaptionCompact: {
+    fontSize: 9,
   },
   segmentCaptionOn: {
     color: 'rgba(255,255,255,0.85)',

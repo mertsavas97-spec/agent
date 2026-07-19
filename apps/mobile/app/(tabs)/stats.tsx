@@ -11,6 +11,7 @@ import {
 
 import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
 import { EXAM_THEME, examThemeFor } from '@/src/features/exam/examTheme';
+import { EXAM_TYPES } from '@/src/features/exam/examTypes';
 import {
   fetchProgressAttempts,
   progressForExam,
@@ -20,13 +21,8 @@ import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
-const WEEKDAY_TR = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-
-function weekdayLabel(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const utc = new Date(Date.UTC(y, m - 1, d));
-  return WEEKDAY_TR[utc.getUTCDay()] ?? isoDate.slice(5);
-}
+/** Hafta başı Pazartesi → Pzt … Paz */
+const WEEK_LABELS_MON = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as const;
 
 function streakBlurb(n: number): string {
   if (n <= 0) return 'Seriyi başlat — bugün bir soru yeter.';
@@ -44,7 +40,7 @@ function summaryHasData(s: ProgressSummary | null): boolean {
 }
 
 function pickDefaultExam(items: AttemptListItem[]): ExamType {
-  for (const exam of ['lgs', 'ygs', 'kpss'] as ExamType[]) {
+  for (const exam of EXAM_TYPES) {
     if (summaryHasData(progressForExam(items, exam))) return exam;
   }
   return 'lgs';
@@ -95,7 +91,7 @@ export default function StatsScreen() {
 
   const examsWithData = useMemo(() => {
     const set = new Set<ExamType>();
-    for (const exam of ['lgs', 'ygs', 'kpss'] as ExamType[]) {
+    for (const exam of EXAM_TYPES) {
       if (summaryHasData(progressForExam(items, exam))) set.add(exam);
     }
     return set;
@@ -109,7 +105,7 @@ export default function StatsScreen() {
   const maxWeekly = Math.max(1, ...summary.weekly.map((w) => w.solvedCount), 1);
   const topTopics = summary.topics.slice(0, 5);
   const hasData = summaryHasData(summary);
-  const otherWithData = (['lgs', 'ygs', 'kpss'] as ExamType[]).filter(
+  const otherWithData = EXAM_TYPES.filter(
     (e) => e !== examType && examsWithData.has(e),
   );
 
@@ -121,7 +117,7 @@ export default function StatsScreen() {
       <Text style={[styles.eyebrow, { color: theme.solid }]}>İlerleme</Text>
       <Text style={styles.title}>İstatistik</Text>
       <Text style={styles.subtitle}>
-        Her sınavın kendi verisi — ana sayfa seçiminden bağımsız. Sekmeye dokun.
+        Sınav sekmeleri bağımsız. Hafta Pazartesi başlar.
       </Text>
 
       <Text style={styles.filterLabel}>Sınav</Text>
@@ -206,10 +202,10 @@ export default function StatsScreen() {
             <View style={styles.sectionBlock}>
               <Text style={styles.section}>Bu hafta</Text>
               <Text style={styles.sectionSub}>
-                {EXAM_LABEL[examType]} — hangi günler ateşlendin?
+                {EXAM_LABEL[examType]} · Pzt → Paz
               </Text>
               <View style={styles.weekly} testID="weekly-series">
-                {summary.weekly.map((w) => {
+                {summary.weekly.map((w, idx) => {
                   const h = Math.max(
                     8,
                     Math.round((w.solvedCount / maxWeekly) * 56),
@@ -228,8 +224,12 @@ export default function StatsScreen() {
                           }}
                         />
                       </View>
-                      <Text style={[styles.weekDay, on && { color: theme.solid, fontWeight: '700' }]}>
-                        {weekdayLabel(w.date)}
+                      <Text
+                        style={[
+                          styles.weekDay,
+                          on && { color: theme.solid, fontWeight: '700' },
+                        ]}>
+                        {WEEK_LABELS_MON[idx] ?? w.date.slice(5)}
                       </Text>
                       <Text style={styles.weekCount}>{w.solvedCount}</Text>
                     </View>
@@ -241,7 +241,7 @@ export default function StatsScreen() {
 
           {summary.subjectMix && summary.subjectMix.length > 0 ? (
             <View style={styles.sectionBlock}>
-              <Text style={styles.section}>Derslerin</Text>
+              <Text style={styles.section}>Ders dağılımı</Text>
               <Text style={styles.sectionSub}>Nereye ağırlık verdin?</Text>
               <View style={styles.mixRow} testID="subject-mix">
                 {summary.subjectMix.map((s) => (
@@ -268,8 +268,8 @@ export default function StatsScreen() {
 
           {topTopics.length > 0 ? (
             <View style={styles.sectionBlock}>
-              <Text style={styles.section}>Konular</Text>
-              <Text style={styles.sectionSub}>Derinleştiğin yerler</Text>
+              <Text style={styles.section}>Konu yoğunluğu</Text>
+              <Text style={styles.sectionSub}>En çok çalıştığın konular</Text>
               {topTopics.map((t) => (
                 <View
                   key={t.topicId}
@@ -335,34 +335,38 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: space.lg, paddingBottom: space.xl * 2 },
   eyebrow: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   title: {
-    fontFamily: typography.fontFamily,
-    fontSize: 28,
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 32,
     fontWeight: '700',
     color: colors.navy,
-    letterSpacing: -0.3,
+    letterSpacing: -0.6,
+    lineHeight: 38,
   },
   subtitle: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: 6,
     marginBottom: space.md,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   filterLabel: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontSize: 12,
-    fontWeight: '600',
-    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.navy,
     marginBottom: space.sm,
+    opacity: 0.72,
   },
   modeChip: {
     alignSelf: 'flex-start',
@@ -433,17 +437,20 @@ const styles = StyleSheet.create({
   },
   sectionBlock: { marginBottom: space.lg },
   section: {
-    fontFamily: typography.fontFamilySemiBold,
+    fontFamily: typography.fontFamilyBold,
     fontWeight: '700',
-    fontSize: 17,
+    fontSize: 22,
     color: colors.navy,
+    letterSpacing: -0.4,
+    lineHeight: 28,
   },
   sectionSub: {
     fontFamily: typography.fontFamily,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
     marginBottom: space.md,
+    lineHeight: 20,
   },
   weekly: {
     flexDirection: 'row',
@@ -459,15 +466,16 @@ const styles = StyleSheet.create({
   weekCol: { alignItems: 'center', flex: 1 },
   weekBarTrack: { height: 56, justifyContent: 'flex-end', marginBottom: 6 },
   weekDay: {
-    fontFamily: typography.fontFamily,
-    fontSize: 11,
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '600',
     color: colors.textMuted,
   },
   weekCount: {
-    fontFamily: typography.fontFamily,
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.navy,
     marginTop: 2,
   },
   mixRow: { gap: space.sm },

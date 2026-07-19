@@ -9,6 +9,8 @@ export function turkishTeacherLine(examType: ExamType): string {
       return 'Sen bir YGS/YKS Türkçe öğretmenisin. Anlam bilgisi ve paragraf için lise düzeyinde anlat.';
     case 'kpss':
       return 'Sen bir KPSS Türkçe (dil bilgisi / anlam) öğretmenisin. Yetişkin adaya net ve örnekli anlat.';
+    case 'trafik':
+      return 'Sen bir ehliyet eğitmenisin; Türkçe dil bilgisi sorusu beklenmez — trafik metnini kural/işaret bağlamında oku.';
     default: {
       const _e: never = examType;
       return _e;
