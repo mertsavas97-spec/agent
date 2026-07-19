@@ -1,4 +1,4 @@
-import { Redirect, usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -13,12 +13,20 @@ type GateState =
 
 const BOOT_TIMEOUT_MS = 12_000;
 
+/**
+ * Auth/onboarding gate. Always keeps the Stack mounted after boot —
+ * never replace the navigator tree with <Redirect> (expo-router update loop).
+ */
 export function BootstrapGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const [uid, setUid] = useState<string | null>(null);
   const [state, setState] = useState<GateState>({ status: 'loading' });
   const [bootError, setBootError] = useState<string | null>(null);
   const bootedForUid = useRef<string | null>(null);
+  const navigatingRef = useRef(false);
 
   useEffect(() => {
     if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
@@ -42,7 +50,6 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
       setState({ status: 'ready' });
       return;
     }
-    // Avoid remounting spinner on every tab pathname change.
     if (uid && bootedForUid.current === uid && state.status !== 'loading') {
       return;
     }
@@ -86,6 +93,50 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-boot on auth uid
   }, [uid]);
 
+  // Imperative navigation — keep Stack mounted (avoids Redirect update-depth loop)
+  useEffect(() => {
+    if (state.status === 'loading') return;
+    if (navigatingRef.current) return;
+
+    const onOnboarding = pathname.includes('onboarding');
+
+    if (state.status === 'needs_onboarding' && !onOnboarding) {
+      // Might have just finished onboarding — re-check before bouncing back
+      let alive = true;
+      void (async () => {
+        try {
+          const status = await fetchOnboardingStatus();
+          if (!alive) return;
+          if (status.done) {
+            if (uid) bootedForUid.current = uid;
+            setState({ status: 'ready' });
+            return;
+          }
+        } catch {
+          /* fall through to onboarding */
+        }
+        if (!alive) return;
+        navigatingRef.current = true;
+        routerRef.current.replace('/onboarding');
+        requestAnimationFrame(() => {
+          navigatingRef.current = false;
+        });
+      })();
+      return () => {
+        alive = false;
+      };
+    }
+
+    if (state.status === 'ready' && onOnboarding) {
+      navigatingRef.current = true;
+      routerRef.current.replace('/(tabs)');
+      requestAnimationFrame(() => {
+        navigatingRef.current = false;
+      });
+    }
+    // router omitted from deps — unstable identity would re-fire navigation every render
+  }, [state.status, pathname, uid]);
+
   if (state.status === 'loading') {
     return (
       <View style={styles.center} testID="bootstrap-loading">
@@ -93,14 +144,6 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
         <Text style={styles.hint}>Hazırlanıyor…</Text>
       </View>
     );
-  }
-
-  const onOnboarding = pathname.includes('onboarding');
-  if (state.status === 'needs_onboarding' && !onOnboarding) {
-    return <Redirect href="/onboarding" />;
-  }
-  if (state.status === 'ready' && onOnboarding) {
-    return <Redirect href="/(tabs)" />;
   }
 
   return (
