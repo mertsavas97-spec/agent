@@ -31,7 +31,6 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid);
 
-      // Client bootstrap (IAM fallback): only with locked free-tier defaults
       allow create: if isOwner(uid)
         && bootstrapDefaultsOk()
         && request.resource.data.keys().hasOnly([
@@ -42,7 +41,6 @@ service cloud.firestore {
           'createdAt', 'updatedAt', 'deleteRequestedAt'
         ]);
 
-      // Profile / exam / onboarding only — never quota or abuse fields
       allow update: if isOwner(uid)
         && profileUpdateKeysOnly()
         && request.resource.data.examType in ['lgs', 'ygs', 'kpss']
@@ -66,13 +64,14 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // Org-policy bypass: client creates pending request; Admin trigger writes result
+      // Dogfood solve path (org-policy bypass). Client: create pending only.
+      // Server (Admin SDK trigger): updates status/response — bypasses rules.
       match /solveRequests/{requestId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid)
+          && request.resource.data.keys().hasAll(['imagePath', 'status'])
           && request.resource.data.status == 'pending'
-          && request.resource.data.imagePath is string
-          && request.resource.data.imagePath.matches('users/' + uid + '/uploads/.*');
+          && request.resource.data.imagePath is string;
         allow update, delete: if false;
       }
     }
@@ -86,7 +85,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Server-only multi-instance rate limit buckets
     match /rateLimits/{limitId} {
       allow read, write: if false;
     }
