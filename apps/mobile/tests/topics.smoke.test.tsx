@@ -32,13 +32,14 @@ jest.mock('firebase/firestore', () => ({
 import TopicsScreen from '@/app/(tabs)/topics';
 
 describe('TopicsScreen', () => {
-  it('lists örnek soru cards for active exam', async () => {
+  it('lists örnek soru cards for active exam subject', async () => {
     render(<TopicsScreen />);
     expect(screen.getByTestId('topics-screen')).toBeTruthy();
-    expect(screen.getByText('Konular')).toBeTruthy();
+    expect(screen.getByText('Konu anlatımı')).toBeTruthy();
     await waitFor(() => {
       expect(screen.getByTestId('topics-list')).toBeTruthy();
-      expect(screen.getByTestId('topic-item-lgs-math-kesirler-001')).toBeTruthy();
+      // LGS default ders = Türkçe
+      expect(screen.getByTestId('topic-item-lgs-turkish-paragraf-001')).toBeTruthy();
     });
   });
 });

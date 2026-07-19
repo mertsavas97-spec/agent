@@ -1,0 +1,37 @@
+{
+  "id": "lgs-math-oran-001",
+  "examType": "lgs",
+  "subject": "math",
+  "topicId": "lgs-math-oran-oranti",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "3 işçinin 4 günde bitirdiği işi 6 işçi kaç günde bitirir? (aynı hızda)",
+  "choices": {
+    "A": "1",
+    "B": "2",
+    "C": "3",
+    "D": "4",
+    "E": "6"
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. İş miktarı",
+      "body": "3 işçi × 4 gün = 12 işçi-gün. Toplam iş 12 birim."
+    },
+    {
+      "title": "2. Yeni süre",
+      "body": "6 işçi → 12 ÷ 6 = 2 gün. Cevap B."
+    }
+  ],
+  "styleRefNote": "LGS ters orantı; özgün",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

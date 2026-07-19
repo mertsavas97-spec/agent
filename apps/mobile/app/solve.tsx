@@ -14,6 +14,7 @@ import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { findTopic } from '@/src/data';
+import { lessonForTopic } from '@/src/data/topicLessons';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { isKnownSubject, subjectsForExam } from '@/src/data';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
@@ -188,28 +189,46 @@ export default function SolveFlowScreen() {
   }
 
   if (result && result.status === 'solved') {
-    const topicName = result.topicId ? findTopic(result.topicId)?.nameTr ?? null : null;
-    return (
-      <SolutionScreen
-        steps={result.steps}
-        transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
-        imageUri={typeof params.uri === 'string' ? params.uri : null}
-        solutionId={result.solutionId}
-        examType={examType}
-        subject={result.subject}
-        topicName={topicName}
-        onExplainAgain={() => callExplainAgain(result.solutionId)}
-        onDone={() => {
-          void (async () => {
-            await runInterstitialIfNeeded({
-              billedSolvesToday: billedSolvesFromQuota(result),
-              atNaturalBreak: true,
-            });
-            router.back();
-          })();
-        }}
-      />
-    );
+        const topicName = result.topicId ? findTopic(result.topicId)?.nameTr ?? null : null;
+        const topicMeta = result.topicId ? findTopic(result.topicId) : undefined;
+        const topicLesson = lessonForTopic(
+          result.topicId,
+          topicMeta
+            ? {
+                nameTr: topicMeta.nameTr,
+                subject: topicMeta.subject,
+                examType: topicMeta.examType,
+              }
+            : examType && result.subject
+              ? {
+                  nameTr: topicName ?? 'Konu',
+                  subject: result.subject,
+                  examType,
+                }
+              : undefined,
+        );
+        return (
+          <SolutionScreen
+            steps={result.steps}
+            transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
+            imageUri={typeof params.uri === 'string' ? params.uri : null}
+            solutionId={result.solutionId}
+            examType={examType}
+            subject={result.subject}
+            topicName={topicName}
+            topicLesson={topicLesson}
+            onExplainAgain={() => callExplainAgain(result.solutionId)}
+            onDone={() => {
+              void (async () => {
+                await runInterstitialIfNeeded({
+                  billedSolvesToday: billedSolvesFromQuota(result),
+                  atNaturalBreak: true,
+                });
+                router.back();
+              })();
+            }}
+          />
+        );
   }
 
   return null;

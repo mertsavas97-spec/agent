@@ -1,11 +1,12 @@
 import { findItem, itemsForExam, ITEM_BANK_SEED } from '@/src/data/itemBank';
 
 describe('item bank seed (T069)', () => {
-  it('has one seed item per exam', () => {
-    expect(itemsForExam('lgs').length).toBeGreaterThanOrEqual(1);
-    expect(itemsForExam('ygs').length).toBeGreaterThanOrEqual(1);
-    expect(itemsForExam('kpss').length).toBeGreaterThanOrEqual(1);
-    expect(ITEM_BANK_SEED.every((i) => i.explanationSteps.length >= 2)).toBe(true);
+  it('has multiple seed items per exam', () => {
+    expect(itemsForExam('lgs').length).toBeGreaterThanOrEqual(3);
+    expect(itemsForExam('ygs').length).toBeGreaterThanOrEqual(3);
+    expect(itemsForExam('kpss').length).toBeGreaterThanOrEqual(3);
+    expect(ITEM_BANK_SEED.every((i) => i.explanationSteps.length >= 1)).toBe(true);
+    expect(ITEM_BANK_SEED.length).toBeGreaterThanOrEqual(10);
   });
 
   it('finds sample by id', () => {

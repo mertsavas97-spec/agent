@@ -11,7 +11,8 @@ import { doc, getDoc } from 'firebase/firestore';
 
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { setPendingSubjectHint } from '@/src/features/solve/subjectHintStore';
-import { itemsForExam } from '@/src/data/itemBank';
+import { itemsForExamSubject } from '@/src/data/itemBank';
+import { lessonForTopic } from '@/src/data/topicLessons';
 import {
   findTopic,
   subjectLabel,
@@ -59,18 +60,21 @@ export default function TopicsScreen() {
     () => topicsForExamSubject(examType, subject),
     [examType, subject],
   );
-  const samples = useMemo(() => itemsForExam(examType), [examType]);
+  const samples = useMemo(
+    () => itemsForExamSubject(examType, subject),
+    [examType, subject],
+  );
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       testID="topics-screen">
-      <Text style={styles.eyebrow}>Müfredat</Text>
-      <Text style={styles.title}>Konular</Text>
+      <Text style={styles.eyebrow}>Müfredat · anlatım</Text>
+      <Text style={styles.title}>Konu anlatımı</Text>
       <Text style={styles.subtitle}>
-        {EXAM_LABEL[examType]} dersleri (2020–2026 oturum yapısı). Alt kategoriden konu seç;
-        örnek anlatım varsa aç.
+        {EXAM_LABEL[examType]} için konuyu seç → kısa öğretmen anlatımı + örnek soru.
+        Telifsiz, özgün içerik.
       </Text>
 
       <Text style={styles.filterLabel}>Ders</Text>
@@ -86,16 +90,31 @@ export default function TopicsScreen() {
         items={subjects.map((s) => ({ id: s, label: subjectLabel(s) }))}
       />
 
-      <Text style={[styles.filterLabel, styles.spaced]}>Konu başlıkları</Text>
+      <Text style={[styles.filterLabel, styles.spaced]}>Konular</Text>
       {topics.length === 0 ? (
         <EmptyState title="Bu derste konu yok" subtitle="Başka bir ders seç." />
       ) : (
         <View style={styles.topicGrid} testID="topics-list">
-          {topics.map((t) => (
-            <View key={t.id} style={styles.topicChip} testID={`catalog-topic-${t.id}`}>
-              <Text style={styles.topicChipText}>{t.nameTr}</Text>
-            </View>
-          ))}
+          {topics.map((t) => {
+            const hasLesson = Boolean(lessonForTopic(t.id));
+            const sampleCount = samples.filter((s) => s.topicId === t.id).length;
+            return (
+              <Pressable
+                key={t.id}
+                style={[styles.topicChip, hasLesson && styles.topicChipRich]}
+                testID={`catalog-topic-${t.id}`}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({ pathname: '/topic/[id]', params: { id: t.id } })
+                }>
+                <Text style={styles.topicChipText}>{t.nameTr}</Text>
+                <Text style={styles.topicChipMeta}>
+                  {hasLesson ? 'Anlatım' : 'Özet'}
+                  {sampleCount > 0 ? ` · ${sampleCount} örnek` : ''}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       )}
 
@@ -111,16 +130,20 @@ export default function TopicsScreen() {
           Bu dersten soru çek ({subjectLabel(subject)})
         </Text>
         <Text style={styles.photoCtaSub}>
-          Ana sayfada kamera veya galeri seç; AI’ya ders ipucu gider
+          Ana sayfada kamera veya galeri — AI’ya ders ipucu gider
         </Text>
       </Pressable>
 
-      <Text style={[styles.filterLabel, styles.spaced]}>Örnek soru & anlatım</Text>
+      <Text style={[styles.filterLabel, styles.spaced]}>
+        Örnek soru & adım adım anlatım
+      </Text>
       {samples.length === 0 ? (
-        <Text style={styles.hint}>
-          Bu ders için örnek madde henüz eklenmedi. Fotoğrafla soru göndererek canlı çözüm
-          alabilirsin.
-        </Text>
+        <View style={styles.emptySamples}>
+          <Text style={styles.hint}>
+            Bu ders için örnek madde henüz yok. Yukarıdan konu seçip kısa anlatımı oku veya
+            fotoğrafla canlı çözüm al.
+          </Text>
+        </View>
       ) : (
         samples.map((item) => {
           const topic = findTopic(item.topicId);
@@ -136,11 +159,16 @@ export default function TopicsScreen() {
               <Text style={styles.cardKicker}>
                 {subjectLabel(item.subject)}
                 {topic ? ` · ${topic.nameTr}` : ''}
+                {item.difficulty === 'easy'
+                  ? ' · kolay'
+                  : item.difficulty === 'mid'
+                    ? ' · orta'
+                    : ' · zor'}
               </Text>
               <Text style={styles.cardTitle} numberOfLines={3}>
                 {item.stem}
               </Text>
-              <Text style={styles.cardCta}>Adım adım anlatımı gör →</Text>
+              <Text style={styles.cardCta}>Konuyu + çözümü gör →</Text>
             </Pressable>
           );
         })
@@ -191,23 +219,42 @@ const styles = StyleSheet.create({
   topicGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   topicChip: {
     backgroundColor: colors.white,
-    borderRadius: radii.pill,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: space.md,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minWidth: '46%',
+    flexGrow: 1,
+  },
+  topicChipRich: {
+    borderColor: colors.orange,
+    backgroundColor: colors.orangeSoft,
   },
   topicChipText: {
     fontFamily: typography.fontFamily,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.navy,
+  },
+  topicChipMeta: {
+    fontFamily: typography.fontFamily,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 3,
   },
   hint: {
     fontFamily: typography.fontFamily,
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 19,
+  },
+  emptySamples: {
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   card: {
     backgroundColor: colors.white,
@@ -243,6 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navy,
     borderRadius: radii.xl,
     padding: space.md,
+    marginTop: space.md,
     marginBottom: space.sm,
   },
   photoCtaText: {
@@ -259,4 +307,3 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 });
-

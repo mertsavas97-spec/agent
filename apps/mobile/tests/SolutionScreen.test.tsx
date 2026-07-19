@@ -45,4 +45,22 @@ describe('SolutionScreen', () => {
     });
     expect(onExplainAgain).toHaveBeenCalled();
   });
+
+  it('shows konu anlatımı tab with lesson content', () => {
+    render(
+      <SolutionScreen
+        steps={[{ title: '1', body: 'x' }]}
+        topicName="Kesirler"
+        topicLesson={{
+          topicId: 'lgs-math-kesirler',
+          headline: 'Kesirler: bütünü parçalara ayırmak',
+          bullets: ['Pay = alınan parça.'],
+          tip: 'Pastayı çiz.',
+        }}
+      />,
+    );
+    fireEvent.press(screen.getByTestId('tab-lesson'));
+    expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Kesirler/);
+    expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Pastayı çiz/);
+  });
 });

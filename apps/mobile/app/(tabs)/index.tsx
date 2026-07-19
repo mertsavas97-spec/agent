@@ -197,9 +197,9 @@ export default function HomeScreen() {
           testID="home-topics-link"
           onPress={() => router.push('/(tabs)/topics')}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.topicsLinkTitle}>Örnek soru ve konu anlatımı</Text>
+            <Text style={styles.topicsLinkTitle}>Konu anlatımı & örnek soru</Text>
             <Text style={styles.topicsLinkBody}>
-              Seçili sınavdan hazır örnekleri adım adım incele.
+              Ders seç, konuyu oku, adım adım örnek çözümü aç.
             </Text>
           </View>
           <Text style={styles.topicsChevron}>›</Text>

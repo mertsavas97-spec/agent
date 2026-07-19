@@ -1,0 +1,37 @@
+{
+  "id": "ygs-math-fonksiyon-001",
+  "examType": "ygs",
+  "subject": "math",
+  "topicId": "ygs-math-fonksiyonlar",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "f(x) = 2x − 3 için f(4) kaçtır?",
+  "choices": {
+    "A": "3",
+    "B": "5",
+    "C": "7",
+    "D": "8",
+    "E": "11"
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. Yerine koy",
+      "body": "f(4) = 2·4 − 3 = 8 − 3."
+    },
+    {
+      "title": "2. Sonuç",
+      "body": "f(4) = 5. Cevap B."
+    }
+  ],
+  "styleRefNote": "YGS fonksiyon değeri; özgün",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

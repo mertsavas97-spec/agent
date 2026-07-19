@@ -97,8 +97,18 @@ export function createStubSolver(
     subject: 'math',
     topicId: 'lgs-math-kesirler',
     steps: [
-      { title: '1. Adım', body: 'Paydaları eşitle.' },
-      { title: '2. Adım', body: 'Payları topla ve sadeleştir.' },
+      {
+        title: '1. Ne istendi?',
+        body: 'Kesir işleminde önce verilenleri ve istenen parçayı ayır.',
+      },
+      {
+        title: '2. Payda eşitle / işlem yap',
+        body: 'Toplama-çıkarmada paydaları eşitle; çarpma-bölmede kuralları uygula.',
+      },
+      {
+        title: '3. Kontrol',
+        body: 'Sonucu sadeleştir ve yerine koyarak doğrula. (Demo stub — canlı AI bağlanınca görsele göre üretilir.)',
+      },
     ],
   },
 ): VisionSolver {

@@ -16,19 +16,19 @@
   "answerKey": "B",
   "explanationSteps": [
     {
-      "title": "1. Adım",
-      "body": "İlk yenenden sonra kalan: 1 - 3/8 = 5/8."
+      "title": "1. Ne kaldı?",
+      "body": "Bütün 1. İlk yemeden sonra kalan: 1 − 3/8 = 5/8."
     },
     {
-      "title": "2. Adım",
-      "body": "Kalanın yarısı yenir: (5/8) × (1/2) = 5/16 yenir; bu ikinci yemedir."
+      "title": "2. Kalanın yarısı",
+      "body": "Kalanın 1/2’si yenir: (5/8)×(1/2) = 5/16."
     },
     {
-      "title": "3. Adım",
-      "body": "Toplam yenmeyen: 5/8 - 5/16 = 10/16 - 5/16 = 5/16. Cevap 5/16."
+      "title": "3. Son durum",
+      "body": "Kalan: 5/8 − 5/16 = 5/16. Cevap B."
     }
   ],
-  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "transparencyNote": "Özgün örnek anlatım — kontrol etmeni öneririz.",
   "source": "original",
   "license": "owned",
   "styleRefNote": "LGS tarzı kesir problemi; özgün senaryo, kitapçık metni yok",

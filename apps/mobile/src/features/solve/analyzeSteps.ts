@@ -9,9 +9,9 @@ export type AnalyzeStep = {
 };
 
 export const ANALYZE_STEPS: AnalyzeStep[] = [
-  { id: 'upload', label: 'Görsel yükleniyor', progress: 0.22 },
-  { id: 'moderate', label: 'Güvenlik kontrolü', progress: 0.48 },
-  { id: 'solve', label: 'Adım adım çözülüyor', progress: 0.86 },
+  { id: 'upload', label: 'Fotoğraf yolda', progress: 0.22 },
+  { id: 'moderate', label: 'Güvenli mi bakıyorum', progress: 0.48 },
+  { id: 'solve', label: 'Adım adım çözüyorum', progress: 0.86 },
 ];
 
 export function progressForStep(stepId: AnalyzeStepId): number {
@@ -19,5 +19,5 @@ export function progressForStep(stepId: AnalyzeStepId): number {
 }
 
 export function labelForStep(stepId: AnalyzeStepId): string {
-  return ANALYZE_STEPS.find((s) => s.id === stepId)?.label ?? 'Sorun analiz ediliyor...';
+  return ANALYZE_STEPS.find((s) => s.id === stepId)?.label ?? 'Sorun analiz ediliyor…';
 }

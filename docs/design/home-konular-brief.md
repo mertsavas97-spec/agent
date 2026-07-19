@@ -10,6 +10,9 @@
 - İkincil: “Galeriden soru seç”
 - Sınav: seçili = navy + turuncu çizgi; yoksa varsayılan LGS persist
 
-## Konular (5. tab)
-- Örnek soru + adım adım anlatım (item bank seed)
+## Konular / Anlatım (5. tab)
+- Başlık: **Konu anlatımı** (tab etiketi: Anlatım)
+- Ders filtresi → tıklanabilir konu chip’leri → `/topic/[id]` öğretmen özeti
+- Örnek soru + adım adım anlatım (item bank seed, ders bazlı filtre)
+- Çözüm ekranında üçüncü sekme: **Konu anlatımı**
 - “%100 doğru” yok; şeffaflık notu

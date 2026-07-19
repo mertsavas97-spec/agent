@@ -83,6 +83,15 @@ function RootLayoutNav() {
               headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
             }}
           />
+          <Stack.Screen
+            name="topic/[id]"
+            options={{
+              title: 'Konu anlatımı',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </BootstrapGate>

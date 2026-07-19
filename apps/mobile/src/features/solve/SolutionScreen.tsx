@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { subjectLabel } from '@/src/data';
+import type { TopicLesson } from '@/src/data/topicLessons';
 import type { ExamType, SolutionStep, Subject } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, radii, space, typography } from '@/src/theme';
@@ -22,8 +23,8 @@ export type SolutionScreenProps = {
   examType?: ExamType | null;
   subject?: Subject | null;
   topicName?: string | null;
+  topicLesson?: TopicLesson | null;
   onExplainAgain?: () => Promise<string>;
-  /** Natural break exit (interstitial may run in parent). */
   onDone?: () => void;
 };
 
@@ -33,6 +34,8 @@ const EXAM_TITLE: Record<ExamType, string> = {
   kpss: 'KPSS',
 };
 
+type TabId = 'steps' | 'short' | 'lesson';
+
 export function SolutionScreen({
   steps,
   transparencyNote = SAFETY_MESSAGES.transparency,
@@ -41,13 +44,14 @@ export function SolutionScreen({
   examType,
   subject,
   topicName,
+  topicLesson,
   onExplainAgain,
   onDone,
 }: SolutionScreenProps) {
   const [followUp, setFollowUp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'steps' | 'short'>('steps');
+  const [tab, setTab] = useState<TabId>('steps');
 
   async function handleExplain() {
     if (!onExplainAgain) return;
@@ -66,8 +70,14 @@ export function SolutionScreen({
   const shortBody =
     followUp ??
     (steps.length > 0
-      ? steps[steps.length - 1]?.body ?? ''
+      ? steps.map((s, i) => `${i + 1}) ${s.body}`).join('\n\n')
       : 'Özet henüz yok — adım adım sekmeye bak.');
+
+  const tabs: { id: TabId; label: string; testID: string }[] = [
+    { id: 'steps', label: 'Adım adım', testID: 'tab-steps' },
+    { id: 'short', label: 'Kısa çözüm', testID: 'tab-short' },
+    { id: 'lesson', label: 'Konu anlatımı', testID: 'tab-lesson' },
+  ];
 
   return (
     <ScrollView
@@ -91,22 +101,17 @@ export function SolutionScreen({
       ) : null}
 
       <View style={styles.tabs} testID="solution-tabs">
-        <Pressable
-          style={[styles.tab, tab === 'steps' && styles.tabOn]}
-          onPress={() => setTab('steps')}
-          testID="tab-steps">
-          <Text style={[styles.tabLabel, tab === 'steps' && styles.tabLabelOn]}>
-            Adım adım
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, tab === 'short' && styles.tabOn]}
-          onPress={() => setTab('short')}
-          testID="tab-short">
-          <Text style={[styles.tabLabel, tab === 'short' && styles.tabLabelOn]}>
-            Kısa özet
-          </Text>
-        </Pressable>
+        {tabs.map((t) => (
+          <Pressable
+            key={t.id}
+            style={[styles.tab, tab === t.id && styles.tabOn]}
+            onPress={() => setTab(t.id)}
+            testID={t.testID}>
+            <Text style={[styles.tabLabel, tab === t.id && styles.tabLabelOn]} numberOfLines={1}>
+              {t.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {tab === 'steps' ? (
@@ -116,11 +121,43 @@ export function SolutionScreen({
             <Text style={styles.stepBody}>{step.body}</Text>
           </View>
         ))
-      ) : (
+      ) : null}
+
+      {tab === 'short' ? (
         <View style={styles.card} testID="short-summary">
           <Text style={styles.stepBody}>{shortBody}</Text>
         </View>
-      )}
+      ) : null}
+
+      {tab === 'lesson' ? (
+        <View style={styles.lessonCard} testID="topic-lesson">
+          {topicLesson ? (
+            <>
+              <Text style={styles.lessonHeadline}>{topicLesson.headline}</Text>
+              {topicLesson.bullets.map((b, i) => (
+                <View key={i} style={styles.bulletRow}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.stepBody}>{b}</Text>
+                </View>
+              ))}
+              <View style={styles.tipBox}>
+                <Text style={styles.tipLabel}>İpucu</Text>
+                <Text style={styles.stepBody}>{topicLesson.tip}</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.lessonHeadline}>
+                {topicName ? `${topicName} — kısa hatırlatma` : 'Konu anlatımı'}
+              </Text>
+              <Text style={styles.stepBody}>
+                Bu soru için konu özeti henüz bağlanmadı. Adım adım çözümü oku; takılıran
+                “Anlamadım” ile daha sade anlatım iste.
+              </Text>
+            </>
+          )}
+        </View>
+      ) : null}
 
       <Text style={styles.note} testID="transparency-note">
         {transparencyNote}
@@ -206,12 +243,13 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    gap: space.sm,
+    gap: 6,
     marginBottom: space.md,
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
+    paddingHorizontal: 4,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -224,7 +262,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontFamily: typography.fontFamily,
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -237,6 +275,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  lessonCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: space.md,
+    marginBottom: space.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  lessonHeadline: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.navy,
+    marginBottom: space.md,
+    lineHeight: 24,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: space.sm,
+  },
+  bulletDot: {
+    fontFamily: typography.fontFamily,
+    color: colors.orange,
+    fontWeight: '700',
+    fontSize: 16,
+    lineHeight: 21,
+  },
+  tipBox: {
+    marginTop: space.sm,
+    backgroundColor: colors.orangeSoft,
+    borderRadius: radii.md,
+    padding: space.md,
+  },
+  tipLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '700',
+    color: colors.orange,
+    fontSize: 12,
+    marginBottom: 4,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   stepTitle: {
     fontFamily: typography.fontFamily,
     fontWeight: '700',
@@ -248,6 +329,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 21,
+    flex: 1,
   },
   note: {
     fontFamily: typography.fontFamily,

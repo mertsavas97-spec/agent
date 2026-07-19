@@ -48,7 +48,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="topics"
         options={{
-          title: 'Konular',
+          title: 'Anlatım',
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{

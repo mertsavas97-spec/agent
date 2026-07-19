@@ -19,10 +19,16 @@
 
 ## Açık
 
-- Item bank doldurma T067+  
+- Item bank tam ~50–60 (T067) — şu an 10 özgün madde + konu anlatımları  
 - EAS iOS kota / TestFlight  
-- T062 icon, T063 dogfood raporu  
+- T062 icon yenileme, T063 dogfood raporu, T070 guardian  
 - `main` merge  
+
+## Son UI (2026-07-19)
+
+- Anlatım sekmesi: konu dersleri + filtreli örnekler (`/topic/[id]`)  
+- Çözüm: Adım adım / Kısa çözüm / Konu anlatımı  
+- Loading: neşeli CozbilRobot + moodboard wording  
 
 ## Lokal demo / kişisel telefon
 

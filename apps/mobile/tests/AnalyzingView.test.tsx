@@ -9,8 +9,10 @@ describe('AnalyzingView', () => {
     render(<AnalyzingView step="moderate" />);
     expect(screen.getByTestId('analyzing-view')).toBeTruthy();
     expect(screen.getByText(/Sorun analiz ediliyor/)).toBeTruthy();
+    expect(screen.getByTestId('analyzing-wait')).toHaveTextContent(/birkaç saniye/);
     expect(screen.getByTestId('analyzing-progress-bar')).toBeTruthy();
-    expect(screen.getByTestId('analyzing-step-label')).toHaveTextContent(/Güvenlik/);
+    expect(screen.getByTestId('analyzing-step-label')).toHaveTextContent(/Güvenli/);
+    expect(screen.getByTestId('cozbil-robot')).toBeTruthy();
     expect(screen.getByTestId('analyzing-step-upload')).toBeTruthy();
     expect(screen.getByTestId('analyzing-step-moderate')).toBeTruthy();
     expect(screen.getByTestId('analyzing-step-solve')).toBeTruthy();

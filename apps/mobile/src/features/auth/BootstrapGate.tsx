@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
 import { colors, space } from '@/src/theme';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
 type GateState =
   | { status: 'loading' }
@@ -140,13 +141,7 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   if (state.status === 'loading') {
     return (
       <View style={styles.center} testID="bootstrap-loading">
-        <View style={styles.robotMini}>
-          <View style={styles.eyeRow}>
-            <View style={styles.eye} />
-            <View style={styles.eye} />
-          </View>
-          <View style={styles.mouth} />
-        </View>
+        <CozbilRobot size={72} animate variant="onLight" testID="bootstrap-robot" />
         <Text style={styles.hint}>Hazırlanıyor…</Text>
       </View>
     );
@@ -172,17 +167,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     gap: space.md,
   },
-  robotMini: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: colors.navy,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eyeRow: { flexDirection: 'row', gap: 12, marginBottom: 10 },
-  eye: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.white },
-  mouth: { width: 22, height: 5, borderRadius: 3, backgroundColor: colors.orange },
   hint: {
     color: colors.textSecondary,
     fontSize: 14,

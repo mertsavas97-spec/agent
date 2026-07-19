@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, space, typography } from '@/src/theme';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
 import {
   ANALYZE_STEPS,
@@ -15,17 +16,16 @@ export type AnalyzingViewProps = {
 };
 
 const TIPS = [
-  'Net kadraj = daha iyi çözüm. Şıklar ve soru metni görünsün.',
-  'Biraz sabır — adım adım Türkçe anlatım hazırlanıyor.',
-  'Diyagram ağır sorularda metin yeterli olmayabilir; onu söyleriz.',
-  'Anlamadığın adımı sonra “Anlamadım” ile yeniden sorabilirsin.',
+  'Birkaç saniye — öğretmen gibi adım adım hazırlıyorum.',
+  'Net kadraj = daha net çözüm. Soru + şıklar framesinde olsun.',
+  'Diyagramlı sorularda metin yetmezse dürüstçe söylerim.',
+  'Sonra “Anlamadım” dersen daha sade anlatırım.',
 ];
 
-/** Moodboard loading: robot + staged progress + rotating tips (keeps user engaged). */
+/** Moodboard loading: neşeli robot + staged progress + rotating tips. */
 export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
   const baseTarget = progressForStep(step);
   const anim = useRef(new Animated.Value(0.08)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
   const tipOpacity = useRef(new Animated.Value(1)).current;
   const [displayPct, setDisplayPct] = useState(8);
   const [tipIndex, setTipIndex] = useState(0);
@@ -45,7 +45,6 @@ export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
     };
   }, [anim, baseTarget]);
 
-  // While on final "solve" stage, soft pulse toward 97% so bar never feels frozen at 90%
   useEffect(() => {
     if (step !== 'solve') return;
     const loop = Animated.loop(
@@ -69,25 +68,6 @@ export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
   }, [anim, step]);
 
   useEffect(() => {
-    const breathe = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1.06,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    breathe.start();
-    return () => breathe.stop();
-  }, [pulse]);
-
-  useEffect(() => {
     const id = setInterval(() => {
       Animated.sequence([
         Animated.timing(tipOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
@@ -105,17 +85,12 @@ export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
 
   return (
     <View style={styles.container} testID="analyzing-view">
-      <Animated.View
-        style={[styles.robot, { transform: [{ scale: pulse }] }]}
-        accessibilityLabel="ÇözBil robot">
-        <View style={styles.eyeRow}>
-          <View style={styles.eye} />
-          <View style={styles.eye} />
-        </View>
-        <View style={styles.mouth} />
-      </Animated.View>
+      <CozbilRobot size={112} />
       <Text style={styles.title} testID="analyzing-title">
         Sorun analiz ediliyor…
+      </Text>
+      <Text style={styles.wait} testID="analyzing-wait">
+        Lütfen birkaç saniye bekle — birlikte çözüyoruz.
       </Text>
       <Text style={styles.stepLabel} testID="analyzing-step-label">
         {labelForStep(step)}
@@ -159,40 +134,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: space.lg,
   },
-  robot: {
-    width: 104,
-    height: 104,
-    borderRadius: 28,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.lg,
-  },
-  eyeRow: { flexDirection: 'row', gap: 18, marginBottom: 14 },
-  eye: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.navy,
-  },
-  mouth: {
-    width: 32,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.orange,
-  },
   title: {
     color: colors.white,
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: typography.fontFamilySemiBold,
     fontWeight: typography.headingWeight,
     textAlign: 'center',
-  },
-  stepLabel: {
     marginTop: space.sm,
-    color: '#CBD5E1',
+  },
+  wait: {
+    marginTop: 8,
+    color: '#E2E8F0',
     fontSize: 15,
     fontFamily: typography.fontFamily,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: space.md,
+  },
+  stepLabel: {
+    marginTop: space.md,
+    color: colors.orange,
+    fontSize: 14,
+    fontFamily: typography.fontFamilyMedium,
+    fontWeight: typography.captionWeight,
   },
   barTrack: {
     marginTop: space.lg,
@@ -217,7 +181,7 @@ const styles = StyleSheet.create({
   },
   tip: {
     marginTop: space.lg,
-    color: '#E2E8F0',
+    color: '#CBD5E1',
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
