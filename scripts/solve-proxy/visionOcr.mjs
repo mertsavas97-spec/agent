@@ -12,7 +12,11 @@ export async function ocrImageBase64(imageBase64, mimeType = 'image/jpeg') {
       requests: [
         {
           image: { content: cleaned },
-          features: [{ type: 'DOCUMENT_TEXT_DETECTION' }, { type: 'TEXT_DETECTION' }],
+          features: [
+            { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 },
+            { type: 'TEXT_DETECTION', maxResults: 1 },
+          ],
+          imageContext: { languageHints: ['tr', 'en'] },
         },
       ],
     }),

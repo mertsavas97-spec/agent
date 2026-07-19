@@ -308,10 +308,88 @@ function normalizeExpr(raw) {
 }
 
 /**
+ * Recover a(b-c/d) / e(f-g/h) from clean or heavily mangled OCR.
+ * Live phone OCR example:
+ *   2.\n52-\n35\n5\n23.\n2  →  5(2-3/5) / 2(3-5/2)
+ */
+export function recoverParenDiffStack(ocrText) {
+  const head = ocrText.split(/\n\s*[A-Ea-e]\)/)[0];
+  const mathPart = head
+    .replace(/işleminin sonucu kaçtır\??/gi, '')
+    .replace(/\bLO\b/gi, '')
+    .trim();
+
+  const exprs = new Set();
+
+  const cleanRe =
+    /(\d+)\s*[·•.]?\s*\(\s*(\d+)\s*[-−]\s*(\d+)\s*\/\s*(\d+)\s*\)\s*[\/÷:\n]+\s*(\d+)\s*[·•.]?\s*\(\s*(\d+)\s*[-−]\s*(\d+)\s*\/\s*(\d+)\s*\)/;
+  const clean = mathPart.match(cleanRe);
+  if (clean) {
+    exprs.add(
+      `(${clean[1]}*(${clean[2]}-${clean[3]}/${clean[4]}))/(${clean[5]}*(${clean[6]}-${clean[7]}/${clean[8]}))`,
+    );
+  }
+
+  // Line form: 52- / 35 / 5 / 23. / 2  (g before e — common Vision layout)
+  const lineForm = mathPart.match(
+    /(\d)(\d)\s*[-−]\s*\n+\s*(\d)(\d)\s*\n+\s*(\d)\s*\n+\s*(\d)(\d)\s*[.\-−]?\s*\n+\s*(\d)\b/,
+  );
+  if (lineForm) {
+    const [, a, b, c, d, g, e, f, h] = lineForm;
+    exprs.add(`(${a}*(${b}-${c}/${d}))/(${e}*(${f}-${g}/${h}))`);
+  }
+
+  // Compact: optional leading "2." then 52-35523.2
+  const compact = mathPart.replace(/\s+/g, '').replace(/^\d+\./, '');
+  const mangledGFirst = compact.match(/^(\d)(\d)[-−](\d)(\d)(\d)(\d)(\d)[.\-−]?(\d)/);
+  if (mangledGFirst) {
+    const [, a, b, c, d, g, e, f, h] = mangledGFirst;
+    exprs.add(`(${a}*(${b}-${c}/${d}))/(${e}*(${f}-${g}/${h}))`);
+  }
+  const mangledNormal = compact.match(
+    /^(\d)(\d)[-−](\d)(\d)(\d)(\d)[-−](\d)(\d)/,
+  );
+  if (mangledNormal) {
+    const [, a, b, c, d, e, f, g, h] = mangledNormal;
+    exprs.add(`(${a}*(${b}-${c}/${d}))/(${e}*(${f}-${g}/${h}))`);
+  }
+
+  // Also: 5(2-3/5) on one blob without slash between stacks
+  const semi = mathPart.replace(/\s+/g, '').match(
+    /(\d+)\((\d+)[-−](\d+)\/(\d+)\)[\/÷]?(\d+)\((\d+)[-−](\d+)\/(\d+)\)/,
+  );
+  if (semi) {
+    exprs.add(
+      `(${semi[1]}*(${semi[2]}-${semi[3]}/${semi[4]}))/(${semi[5]}*(${semi[6]}-${semi[7]}/${semi[8]}))`,
+    );
+  }
+
+  return [...exprs];
+}
+
+/**
  * @returns {{ expr: string, value: number, choice?: string, ocr: string, num?: number, den?: number } | null}
  */
 export function evaluateExpression(ocrText) {
   const choices = parseChoices(ocrText);
+
+  const parenStack = pickBestVariant(
+    recoverParenDiffStack(ocrText).flatMap((e) => exprVariants(e)),
+    choices,
+    (expr) => {
+      const value = evalArith(expr);
+      const m = expr.match(/^\((.+)\)\/\((.+)\)$/);
+      if (m) {
+        try {
+          return { value, num: evalArith(m[1]), den: evalArith(m[2]) };
+        } catch {
+          return { value };
+        }
+      }
+      return { value };
+    },
+  );
+  if (parenStack) return { ...parenStack, ocr: ocrText };
 
   // Prefer explicit vertical reconstruction (avoids "1\\n3÷1\\n7" → 13/17)
   const verticalExpr = reconstructVerticalMath(ocrText);

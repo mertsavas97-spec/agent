@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { evaluateExpression, reconstructVerticalMath } from './arithSolve.mjs';
+import {
+  evaluateExpression,
+  reconstructVerticalMath,
+  recoverParenDiffStack,
+} from './arithSolve.mjs';
 
 function check(label, ocr, expect) {
   const r = evaluateExpression(ocr);
@@ -41,5 +45,21 @@ assert.equal(
   reconstructVerticalMath(`1\n3\n÷\n1\n7`),
   '(1/3)/(1/7)',
 );
+
+const liveOcr = `2.
+52-
+35
+5
+23.
+2
+işleminin sonucu kaçtır?
+LO
+A) 555
+B) 글
+C) 3
+D) 5
+E) 7`;
+assert.ok(recoverParenDiffStack(liveOcr).length >= 1, 'recover live OCR');
+check('live phone OCR mangled stack', liveOcr, { approx: 7, choice: 'E' });
 
 console.log('all arithSolve tests passed');
