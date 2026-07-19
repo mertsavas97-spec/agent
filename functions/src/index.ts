@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 
 import { liveBackendLabel, runtimeModeLabel } from './config/runtime';
 import {
@@ -128,14 +129,20 @@ export const solveQuestion = regional
   });
 
 /**
- * Org-policy safe path: no public HTTP invoker.
- * Mobile writes users/{uid}/solveRequests/{id} → this trigger runs Admin SDK.
+ * Org-policy safe path (Gen2 — Gen1 cannot attach to Firestore eur3).
+ * Mobile writes users/{uid}/solveRequests/{id} → Admin SDK runs here.
  */
-export const onSolveRequestCreated = regional
-  .runWith({ timeoutSeconds: 120, memory: '512MB' })
-  .firestore.document('users/{uid}/solveRequests/{requestId}')
-  .onCreate(async (snap, context) => {
-    const uid = context.params.uid;
+export const onSolveRequestCreated = onDocumentCreated(
+  {
+    document: 'users/{uid}/solveRequests/{requestId}',
+    region: 'europe-west1',
+    timeoutSeconds: 120,
+    memory: '512MiB',
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const uid = event.params.uid;
     const data = snap.data() ?? {};
     const ref = snap.ref;
 
@@ -179,7 +186,8 @@ export const onSolveRequestCreated = regional
         { merge: true },
       );
     }
-  });
+  },
+);
 
 /** US4: history list */
 export const listAttempts = regional.https.onCall(async (data, context) => {
