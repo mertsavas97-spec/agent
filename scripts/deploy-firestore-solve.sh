@@ -47,7 +47,7 @@ echo "==> Build functions"
 echo "==> 1/2 Deploy firestore:rules"
 "$FIREBASE_BIN" deploy --project "$PROJECT" --only firestore:rules
 
-echo "==> 2/2 Deploy onSolveRequestCreated (+ solveQuestion)"
+echo "==> 2/2 Deploy onSolveRequestCreatedV2 (+ solveQuestion)"
 "$FIREBASE_BIN" deploy \
   --project "$PROJECT" \
   --only functions:onSolveRequestCreatedV2,functions:solveQuestion
