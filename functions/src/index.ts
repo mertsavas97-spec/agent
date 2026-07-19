@@ -2,7 +2,13 @@ import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 
-import { liveBackendLabel, runtimeModeLabel } from './config/runtime';
+import {
+  assertDemoAiAllowedInRuntime,
+  assertVisionConfiguredForLive,
+  isDemoAiMode,
+  liveBackendLabel,
+  runtimeModeLabel,
+} from './config/runtime';
 import { createFirestoreCache, downloadImageBuffer, loadQuota, persistRejected, persistSolved } from './solve/firestoreAdapters';
 import {
   assertExplainRateLimit,
@@ -23,6 +29,8 @@ import {
   restrictionAfterScore,
 } from './abuse/invalidImageScore';
 import { assertRateLimit } from './abuse/rateLimit';
+import { assertPersistentRateLimit } from './abuse/persistentRateLimit';
+import { isKnownSubject, subjectsForExam } from './data/subjects';
 import { completeOnboardingDocument } from './users/completeOnboarding';
 import { requestAccountDeletionDocument } from './users/requestAccountDeletion';
 import { updateExamTypeDocument } from './users/updateExamType';
@@ -132,7 +140,9 @@ export const solveQuestion = regional
     const examType = examTypeRaw as ExamType;
 
     try {
-      assertRateLimit(`solve:${context.auth.uid}`);
+      const rateKey = `solve:${context.auth.uid}`;
+      assertRateLimit(rateKey);
+      await assertPersistentRateLimit(rateKey, { db: getFirestore() });
       const invalidScore = Number(userData.invalidImageScore ?? 0);
       const restrictedUntil =
         typeof userData.restrictedUntil === 'number' ? userData.restrictedUntil : null;
@@ -158,11 +168,19 @@ export const solveQuestion = regional
         );
       }
 
+      assertDemoAiAllowedInRuntime();
+      assertVisionConfiguredForLive();
       console.info('solveQuestion aiBackend', liveBackendLabel());
       const imageBuffer = await downloadImageBuffer(imagePath);
       const subjectHintRaw = data?.subjectHint;
+      const allowedSubjects = subjectsForExam(examType);
       const subjectHint =
-        typeof subjectHintRaw === 'string' ? (subjectHintRaw as Subject) : undefined;
+        typeof subjectHintRaw === 'string' &&
+        isKnownSubject(subjectHintRaw) &&
+        allowedSubjects.includes(subjectHintRaw)
+          ? subjectHintRaw
+          : undefined;
+      const solver = createGeminiSolver();
       return await runSolveQuestion(
         {
           uid: context.auth.uid,
@@ -174,8 +192,10 @@ export const solveQuestion = regional
         },
         {
           vision: createVisionClient(),
-          solver: createGeminiSolver(),
+          solver,
           cache: createFirestoreCache(),
+          // Demo/stub çözümleri cache'e yazma (zehirlenmeyi önle)
+          writeCacheEnabled: !isDemoAiMode() && solver.source === 'live',
           loadQuota,
           persistSolved,
           persistRejected,
@@ -183,6 +203,12 @@ export const solveQuestion = regional
       );
     } catch (err) {
       if (err instanceof functions.https.HttpsError) throw err;
+      if (err instanceof Error && err.name === 'DemoAiBlockedError') {
+        throw new functions.https.HttpsError('failed-precondition', err.message);
+      }
+      if (err instanceof Error && err.name === 'VisionConfigError') {
+        throw new functions.https.HttpsError('failed-precondition', err.message);
+      }
       if (err instanceof Error && err.name === 'QuotaExceededError') {
         throw new functions.https.HttpsError('resource-exhausted', 'Günlük hak bitti');
       }

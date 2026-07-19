@@ -14,7 +14,8 @@ import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { findTopic } from '@/src/data';
 import { ensureSignedIn } from '@/src/lib/auth';
-import type { ExamType, SolveQuestionResponse } from '@/src/lib/api/types';
+import { isKnownSubject, subjectsForExam } from '@/src/data';
+import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space } from '@/src/theme';
@@ -31,6 +32,7 @@ export default function SolveFlowScreen() {
     uri?: string;
     mimeType?: string;
     source?: string;
+    subjectHint?: string;
   }>();
   const [phase, setPhase] = useState<'analyzing' | 'result' | 'error' | 'paywall'>(
     'analyzing',
@@ -53,10 +55,14 @@ export default function SolveFlowScreen() {
         // Camera and gallery share the identical pipeline from here.
         setAnalyzeStep('upload');
         const user = await ensureSignedIn();
+        let resolvedExam: ExamType = 'lgs';
         try {
           const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
           const et = snap.data()?.examType;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+          if (et === 'lgs' || et === 'ygs' || et === 'kpss') {
+            resolvedExam = et;
+            setExamType(et);
+          }
         } catch {
           /* optional */
         }
@@ -76,9 +82,17 @@ export default function SolveFlowScreen() {
         if (cancelled) return;
         setAnalyzeStep('solve');
 
+        const hintRaw = typeof params.subjectHint === 'string' ? params.subjectHint : '';
+        const subjectHint: Subject | undefined =
+          isKnownSubject(hintRaw) && subjectsForExam(resolvedExam).includes(hintRaw)
+            ? hintRaw
+            : undefined;
+
         const response = await callSolveQuestion({
           imagePath,
           mimeType: params.mimeType,
+          examType: resolvedExam,
+          subjectHint,
         });
         if (cancelled) return;
         setResult(response);

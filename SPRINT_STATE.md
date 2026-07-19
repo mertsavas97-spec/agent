@@ -37,9 +37,13 @@ npx expo run:ios
 Araştırma + katalog: `docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md`  
 LGS/YGS(YKS)/KPSS alt dersleri UI + `systemPromptForSolve` + `clampTopicId`.
 
-## Audit (2026-07-19)
-Pipeline + AI audit: `docs/architecture/PIPELINE_AI_AUDIT_2026-07-19.md`  
-Verdict: dogfood Borderline; public Play hayır. P0: fail-closed Vision, rules kilidi, topicId clamp.
+## Pipeline P0/P1 (2026-07-19) — subject-aware
+Audit uygulandı + ders ağacı hattı:
+- Vision fail-closed, demo cloud block, stub cache off, Firestore kilidi
+- JSON repair/retry, T068 few-shots (math+turkish), `teacherLineForSubject`
+- Firestore persistent rate limit (`rateLimits`)
+- Mobil: Konular → subjectHint → solve
+Doc: `docs/architecture/PIPELINE_AI_AUDIT_2026-07-19.md` — dogfood **evet**; Play hâlâ IAM + eval.
 
 ## UI polish (2026-07-19) — durduruldu
 - Home: daire CTA kaldırıldı → tam genişlik “Soru fotoğrafı çek / Galeriden soru seç”

@@ -6,6 +6,8 @@ import { parseModelSolution, type ParsedModelSolution } from './parseSolution';
 import { systemPromptForSolve } from './prompts';
 
 export type VisionSolver = {
+  /** stub | live — stub çıktıları production cache'e yazılmaz */
+  source: 'stub' | 'live';
   solve(input: {
     imageBase64: string;
     mimeType: string;
@@ -14,9 +16,26 @@ export type VisionSolver = {
   }): Promise<ParsedModelSolution>;
 };
 
+async function solveWithRetry(
+  generate: (prompt: string) => Promise<string>,
+  examType: ExamType,
+  subjectHint?: Subject | null,
+): Promise<ParsedModelSolution> {
+  const base = systemPromptForSolve(examType, subjectHint);
+  try {
+    return parseModelSolution(await generate(base));
+  } catch {
+    const retryPrompt = [
+      base,
+      'ÖNCEKİ YANIT GEÇERSİZ JSON İÇERİYORDU.',
+      'Şimdi YALNIZCA tek bir geçerli JSON nesnesi döndür; açıklama veya markdown ekleme.',
+    ].join('\n');
+    return parseModelSolution(await generate(retryPrompt));
+  }
+}
+
 /**
- * Live: Vertex AI (Startup/GCP billing) preferred; else AI Studio API key;
- * otherwise demo stub.
+ * Live: Vertex AI preferred; else AI Studio API key; otherwise demo stub.
  */
 export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionSolver {
   const forceDemo = process.env.COZBIL_DEMO_AI === '1';
@@ -24,14 +43,19 @@ export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionS
 
   if (useVertexAi()) {
     return {
+      source: 'live',
       async solve({ imageBase64, mimeType, examType, subjectHint }) {
-        const text = await vertexSolveMath({
+        return solveWithRetry(
+          (systemPrompt) =>
+            vertexSolveMath({
+              examType,
+              systemPrompt,
+              imageBase64,
+              mimeType: mimeType || 'image/jpeg',
+            }),
           examType,
-          systemPrompt: systemPromptForSolve(examType, subjectHint),
-          imageBase64,
-          mimeType: mimeType || 'image/jpeg',
-        });
-        return parseModelSolution(text);
+          subjectHint,
+        );
       },
     };
   }
@@ -42,18 +66,24 @@ export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionS
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   return {
+    source: 'live',
     async solve({ imageBase64, mimeType, examType, subjectHint }) {
-      const result = await model.generateContent([
-        { text: systemPromptForSolve(examType, subjectHint) },
-        {
-          inlineData: {
-            data: imageBase64,
-            mimeType: mimeType || 'image/jpeg',
-          },
+      return solveWithRetry(
+        async (systemPrompt) => {
+          const result = await model.generateContent([
+            { text: systemPrompt },
+            {
+              inlineData: {
+                data: imageBase64,
+                mimeType: mimeType || 'image/jpeg',
+              },
+            },
+          ]);
+          return result.response.text();
         },
-      ]);
-      const text = result.response.text();
-      return parseModelSolution(text);
+        examType,
+        subjectHint,
+      );
     },
   };
 }
@@ -73,6 +103,7 @@ export function createStubSolver(
   },
 ): VisionSolver {
   return {
+    source: 'stub',
     async solve() {
       return fixture;
     },

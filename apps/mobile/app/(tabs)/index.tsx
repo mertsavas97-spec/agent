@@ -17,13 +17,17 @@ import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
+import {
+  peekPendingSubjectHint,
+  takePendingSubjectHint,
+} from '@/src/features/solve/subjectHintStore';
 import { fetchAttempts, fetchProgressSummary } from '@/src/lib/api/progressClient';
 import type { AttemptListItem, ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
-import { topicsForExam } from '@/src/data';
+import { subjectLabel, topicsForExam } from '@/src/data';
 import { EmptyState } from '@/src/ui/EmptyState';
 
 export default function HomeScreen() {
@@ -33,10 +37,13 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [switching, setSwitching] = useState(false);
+  const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
+      const pending = peekPendingSubjectHint();
+      setSubjectHintBanner(pending ? subjectLabel(pending) : null);
       void (async () => {
         setLoading(true);
         try {
@@ -104,12 +111,15 @@ export default function HomeScreen() {
       );
       return;
     }
+    const subjectHint = takePendingSubjectHint() ?? undefined;
+    setSubjectHintBanner(null);
     router.push({
       pathname: '/solve',
       params: {
         uri: picked.uri,
         mimeType: picked.mimeType ?? 'image/jpeg',
         source,
+        ...(subjectHint ? { subjectHint } : {}),
       },
     });
   }
@@ -143,6 +153,12 @@ export default function HomeScreen() {
             Seri: {streak} gün
           </Text>
         )}
+
+        {subjectHintBanner ? (
+          <Text style={styles.hintBanner} testID="home-subject-hint">
+            Ders ipucu: {subjectHintBanner} — sonraki fotoğrafa eklenecek
+          </Text>
+        ) : null}
 
         <View style={styles.actionCard}>
           <Text style={styles.actionKicker}>Soru çöz</Text>
@@ -245,6 +261,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.navy,
     marginBottom: space.md,
+  },
+  hintBanner: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.orange,
+    marginBottom: space.md,
+    lineHeight: 18,
   },
   actionCard: {
     backgroundColor: colors.white,

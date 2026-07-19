@@ -10,16 +10,25 @@ export type ParsedModelSolution = {
   steps: SolutionStep[];
 };
 
-function stripFences(text: string): string {
+export function stripFences(text: string): string {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   return fenced ? fenced[1].trim() : trimmed;
 }
 
-export function parseModelSolution(raw: string): ParsedModelSolution {
-  const jsonText = stripFences(raw);
-  const data = JSON.parse(jsonText) as Partial<ParsedModelSolution>;
+/** Best-effort repair before JSON.parse (fence, slice, trailing commas). */
+export function repairJsonText(text: string): string {
+  let t = stripFences(text);
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    t = t.slice(start, end + 1);
+  }
+  t = t.replace(/,\s*([\]}])/g, '$1');
+  return t;
+}
 
+function mapParsed(data: Partial<ParsedModelSolution>): ParsedModelSolution {
   const steps = Array.isArray(data.steps)
     ? data.steps
         .filter((s) => s && typeof s.body === 'string' && s.body.trim().length > 0)
@@ -31,9 +40,7 @@ export function parseModelSolution(raw: string): ParsedModelSolution {
 
   const subject: Subject = isKnownSubject(data.subject)
     ? data.subject
-    : data.subject === 'unknown'
-      ? 'unknown'
-      : 'unknown';
+    : 'unknown';
 
   return {
     isQuestion: Boolean(data.isQuestion),
@@ -44,6 +51,17 @@ export function parseModelSolution(raw: string): ParsedModelSolution {
     topicId: typeof data.topicId === 'string' ? data.topicId : null,
     steps,
   };
+}
+
+export function parseModelSolution(raw: string): ParsedModelSolution {
+  try {
+    const data = JSON.parse(stripFences(raw)) as Partial<ParsedModelSolution>;
+    return mapParsed(data);
+  } catch {
+    const repaired = repairJsonText(raw);
+    const data = JSON.parse(repaired) as Partial<ParsedModelSolution>;
+    return mapParsed(data);
+  }
 }
 
 export function isGeometryUnsupported(parsed: ParsedModelSolution): boolean {

@@ -10,6 +10,7 @@ import {
 import { doc, getDoc } from 'firebase/firestore';
 
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { setPendingSubjectHint } from '@/src/features/solve/subjectHintStore';
 import { itemsForExam } from '@/src/data/itemBank';
 import {
   findTopic,
@@ -78,7 +79,10 @@ export default function TopicsScreen() {
         itemTestIDPrefix="topics-subject"
         variant="chips"
         value={subject}
-        onChange={(id) => setSubject(id)}
+        onChange={(id) => {
+          setSubject(id);
+          if (id !== 'unknown') setPendingSubjectHint(id);
+        }}
         items={subjects.map((s) => ({ id: s, label: subjectLabel(s) }))}
       />
 
@@ -94,6 +98,22 @@ export default function TopicsScreen() {
           ))}
         </View>
       )}
+
+      <Pressable
+        style={styles.photoCta}
+        testID="topics-photo-cta"
+        accessibilityRole="button"
+        onPress={() => {
+          if (subject !== 'unknown') setPendingSubjectHint(subject);
+          router.push('/(tabs)');
+        }}>
+        <Text style={styles.photoCtaText}>
+          Bu dersten soru çek ({subjectLabel(subject)})
+        </Text>
+        <Text style={styles.photoCtaSub}>
+          Ana sayfada kamera veya galeri seç; AI’ya ders ipucu gider
+        </Text>
+      </Pressable>
 
       <Text style={[styles.filterLabel, styles.spaced]}>Örnek soru & anlatım</Text>
       {samples.length === 0 ? (
@@ -219,4 +239,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.navy,
   },
+  photoCta: {
+    backgroundColor: colors.navy,
+    borderRadius: radii.xl,
+    padding: space.md,
+    marginBottom: space.sm,
+  },
+  photoCtaText: {
+    fontFamily: typography.fontFamily,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  photoCtaSub: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 4,
+    lineHeight: 17,
+  },
 });
+

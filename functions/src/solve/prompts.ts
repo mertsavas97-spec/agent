@@ -2,42 +2,11 @@ import { topicsForExam } from '../data/topics';
 import { SUBJECT_LABEL, isKnownSubject } from '../data/subjects';
 import type { ExamType, Subject } from '../types/contracts';
 
-import { KPSS_MATH_FEWSHOT, KPSS_MATH_TEACHER } from './prompts/math/kpss';
-import { LGS_MATH_FEWSHOT, LGS_MATH_TEACHER } from './prompts/math/lgs';
-import { YGS_MATH_FEWSHOT, YGS_MATH_TEACHER } from './prompts/math/ygs';
+import { itemBankFewShot } from './prompts/fewshots';
+import { teacherLineForSubject } from './subjectTeacher';
 
 const SUBJECT_ENUM =
   '"math"|"turkish"|"science"|"physics"|"chemistry"|"biology"|"history"|"geography"|"philosophy"|"literature"|"religion"|"english"|"geometry"|"civics"|"current"|"unknown"';
-
-function examTeacherLine(examType: ExamType): string {
-  switch (examType) {
-    case 'lgs':
-      return LGS_MATH_TEACHER;
-    case 'ygs':
-      return YGS_MATH_TEACHER;
-    case 'kpss':
-      return KPSS_MATH_TEACHER;
-    default: {
-      const _e: never = examType;
-      return _e;
-    }
-  }
-}
-
-function examFewShot(examType: ExamType): string {
-  switch (examType) {
-    case 'lgs':
-      return LGS_MATH_FEWSHOT;
-    case 'ygs':
-      return YGS_MATH_FEWSHOT;
-    case 'kpss':
-      return KPSS_MATH_FEWSHOT;
-    default: {
-      const _e: never = examType;
-      return _e;
-    }
-  }
-}
 
 function examAudience(examType: ExamType): string {
   switch (examType) {
@@ -91,16 +60,9 @@ export function systemPromptForSolve(
     ? `Öncelik ders: ${SUBJECT_LABEL[subject]} (${subject}). Görsel başka derse aitse doğru subject yaz.`
     : 'Görseldeki sorunun dersini (subject) doğru tespit et.';
 
-  const mathBoost =
-    !subject || subject === 'math' || subject === 'geometry'
-      ? [examTeacherLine(examType), examFewShot(examType)]
-      : [
-          examTeacherLine(examType),
-          `${SUBJECT_LABEL[subject]} öğretmeni gibi, sınav seviyesinde sade Türkçe anlat.`,
-        ];
-
   return [
-    ...mathBoost,
+    teacherLineForSubject(examType, subject),
+    itemBankFewShot(examType, subject),
     examAudience(examType),
     subjectLine,
     'Adım adım, sade Türkçe ile çöz / anlat.',
@@ -116,7 +78,7 @@ export function explainAgainPrompt(examType: ExamType, subject?: Subject | null)
   const sub =
     subject && isKnownSubject(subject) ? ` Ders: ${SUBJECT_LABEL[subject]}.` : '';
   return [
-    examTeacherLine(examType),
+    teacherLineForSubject(examType, subject),
     examAudience(examType),
     `Öğrenci önceki çözümü anlamadı.${sub}`,
     'Aynı soruyu DAHA SADE, daha kısa cümlelerle, gerekirse günlük hayattan bir benzetmeyle yeniden anlat.',

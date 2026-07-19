@@ -71,7 +71,7 @@ describe('runSolveQuestion', () => {
   });
 
   it('returns cached solution on second identical image', async () => {
-    const d = deps();
+    const d = { ...deps(), writeCacheEnabled: true as const };
     const buf = Buffer.from('same-bytes-for-cache');
     const input = {
       uid: 'u1',

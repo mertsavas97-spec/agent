@@ -21,6 +21,8 @@ export type SolveDeps = {
   vision: VisionClient;
   solver: VisionSolver;
   cache: CacheStore;
+  /** false → skip solutionCache write (demo/stub poison prevention). Default true for unit tests. */
+  writeCacheEnabled?: boolean;
   loadQuota: (uid: string) => Promise<QuotaState>;
   persistSolved: (input: {
     uid: string;
@@ -169,12 +171,15 @@ export async function runSolveQuestion(
     },
   };
 
-  await writeCache(deps.cache, phash, input.examType, {
-    phash,
-    topicId,
-    steps: parsed.steps,
-    subject,
-  });
+  // Production (index) sets writeCacheEnabled=false for demo/stub; unit tests default true.
+  if (deps.writeCacheEnabled !== false) {
+    await writeCache(deps.cache, phash, input.examType, {
+      phash,
+      topicId,
+      steps: parsed.steps,
+      subject,
+    });
+  }
 
   const { attemptId, solutionId } = await deps.persistSolved({
     uid: input.uid,

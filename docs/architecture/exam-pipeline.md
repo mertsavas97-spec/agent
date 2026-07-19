@@ -5,18 +5,22 @@
 | Katman | Durum |
 |--------|--------|
 | Onboarding’de sınav seçimi | ✅ `completeOnboarding` → `users.examType` |
-| Solve pipeline | ✅ SafeSearch → phash cache → Gemini/Vertex (`mathSystemPrompt(examType)`) → Firestore attempt |
-| Explain again | ✅ `explainAgainPrompt(examType)` |
-| Konu katalogları | ✅ Ayrı listeler: `lgs` / `ygs` / `kpss` (mobil + functions mirror) |
-| Cache anahtarı | ✅ phash **+** examType (aynı foto farklı sınavda ayrı cache) |
+| Solve pipeline | ✅ SafeSearch → phash cache → Vertex (`systemPromptForSolve`) → clamp → Firestore |
+| Fail-closed Vision / demo cloud | ✅ `assertVisionConfiguredForLive` + `assertDemoAiAllowedInRuntime` |
+| Stub cache poison | ✅ demo/stub `writeCacheEnabled=false` |
+| Rate limit | ✅ in-memory + Firestore `rateLimits` |
+| Explain again | ✅ `explainAgainPrompt(examType, subject)` |
+| Konu katalogları | ✅ Ders ağacı 2020–2026 (subject → topic) |
+| Cache anahtarı | ✅ phash **+** examType |
+| Item-bank few-shot (T068) | ✅ math + turkish subject-aware |
+| Teacher router | ✅ `teacherLineForSubject` |
+| Mobil subjectHint | ✅ Konular → store → Home → solve |
+| Firestore kota/abuse kilidi | ✅ client update yasak |
 | Uygulama içi sınav değiştirme | ✅ `updateExamType` + `ExamModeSwitcher` (US7) |
 
-## Henüz ince ayar (Polish)
+## Açık (audit P2)
 
-- T060: matematik few-shot’ları sınav dosyalarına ayırma
-- T061: Türkçe subject prompt’ları
-- Item bank few-shot bağlama (T068)
-- Katalog uzman doğrulaması (geniş müfredat değil, MVP iskelet)
+- T061 Türkçe prompt derinliği · T067 banka hacmi · Functions IAM · eval harness
 
 ## Hangi sınavda hangi dersler (2020–2026 oturum ağacı)
 

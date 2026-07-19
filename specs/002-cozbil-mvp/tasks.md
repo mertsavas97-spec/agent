@@ -214,7 +214,7 @@
 
 - [x] T066 [P] Architecture + schema + seed skeleton in `content/item-bank/` + `docs/architecture/item-bank.md`
 - [ ] T067 Fill MVP mini pack to ~50–60 original items (LGS/YGS/KPSS math-first) with answer keys + explanationSteps; update `manifests/mvp-1.0.json`
-- [ ] T068 Wire 1–2 bank items per exam into solve few-shot prompts (T060); keep `source: original` only
+- [x] T068 Wire 1–2 bank items per exam into solve few-shot prompts (T060); keep `source: original` only — `prompts/fewshots.ts`
 - [x] T069 [P] Optional light UI “Örnek soru” from manifest (not full practice session) — tab **Konular** + `app/sample/[id]` + bundled seed
 - [ ] T070 Guardian pass: no copyrighted stems; similarityCheck=pass on all manifest ids
 

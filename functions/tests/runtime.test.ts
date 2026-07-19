@@ -38,4 +38,24 @@ describe('runtime demo mode', () => {
     expect(isDemoAiMode()).toBe(false);
     expect(liveBackendLabel()).toBe('vertex');
   });
+
+  it('blocks demo AI on cloud without override', () => {
+    process.env.COZBIL_DEMO_AI = '1';
+    process.env.K_SERVICE = 'solveQuestion';
+    delete process.env.COZBIL_ALLOW_DEMO_IN_PROD;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { assertDemoAiAllowedInRuntime } = require('../src/config/runtime');
+    expect(() => assertDemoAiAllowedInRuntime()).toThrow(/COZBIL_DEMO_AI/);
+  });
+
+  it('requires Vision key in live mode', () => {
+    process.env.COZBIL_DEMO_AI = '0';
+    process.env.GEMINI_API_KEY = 'k';
+    delete process.env.GOOGLE_CLOUD_VISION_API_KEY;
+    delete process.env.COZBIL_ALLOW_OPEN_VISION;
+    delete process.env.COZBIL_USE_VERTEX;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { assertVisionConfiguredForLive } = require('../src/config/runtime');
+    expect(() => assertVisionConfiguredForLive()).toThrow(/VISION/);
+  });
 });
