@@ -20,18 +20,32 @@ function isInvokerBlocked(err: unknown): boolean {
 
 /**
  * Prefer Firestore trigger path (works under Domain Restricted Sharing).
- * Falls back to callable if Firestore path fails unexpectedly; callable
- * 403 → retry Firestore once more is skipped (already primary).
  */
 export async function callSolveQuestion(
   request: SolveQuestionRequest & { mimeType?: string },
 ): Promise<SolveQuestionResponse> {
-  // Primary: org-policy safe
   try {
     return await callSolveQuestionViaFirestore(request);
   } catch (firestoreErr) {
-    // If trigger not deployed yet, try callable (may also 403)
     console.warn('solveViaFirestore failed, trying callable', firestoreErr);
+
+    const fsCode =
+      firestoreErr &&
+      typeof firestoreErr === 'object' &&
+      'code' in firestoreErr &&
+      typeof (firestoreErr as { code: unknown }).code === 'string'
+        ? (firestoreErr as { code: string }).code
+        : '';
+
+    if (fsCode === 'permission-denied') {
+      throw Object.assign(
+        new Error(
+          'Firestore izin yok (solveRequests). Mac’te: bash scripts/deploy-firestore-solve.sh',
+        ),
+        { code: 'functions/permission-denied' },
+      );
+    }
+
     try {
       const { functions } = getFirebase();
       const callable = httpsCallable(functions, 'solveQuestion');
@@ -41,7 +55,7 @@ export async function callSolveQuestion(
       if (isInvokerBlocked(callableErr)) {
         throw Object.assign(
           new Error(
-            'Sunucu erişim engeli — Firestore solve trigger deploy edilmeli (onSolveRequestCreated).',
+            'Callable 403 + Firestore solve başarısız. Önce deploy-firestore-solve.sh çalıştır.',
           ),
           { code: 'functions/permission-denied' },
         );
