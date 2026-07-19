@@ -109,7 +109,7 @@ export default function SolveFlowScreen() {
           setPhase('paywall');
           return;
         }
-        console.error('solve flow failed', err);
+        console.warn('solve flow used fallback or failed', err);
         setError(solveFailureMessage(err));
         setPhase('error');
       }

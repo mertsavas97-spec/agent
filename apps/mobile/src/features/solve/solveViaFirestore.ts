@@ -11,7 +11,10 @@ import type { SolveQuestionRequest, SolveQuestionResponse } from '@/src/lib/api/
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
-const SOLVE_TIMEOUT_MS = 55_000;
+/** Hard stop — if trigger never writes, fail fast to local fallback. */
+const SOLVE_TIMEOUT_MS = 28_000;
+/** If still `pending` (trigger never claimed), bail sooner. */
+const PENDING_STUCK_MS = 8_000;
 
 type SolveRequestDoc = {
   status: 'pending' | 'running' | 'done' | 'error';
@@ -28,9 +31,8 @@ export type SolveViaFirestoreRequest = SolveQuestionRequest & {
 
 /**
  * Org-policy safe solve:
- * 1) Ensure pending doc at known id (Storage trigger writes the same id)
- * 2) Listen until done/error
- * Storage `onSolveUploadFinalized` is primary; Firestore create trigger is backup.
+ * Listen on users/{uid}/solveRequests/{requestId} until done/error.
+ * Storage `onSolveUploadFinalized` is primary; Firestore create is backup.
  */
 export async function callSolveQuestionViaFirestore(
   request: SolveViaFirestoreRequest,
@@ -59,7 +61,6 @@ export async function callSolveQuestionViaFirestore(
     if (request.examType) payload.examType = request.examType;
     if (request.subjectHint) payload.subjectHint = request.subjectHint;
     try {
-      // Rules: create-only. If Storage trigger already wrote the doc, this fails.
       await setDoc(ref, payload);
     } catch (createErr) {
       const again = await getDoc(ref);
@@ -67,45 +68,71 @@ export async function callSolveQuestionViaFirestore(
       const data = again.data() as SolveRequestDoc;
       if (data.status === 'done' && data.response) return data.response;
       if (data.status === 'error') throw mapSolveDocError(data);
-      // running/pending — fall through to listener
     }
   }
 
   return await new Promise<SolveQuestionResponse>((resolve, reject) => {
     let unsub: Unsubscribe | null = null;
-    const timer = setTimeout(() => {
+    let lastStatus: string | undefined = existing.exists()
+      ? (existing.data() as SolveRequestDoc).status
+      : 'pending';
+
+    const fail = (err: Error) => {
+      clearTimeout(hardTimer);
+      clearTimeout(pendingTimer);
       unsub?.();
-      reject(
+      reject(err);
+    };
+
+    const hardTimer = setTimeout(() => {
+      fail(
         Object.assign(
           new Error(
-            'SOLVE_TIMEOUT — Storage/Firestore trigger yanıt yazmadı. Mac’te: bash scripts/deploy-firestore-solve.sh',
+            'SOLVE_TIMEOUT — sunucu tetikleyicisi yanıt yazmadı (onSolveUploadFinalized).',
           ),
           { code: 'functions/deadline-exceeded' },
         ),
       );
     }, SOLVE_TIMEOUT_MS);
 
+    const pendingTimer = setTimeout(() => {
+      if (lastStatus === 'pending') {
+        fail(
+          Object.assign(
+            new Error(
+              'SOLVE_TRIGGER_MISSING — istek pending kaldı; Functions deploy edilmemiş olabilir.',
+            ),
+            { code: 'functions/unavailable' },
+          ),
+        );
+      }
+    }, PENDING_STUCK_MS);
+
     unsub = onSnapshot(
       ref,
       (snap) => {
         const data = snap.data() as SolveRequestDoc | undefined;
         if (!data) return;
+        lastStatus = data.status;
+        if (data.status === 'running') {
+          clearTimeout(pendingTimer);
+        }
         if (data.status === 'done' && data.response) {
-          clearTimeout(timer);
+          clearTimeout(hardTimer);
+          clearTimeout(pendingTimer);
           unsub?.();
           resolve(data.response);
           return;
         }
         if (data.status === 'error') {
-          clearTimeout(timer);
+          clearTimeout(hardTimer);
+          clearTimeout(pendingTimer);
           unsub?.();
           reject(mapSolveDocError(data));
         }
       },
       (err) => {
-        clearTimeout(timer);
-        unsub?.();
-        reject(err);
+        fail(err instanceof Error ? err : new Error(String(err)));
       },
     );
   });

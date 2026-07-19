@@ -22,49 +22,50 @@ const TIPS = [
   'Sonra “Anlamadım” dersen daha sade anlatırım.',
 ];
 
-/** Moodboard loading: neşeli robot + staged progress + rotating tips. */
+/**
+ * Moodboard loading: neşeli robot + monotonic progress (no bounce loop).
+ * Progress only moves forward — never drops from 96→88.
+ */
 export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
   const baseTarget = progressForStep(step);
   const anim = useRef(new Animated.Value(0.08)).current;
   const tipOpacity = useRef(new Animated.Value(1)).current;
   const [displayPct, setDisplayPct] = useState(8);
   const [tipIndex, setTipIndex] = useState(0);
+  const peakRef = useRef(0.08);
 
   useEffect(() => {
     const id = anim.addListener(({ value }) => {
-      setDisplayPct(Math.min(99, Math.round(value * 100)));
+      const next = Math.max(peakRef.current, value);
+      peakRef.current = next;
+      setDisplayPct(Math.min(99, Math.round(next * 100)));
     });
-    Animated.timing(anim, {
-      toValue: baseTarget,
-      duration: 520,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
     return () => {
       anim.removeListener(id);
     };
-  }, [anim, baseTarget]);
+  }, [anim]);
 
   useEffect(() => {
+    const target = Math.max(peakRef.current, baseTarget);
+    Animated.timing(anim, {
+      toValue: target,
+      duration: 480,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [anim, baseTarget]);
+
+  // On solve stage: crawl slowly toward 92% once — hold (no oscillation).
+  useEffect(() => {
     if (step !== 'solve') return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, {
-          toValue: 0.97,
-          duration: 2800,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: false,
-        }),
-        Animated.timing(anim, {
-          toValue: 0.88,
-          duration: 2200,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: false,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    const crawl = Animated.timing(anim, {
+      toValue: 0.92,
+      duration: 14_000,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    });
+    crawl.start();
+    return () => crawl.stop();
   }, [anim, step]);
 
   useEffect(() => {
@@ -117,7 +118,11 @@ export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
               testID={`analyzing-step-${s.id}`}
               style={[styles.stepItem, active && styles.stepActive, done && styles.stepDone]}>
               {done && !active ? '✓ ' : active ? '● ' : '○ '}
-              {s.label}
+              {done && !active && s.id === 'upload'
+                ? 'Fotoğraf yüklendi'
+                : done && !active && s.id === 'moderate'
+                  ? 'Güvenlik tamam'
+                  : s.label}
             </Text>
           );
         })}
