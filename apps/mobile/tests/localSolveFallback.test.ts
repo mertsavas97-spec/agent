@@ -26,8 +26,22 @@ describe('localSolveFallback', () => {
     });
     expect(res.status).toBe('solved');
     if (res.status !== 'solved') throw new Error('expected solved');
-    expect(res.transparencyNote).toMatch(/net bir fotoğraf|kadraj/i);
+    expect(res.transparencyNote).toMatch(/net bir fotoğraf|kadraj|otomatik/i);
     expect(res.transparencyNote).not.toMatch(/deploy|AI deploy/i);
+  });
+
+  it('uses turkish topic when subjectHint is turkish', () => {
+    const res = buildLocalSolveFallback({
+      examType: 'kpss',
+      subjectHint: 'turkish',
+      requestId: 'tr1',
+      reason: 'unsupported',
+    });
+    expect(res.status).toBe('solved');
+    if (res.status !== 'solved') throw new Error('expected solved');
+    expect(res.subject).toBe('turkish');
+    expect(res.topicId).toBe('kpss-turkish-paragraf');
+    expect(res.steps[0]?.body).toMatch(/anlatım|kök|metne/i);
   });
 
   it('uses temel işlemler topic for KPSS fallback', () => {

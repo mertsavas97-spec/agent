@@ -70,6 +70,26 @@ const LESSONS: TopicLesson[] = [
     tip: 'Şıkları metne götür — kendi bilginle değil metinle cevapla.',
   },
   {
+    topicId: 'kpss-turkish-paragraf',
+    headline: 'Paragraf ve anlatım biçimleri',
+    bullets: [
+      'Öyküleme: olayları zaman içinde anlatır (her sabah, sonra, -di/-mış).',
+      'Betimleme: varlık/ortamı duyularla resmeder; açıklama bilgi verir; tartışma savunanır.',
+      'Şıkları metne götür — “güzel duruyor” diye değil, dayanakla seç.',
+    ],
+    tip: 'Anlatım biçimi sorusunda önce eylem/zaman mı, yoksa sıfat/duyu mu baskın bak.',
+  },
+  {
+    topicId: 'ygs-turkish-paragraf',
+    headline: 'Paragraf (TYT)',
+    bullets: [
+      'Ana fikir / konu / anlatım biçimi köklerini ayırt et.',
+      'Öyküleme olay, betimleme tasvir, açıklama bilgi, tartışma kanı taşır.',
+      'Çıkarım sorularında metnin sınırını aşma.',
+    ],
+    tip: 'Uzun paragrafta önce soru kökünü oku, sonra metne dön.',
+  },
+  {
     topicId: 'ygs-math-denklemler',
     headline: 'Denklemler (YGS/YKS)',
     bullets: [
@@ -166,14 +186,21 @@ export function buildFallbackLesson(input: {
       : input.examType === 'ygs'
         ? 'lise seviyesinde'
         : 'aday dilinde';
+  const verbal = input.subject === 'turkish' || input.subject === 'literature';
   return {
     topicId: input.topicId,
     headline: `${input.nameTr} — kısa hatırlatma`,
-    bullets: [
-      `Bu konu ${examVoice} sorulur; ezber değil mantık kur.`,
-      'Önce neyin verildiğini, sonra neyin istendiğini ayır.',
-      'İşlemi adım adım yaz; sonucu yerine koyarak doğrula.',
-    ],
+    bullets: verbal
+      ? [
+          `Bu konu ${examVoice} sorulur; şıkları metne götürerek ele.`,
+          'Soru kökünü ayır: ana fikir, anlatım biçimi, çıkarım, dil bilgisi…',
+          'Metinde dayanağı olmayan şıkkı eler.',
+        ]
+      : [
+          `Bu konu ${examVoice} sorulur; ezber değil mantık kur.`,
+          'Önce neyin verildiğini, sonra neyin istendiğini ayır.',
+          'İşlemi adım adım yaz; sonucu yerine koyarak doğrula.',
+        ],
     tip: 'Takılırsan “Anlamadım” ile daha sade anlatım iste.',
   };
 }

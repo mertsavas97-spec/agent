@@ -1,6 +1,10 @@
 import { httpsCallable } from 'firebase/functions';
 
-import type { SolveQuestionRequest, SolveQuestionResponse } from '@/src/lib/api/types';
+import type {
+  SolveQuestionRequest,
+  SolveQuestionResponse,
+  Subject,
+} from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 
 import {
@@ -9,6 +13,28 @@ import {
 } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
+
+function asSubject(value: unknown): Subject | undefined {
+  if (typeof value !== 'string') return undefined;
+  const allowed: Subject[] = [
+    'math',
+    'turkish',
+    'science',
+    'physics',
+    'chemistry',
+    'biology',
+    'history',
+    'geography',
+    'philosophy',
+    'literature',
+    'religion',
+    'english',
+    'geometry',
+    'civics',
+    'current',
+  ];
+  return allowed.includes(value as Subject) ? (value as Subject) : undefined;
+}
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -59,10 +85,16 @@ export async function callSolveQuestion(
       // Parse/OCR miss — skip hard-reject UI; soft local steps instead.
       if (proxy.status === 'unsupported_type') {
         proxyUnsupported = true;
-        console.warn('solve proxy unsupported_type → local fallback');
+        const detected = asSubject(
+          (proxy as { detectedSubject?: string }).detectedSubject,
+        );
+        const topicId =
+          'topicId' in proxy && typeof proxy.topicId === 'string' ? proxy.topicId : null;
+        console.warn('solve proxy unsupported_type → local fallback', detected);
         return buildLocalSolveFallback({
           examType: request.examType,
-          subjectHint: request.subjectHint,
+          subjectHint: detected ?? request.subjectHint,
+          topicId,
           requestId: request.requestId,
           reason: 'unsupported',
         });

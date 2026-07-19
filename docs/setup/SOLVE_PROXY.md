@@ -5,9 +5,10 @@ not deployed, the mobile app can call this proxy:
 
 1. Prefer `imageBase64` from the phone (fallback: Storage download URL)  
 2. Google Cloud Vision OCR  
-3. Deterministic arithmetic evaluation + Turkish steps (incl. vertical stacked fractions)  
+3. Classify subject (math vs Türkçe / sözel) from OCR  
+4. Math → arithmetic steps; Türkçe → verbal steps (e.g. anlatım biçimi → öyküleme)  
 
-If OCR/parse fails, the app soft-falls back to generic steps (no hard “deploy” error).
+If OCR/parse fails, the app soft-falls back with the **detected subject** (not always Matematik).
 
 ## Run (cloud / Mac)
 

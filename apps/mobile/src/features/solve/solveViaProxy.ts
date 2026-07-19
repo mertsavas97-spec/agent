@@ -60,6 +60,8 @@ export async function callSolveQuestionViaProxy(input: {
       error?: string;
       message?: string;
       debugOcrPreview?: string;
+      detectedSubject?: string;
+      topicId?: string | null;
     };
     try {
       data = JSON.parse(text) as typeof data;

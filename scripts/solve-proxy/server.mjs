@@ -1,5 +1,5 @@
 /**
- * Dogfood solve proxy — Vision OCR + deterministic arithmetic steps.
+ * Dogfood solve proxy — Vision OCR + arithmetic / verbal steps.
  * Used when Firebase Functions triggers/callables are blocked (org policy).
  *
  * Start: node scripts/solve-proxy/server.mjs
@@ -7,8 +7,9 @@
  */
 import http from 'node:http';
 import { evaluateExpression, buildStepsFromEval } from './arithSolve.mjs';
+import { classifyOcr, topicIdFor } from './classifyOcr.mjs';
 import { ocrImageBase64 } from './visionOcr.mjs';
-import { pickTopicId } from './topicPick.mjs';
+import { tryVerbalSolve } from './verbalSolve.mjs';
 
 const PORT = Number(process.env.SOLVE_PROXY_PORT || 8787);
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -22,6 +23,23 @@ function send(res, status, body) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   });
   res.end(json);
+}
+
+function solvedPayload({ requestId, topicId, subject, steps, ocrText, note }) {
+  return {
+    status: 'solved',
+    attemptId: `proxy-${requestId}`,
+    solutionId: `proxy-sol-${requestId}`,
+    cached: false,
+    topicId,
+    subject,
+    steps,
+    transparencyNote:
+      note ||
+      'Görselden okuyup adım adım çözüldü. Sonucu kontrol etmeni öneririz.',
+    quota: { remainingToday: 5, unlimited: false },
+    debugOcrPreview: ocrText.slice(0, 240),
+  };
 }
 
 const server = http.createServer(async (req, res) => {
@@ -92,38 +110,65 @@ const server = http.createServer(async (req, res) => {
     }
 
     const ocrText = await ocrImageBase64(imageBase64, mimeType);
+    const classified = classifyOcr(ocrText, examType);
+    const topicId = topicIdFor(examType, classified.subject, classified.topicKey);
+
+    // Non-math first when classification is verbal — avoid false arith matches
+    if (classified.subject !== 'math') {
+      const verbal = tryVerbalSolve(ocrText, classified);
+      if (verbal?.steps?.length) {
+        send(
+          res,
+          200,
+          solvedPayload({
+            requestId,
+            topicId,
+            subject: classified.subject,
+            steps: verbal.steps,
+            ocrText,
+            note:
+              'Metinden okunarak adım adım çözüldü (sözel). Sonucu şıklarla kontrol etmeni öneririz.',
+          }),
+        );
+        return;
+      }
+    }
+
     const evaluated = evaluateExpression(ocrText);
-    if (!evaluated) {
-      console.warn(
-        'solve-proxy unsupported_type OCR preview:',
-        JSON.stringify(ocrText.slice(0, 400)),
+    if (evaluated) {
+      send(
+        res,
+        200,
+        solvedPayload({
+          requestId,
+          topicId:
+            classified.subject === 'math'
+              ? topicId
+              : topicIdFor(examType, 'math', 'temel'),
+          subject: 'math',
+          steps: buildStepsFromEval(evaluated),
+          ocrText,
+        }),
       );
-      send(res, 200, {
-        status: 'unsupported_type',
-        attemptId: `proxy-${requestId}`,
-        userMessage:
-          'Bu görseldeki işlem şu an otomatik çözülemedi. Soruyu ve şıkları daha net kadraja alıp tekrar dene.',
-        quota: { remainingToday: 5, unlimited: false },
-        debugOcrPreview: ocrText.slice(0, 240),
-      });
       return;
     }
 
-    const topicId = pickTopicId(examType, ocrText, evaluated);
-    const steps = buildStepsFromEval(evaluated);
-
+    console.warn(
+      'solve-proxy unsupported_type',
+      classified.subject,
+      JSON.stringify(ocrText.slice(0, 400)),
+    );
     send(res, 200, {
-      status: 'solved',
+      status: 'unsupported_type',
       attemptId: `proxy-${requestId}`,
-      solutionId: `proxy-sol-${requestId}`,
-      cached: false,
-      topicId,
-      subject: 'math',
-      steps,
-      transparencyNote:
-        'Görselden okuyup adım adım çözüldü. Sonucu kontrol etmeni öneririz.',
+      userMessage:
+        classified.subject === 'turkish'
+          ? 'Bu Türkçe sorusu okundu ama otomatik cevap üretilemedi. Şıkları da kadraja alıp tekrar dene.'
+          : 'Bu görseldeki soru şu an otomatik çözülemedi. Soruyu ve şıkları daha net kadraja alıp tekrar dene.',
       quota: { remainingToday: 5, unlimited: false },
       debugOcrPreview: ocrText.slice(0, 240),
+      detectedSubject: classified.subject,
+      topicId,
     });
   } catch (err) {
     console.error('solve-proxy error', err instanceof Error ? err.message : err);
