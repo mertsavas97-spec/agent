@@ -36,6 +36,7 @@ __pycache__/
 *.pyc
 .expo/
 web-build/
+.tools/
 firebase-debug.log
 firebase-debug.*.log
 ui-debug.log
