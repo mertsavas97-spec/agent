@@ -1,9 +1,10 @@
 import type { ExamType } from '@/src/lib/api/types';
 
+import { buildCoverageSamples } from './coverageSamples';
 import type { ItemBankItem } from './types';
 
-/** Bundled MVP seed — mirrors content/item-bank (telifsiz). */
-export const ITEM_BANK_SEED: ItemBankItem[] = [
+/** Hand-authored MVP seeds — mirrors content/item-bank (telifsiz). */
+const CURATED_SEED: ItemBankItem[] = [
   {
     id: 'lgs-math-kesirler-001',
     examType: 'lgs',
@@ -197,6 +198,14 @@ export const ITEM_BANK_SEED: ItemBankItem[] = [
     ],
     transparencyNote: 'Özgün örnek anlatım — kontrol etmeni öneririz.',
   },
+];
+
+const curatedTopicIds = new Set(CURATED_SEED.map((i) => i.topicId));
+
+/** Full bank: curated + one demo sample per remaining catalog topic. */
+export const ITEM_BANK_SEED: ItemBankItem[] = [
+  ...CURATED_SEED,
+  ...buildCoverageSamples(curatedTopicIds),
 ];
 
 export function itemsForExam(exam: ExamType): ItemBankItem[] {

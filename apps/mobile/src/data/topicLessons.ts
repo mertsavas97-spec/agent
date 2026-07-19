@@ -203,7 +203,82 @@ const LESSONS: TopicLesson[] = [
 
 const BY_ID = new Map(LESSONS.map((l) => [l.topicId, l]));
 
-/** Generic teacher-voice primer when topic-specific copy is missing. */
+function subjectBullets(
+  subject: Subject,
+  examVoice: string,
+  nameTr: string,
+): string[] {
+  switch (subject) {
+    case 'turkish':
+    case 'literature':
+      return [
+        `${nameTr}: ${examVoice} sorularda şıkları metne götür.`,
+        'Kökü ayır — ana fikir, anlatım biçimi, anlam ilgisi, dil bilgisi…',
+        'Metinde dayanağı olmayan şıkkı eler; “güzel duruyor” diye seçme.',
+      ];
+    case 'math':
+    case 'geometry':
+      return [
+        `${nameTr}: ${examVoice} işlemde önce verileri yaz.`,
+        'Ne verildi / ne istendi diye ayır; birimleri kontrol et.',
+        'Sonucu yerine koyarak doğrula; şıkları ele.',
+      ];
+    case 'science':
+    case 'physics':
+    case 'chemistry':
+    case 'biology':
+      return [
+        `${nameTr}: kavram + birim + örnek olay üçlüsünü kur.`,
+        'Formül ezberi yetmez — hangi büyüklük değişiyor bak.',
+        'Şıkları günlük yaşam örneğiyle test et.',
+      ];
+    case 'history':
+      return [
+        `${nameTr}: olay → sebep → sonuç zincirini kur.`,
+        'Tarih / yer / kişi üçlüsünü metinde doğrula.',
+        'Çıkarım sorusunda metnin sınırını aşma.',
+      ];
+    case 'geography':
+      return [
+        `${nameTr}: konum, iklim, nüfus veya ekonomi hangisi soruluyor ayır.`,
+        'Harita / tablo varsa önce onu oku.',
+        'Genellemeyi veriye bağla.',
+      ];
+    case 'civics':
+    case 'current':
+      return [
+        `${nameTr}: kurum / hak / görev kavramını netleştir.`,
+        'Anayasa ve temel organları karıştırma.',
+        'Güncel soruda tarihi çerçeveyi unutma.',
+      ];
+    case 'philosophy':
+      return [
+        `${nameTr}: sorunun hangi felsefe alanına ait olduğunu bul.`,
+        'Tanım ↔ örnek eşlemesi yap.',
+        'Şıklardaki uç genellemeleri ele.',
+      ];
+    case 'religion':
+      return [
+        `${nameTr}: inanç / ibadet / ahlak boyutunu ayır.`,
+        'Kavramı günlük örnekle bağla.',
+        'Metne dayanmayan yorumu seçme.',
+      ];
+    case 'english':
+      return [
+        `${nameTr}: tense / vocabulary / reading kökünü ayır.`,
+        'Özne–fiil uyumuna bak; bağlamdan kelime çıkar.',
+        'Şıkları cümleye geri koy.',
+      ];
+    default:
+      return [
+        `${nameTr}: ${examVoice} sorulur; ezber değil mantık kur.`,
+        'Önce neyin verildiğini, sonra neyin istendiğini ayır.',
+        'Dayanaklı şıkkı seç; emin değilsen eleme yap.',
+      ];
+  }
+}
+
+/** Subject-aware teacher primer when topic-specific copy is missing. */
 export function buildFallbackLesson(input: {
   topicId: string;
   nameTr: string;
@@ -216,22 +291,11 @@ export function buildFallbackLesson(input: {
       : input.examType === 'ygs'
         ? 'lise seviyesinde'
         : 'aday dilinde';
-  const verbal = input.subject === 'turkish' || input.subject === 'literature';
   return {
     topicId: input.topicId,
-    headline: `${input.nameTr} — kısa hatırlatma`,
-    bullets: verbal
-      ? [
-          `Bu konu ${examVoice} sorulur; şıkları metne götürerek ele.`,
-          'Soru kökünü ayır: ana fikir, anlatım biçimi, çıkarım, dil bilgisi…',
-          'Metinde dayanağı olmayan şıkkı eler.',
-        ]
-      : [
-          `Bu konu ${examVoice} sorulur; ezber değil mantık kur.`,
-          'Önce neyin verildiğini, sonra neyin istendiğini ayır.',
-          'İşlemi adım adım yaz; sonucu yerine koyarak doğrula.',
-        ],
-    tip: 'Takılırsan “Anlamadım” ile daha sade anlatım iste.',
+    headline: `${input.nameTr} — kısa anlatım`,
+    bullets: subjectBullets(input.subject, examVoice, input.nameTr),
+    tip: 'Örnek soruyu çöz; takılırsan fotoğrafla canlı çözüm al.',
   };
 }
 

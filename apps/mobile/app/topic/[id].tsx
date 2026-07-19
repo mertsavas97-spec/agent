@@ -5,6 +5,7 @@ import { findTopic, subjectLabel } from '@/src/data';
 import { itemsForTopic } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { examThemeFor } from '@/src/features/exam/examTheme';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 
 export default function TopicLessonScreen() {
@@ -19,6 +20,7 @@ export default function TopicLessonScreen() {
       })
     : null;
   const samples = topic ? itemsForTopic(topic.id) : [];
+  const theme = topic ? examThemeFor(topic.examType) : null;
 
   if (!topic || !lesson) {
     return (
@@ -30,10 +32,17 @@ export default function TopicLessonScreen() {
 
   return (
     <ScrollView
-      style={styles.root}
+      style={[styles.root, theme ? { backgroundColor: theme.soft } : null]}
       contentContainerStyle={styles.content}
       testID="topic-lesson-screen">
-      <Text style={styles.kicker}>
+      <View
+        style={[
+          styles.modeChip,
+          { backgroundColor: theme?.solid ?? colors.navy },
+        ]}>
+        <Text style={styles.modeChipText}>{theme?.modeChip ?? EXAM_LABEL[topic.examType]}</Text>
+      </View>
+      <Text style={[styles.kicker, theme ? { color: theme.solid } : null]}>
         {EXAM_LABEL[topic.examType]} · {subjectLabel(topic.subject)}
       </Text>
       <Text style={styles.title}>{topic.nameTr}</Text>
@@ -86,6 +95,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   missingText: { color: colors.textSecondary, fontFamily: typography.fontFamily },
+  modeChip: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: space.sm,
+  },
+  modeChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
+  },
   kicker: {
     fontFamily: typography.fontFamily,
     fontSize: 12,

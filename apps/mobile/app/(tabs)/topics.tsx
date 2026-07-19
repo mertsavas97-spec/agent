@@ -1,5 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -7,9 +7,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
 
 import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
+import { examThemeFor } from '@/src/features/exam/examTheme';
 import { itemsForExamSubject } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import {
@@ -19,41 +19,20 @@ import {
   topicsForExamSubject,
 } from '@/src/data';
 import type { ExamType, Subject } from '@/src/lib/api/types';
-import { ensureSignedIn } from '@/src/lib/auth';
-import { getFirebase } from '@/src/lib/firebase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
+
+type PanelId = 'topics' | 'samples';
 
 export default function TopicsScreen() {
   const router = useRouter();
   const [examType, setExamType] = useState<ExamType>('lgs');
   const subjects = useMemo(() => subjectsForExam(examType), [examType]);
   const [subject, setSubject] = useState<Subject>(subjects[0] ?? 'math');
+  const [panel, setPanel] = useState<PanelId>('topics');
 
-  useFocusEffect(
-    useCallback(() => {
-      let alive = true;
-      void (async () => {
-        try {
-          const user = await ensureSignedIn();
-          const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
-          const et = snap.data()?.examType;
-          if (!alive) return;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss') {
-            setExamType(et);
-            const nextSubjects = subjectsForExam(et);
-            setSubject(nextSubjects[0] ?? 'math');
-          }
-        } catch {
-          /* keep default */
-        }
-      })();
-      return () => {
-        alive = false;
-      };
-    }, []),
-  );
+  const theme = examThemeFor(examType)!;
 
   const topics = useMemo(
     () => topicsForExamSubject(examType, subject),
@@ -68,18 +47,25 @@ export default function TopicsScreen() {
     setExamType(next);
     const nextSubjects = subjectsForExam(next);
     setSubject(nextSubjects[0] ?? 'math');
+    setPanel('topics');
   }
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.soft }]}
       contentContainerStyle={styles.content}
       testID="topics-screen">
-      <Text style={styles.eyebrow}>Müfredat</Text>
+      <Text style={[styles.eyebrow, { color: theme.solid }]}>Müfredat</Text>
       <Text style={styles.title}>Konu anlatımı</Text>
       <Text style={styles.subtitle}>
-        Sınav seç → ders → konu. Kısa öğretmen özeti ve örnek sorular.
+        Sınav seç → ders → konu veya örnek soru. Ana sayfa modundan bağımsız gez.
       </Text>
+
+      <View
+        style={[styles.modeChip, { backgroundColor: theme.solid }]}
+        testID="topics-mode-chip">
+        <Text style={styles.modeChipText}>{theme.modeChip}</Text>
+      </View>
 
       <Text style={styles.filterLabel}>Sınav</Text>
       <SegmentedTabs
@@ -88,6 +74,8 @@ export default function TopicsScreen() {
         variant="track"
         value={examType}
         onChange={switchExam}
+        activeColor={theme.solid}
+        accentColor={theme.accent}
         items={EXAM_OPTIONS.map((o) => ({
           id: o.id,
           label: o.label,
@@ -101,78 +89,114 @@ export default function TopicsScreen() {
         itemTestIDPrefix="topics-subject"
         variant="chips"
         value={subject}
-        onChange={setSubject}
+        onChange={(id) => {
+          setSubject(id);
+          setPanel('topics');
+        }}
+        activeColor={theme.solid}
+        accentColor={theme.accent}
         items={subjects.map((s) => ({ id: s, label: subjectLabel(s) }))}
       />
 
-      <Text style={[styles.filterLabel, styles.spaced]}>
-        {EXAM_LABEL[examType]} · {subjectLabel(subject)} konuları
+      <Text style={[styles.filterLabel, styles.spaced]}>İçerik</Text>
+      <SegmentedTabs
+        testID="topics-panel-tabs"
+        itemTestIDPrefix="topics-panel"
+        variant="track"
+        value={panel}
+        onChange={setPanel}
+        activeColor={theme.solid}
+        accentColor={theme.accent}
+        items={[
+          {
+            id: 'topics' as const,
+            label: 'Konular',
+            caption: `${topics.length} anlatım`,
+          },
+          {
+            id: 'samples' as const,
+            label: 'Örnek sorular',
+            caption: `${samples.length} soru`,
+          },
+        ]}
+      />
+
+      <Text style={[styles.branchTitle, { color: theme.solid }]}>
+        {EXAM_LABEL[examType]} · {subjectLabel(subject)}
       </Text>
-      {topics.length === 0 ? (
-        <EmptyState title="Bu derste konu yok" subtitle="Başka bir ders seç." />
+
+      {panel === 'topics' ? (
+        topics.length === 0 ? (
+          <EmptyState title="Bu derste konu yok" subtitle="Başka bir ders seç." />
+        ) : (
+          <View style={styles.topicList} testID="topics-list">
+            {topics.map((t) => {
+              const lesson = lessonForTopic(t.id, {
+                nameTr: t.nameTr,
+                subject: t.subject,
+                examType: t.examType,
+              });
+              const sampleCount = samples.filter((s) => s.topicId === t.id).length;
+              return (
+                <Pressable
+                  key={t.id}
+                  style={[styles.topicRow, { borderColor: theme.accent }]}
+                  testID={`catalog-topic-${t.id}`}
+                  accessibilityRole="button"
+                  onPress={() =>
+                    router.push({ pathname: '/topic/[id]', params: { id: t.id } })
+                  }>
+                  <View style={styles.topicRowMain}>
+                    <Text style={styles.topicRowTitle}>{t.nameTr}</Text>
+                    <Text style={styles.topicRowMeta}>
+                      {lesson ? 'Anlatım hazır' : 'Özet'}
+                      {sampleCount > 0 ? ` · ${sampleCount} örnek` : ' · örnek yok'}
+                    </Text>
+                  </View>
+                  <Text style={[styles.topicChevron, { color: theme.solid }]}>›</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )
+      ) : samples.length === 0 ? (
+        <View style={styles.emptySamples} testID="topics-samples-empty">
+          <Text style={styles.hint}>
+            Bu ders için örnek soru henüz yok. Konular sekmesinden anlatımı oku.
+          </Text>
+        </View>
       ) : (
-        <View style={styles.topicList} testID="topics-list">
-          {topics.map((t) => {
-            const hasLesson = Boolean(lessonForTopic(t.id));
-            const sampleCount = samples.filter((s) => s.topicId === t.id).length;
+        <View testID="topics-samples-list">
+          {samples.map((item) => {
+            const topic = findTopic(item.topicId);
             return (
               <Pressable
-                key={t.id}
-                style={styles.topicRow}
-                testID={`catalog-topic-${t.id}`}
+                key={item.id}
+                style={[styles.card, { borderColor: theme.accent }]}
+                testID={`topic-item-${item.id}`}
                 accessibilityRole="button"
                 onPress={() =>
-                  router.push({ pathname: '/topic/[id]', params: { id: t.id } })
+                  router.push({ pathname: '/sample/[id]', params: { id: item.id } })
                 }>
-                <View style={styles.topicRowMain}>
-                  <Text style={styles.topicRowTitle}>{t.nameTr}</Text>
-                  <Text style={styles.topicRowMeta}>
-                    {hasLesson ? 'Anlatım hazır' : 'Kısa özet'}
-                    {sampleCount > 0 ? ` · ${sampleCount} örnek` : ''}
-                  </Text>
-                </View>
-                <Text style={styles.topicChevron}>›</Text>
+                <Text style={[styles.cardKicker, { color: theme.solid }]}>
+                  {subjectLabel(item.subject)}
+                  {topic ? ` · ${topic.nameTr}` : ''}
+                  {item.difficulty === 'easy'
+                    ? ' · kolay'
+                    : item.difficulty === 'mid'
+                      ? ' · orta'
+                      : ' · zor'}
+                </Text>
+                <Text style={styles.cardTitle} numberOfLines={3}>
+                  {item.stem}
+                </Text>
+                <Text style={[styles.cardCta, { color: theme.solid }]}>
+                  Konuyu + çözümü gör →
+                </Text>
               </Pressable>
             );
           })}
         </View>
-      )}
-
-      <Text style={[styles.filterLabel, styles.spaced]}>Örnek sorular</Text>
-      {samples.length === 0 ? (
-        <View style={styles.emptySamples}>
-          <Text style={styles.hint}>
-            Bu dal için örnek madde henüz yok. Yukarıdan bir konuya girip özeti oku.
-          </Text>
-        </View>
-      ) : (
-        samples.map((item) => {
-          const topic = findTopic(item.topicId);
-          return (
-            <Pressable
-              key={item.id}
-              style={styles.card}
-              testID={`topic-item-${item.id}`}
-              accessibilityRole="button"
-              onPress={() =>
-                router.push({ pathname: '/sample/[id]', params: { id: item.id } })
-              }>
-              <Text style={styles.cardKicker}>
-                {subjectLabel(item.subject)}
-                {topic ? ` · ${topic.nameTr}` : ''}
-                {item.difficulty === 'easy'
-                  ? ' · kolay'
-                  : item.difficulty === 'mid'
-                    ? ' · orta'
-                    : ' · zor'}
-              </Text>
-              <Text style={styles.cardTitle} numberOfLines={3}>
-                {item.stem}
-              </Text>
-              <Text style={styles.cardCta}>Konuyu + çözümü gör →</Text>
-            </Pressable>
-          );
-        })
       )}
     </ScrollView>
   );
@@ -191,7 +215,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: 4,
   },
   title: {
@@ -206,8 +229,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 6,
-    marginBottom: space.lg,
+    marginBottom: space.md,
     lineHeight: 20,
+  },
+  modeChip: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: space.md,
+  },
+  modeChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
   },
   filterLabel: {
     fontFamily: typography.fontFamily,
@@ -217,14 +253,20 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   spaced: { marginTop: space.lg },
+  branchTitle: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: space.lg,
+    marginBottom: space.md,
+  },
   topicList: { gap: space.sm },
   topicRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
     paddingHorizontal: space.md,
     paddingVertical: 12,
     ...shadows.soft,
@@ -245,7 +287,6 @@ const styles = StyleSheet.create({
   topicChevron: {
     fontFamily: typography.fontFamily,
     fontSize: 22,
-    color: colors.navy,
     marginLeft: space.sm,
   },
   hint: {
@@ -266,15 +307,13 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     padding: space.md,
     marginBottom: space.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
     ...shadows.soft,
   },
   cardKicker: {
     fontFamily: typography.fontFamily,
     fontSize: 12,
     fontWeight: '700',
-    color: colors.orange,
     marginBottom: 6,
   },
   cardTitle: {
@@ -289,6 +328,5 @@ const styles = StyleSheet.create({
     marginTop: space.md,
     fontSize: 13,
     fontWeight: '700',
-    color: colors.navy,
   },
 });

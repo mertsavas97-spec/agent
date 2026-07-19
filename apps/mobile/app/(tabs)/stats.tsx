@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,11 +9,16 @@ import {
   View,
 } from 'react-native';
 
-import { EXAM_LABEL } from '@/src/features/exam/examLabels';
-import { fetchProgressSummary } from '@/src/lib/api/progressClient';
-import type { ProgressSummary } from '@/src/lib/api/types';
+import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
+import { EXAM_THEME, examThemeFor } from '@/src/features/exam/examTheme';
+import {
+  fetchProgressAttempts,
+  progressForExam,
+} from '@/src/lib/api/progressClient';
+import type { AttemptListItem, ExamType, ProgressSummary } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
+import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
 const WEEKDAY_TR = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
 
@@ -29,9 +34,27 @@ function streakBlurb(n: number): string {
   return 'Serin devam ediyor. Bir gün koparsa sıfırlanır — bugün bir soru yeter.';
 }
 
+function summaryHasData(s: ProgressSummary | null): boolean {
+  if (!s) return false;
+  return (
+    (s.totalSolved ?? 0) > 0 ||
+    s.topics.length > 0 ||
+    s.weekly.some((w) => w.solvedCount > 0)
+  );
+}
+
+function pickDefaultExam(items: AttemptListItem[]): ExamType {
+  for (const exam of ['lgs', 'ygs', 'kpss'] as ExamType[]) {
+    if (summaryHasData(progressForExam(items, exam))) return exam;
+  }
+  return 'lgs';
+}
+
 export default function StatsScreen() {
   const router = useRouter();
-  const [summary, setSummary] = useState<ProgressSummary | null>(null);
+  const [items, setItems] = useState<AttemptListItem[]>([]);
+  const [examType, setExamType] = useState<ExamType>('lgs');
+  const seededRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +65,16 @@ export default function StatsScreen() {
         setLoading(true);
         setError(null);
         try {
-          const data = await fetchProgressSummary();
-          if (alive) setSummary(data);
+          const data = await fetchProgressAttempts();
+          if (!alive) return;
+          setItems(data);
+          if (!seededRef.current) {
+            setExamType(pickDefaultExam(data));
+            seededRef.current = true;
+          }
         } catch {
           if (alive) {
-            setSummary(null);
+            setItems([]);
             setError('İstatistik yüklenemedi. Bağlantını kontrol edip tekrar dene.');
           }
         } finally {
@@ -59,87 +87,129 @@ export default function StatsScreen() {
     }, []),
   );
 
+  const theme = examThemeFor(examType)!;
+  const summary = useMemo(
+    () => progressForExam(items, examType),
+    [items, examType],
+  );
+
+  const examsWithData = useMemo(() => {
+    const set = new Set<ExamType>();
+    for (const exam of ['lgs', 'ygs', 'kpss'] as ExamType[]) {
+      if (summaryHasData(progressForExam(items, exam))) set.add(exam);
+    }
+    return set;
+  }, [items]);
+
   const maxAttempts = Math.max(
     1,
-    ...(summary?.topics.map((t) => t.attemptCount) ?? [1]),
-  );
-  const maxWeekly = Math.max(
+    ...summary.topics.map((t) => t.attemptCount),
     1,
-    ...(summary?.weekly.map((w) => w.solvedCount) ?? [1]),
   );
-  const topTopics = useMemo(
-    () => (summary?.topics ?? []).slice(0, 5),
-    [summary?.topics],
+  const maxWeekly = Math.max(1, ...summary.weekly.map((w) => w.solvedCount), 1);
+  const topTopics = summary.topics.slice(0, 5);
+  const hasData = summaryHasData(summary);
+  const otherWithData = (['lgs', 'ygs', 'kpss'] as ExamType[]).filter(
+    (e) => e !== examType && examsWithData.has(e),
   );
-  const hasData =
-    !!summary &&
-    ((summary.totalSolved ?? 0) > 0 ||
-      summary.topics.length > 0 ||
-      summary.weekly.some((w) => w.solvedCount > 0));
-
-  const examLabel = summary?.examType ? EXAM_LABEL[summary.examType] : null;
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.soft }]}
       contentContainerStyle={styles.content}
       testID="stats-screen">
-      <Text style={styles.eyebrow}>İlerleme</Text>
+      <Text style={[styles.eyebrow, { color: theme.solid }]}>İlerleme</Text>
       <Text style={styles.title}>İstatistik</Text>
       <Text style={styles.subtitle}>
-        {examLabel
-          ? `${examLabel} çalışma haritan — seri, ritim ve odak.`
-          : 'Çalışma haritan — seri, ritim ve odak.'}
+        Her sınavın kendi verisi — ana sayfa seçiminden bağımsız. Sekmeye dokun.
       </Text>
 
+      <Text style={styles.filterLabel}>Sınav</Text>
+      <SegmentedTabs
+        testID="stats-exam-tabs"
+        itemTestIDPrefix="stats-exam"
+        variant="track"
+        value={examType}
+        onChange={setExamType}
+        activeColor={theme.solid}
+        accentColor={theme.accent}
+        items={EXAM_OPTIONS.map((o) => ({
+          id: o.id,
+          label: o.label,
+          caption: examsWithData.has(o.id) ? 'veri var' : EXAM_SHORT[o.id],
+        }))}
+      />
+
+      <View
+        style={[styles.modeChip, { backgroundColor: theme.solid }]}
+        testID="stats-mode-chip">
+        <Text style={styles.modeChipText}>{theme.modeChip}</Text>
+      </View>
+
       {loading ? (
-        <ActivityIndicator color={colors.navy} style={{ marginTop: space.lg }} />
+        <ActivityIndicator color={theme.solid} style={{ marginTop: space.lg }} />
       ) : error ? (
         <EmptyState title="Yüklenemedi" subtitle={error} />
       ) : !hasData ? (
         <View style={styles.emptyBlock} testID="stats-empty">
-          <View style={styles.streakHeroMuted}>
-            <View style={styles.streakRingMuted}>
-              <Text style={styles.streakNumMuted}>0</Text>
-              <Text style={styles.streakUnitMuted}>gün</Text>
-            </View>
-            <Text style={styles.streakHint}>Henüz iz yok.</Text>
-          </View>
           <EmptyState
-            title="Haritan boş"
-            subtitle="Bir soru çöz, seri ve ders bar’ların dolsun."
+            title={`${EXAM_LABEL[examType]} için henüz iz yok`}
+            subtitle={
+              otherWithData.length > 0
+                ? `Bu sekmede veri yok. ${otherWithData
+                    .map((e) => EXAM_LABEL[e])
+                    .join(', ')} sekmesinde kayıtların var — oraya geç veya ${EXAM_LABEL[examType]} sorusu çöz.`
+                : `${EXAM_LABEL[examType]} modunda bir soru çözünce seri ve bar’lar burada oluşur.`
+            }
           />
-          <Pressable
-            style={styles.primaryCta}
-            testID="stats-empty-cta"
-            onPress={() => router.push('/(tabs)')}>
-            <Text style={styles.primaryCtaText}>Fotoğraf çek / galeri</Text>
-          </Pressable>
+          {otherWithData.length > 0 ? (
+            <View style={styles.otherRow}>
+              {otherWithData.map((e) => (
+                <Pressable
+                  key={e}
+                  style={[styles.otherChip, { backgroundColor: EXAM_THEME[e].solid }]}
+                  testID={`stats-jump-${e}`}
+                  onPress={() => setExamType(e)}>
+                  <Text style={styles.otherChipText}>
+                    {EXAM_THEME[e].modeChip} verisine git
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Pressable
+              style={[styles.primaryCta, { backgroundColor: theme.solid }]}
+              testID="stats-empty-cta"
+              onPress={() => router.push('/(tabs)')}>
+              <Text style={styles.primaryCtaText}>Ana sayfada soru çöz</Text>
+            </Pressable>
+          )}
         </View>
       ) : (
         <>
-          {/* Hero streak */}
           <View style={styles.streakHero} testID="stats-streak">
-            <View style={styles.streakRing}>
-              <Text style={styles.streakNum}>{summary!.streakCount}</Text>
-              <Text style={styles.streakUnit}>gün seri</Text>
+            <View style={[styles.streakRing, { borderColor: theme.accent }]}>
+              <Text style={[styles.streakNum, { color: theme.solid }]}>
+                {summary.streakCount}
+              </Text>
+              <Text style={[styles.streakUnit, { color: theme.accent }]}>gün seri</Text>
             </View>
-            <Text style={styles.streakHint}>{streakBlurb(summary!.streakCount)}</Text>
-            {(summary!.totalSolved ?? 0) > 0 ? (
+            <Text style={styles.streakHint}>{streakBlurb(summary.streakCount)}</Text>
+            {(summary.totalSolved ?? 0) > 0 ? (
               <Text style={styles.totalSolved}>
-                Toplam {summary!.totalSolved} çözüm
-                {examLabel ? ` · ${examLabel}` : ''}
+                {EXAM_LABEL[examType]} · toplam {summary.totalSolved} çözüm
               </Text>
             ) : null}
           </View>
 
-          {/* Weekly activity */}
-          {summary!.weekly.length > 0 ? (
+          {summary.weekly.length > 0 ? (
             <View style={styles.sectionBlock}>
               <Text style={styles.section}>Bu hafta</Text>
-              <Text style={styles.sectionSub}>Hangi günler ateşlendin?</Text>
+              <Text style={styles.sectionSub}>
+                {EXAM_LABEL[examType]} — hangi günler ateşlendin?
+              </Text>
               <View style={styles.weekly} testID="weekly-series">
-                {summary!.weekly.map((w) => {
+                {summary.weekly.map((w) => {
                   const h = Math.max(
                     8,
                     Math.round((w.solvedCount / maxWeekly) * 56),
@@ -149,16 +219,16 @@ export default function StatsScreen() {
                     <View key={w.date} style={styles.weekCol}>
                       <View style={styles.weekBarTrack}>
                         <View
-                          style={[
-                            styles.weekBarFill,
-                            {
-                              height: on ? h : 8,
-                              backgroundColor: on ? colors.orange : colors.border,
-                            },
-                          ]}
+                          style={{
+                            height: on ? h : 8,
+                            width: 14,
+                            borderRadius: 7,
+                            alignSelf: 'center',
+                            backgroundColor: on ? theme.accent : colors.border,
+                          }}
                         />
                       </View>
-                      <Text style={[styles.weekDay, on && styles.weekDayOn]}>
+                      <Text style={[styles.weekDay, on && { color: theme.solid, fontWeight: '700' }]}>
                         {weekdayLabel(w.date)}
                       </Text>
                       <Text style={styles.weekCount}>{w.solvedCount}</Text>
@@ -169,17 +239,22 @@ export default function StatsScreen() {
             </View>
           ) : null}
 
-          {/* Subject mix */}
-          {summary!.subjectMix && summary!.subjectMix.length > 0 ? (
+          {summary.subjectMix && summary.subjectMix.length > 0 ? (
             <View style={styles.sectionBlock}>
               <Text style={styles.section}>Derslerin</Text>
               <Text style={styles.sectionSub}>Nereye ağırlık verdin?</Text>
               <View style={styles.mixRow} testID="subject-mix">
-                {summary!.subjectMix.map((s) => (
+                {summary.subjectMix.map((s) => (
                   <View key={s.subject} style={styles.mixChip}>
                     <View style={styles.mixTrack}>
                       <View
-                        style={[styles.mixFill, { width: `${Math.max(8, s.pct)}%` }]}
+                        style={[
+                          styles.mixFill,
+                          {
+                            width: `${Math.max(8, s.pct)}%`,
+                            backgroundColor: theme.solid,
+                          },
+                        ]}
                       />
                     </View>
                     <Text style={styles.mixLabel}>
@@ -191,18 +266,22 @@ export default function StatsScreen() {
             </View>
           ) : null}
 
-          {/* Topic bars */}
           {topTopics.length > 0 ? (
             <View style={styles.sectionBlock}>
               <Text style={styles.section}>Konular</Text>
               <Text style={styles.sectionSub}>Derinleştiğin yerler</Text>
               {topTopics.map((t) => (
-                <View key={t.topicId} style={styles.barRow} testID={`topic-bar-${t.topicId}`}>
+                <View
+                  key={t.topicId}
+                  style={styles.barRow}
+                  testID={`topic-bar-${t.topicId}`}>
                   <View style={styles.barHead}>
                     <Text style={styles.barLabel} numberOfLines={1}>
                       {t.nameTr}
                     </Text>
-                    <Text style={styles.barCount}>{t.attemptCount}</Text>
+                    <Text style={[styles.barCount, { color: theme.solid }]}>
+                      {t.attemptCount}
+                    </Text>
                   </View>
                   <View style={styles.barTrack}>
                     <View
@@ -210,6 +289,7 @@ export default function StatsScreen() {
                         styles.barFill,
                         {
                           width: `${Math.round((t.attemptCount / maxAttempts) * 100)}%`,
+                          backgroundColor: theme.accent,
                         },
                       ]}
                     />
@@ -219,14 +299,16 @@ export default function StatsScreen() {
             </View>
           ) : null}
 
-          {/* Focus / weakest */}
-          {summary!.weakestTopic ? (
-            <View style={styles.focusCard} testID="weakest-topic">
-              <Text style={styles.focusEyebrow}>Bugünkü odak</Text>
-              <Text style={styles.focusName}>{summary!.weakestTopic.nameTr}</Text>
+          {summary.weakestTopic ? (
+            <View
+              style={[styles.focusCard, { borderColor: theme.accent }]}
+              testID="weakest-topic">
+              <Text style={[styles.focusEyebrow, { color: theme.accent }]}>
+                Bugünkü odak · {EXAM_LABEL[examType]}
+              </Text>
+              <Text style={styles.focusName}>{summary.weakestTopic.nameTr}</Text>
               <Text style={styles.focusHint}>
-                {summary!.focusHint ??
-                  'En zayıf halkayı bugün kırmaya değer.'}
+                {summary.focusHint ?? 'En zayıf halkayı bugün kırmaya değer.'}
               </Text>
               <Pressable
                 style={styles.focusCta}
@@ -234,10 +316,12 @@ export default function StatsScreen() {
                 onPress={() =>
                   router.push({
                     pathname: '/topic/[id]',
-                    params: { id: summary!.weakestTopic!.topicId },
+                    params: { id: summary.weakestTopic!.topicId },
                   })
                 }>
-                <Text style={styles.focusCtaText}>Konu anlatımına git →</Text>
+                <Text style={[styles.focusCtaText, { color: theme.solid }]}>
+                  Konu anlatımına git →
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -256,7 +340,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: 4,
   },
   title: {
@@ -271,63 +354,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
-    marginBottom: space.lg,
+    marginBottom: space.md,
     lineHeight: 20,
   },
-  emptyBlock: { marginTop: space.sm },
-  streakHero: {
-    alignItems: 'center',
-    marginBottom: space.lg,
+  filterLabel: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: space.sm,
   },
-  streakHeroMuted: {
-    alignItems: 'center',
+  modeChip: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: space.md,
     marginBottom: space.md,
   },
+  modeChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  emptyBlock: { marginTop: space.sm },
+  otherRow: { gap: space.sm, marginTop: space.md },
+  otherChip: {
+    borderRadius: radii.lg,
+    paddingVertical: 12,
+    paddingHorizontal: space.md,
+    alignItems: 'center',
+  },
+  otherChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  streakHero: { alignItems: 'center', marginBottom: space.lg },
   streakRing: {
     width: 132,
     height: 132,
     borderRadius: 66,
     borderWidth: 6,
-    borderColor: colors.orange,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.soft,
   },
-  streakRingMuted: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    borderWidth: 5,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   streakNum: {
     fontFamily: typography.fontFamilySemiBold,
     fontSize: 40,
     fontWeight: '700',
-    color: colors.navy,
     lineHeight: 44,
-  },
-  streakNumMuted: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.textMuted,
   },
   streakUnit: {
     fontFamily: typography.fontFamily,
     fontSize: 13,
     fontWeight: '600',
-    color: colors.orange,
     marginTop: 2,
-  },
-  streakUnitMuted: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    color: colors.textMuted,
   },
   streakHint: {
     fontFamily: typography.fontFamily,
@@ -371,24 +457,11 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   weekCol: { alignItems: 'center', flex: 1 },
-  weekBarTrack: {
-    height: 56,
-    justifyContent: 'flex-end',
-    marginBottom: 6,
-  },
-  weekBarFill: {
-    width: 14,
-    borderRadius: 7,
-    alignSelf: 'center',
-  },
+  weekBarTrack: { height: 56, justifyContent: 'flex-end', marginBottom: 6 },
   weekDay: {
     fontFamily: typography.fontFamily,
     fontSize: 11,
     color: colors.textMuted,
-  },
-  weekDayOn: {
-    color: colors.navy,
-    fontWeight: '700',
   },
   weekCount: {
     fontFamily: typography.fontFamily,
@@ -412,11 +485,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 6,
   },
-  mixFill: {
-    height: '100%',
-    backgroundColor: colors.navy,
-    borderRadius: 4,
-  },
+  mixFill: { height: '100%', borderRadius: 4 },
   mixLabel: {
     fontFamily: typography.fontFamily,
     fontSize: 13,
@@ -443,23 +512,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  barFill: {
-    height: '100%',
-    backgroundColor: colors.orange,
-    borderRadius: 6,
-  },
+  barFill: { height: '100%', borderRadius: 6 },
   barCount: {
     fontFamily: typography.fontFamily,
     fontSize: 12,
     fontWeight: '700',
-    color: colors.navy,
   },
   focusCard: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
     padding: space.lg,
     borderWidth: 1.5,
-    borderColor: colors.orange,
     ...shadows.soft,
   },
   focusEyebrow: {
@@ -468,7 +531,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: 6,
   },
   focusName: {
@@ -484,19 +546,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 19,
   },
-  focusCta: {
-    marginTop: space.md,
-    alignSelf: 'flex-start',
-  },
+  focusCta: { marginTop: space.md, alignSelf: 'flex-start' },
   focusCtaText: {
     fontFamily: typography.fontFamilySemiBold,
     fontSize: 14,
     fontWeight: '700',
-    color: colors.navy,
   },
   primaryCta: {
     marginTop: space.md,
-    backgroundColor: colors.navy,
     borderRadius: radii.xl,
     paddingVertical: 14,
     alignItems: 'center',

@@ -212,6 +212,8 @@
 - [x] T073 [P] Konular: sınav sekmeli (LGS/YGS/KPSS) → ders → konu listesi + örnekler; “Bu dersten soru çek” kaldırıldı
 - [x] T074 [P] Geçmiş: localHistory (proxy/local solves) + sınav filtresi + tıklanabilir çözüm detayı + UI polish
 - [x] T075 [P] İstatistik: local progress merge + streak hero, haftalık bar, ders karışımı, konu bar’ları, odak kartı
+- [x] T076 [P] İstatistik: sınav sekmeleri ana sayfadan bağımsız; boş sekme wording + veri olan sekmeye atla
+- [x] T077 [P] Konular: exam theme renkleri + Konular/Örnek panelleri; her topic’te lesson + ≥1 sample (coverage seed)
 
 ### Mini item bank (MVP 1.0 — telifsiz)
 

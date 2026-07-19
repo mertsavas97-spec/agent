@@ -146,15 +146,29 @@ function mergeAttempts(
     .slice(0, lim);
 }
 
-async function localProgress(examType: ExamType | null): Promise<ProgressSummary> {
-  const local = (await listLocalHistory(80)).map(toAttemptListItem);
-  return buildProgressFromAttempts(local, examType);
+/** All attempts for client-side per-exam stats (independent of home exam). */
+export async function fetchProgressAttempts(): Promise<AttemptListItem[]> {
+  const res = await fetchAttempts({ limit: 50 });
+  return res.items;
 }
 
+/**
+ * Progress for a single exam tab. Does NOT force profile exam —
+ * Stats UI picks the tab; home YGS ≠ hide KPSS data.
+ */
+export function progressForExam(
+  items: AttemptListItem[],
+  examType: ExamType,
+): ProgressSummary {
+  return buildProgressFromAttempts(items, examType);
+}
+
+/** @deprecated Prefer fetchProgressAttempts + progressForExam for Stats tabs. */
 export async function fetchProgressSummary(): Promise<ProgressSummary> {
   const user = await ensureSignedIn();
   const examType = await readProfileExam(user.uid);
-  const fromLocal = await localProgress(examType);
+  const items = await fetchProgressAttempts();
+  const fromLocal = buildProgressFromAttempts(items, examType);
 
   if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
     return mergeProgressSummaries(
@@ -181,7 +195,7 @@ export async function fetchProgressSummary(): Promise<ProgressSummary> {
           },
         ],
         weekly: fromLocal.weekly,
-        examType: 'lgs',
+        examType: examType ?? 'lgs',
         totalSolved: 6,
         subjectMix: [
           { subject: 'math', label: 'Matematik', count: 4, pct: 67 },
@@ -198,6 +212,7 @@ export async function fetchProgressSummary(): Promise<ProgressSummary> {
     const callable = httpsCallable(functions, 'getProgressSummary');
     const result = await callable({});
     const remote = result.data as ProgressSummary;
+    // Merge remote (profile-scoped) with full local list for that exam only
     return mergeProgressSummaries(
       { ...remote, examType: remote.examType ?? examType ?? undefined },
       fromLocal,
