@@ -25,7 +25,7 @@ function send(res, status, body) {
   res.end(json);
 }
 
-function solvedPayload({ requestId, topicId, subject, steps, ocrText, note }) {
+function solvedPayload({ requestId, topicId, subject, steps, ocrText, note, classification }) {
   return {
     status: 'solved',
     attemptId: `proxy-${requestId}`,
@@ -39,6 +39,14 @@ function solvedPayload({ requestId, topicId, subject, steps, ocrText, note }) {
       'Görselden okuyup adım adım çözüldü. Sonucu kontrol etmeni öneririz.',
     quota: { remainingToday: 5, unlimited: false },
     debugOcrPreview: ocrText.slice(0, 240),
+    classification: {
+      subject: classification.subject,
+      topicKey: classification.topicKey,
+      confidence: classification.confidence,
+      needsConfirm: classification.needsConfirm,
+      score: classification.score,
+      alternatives: classification.alternatives,
+    },
   };
 }
 
@@ -128,6 +136,7 @@ const server = http.createServer(async (req, res) => {
             ocrText,
             note:
               'Metinden okunarak adım adım çözüldü (sözel). Sonucu şıklarla kontrol etmeni öneririz.',
+            classification: classified,
           }),
         );
         return;
@@ -136,18 +145,31 @@ const server = http.createServer(async (req, res) => {
 
     const evaluated = evaluateExpression(ocrText);
     if (evaluated) {
+      const mathClass =
+        classified.subject === 'math' || classified.subject === 'geometry'
+          ? classified
+          : {
+              ...classified,
+              subject: 'math',
+              topicKey: 'temel',
+              confidence: 'high',
+              needsConfirm: false,
+              score: Math.max(classified.score || 0, 8),
+              alternatives: classified.alternatives || [],
+            };
       send(
         res,
         200,
         solvedPayload({
           requestId,
           topicId:
-            classified.subject === 'math'
-              ? topicId
-              : topicIdFor(examType, 'math', 'temel'),
+            mathClass.subject === 'math'
+              ? topicIdFor(examType, 'math', mathClass.topicKey || 'temel')
+              : topicId,
           subject: 'math',
           steps: buildStepsFromEval(evaluated),
           ocrText,
+          classification: mathClass,
         }),
       );
       return;
@@ -169,6 +191,14 @@ const server = http.createServer(async (req, res) => {
       debugOcrPreview: ocrText.slice(0, 240),
       detectedSubject: classified.subject,
       topicId,
+      classification: {
+        subject: classified.subject,
+        topicKey: classified.topicKey,
+        confidence: classified.confidence,
+        needsConfirm: true,
+        score: classified.score,
+        alternatives: classified.alternatives,
+      },
     });
   } catch (err) {
     console.error('solve-proxy error', err instanceof Error ? err.message : err);

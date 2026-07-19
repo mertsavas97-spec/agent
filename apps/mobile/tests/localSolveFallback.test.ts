@@ -4,7 +4,7 @@ import {
 } from '@/src/features/solve/localSolveFallback';
 
 describe('localSolveFallback', () => {
-  it('returns solved response with steps', () => {
+  it('returns solved response with steps for explicit math hint', () => {
     const res = buildLocalSolveFallback({
       examType: 'lgs',
       subjectHint: 'math',
@@ -13,12 +13,12 @@ describe('localSolveFallback', () => {
     expect(res.status).toBe('solved');
     if (res.status !== 'solved') throw new Error('expected solved');
     expect(res.steps.length).toBeGreaterThanOrEqual(3);
-    expect(res.transparencyNote).toMatch(/otomatik çözüm|tekrar/i);
     expect(res.transparencyNote).not.toMatch(/deploy-firestore|bash/i);
     expect(res.topicId).toBe('lgs-math-kesirler');
+    expect(res.subject).toBe('math');
   });
 
-  it('uses clearer copy when OCR parse is unsupported', () => {
+  it('does not default to math when unsupported without hint', () => {
     const res = buildLocalSolveFallback({
       examType: 'lgs',
       requestId: '1',
@@ -26,7 +26,8 @@ describe('localSolveFallback', () => {
     });
     expect(res.status).toBe('solved');
     if (res.status !== 'solved') throw new Error('expected solved');
-    expect(res.transparencyNote).toMatch(/net bir fotoğraf|kadraj|otomatik/i);
+    expect(res.subject).toBe('unknown');
+    expect(res.steps[0]?.body).toMatch(/ders/i);
     expect(res.transparencyNote).not.toMatch(/deploy|AI deploy/i);
   });
 
@@ -44,9 +45,10 @@ describe('localSolveFallback', () => {
     expect(res.steps[0]?.body).toMatch(/anlatım|kök|metne/i);
   });
 
-  it('uses temel işlemler topic for KPSS fallback', () => {
+  it('uses temel işlemler topic for KPSS math hint', () => {
     const res = buildLocalSolveFallback({
       examType: 'kpss',
+      subjectHint: 'math',
       requestId: '9',
     });
     expect(res.status).toBe('solved');

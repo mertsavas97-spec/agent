@@ -1,6 +1,7 @@
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
-function defaultTopicId(examType: ExamType, subject: Subject): string {
+function defaultTopicId(examType: ExamType, subject: Subject): string | null {
+  if (subject === 'unknown') return null;
   if (subject === 'turkish') {
     return examType === 'kpss'
       ? 'kpss-turkish-paragraf'
@@ -18,6 +19,11 @@ function defaultTopicId(examType: ExamType, subject: Subject): string {
   if (subject === 'science') {
     return 'lgs-science-enerji';
   }
+  if (subject === 'geography') {
+    return examType === 'kpss' ? 'kpss-geography-turkiye' : 'ygs-geography-turkiye';
+  }
+  if (subject === 'geometry') return 'kpss-geometry-ucgen';
+  if (subject === 'civics') return 'kpss-civics-anayasa';
   if (examType === 'kpss') return 'kpss-math-temel-islemler';
   if (examType === 'ygs') return 'ygs-math-temel-kavramlar';
   return 'lgs-math-kesirler';
@@ -26,6 +32,7 @@ function defaultTopicId(examType: ExamType, subject: Subject): string {
 /**
  * Last-resort offline fallback when server + OCR proxy unavailable.
  * User-facing copy only — no deploy shell commands.
+ * Never silently force Matematik when subject is unknown.
  */
 export function buildLocalSolveFallback(input: {
   examType?: ExamType;
@@ -37,15 +44,24 @@ export function buildLocalSolveFallback(input: {
 }): SolveQuestionResponse {
   const examType = input.examType ?? 'lgs';
   const subject: Subject =
-    input.subjectHint && input.subjectHint !== 'unknown' ? input.subjectHint : 'math';
-  const topicId = input.topicId || defaultTopicId(examType, subject);
+    input.subjectHint && input.subjectHint !== 'unknown'
+      ? input.subjectHint
+      : input.reason === 'unsupported' || input.reason === 'unavailable'
+        ? 'unknown'
+        : 'math';
+
+  const topicId =
+    input.topicId !== undefined && input.topicId !== null
+      ? input.topicId
+      : defaultTopicId(examType, subject);
   const isVerbal = subject === 'turkish' || subject === 'literature';
+  const isUnknown = subject === 'unknown';
 
   const transparencyNote =
     input.reason === 'unsupported'
       ? isVerbal
         ? 'Bu sözel soru tam otomatik çözülemedi. Şıkları da kadraja alıp tekrar dene.'
-        : 'Bu kadrajdaki soru otomatik çözülemedi. Daha net bir fotoğraf dene; soru ve şıklar tam görünsün.'
+        : 'Bu kadrajdaki soru otomatik çözülemedi. Dersini onayla; soru ve şıklar net olsun.'
       : 'Şu an otomatik çözüme ulaşılamadı; genel hatırlatma gösteriyoruz. Biraz sonra tekrar dener misin?';
 
   return {
@@ -55,38 +71,53 @@ export function buildLocalSolveFallback(input: {
     cached: false,
     topicId,
     subject,
-    steps: isVerbal
+    steps: isUnknown
       ? [
           {
-            title: '1. Soru kökünü bul',
-            body: 'Ana fikir, anlatım biçimi, çıkarım veya dil bilgisi mi isteniyor? Kök cümleyi ayır.',
+            title: '1. Dersi onayla',
+            body: 'Önce doğru dersi seç — yanlış Matematik etiketi yapıştırmıyoruz.',
           },
           {
-            title: '2. Metni tara',
-            body: 'Şıkları kendi bilginle değil metne götürerek ele; dayanağı olmayanı çıkar.',
+            title: '2. Soruyu oku',
+            body: 'Kök cümleyi ve şıkları ayır; kadrajda tam görünsünler.',
           },
           {
-            title: '3. Kontrol et',
-            body: 'Seçtiğin şık metindeki bir cümleyle desteklenebiliyor mu? Destek yoksa eler.',
+            title: '3. Tekrar dene',
+            body: 'Ders netleşince adımlar o derse göre düzenlenir.',
           },
         ]
-      : [
-          {
-            title: '1. Soruyu oku',
-            body: 'Verilenleri ve isteneni ayır. Şıklar ve işlem tamamen kadrajda olsun.',
-          },
-          {
-            title: '2. İşlemi kur',
-            body:
-              subject === 'math' || subject === 'geometry'
-                ? 'Parantez → çarpma/bölme → toplama/çıkarma sırasıyla ilerle. Kesirlerde paydaları dikkat et.'
-                : 'Verilenleri maddele; soru köküne göre eleme yap.',
-          },
-          {
-            title: '3. Kontrol et',
-            body: 'Sonucu yerine koyarak veya şıkları eleyerek doğrula.',
-          },
-        ],
+      : isVerbal
+        ? [
+            {
+              title: '1. Soru kökünü bul',
+              body: 'Ana fikir, anlatım biçimi, çıkarım veya dil bilgisi mi isteniyor? Kök cümleyi ayır.',
+            },
+            {
+              title: '2. Metni tara',
+              body: 'Şıkları kendi bilginle değil metne götürerek ele; dayanağı olmayanı çıkar.',
+            },
+            {
+              title: '3. Kontrol et',
+              body: 'Seçtiğin şık metindeki bir cümleyle desteklenebiliyor mu? Destek yoksa eler.',
+            },
+          ]
+        : [
+            {
+              title: '1. Soruyu oku',
+              body: 'Verilenleri ve isteneni ayır. Şıklar ve işlem tamamen kadrajda olsun.',
+            },
+            {
+              title: '2. İşlemi kur',
+              body:
+                subject === 'math' || subject === 'geometry'
+                  ? 'Parantez → çarpma/bölme → toplama/çıkarma sırasıyla ilerle. Kesirlerde paydaları dikkat et.'
+                  : 'Verilenleri maddele; soru köküne göre eleme yap.',
+            },
+            {
+              title: '3. Kontrol et',
+              body: 'Sonucu yerine koyarak veya şıkları eleyerek doğrula.',
+            },
+          ],
     transparencyNote,
     quota: { remainingToday: 5, unlimited: false },
   };

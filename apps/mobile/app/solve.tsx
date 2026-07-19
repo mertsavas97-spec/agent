@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -10,11 +10,17 @@ import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
+import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
 import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
+import {
+  applySubjectOverride,
+  shouldConfirmSubject,
+  type SolvedWithClassification,
+} from '@/src/features/solve/subjectClassification';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { findTopic, isKnownSubject, subjectsForExam } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
@@ -29,6 +35,8 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
 }
 
+type Phase = 'analyzing' | 'confirmSubject' | 'result' | 'error' | 'paywall';
+
 export default function SolveFlowScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -37,13 +45,13 @@ export default function SolveFlowScreen() {
     source?: string;
     subjectHint?: string;
   }>();
-  const [phase, setPhase] = useState<'analyzing' | 'result' | 'error' | 'paywall'>(
-    'analyzing',
-  );
+  const [phase, setPhase] = useState<Phase>('analyzing');
   const [analyzeStep, setAnalyzeStep] = useState<AnalyzeStepId>('upload');
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [examType, setExamType] = useState<ExamType | null>(null);
+  const [examType, setExamType] = useState<ExamType>('lgs');
+  const [selectedSubject, setSelectedSubject] =
+    useState<Exclude<Subject, 'unknown'>>('turkish');
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +63,6 @@ export default function SolveFlowScreen() {
         return;
       }
       try {
-        // Camera and gallery share the identical pipeline from here.
         setAnalyzeStep('upload');
         const user = await ensureSignedIn();
         let resolvedExam: ExamType = 'lgs';
@@ -76,7 +83,6 @@ export default function SolveFlowScreen() {
             ? hintRaw
             : undefined;
 
-        // Upload first (tags cozbilSolve=1) → Storage Gen2 trigger solves.
         const { imagePath, downloadUrl } = await uploadQuestionImage({
           uid: user.uid,
           localId,
@@ -87,18 +93,15 @@ export default function SolveFlowScreen() {
         });
         if (cancelled) return;
 
-        // Prefer bytes from the phone — Storage download from the proxy can flake.
         const imageBase64 = await uriToBase64(params.uri);
         if (cancelled) return;
 
-        // Server applies SafeSearch + solve; UI shows moderate then solve stages.
         setAnalyzeStep('moderate');
-        // Brief tick so progress bar is visible before the long AI call.
         await new Promise((r) => setTimeout(r, 280));
         if (cancelled) return;
         setAnalyzeStep('solve');
 
-        const response = await callSolveQuestion({
+        let response = await callSolveQuestion({
           imagePath,
           mimeType: params.mimeType,
           examType: resolvedExam,
@@ -108,6 +111,29 @@ export default function SolveFlowScreen() {
           imageBase64: imageBase64 ?? undefined,
         });
         if (cancelled) return;
+
+        if (response.status === 'solved' && subjectHint) {
+          response = applySubjectOverride(response, resolvedExam, subjectHint);
+        }
+
+        if (response.status === 'solved') {
+          const solved = response as SolvedWithClassification;
+          const suggested =
+            solved.subject !== 'unknown' &&
+            subjectsForExam(resolvedExam).includes(solved.subject as Exclude<Subject, 'unknown'>)
+              ? (solved.subject as Exclude<Subject, 'unknown'>)
+              : subjectsForExam(resolvedExam)[0];
+          setSelectedSubject(suggested);
+          setResult(solved);
+
+          if (shouldConfirmSubject(solved, { subjectHint, examType: resolvedExam })) {
+            setPhase('confirmSubject');
+            return;
+          }
+          setPhase('result');
+          return;
+        }
+
         setResult(response);
         setPhase('result');
       } catch (err) {
@@ -126,13 +152,45 @@ export default function SolveFlowScreen() {
     return () => {
       cancelled = true;
     };
-  }, [params.uri, params.mimeType]);
+  }, [params.uri, params.mimeType, params.subjectHint]);
+
+  const suggestedSubject = useMemo(() => {
+    if (result && result.status === 'solved' && result.subject !== 'unknown') {
+      if (subjectsForExam(examType).includes(result.subject as Exclude<Subject, 'unknown'>)) {
+        return result.subject as Exclude<Subject, 'unknown'>;
+      }
+    }
+    return subjectsForExam(examType)[0];
+  }, [result, examType]);
 
   if (phase === 'analyzing') {
     return (
       <>
         <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
         <AnalyzingView step={analyzeStep} />
+      </>
+    );
+  }
+
+  if (phase === 'confirmSubject' && result && result.status === 'solved') {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
+        <AnalyzingView step="solve" />
+        <SubjectConfirmSheet
+          visible
+          examType={examType}
+          suggested={suggestedSubject}
+          selected={selectedSubject}
+          confidence={result.classification?.confidence}
+          onSelect={setSelectedSubject}
+          onDismiss={() => router.back()}
+          onConfirm={() => {
+            const next = applySubjectOverride(result, examType, selectedSubject);
+            setResult(next);
+            setPhase('result');
+          }}
+        />
       </>
     );
   }
@@ -204,52 +262,52 @@ export default function SolveFlowScreen() {
   }
 
   if (result && result.status === 'solved') {
-        const topicName = result.topicId ? findTopic(result.topicId)?.nameTr ?? null : null;
-        const topicMeta = result.topicId ? findTopic(result.topicId) : undefined;
-        const topicLesson = lessonForTopic(
-          result.topicId,
-          topicMeta
-            ? {
-                nameTr: topicMeta.nameTr,
-                subject: topicMeta.subject,
-                examType: topicMeta.examType,
-              }
-            : examType && result.subject
-              ? {
-                  nameTr: topicName ?? 'Konu',
-                  subject: result.subject,
-                  examType,
-                }
-              : undefined,
-        );
-        const canExplain = !isOfflineSolutionId(result.solutionId);
-        return (
-          <>
-            <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
-            <SolutionScreen
-              steps={result.steps}
-              transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
-              imageUri={typeof params.uri === 'string' ? params.uri : null}
-              solutionId={canExplain ? result.solutionId : null}
-              examType={examType}
-              subject={result.subject}
-              topicName={topicName}
-              topicLesson={topicLesson}
-              onExplainAgain={
-                canExplain ? () => callExplainAgain(result.solutionId) : undefined
-              }
-              onDone={() => {
-                void (async () => {
-                  await runInterstitialIfNeeded({
-                    billedSolvesToday: billedSolvesFromQuota(result),
-                    atNaturalBreak: true,
-                  });
-                  router.back();
-                })();
-              }}
-            />
-          </>
-        );
+    const topicName = result.topicId ? findTopic(result.topicId)?.nameTr ?? null : null;
+    const topicMeta = result.topicId ? findTopic(result.topicId) : undefined;
+    const topicLesson = lessonForTopic(
+      result.topicId,
+      topicMeta
+        ? {
+            nameTr: topicMeta.nameTr,
+            subject: topicMeta.subject,
+            examType: topicMeta.examType,
+          }
+        : examType && result.subject && result.subject !== 'unknown'
+          ? {
+              nameTr: topicName ?? 'Konu',
+              subject: result.subject,
+              examType,
+            }
+          : undefined,
+    );
+    const canExplain = !isOfflineSolutionId(result.solutionId);
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
+        <SolutionScreen
+          steps={result.steps}
+          transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
+          imageUri={typeof params.uri === 'string' ? params.uri : null}
+          solutionId={canExplain ? result.solutionId : null}
+          examType={examType}
+          subject={result.subject}
+          topicName={topicName}
+          topicLesson={topicLesson}
+          onExplainAgain={
+            canExplain ? () => callExplainAgain(result.solutionId) : undefined
+          }
+          onDone={() => {
+            void (async () => {
+              await runInterstitialIfNeeded({
+                billedSolvesToday: billedSolvesFromQuota(result),
+                atNaturalBreak: true,
+              });
+              router.back();
+            })();
+          }}
+        />
+      </>
+    );
   }
 
   return null;

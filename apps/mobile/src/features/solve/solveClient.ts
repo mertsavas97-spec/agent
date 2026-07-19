@@ -4,6 +4,7 @@ import type {
   SolveQuestionRequest,
   SolveQuestionResponse,
   Subject,
+  SubjectClassificationMeta,
 } from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 
@@ -13,6 +14,19 @@ import {
 } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
+
+function isInvokerBlocked(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = 'code' in err && typeof (err as { code: unknown }).code === 'string'
+    ? (err as { code: string }).code
+    : '';
+  const message = err instanceof Error ? err.message : '';
+  return (
+    code === 'functions/permission-denied' ||
+    code === 'functions/unauthenticated' ||
+    /403|Forbidden|permission-denied|unauthenticated|not.?found/i.test(`${code} ${message}`)
+  );
+}
 
 function asSubject(value: unknown): Subject | undefined {
   if (typeof value !== 'string') return undefined;
@@ -32,21 +46,9 @@ function asSubject(value: unknown): Subject | undefined {
     'geometry',
     'civics',
     'current',
+    'unknown',
   ];
   return allowed.includes(value as Subject) ? (value as Subject) : undefined;
-}
-
-function isInvokerBlocked(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const code = 'code' in err && typeof (err as { code: unknown }).code === 'string'
-    ? (err as { code: string }).code
-    : '';
-  const message = err instanceof Error ? err.message : '';
-  return (
-    code === 'functions/permission-denied' ||
-    code === 'functions/unauthenticated' ||
-    /403|Forbidden|permission-denied|unauthenticated|not.?found/i.test(`${code} ${message}`)
-  );
 }
 
 export type SolveClientRequest = SolveQuestionRequest & {
@@ -70,7 +72,6 @@ export async function callSolveQuestion(
 ): Promise<SolveQuestionResponse> {
   let proxyUnsupported = false;
 
-  // Prefer OCR proxy first — avoids 5–8s pending wait when triggers are undeployed.
   if (isSolveProxyConfigured() && (request.imageUrl || request.imageBase64)) {
     try {
       console.info('solve: OCR proxy');
@@ -82,7 +83,6 @@ export async function callSolveQuestion(
         subjectHint: request.subjectHint,
         requestId: request.requestId,
       });
-      // Parse/OCR miss — skip hard-reject UI; soft local steps instead.
       if (proxy.status === 'unsupported_type') {
         proxyUnsupported = true;
         const detected = asSubject(
@@ -90,14 +90,28 @@ export async function callSolveQuestion(
         );
         const topicId =
           'topicId' in proxy && typeof proxy.topicId === 'string' ? proxy.topicId : null;
+        const classMeta = (proxy as { classification?: SubjectClassificationMeta })
+          .classification;
         console.warn('solve proxy unsupported_type → local fallback', detected);
-        return buildLocalSolveFallback({
+        const fallback = buildLocalSolveFallback({
           examType: request.examType,
-          subjectHint: detected ?? request.subjectHint,
+          subjectHint: detected && detected !== 'unknown' ? detected : request.subjectHint,
           topicId,
           requestId: request.requestId,
           reason: 'unsupported',
         });
+        if (fallback.status === 'solved') {
+          return {
+            ...fallback,
+            classification: {
+              subject: detected ?? fallback.subject,
+              confidence: classMeta?.confidence ?? 'low',
+              needsConfirm: true,
+              alternatives: classMeta?.alternatives,
+            },
+          };
+        }
+        return fallback;
       }
       return proxy;
     } catch (proxyErr) {
@@ -129,12 +143,23 @@ export async function callSolveQuestion(
         isServerSolveUnavailable(firestoreErr) ||
         isServerSolveUnavailable(callableErr)
       ) {
-        return buildLocalSolveFallback({
+        const fallback = buildLocalSolveFallback({
           examType: request.examType,
           subjectHint: request.subjectHint,
           requestId: request.requestId,
           reason: proxyUnsupported ? 'unsupported' : 'unavailable',
         });
+        if (fallback.status === 'solved' && !request.subjectHint) {
+          return {
+            ...fallback,
+            classification: {
+              subject: fallback.subject,
+              confidence: 'low',
+              needsConfirm: true,
+            },
+          };
+        }
+        return fallback;
       }
       throw callableErr;
     }

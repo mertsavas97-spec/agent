@@ -45,6 +45,15 @@ export type SolveQuestionRequest = {
   examType?: ExamType;
 };
 
+export type SubjectClassificationMeta = {
+  subject: Subject;
+  confidence: 'high' | 'medium' | 'low';
+  needsConfirm: boolean;
+  topicKey?: string;
+  score?: number;
+  alternatives?: { subject: string; score: number }[];
+};
+
 export type SolveQuestionSuccess = {
   attemptId: string;
   solutionId: string;
@@ -55,6 +64,8 @@ export type SolveQuestionSuccess = {
   steps: SolutionStep[];
   transparencyNote: string;
   quota: QuotaInfo;
+  /** Dogfood / proxy: when needsConfirm, UI asks user before showing result */
+  classification?: SubjectClassificationMeta;
 };
 
 export type SolveQuestionRejected = {

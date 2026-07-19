@@ -12,6 +12,8 @@ CEVAP:`;
 
 const classified = classifyOcr(liveOcr, 'kpss');
 assert.equal(classified.subject, 'turkish');
+assert.equal(classified.confidence, 'high');
+assert.equal(classified.needsConfirm, false);
 assert.equal(topicIdFor('kpss', 'turkish', classified.topicKey), 'kpss-turkish-paragraf');
 
 const verbal = tryVerbalSolve(liveOcr, classified);
