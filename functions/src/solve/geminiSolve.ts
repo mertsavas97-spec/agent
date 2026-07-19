@@ -1,15 +1,16 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 import { useVertexAi, vertexSolveMath } from '../ai/vertexClient';
-import type { ExamType } from '../types/contracts';
+import type { ExamType, Subject } from '../types/contracts';
 import { parseModelSolution, type ParsedModelSolution } from './parseSolution';
-import { mathSystemPrompt } from './prompts';
+import { systemPromptForSolve } from './prompts';
 
 export type VisionSolver = {
   solve(input: {
     imageBase64: string;
     mimeType: string;
     examType: ExamType;
+    subjectHint?: Subject | null;
   }): Promise<ParsedModelSolution>;
 };
 
@@ -23,10 +24,10 @@ export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionS
 
   if (useVertexAi()) {
     return {
-      async solve({ imageBase64, mimeType, examType }) {
+      async solve({ imageBase64, mimeType, examType, subjectHint }) {
         const text = await vertexSolveMath({
           examType,
-          systemPrompt: mathSystemPrompt(examType),
+          systemPrompt: systemPromptForSolve(examType, subjectHint),
           imageBase64,
           mimeType: mimeType || 'image/jpeg',
         });
@@ -41,9 +42,9 @@ export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionS
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   return {
-    async solve({ imageBase64, mimeType, examType }) {
+    async solve({ imageBase64, mimeType, examType, subjectHint }) {
       const result = await model.generateContent([
-        { text: mathSystemPrompt(examType) },
+        { text: systemPromptForSolve(examType, subjectHint) },
         {
           inlineData: {
             data: imageBase64,

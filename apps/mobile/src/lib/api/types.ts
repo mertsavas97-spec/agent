@@ -1,7 +1,24 @@
 /** Shared client DTOs — mirror `specs/002-cozbil-mvp/contracts/` */
 
 export type ExamType = 'lgs' | 'ygs' | 'kpss';
-export type Subject = 'math' | 'turkish' | 'unknown';
+/** Exam branch / ders — see docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md */
+export type Subject =
+  | 'math'
+  | 'turkish'
+  | 'science'
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'history'
+  | 'geography'
+  | 'philosophy'
+  | 'literature'
+  | 'religion'
+  | 'english'
+  | 'geometry'
+  | 'civics'
+  | 'current'
+  | 'unknown';
 
 export type AttemptStatus =
   | 'pending_moderation'

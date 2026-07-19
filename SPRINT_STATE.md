@@ -33,6 +33,10 @@ cd apps/mobile
 npx expo run:ios
 ```
 
+## Exam subject tree (2026-07-19)
+Araştırma + katalog: `docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md`  
+LGS/YGS(YKS)/KPSS alt dersleri UI + `systemPromptForSolve` + `clampTopicId`.
+
 ## Audit (2026-07-19)
 Pipeline + AI audit: `docs/architecture/PIPELINE_AI_AUDIT_2026-07-19.md`  
 Verdict: dogfood Borderline; public Play hayır. P0: fail-closed Vision, rules kilidi, topicId clamp.

@@ -1,9 +1,13 @@
-import type { ExamType } from '../types/contracts';
+import { topicsForExam } from '../data/topics';
+import { SUBJECT_LABEL, isKnownSubject } from '../data/subjects';
+import type { ExamType, Subject } from '../types/contracts';
 
 import { KPSS_MATH_FEWSHOT, KPSS_MATH_TEACHER } from './prompts/math/kpss';
 import { LGS_MATH_FEWSHOT, LGS_MATH_TEACHER } from './prompts/math/lgs';
 import { YGS_MATH_FEWSHOT, YGS_MATH_TEACHER } from './prompts/math/ygs';
-import { turkishSystemPromptStub } from './prompts/turkish/stubs';
+
+const SUBJECT_ENUM =
+  '"math"|"turkish"|"science"|"physics"|"chemistry"|"biology"|"history"|"geography"|"philosophy"|"literature"|"religion"|"english"|"geometry"|"civics"|"current"|"unknown"';
 
 function examTeacherLine(examType: ExamType): string {
   switch (examType) {
@@ -35,33 +39,89 @@ function examFewShot(examType: ExamType): string {
   }
 }
 
-export function mathSystemPrompt(examType: ExamType): string {
+function examAudience(examType: ExamType): string {
+  switch (examType) {
+    case 'lgs':
+      return 'LGS (8. sınıf MEB): Türkçe, Matematik, Fen, İnkılap, Din, İngilizce.';
+    case 'ygs':
+      return 'YGS ürün etiketi = YKS TYT/AYT hattı (eski LYS alanları AYT ile). Türkçe/Edebiyat, Matematik, Fizik, Kimya, Biyoloji, Tarih, Coğrafya, Felsefe, Din.';
+    case 'kpss':
+      return 'KPSS GY–GK: Türkçe, Matematik, Geometri, Tarih, Coğrafya, Vatandaşlık, Güncel.';
+    default: {
+      const _e: never = examType;
+      return _e;
+    }
+  }
+}
+
+function catalogHint(examType: ExamType, subject?: Subject): string {
+  const topics = topicsForExam(examType).filter((t) =>
+    subject && subject !== 'unknown' ? t.subject === subject : true,
+  );
+  const sample = topics.slice(0, 12).map((t) => t.id).join(', ');
+  return `topicId mümkünse şu katalogdan seç: ${sample}${topics.length > 12 ? ', …' : ''}`;
+}
+
+function jsonSchemaBlock(): string {
   return [
-    examTeacherLine(examType),
-    examFewShot(examType),
-    'Adım adım, sade Türkçe ile çöz.',
-    'Diyagram çizimi veya karmaşık geometri şekli gerektiriyorsa unsupported=true yaz.',
-    'Görsel bir soru değilse isQuestion=false yaz.',
-    `topicId mümkünse "${examType}-math-..." formatındaki katalog kimliklerinden seç.`,
     'Yanıtını YALNIZCA aşağıdaki JSON şemasında ver:',
     '{',
     '  "isQuestion": boolean,',
     '  "unsupported": boolean,',
     '  "unsupportedReason": string | null,',
-    '  "subject": "math" | "turkish" | "unknown",',
+    `  "subject": ${SUBJECT_ENUM},`,
     '  "topicId": string | null,',
     '  "steps": [ { "title": string, "body": string } ]',
     '}',
   ].join('\n');
 }
 
-export function explainAgainPrompt(examType: ExamType): string {
+/** @deprecated prefer systemPromptForSolve — kept for math-only tests */
+export function mathSystemPrompt(examType: ExamType): string {
+  return systemPromptForSolve(examType, 'math');
+}
+
+export function systemPromptForSolve(
+  examType: ExamType,
+  subjectHint?: Subject | null,
+): string {
+  const subject =
+    subjectHint && isKnownSubject(subjectHint) ? subjectHint : undefined;
+  const subjectLine = subject
+    ? `Öncelik ders: ${SUBJECT_LABEL[subject]} (${subject}). Görsel başka derse aitse doğru subject yaz.`
+    : 'Görseldeki sorunun dersini (subject) doğru tespit et.';
+
+  const mathBoost =
+    !subject || subject === 'math' || subject === 'geometry'
+      ? [examTeacherLine(examType), examFewShot(examType)]
+      : [
+          examTeacherLine(examType),
+          `${SUBJECT_LABEL[subject]} öğretmeni gibi, sınav seviyesinde sade Türkçe anlat.`,
+        ];
+
+  return [
+    ...mathBoost,
+    examAudience(examType),
+    subjectLine,
+    'Adım adım, sade Türkçe ile çöz / anlat.',
+    'Diyagram çizimi veya şekil render gerektiriyorsa unsupported=true yaz (metin yetmiyorsa).',
+    'Görsel bir soru değilse isQuestion=false yaz.',
+    catalogHint(examType, subject),
+    'Doğruluk garantisi verme; şeffaf ve kontrollü anlat.',
+    jsonSchemaBlock(),
+  ].join('\n');
+}
+
+export function explainAgainPrompt(examType: ExamType, subject?: Subject | null): string {
+  const sub =
+    subject && isKnownSubject(subject) ? ` Ders: ${SUBJECT_LABEL[subject]}.` : '';
   return [
     examTeacherLine(examType),
-    'Öğrenci önceki çözümü anlamadı.',
+    examAudience(examType),
+    `Öğrenci önceki çözümü anlamadı.${sub}`,
     'Aynı soruyu DAHA SADE, daha kısa cümlelerle, gerekirse günlük hayattan bir benzetmeyle yeniden anlat.',
     'Yeni ileri konu ekleme. Sadece açıklama metni üret (düz Türkçe paragraf veya maddeler).',
   ].join('\n');
 }
 
-export { turkishSystemPromptStub };
+export { turkishSystemPromptStub } from './prompts/turkish/stubs';

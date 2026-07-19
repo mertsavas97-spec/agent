@@ -160,6 +160,9 @@ export const solveQuestion = regional
 
       console.info('solveQuestion aiBackend', liveBackendLabel());
       const imageBuffer = await downloadImageBuffer(imagePath);
+      const subjectHintRaw = data?.subjectHint;
+      const subjectHint =
+        typeof subjectHintRaw === 'string' ? (subjectHintRaw as Subject) : undefined;
       return await runSolveQuestion(
         {
           uid: context.auth.uid,
@@ -167,6 +170,7 @@ export const solveQuestion = regional
           imageBuffer,
           examType,
           mimeType: typeof data?.mimeType === 'string' ? data.mimeType : 'image/jpeg',
+          subjectHint,
         },
         {
           vision: createVisionClient(),

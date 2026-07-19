@@ -10,9 +10,9 @@
 | Katman | Ne | Nerede |
 |--------|----|--------|
 | Sınav seçimi | `examType: lgs \| ygs \| kpss` | kullanıcı profili |
-| Konu kataloğu | Statik müfredat listesi | `apps/mobile/src/data/*-topics.ts` + `functions/src/data/topics.ts` |
+| Konu kataloğu | Ders → konu ağacı (2020–2026) | `*-topics.ts` + `EXAM_SUBJECT_TREE_2020_2026.md` |
 | Çözüm motoru | Gemini Vision (veya demo stub) | `functions/src/solve/` |
-| Prompt | Sınava özel öğretmen rolü | `functions/src/solve/prompts.ts` |
+| Prompt | Sınav + ders (subject) router | `systemPromptForSolve` in `prompts.ts` |
 | Etiketleme | Model + katalogdan `topicId` | solve JSON çıktısı |
 | Zayıflık sinyali | “Anlamadım” / hata sayıları | `topicStats` |
 | Dedup | pHash cache | `functions/src/cache/` |

@@ -18,23 +18,18 @@
 - Item bank few-shot bağlama (T068)
 - Katalog uzman doğrulaması (geniş müfredat değil, MVP iskelet)
 
-## Hangi sınavda hangi dersler (MVP katalog)
+## Hangi sınavda hangi dersler (2020–2026 oturum ağacı)
 
-Her sınavda öncelik **matematik**; ikinci dalga **Türkçe**. Diğer dersler (fen, sosyal, GY/GK geniş) MVP dışı.
+Tam brifing: **`docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md`**
 
-### LGS
-- Mat: Kesirler, Üslü, Köklü, Oran Orantı, Yüzdeler, Denklemler, Olasılık, Veri Analizi  
-- Türkçe: Sözcükte Anlam, Paragraf  
+| Sınav | Alt ders (subject) |
+|-------|--------------------|
+| LGS | turkish, math, science, history, religion, english |
+| YGS (=YKS TYT/AYT) | turkish, literature, math, physics, chemistry, biology, history, geography, philosophy, religion |
+| KPSS GY–GK | turkish, math, geometry, history, geography, civics, current |
 
-### YGS (YKS hattı etiketi)
-- Mat: Temel Kavramlar, Sayılar, Bölünebilme, Faktöriyel, Denklemler, Eşitsizlikler, Fonksiyonlar, Trigonometri  
-- Türkçe: Anlam Bilgisi, Paragraf  
-
-### KPSS
-- Mat: Temel İşlemler, Kesirler, Yüzde, Oran Orantı, Problemler, Temel Geometri (metin), Tablo/Grafik  
-- Türkçe: Dil Bilgisi, Anlam Bilgisi, Paragraf  
-
-Kaynak kod: `apps/mobile/src/data/*-topics.ts`, `functions/src/data/topics.ts`.
+Konu katalogları: `apps/mobile/src/data/*-topics.ts` + `functions/src/data/topics.ts`  
+AI: `systemPromptForSolve(examType, subjectHint)` + `clampTopicId`
 
 ## Değiştirince ne olur?
 

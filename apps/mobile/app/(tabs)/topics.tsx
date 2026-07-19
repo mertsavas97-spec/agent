@@ -1,8 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,16 +11,24 @@ import { doc, getDoc } from 'firebase/firestore';
 
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { itemsForExam } from '@/src/data/itemBank';
-import type { ExamType } from '@/src/lib/api/types';
+import {
+  findTopic,
+  subjectLabel,
+  subjectsForExam,
+  topicsForExamSubject,
+} from '@/src/data';
+import type { ExamType, Subject } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
-import { findTopic } from '@/src/data';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
+import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
 export default function TopicsScreen() {
   const router = useRouter();
   const [examType, setExamType] = useState<ExamType>('lgs');
+  const subjects = useMemo(() => subjectsForExam(examType), [examType]);
+  const [subject, setSubject] = useState<Subject>(subjects[0] ?? 'math');
 
   useFocusEffect(
     useCallback(() => {
@@ -31,7 +39,11 @@ export default function TopicsScreen() {
           const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
           const et = snap.data()?.examType;
           if (!alive) return;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+          if (et === 'lgs' || et === 'ygs' || et === 'kpss') {
+            setExamType(et);
+            const nextSubjects = subjectsForExam(et);
+            setSubject(nextSubjects[0] ?? 'math');
+          }
         } catch {
           /* keep default */
         }
@@ -42,61 +54,87 @@ export default function TopicsScreen() {
     }, []),
   );
 
-  const items = useMemo(() => itemsForExam(examType), [examType]);
+  const topics = useMemo(
+    () => topicsForExamSubject(examType, subject),
+    [examType, subject],
+  );
+  const samples = useMemo(() => itemsForExam(examType), [examType]);
 
   return (
-    <View style={styles.container} testID="topics-screen">
-      <Text style={styles.eyebrow}>Öğren</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      testID="topics-screen">
+      <Text style={styles.eyebrow}>Müfredat</Text>
       <Text style={styles.title}>Konular</Text>
       <Text style={styles.subtitle}>
-        {EXAM_LABEL[examType]} için örnek soru ve adım adım anlatım. Ana sayfadan sınavını
-        değiştirebilirsin.
+        {EXAM_LABEL[examType]} dersleri (2020–2026 oturum yapısı). Alt kategoriden konu seç;
+        örnek anlatım varsa aç.
       </Text>
 
-      {items.length === 0 ? (
-        <EmptyState
-          title="Bu sınavda örnek henüz yok"
-          subtitle="Yakında yeni telifsiz örnekler eklenecek."
-        />
+      <Text style={styles.filterLabel}>Ders</Text>
+      <SegmentedTabs
+        testID="topics-subject-filters"
+        itemTestIDPrefix="topics-subject"
+        variant="chips"
+        value={subject}
+        onChange={(id) => setSubject(id)}
+        items={subjects.map((s) => ({ id: s, label: subjectLabel(s) }))}
+      />
+
+      <Text style={[styles.filterLabel, styles.spaced]}>Konu başlıkları</Text>
+      {topics.length === 0 ? (
+        <EmptyState title="Bu derste konu yok" subtitle="Başka bir ders seç." />
       ) : (
-        <FlatList
-          testID="topics-list"
-          data={items}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => {
-            const topic = findTopic(item.topicId);
-            return (
-              <Pressable
-                style={styles.card}
-                testID={`topic-item-${item.id}`}
-                accessibilityRole="button"
-                onPress={() =>
-                  router.push({ pathname: '/sample/[id]', params: { id: item.id } })
-                }>
-                <Text style={styles.cardKicker}>
-                  {item.subject === 'math' ? 'Matematik' : 'Türkçe'}
-                  {topic ? ` · ${topic.nameTr}` : ''}
-                </Text>
-                <Text style={styles.cardTitle} numberOfLines={3}>
-                  {item.stem}
-                </Text>
-                <Text style={styles.cardCta}>Örnek çözümü gör →</Text>
-              </Pressable>
-            );
-          }}
-        />
+        <View style={styles.topicGrid} testID="topics-list">
+          {topics.map((t) => (
+            <View key={t.id} style={styles.topicChip} testID={`catalog-topic-${t.id}`}>
+              <Text style={styles.topicChipText}>{t.nameTr}</Text>
+            </View>
+          ))}
+        </View>
       )}
-    </View>
+
+      <Text style={[styles.filterLabel, styles.spaced]}>Örnek soru & anlatım</Text>
+      {samples.length === 0 ? (
+        <Text style={styles.hint}>
+          Bu ders için örnek madde henüz eklenmedi. Fotoğrafla soru göndererek canlı çözüm
+          alabilirsin.
+        </Text>
+      ) : (
+        samples.map((item) => {
+          const topic = findTopic(item.topicId);
+          return (
+            <Pressable
+              key={item.id}
+              style={styles.card}
+              testID={`topic-item-${item.id}`}
+              accessibilityRole="button"
+              onPress={() =>
+                router.push({ pathname: '/sample/[id]', params: { id: item.id } })
+              }>
+              <Text style={styles.cardKicker}>
+                {subjectLabel(item.subject)}
+                {topic ? ` · ${topic.nameTr}` : ''}
+              </Text>
+              <Text style={styles.cardTitle} numberOfLines={3}>
+                {item.stem}
+              </Text>
+              <Text style={styles.cardCta}>Adım adım anlatımı gör →</Text>
+            </Pressable>
+          );
+        })
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface,
+  container: { flex: 1, backgroundColor: colors.surface },
+  content: {
     paddingHorizontal: space.lg,
     paddingTop: space.lg,
+    paddingBottom: space.xl * 2,
   },
   eyebrow: {
     fontFamily: typography.fontFamily,
@@ -122,7 +160,35 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
     lineHeight: 20,
   },
-  list: { paddingBottom: space.xl },
+  filterLabel: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: space.sm,
+  },
+  spaced: { marginTop: space.lg },
+  topicGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  topicChip: {
+    backgroundColor: colors.white,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    paddingVertical: 8,
+  },
+  topicChipText: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.navy,
+  },
+  hint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 19,
+  },
   card: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,

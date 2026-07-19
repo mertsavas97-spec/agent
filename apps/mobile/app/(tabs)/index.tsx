@@ -114,8 +114,9 @@ export default function HomeScreen() {
     });
   }
 
-  const mathCount =
-    examType != null ? topicsForExam(examType).filter((t) => t.subject === 'math').length : 0;
+  const subjectCount =
+    examType != null ? new Set(topicsForExam(examType).map((t) => t.subject)).size : 0;
+  const topicCount = examType != null ? topicsForExam(examType).length : 0;
 
   return (
     <View style={styles.root} testID="home-screen">
@@ -135,7 +136,7 @@ export default function HomeScreen() {
 
         {examType ? (
           <Text style={styles.metaLine} testID="home-streak">
-            Seri: {streak} gün · {EXAM_LABEL[examType]} · {mathCount} matematik konusu
+            Seri: {streak} gün · {EXAM_LABEL[examType]} · {subjectCount} ders · {topicCount} konu
           </Text>
         ) : (
           <Text style={styles.metaLine} testID="home-streak">

@@ -12,10 +12,13 @@ import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
+import { findTopic } from '@/src/data';
 import { ensureSignedIn } from '@/src/lib/auth';
-import type { SolveQuestionResponse } from '@/src/lib/api/types';
+import type { ExamType, SolveQuestionResponse } from '@/src/lib/api/types';
+import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space } from '@/src/theme';
+import { doc, getDoc } from 'firebase/firestore';
 
 function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   if (result.quota.unlimited) return 0;
@@ -35,6 +38,7 @@ export default function SolveFlowScreen() {
   const [analyzeStep, setAnalyzeStep] = useState<AnalyzeStepId>('upload');
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [examType, setExamType] = useState<ExamType | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +53,13 @@ export default function SolveFlowScreen() {
         // Camera and gallery share the identical pipeline from here.
         setAnalyzeStep('upload');
         const user = await ensureSignedIn();
+        try {
+          const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
+          const et = snap.data()?.examType;
+          if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+        } catch {
+          /* optional */
+        }
         const localId = `${Date.now()}`;
         const { imagePath } = await uploadQuestionImage({
           uid: user.uid,
@@ -155,12 +166,16 @@ export default function SolveFlowScreen() {
   }
 
   if (result && result.status === 'solved') {
+    const topicName = result.topicId ? findTopic(result.topicId)?.nameTr ?? null : null;
     return (
       <SolutionScreen
         steps={result.steps}
         transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
         imageUri={typeof params.uri === 'string' ? params.uri : null}
         solutionId={result.solutionId}
+        examType={examType}
+        subject={result.subject}
+        topicName={topicName}
         onExplainAgain={() => callExplainAgain(result.solutionId)}
         onDone={() => {
           void (async () => {

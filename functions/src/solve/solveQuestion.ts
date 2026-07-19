@@ -1,3 +1,5 @@
+import { clampTopicId } from '../data/topics';
+import { isKnownSubject } from '../data/subjects';
 import { SAFETY_MESSAGES } from '../safety/messages';
 import type { CacheStore } from '../cache/solutionCache';
 import { lookupCache, writeCache } from '../cache/solutionCache';
@@ -7,6 +9,7 @@ import type { VisionClient } from '../moderation/visionClient';
 import { assertHasQuota, istanbulDate, remainingQuota, type QuotaState } from '../quota/dailyQuota';
 import type {
   ExamType,
+  Subject,
   SolveQuestionRejected,
   SolveQuestionResponse,
   SolveQuestionSuccess,
@@ -41,6 +44,7 @@ export type SolveInput = {
   imageBuffer: Buffer;
   examType: ExamType;
   mimeType?: string;
+  subjectHint?: Subject | null;
 };
 
 export async function runSolveQuestion(
@@ -104,7 +108,15 @@ export async function runSolveQuestion(
     imageBase64: input.imageBuffer.toString('base64'),
     mimeType: input.mimeType ?? 'image/jpeg',
     examType: input.examType,
+    subjectHint: input.subjectHint,
   });
+
+  const topicId = clampTopicId(input.examType, parsed.topicId);
+  const subject: Subject = isKnownSubject(parsed.subject)
+    ? parsed.subject
+    : parsed.subject === 'unknown'
+      ? 'unknown'
+      : 'unknown';
 
   if (!parsed.isQuestion) {
     const { attemptId } = await deps.persistRejected({
@@ -147,8 +159,8 @@ export async function runSolveQuestion(
     solutionId: 'pending',
     status: 'solved',
     cached: false,
-    topicId: parsed.topicId,
-    subject: parsed.subject,
+    topicId,
+    subject,
     steps: parsed.steps,
     transparencyNote: SAFETY_MESSAGES.transparency,
     quota: {
@@ -159,9 +171,9 @@ export async function runSolveQuestion(
 
   await writeCache(deps.cache, phash, input.examType, {
     phash,
-    topicId: parsed.topicId,
+    topicId,
     steps: parsed.steps,
-    subject: parsed.subject,
+    subject,
   });
 
   const { attemptId, solutionId } = await deps.persistSolved({

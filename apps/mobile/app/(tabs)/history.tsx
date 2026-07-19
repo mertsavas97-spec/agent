@@ -7,23 +7,22 @@ import {
   Text,
   View,
 } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { filterAttempts } from '@/src/features/history/filterAttempts';
+import { subjectLabel, subjectsForExam } from '@/src/data';
 import { fetchAttempts } from '@/src/lib/api/progressClient';
-import type { AttemptListItem, Subject } from '@/src/lib/api/types';
+import type { AttemptListItem, ExamType, Subject } from '@/src/lib/api/types';
+import { ensureSignedIn } from '@/src/lib/auth';
+import { getFirebase } from '@/src/lib/firebase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
-const SUBJECTS: { id: Subject | 'all'; label: string }[] = [
-  { id: 'all', label: 'Tümü' },
-  { id: 'math', label: 'Matematik' },
-  { id: 'turkish', label: 'Türkçe' },
-];
-
 export default function HistoryScreen() {
   const [items, setItems] = useState<AttemptListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [examType, setExamType] = useState<ExamType>('lgs');
   const [subject, setSubject] = useState<Subject | 'all'>('all');
   const [topicId, setTopicId] = useState<string | 'all'>('all');
 
@@ -33,6 +32,14 @@ export default function HistoryScreen() {
       void (async () => {
         setLoading(true);
         try {
+          const user = await ensureSignedIn();
+          try {
+            const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
+            const et = snap.data()?.examType;
+            if (et === 'lgs' || et === 'ygs' || et === 'kpss') setExamType(et);
+          } catch {
+            /* keep */
+          }
           const res = await fetchAttempts({ limit: 50 });
           if (!alive) return;
           setItems(res.items);
@@ -48,6 +55,14 @@ export default function HistoryScreen() {
     }, []),
   );
 
+  const subjectFilters = useMemo(() => {
+    const list = subjectsForExam(examType);
+    return [
+      { id: 'all' as const, label: 'Tümü' },
+      ...list.map((s) => ({ id: s, label: subjectLabel(s) })),
+    ];
+  }, [examType]);
+
   const topics = useMemo(() => {
     const ids = new Set<string>();
     for (const i of items) {
@@ -56,14 +71,18 @@ export default function HistoryScreen() {
     return ['all', ...Array.from(ids)];
   }, [items]);
 
-  const filtered = filterAttempts(items, { subject, topicId });
+  const filtered = filterAttempts(items, {
+    subject: subject === 'all' ? undefined : subject,
+    topicId,
+  });
 
   return (
     <View style={styles.container} testID="history-screen">
       <Text style={styles.eyebrow}>Kayıtlar</Text>
       <Text style={styles.title}>Geçmiş</Text>
       <Text style={styles.subtitle}>
-        Fotoğrafla çözdüğün sorular burada. Derse veya konuya göre süz.
+        Fotoğrafla çözdüğün sorular. Ders filtresi aktif sınavın ({examType.toUpperCase()})
+        kategorilerine göre.
       </Text>
 
       <Text style={styles.filterLabel}>Ders</Text>
@@ -72,8 +91,11 @@ export default function HistoryScreen() {
         itemTestIDPrefix="filter-subject"
         variant="chips"
         value={subject}
-        onChange={setSubject}
-        items={SUBJECTS}
+        onChange={(id) => {
+          setSubject(id);
+          setTopicId('all');
+        }}
+        items={subjectFilters}
       />
 
       <Text style={[styles.filterLabel, styles.filterLabelSpaced]}>Konu</Text>
@@ -95,7 +117,7 @@ export default function HistoryScreen() {
         ) : filtered.length === 0 ? (
           <EmptyState
             title="Henüz çözülmüş soru yok"
-            subtitle="Ana sayfadan fotoğraf çekerek ilk çözümünü kaydet."
+            subtitle="Ana sayfadan soru fotoğrafı çekerek ilk çözümünü kaydet."
           />
         ) : (
           <FlatList
@@ -107,7 +129,7 @@ export default function HistoryScreen() {
               <View style={styles.row} testID={`history-item-${item.attemptId}`}>
                 <Text style={styles.rowTitle}>{item.topicId ?? 'Konu yok'}</Text>
                 <Text style={styles.rowMeta}>
-                  {item.subject === 'math' ? 'Matematik' : item.subject === 'turkish' ? 'Türkçe' : item.subject}
+                  {subjectLabel(item.subject)}
                   {' · '}
                   {item.status === 'solved' ? 'Çözüldü' : item.status}
                 </Text>

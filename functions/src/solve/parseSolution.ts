@@ -1,3 +1,4 @@
+import { isKnownSubject } from '../data/subjects';
 import type { SolutionStep, Subject } from '../types/contracts';
 
 export type ParsedModelSolution = {
@@ -28,9 +29,10 @@ export function parseModelSolution(raw: string): ParsedModelSolution {
         }))
     : [];
 
-  const subject =
-    data.subject === 'math' || data.subject === 'turkish' || data.subject === 'unknown'
-      ? data.subject
+  const subject: Subject = isKnownSubject(data.subject)
+    ? data.subject
+    : data.subject === 'unknown'
+      ? 'unknown'
       : 'unknown';
 
   return {
