@@ -2,6 +2,8 @@ export { BannerSlot } from './BannerSlot';
 export {
   ADS_LIMITS,
   adsAllowedOnSurface,
+  canClaimMultiBatchUnlock,
+  requiresRewardedForMultiBatch,
   shouldOfferRewardedExtra,
   shouldShowBanner,
   shouldShowInterstitial,
@@ -9,3 +11,4 @@ export {
 export { isPremiumAudience } from './premiumGate';
 export { runInterstitialIfNeeded } from './runInterstitialIfNeeded';
 export { runRewardedExtra } from './runRewardedExtra';
+export { runRewardedMultiBatchUnlock } from './runRewardedMultiBatch';

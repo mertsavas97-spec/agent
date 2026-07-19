@@ -13,6 +13,8 @@ import {
 
 export type AnalyzingViewProps = {
   step?: AnalyzeStepId;
+  /** Optional status under the tip — e.g. multi-batch "Soru 2/5 hazır" */
+  statusLine?: string | null;
 };
 
 const TIPS = [
@@ -26,7 +28,7 @@ const TIPS = [
  * Moodboard loading: neşeli robot + monotonic progress (no bounce loop).
  * Progress only moves forward — never drops from 96→88.
  */
-export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
+export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProps) {
   const baseTarget = progressForStep(step);
   const anim = useRef(new Animated.Value(0.08)).current;
   const tipOpacity = useRef(new Animated.Value(1)).current;
@@ -107,6 +109,12 @@ export function AnalyzingView({ step = 'upload' }: AnalyzingViewProps) {
       <Animated.Text style={[styles.tip, { opacity: tipOpacity }]} testID="analyzing-tip">
         {TIPS[tipIndex]}
       </Animated.Text>
+
+      {statusLine ? (
+        <Text style={styles.statusLine} testID="analyzing-status-line">
+          {statusLine}
+        </Text>
+      ) : null}
 
       <View style={styles.steps} testID="analyzing-steps">
         {ANALYZE_STEPS.map((s) => {
@@ -193,6 +201,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     fontFamily: typography.fontFamily,
     minHeight: 44,
+  },
+  statusLine: {
+    marginTop: space.sm,
+    color: colors.orange,
+    fontSize: 14,
+    fontFamily: typography.fontFamilySemiBold,
+    textAlign: 'center',
   },
   steps: {
     marginTop: space.xl,

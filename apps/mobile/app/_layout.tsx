@@ -76,6 +76,16 @@ function RootLayoutNav() {
             }}
           />
           <Stack.Screen
+            name="solve-batch"
+            options={{
+              title: 'Çoklu çözüm',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
+          <Stack.Screen
             name="sample/[id]"
             options={{
               title: 'Örnek anlatım',

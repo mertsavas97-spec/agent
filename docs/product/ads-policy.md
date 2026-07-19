@@ -18,7 +18,7 @@
 |--------|----------|----------------|
 | **Banner** (küçük, alt şerit) | Ana Sayfa / Geçmiş / İstatistik / Profil tab shell | Çözüm akışı (`/solve`), Analyzing, SolutionScreen, onboarding |
 | **Interstitial** (tam ekran) | Günde **en fazla 1**: günün **3. başarılı çözümünden sonra**, kullanıcı çözüm ekranından **çıkarken** (doğal mola) | Çözüm okurken; kamera/analiz sırasında; her soruda; onboarding |
-| **Rewarded** (ödüllü, isteğe bağlı) | Günlük 5 hak bitince paywall’da: “Reklam izle · +1 soru” | Zorunlu izletme; çözüm ortasında dayatma |
+| **Rewarded** (ödüllü, isteğe bağlı) | (1) Günlük 5 hak bitince paywall’da: “Reklam izle · +1 soru”. (2) **Çoklu soru batch** açmak için free’de **1 rewarded** (Premium muaf; batch yine ≤5) | Çözüm okurken dayatma; premium’a reklam |
 
 ### Frekans tavanı
 

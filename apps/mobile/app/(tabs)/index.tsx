@@ -12,11 +12,21 @@ import {
 } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
-import { BannerSlot } from '@/src/features/ads';
+import {
+  BannerSlot,
+  isPremiumAudience,
+  runRewardedMultiBatchUnlock,
+} from '@/src/features/ads';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
-import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
+import {
+  pickFromCamera,
+  pickFromLibrary,
+  pickMultipleFromLibrary,
+} from '@/src/features/solve/image';
+import { MULTI_BATCH_MAX, multiBatchUserCopy } from '@/src/features/solve/multiBatchPolicy';
+import { setPendingMultiBatch } from '@/src/features/solve/multiBatchStore';
 import {
   peekPendingSubjectHint,
   takePendingSubjectHint,
@@ -124,6 +134,58 @@ export default function HomeScreen() {
     });
   }
 
+  async function openMultiBatch() {
+    if (!examType) {
+      Alert.alert('Önce sınav seç', 'LGS, YGS veya KPSS seçmeden soru gönderilemez.');
+      return;
+    }
+    const copy = multiBatchUserCopy();
+    const premium = isPremiumAudience();
+    Alert.alert(copy.title, premium ? copy.premiumBody : copy.freeBody, [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: premium ? 'Galeriden seç' : 'Reklam izle ve seç',
+        onPress: () => {
+          void (async () => {
+            const unlock = await runRewardedMultiBatchUnlock();
+            if (!unlock.allowed) {
+              if (unlock.reason === 'daily_cap') {
+                Alert.alert(
+                  'Günlük limit',
+                  'Bugünkü çoklu soru açılış hakkın doldu. Yarın tekrar dene veya Premium’a geç.',
+                );
+                return;
+              }
+              Alert.alert('Devam edilmedi', 'Reklam tamamlanmadan çoklu soru açılamaz.');
+              return;
+            }
+            const picked = await pickMultipleFromLibrary(MULTI_BATCH_MAX);
+            if (!picked?.length) {
+              Alert.alert('Seçim yok', SAFETY_MESSAGES.permissionLibrary);
+              return;
+            }
+            const subjectHint = takePendingSubjectHint() ?? undefined;
+            setSubjectHintBanner(null);
+            if (picked.length === 1) {
+              router.push({
+                pathname: '/solve',
+                params: {
+                  uri: picked[0]!.uri,
+                  mimeType: picked[0]!.mimeType ?? 'image/jpeg',
+                  source: 'library',
+                  ...(subjectHint ? { subjectHint } : {}),
+                },
+              });
+              return;
+            }
+            setPendingMultiBatch({ images: picked, subjectHint });
+            router.push('/solve-batch');
+          })();
+        },
+      },
+    ]);
+  }
+
   const subjectCount =
     examType != null ? new Set(topicsForExam(examType).map((t) => t.subject)).size : 0;
   const topicCount = examType != null ? topicsForExam(examType).length : 0;
@@ -184,6 +246,20 @@ export default function HomeScreen() {
             testID="gallery-cta"
             onPress={() => void openPicker('library')}>
             <Text style={styles.secondaryBtnLabel}>Galeriden soru seç</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.multiBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Çoklu soru seç"
+            testID="multi-batch-cta"
+            onPress={() => void openMultiBatch()}>
+            <Text style={styles.multiBtnLabel}>
+              Çoklu soru · en fazla {MULTI_BATCH_MAX}
+            </Text>
+            <Text style={styles.multiBtnCaption}>
+              İlk cevap hemen açılır · diğerleri arka planda
+            </Text>
           </Pressable>
 
           <Text style={styles.micro}>
@@ -329,6 +405,28 @@ const styles = StyleSheet.create({
     color: colors.navy,
     fontSize: 15,
     fontWeight: '600',
+  },
+  multiBtn: {
+    marginTop: space.sm,
+    borderRadius: radii.lg,
+    paddingVertical: 12,
+    paddingHorizontal: space.md,
+    alignItems: 'center',
+    backgroundColor: colors.navySoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  multiBtnLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.navy,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  multiBtnCaption: {
+    fontFamily: typography.fontFamily,
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
   },
   micro: {
     fontFamily: typography.fontFamily,

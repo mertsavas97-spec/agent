@@ -9,6 +9,10 @@ export const ADS_LIMITS = {
   /** Soft interstitial only after this many billed free solves today */
   interstitialAfterBilledSolves: 3,
   freeDailySolves: 5,
+  /** Max photos in one multi-question batch (abuse cap; also Premium) */
+  multiBatchMax: 5,
+  /** Free users: rewarded claims that unlock a multi batch per İstanbul day */
+  rewardedMultiBatchMaxPerIstanbulDay: 3,
 } as const;
 
 export type AdAudience = {
@@ -45,6 +49,25 @@ export function shouldOfferRewardedExtra(ctx: RewardedContext): boolean {
   if (ctx.freeRemainingToday > 0) return false;
   if (ctx.rewardedClaimedToday >= ADS_LIMITS.rewardedExtraMaxPerIstanbulDay) return false;
   return true;
+}
+
+export type MultiBatchGateContext = AdAudience & {
+  /** How many multi-batch unlocks already claimed today (free) */
+  multiBatchUnlocksToday: number;
+};
+
+/**
+ * Free must watch rewarded to start a multi batch.
+ * Premium skips the ad; both still capped by `multiBatchMax` photos.
+ */
+export function requiresRewardedForMultiBatch(ctx: MultiBatchGateContext): boolean {
+  if (ctx.isPremium) return false;
+  return true;
+}
+
+export function canClaimMultiBatchUnlock(ctx: MultiBatchGateContext): boolean {
+  if (ctx.isPremium) return true;
+  return ctx.multiBatchUnlocksToday < ADS_LIMITS.rewardedMultiBatchMaxPerIstanbulDay;
 }
 
 /** Solve / analyzing / solution surfaces never host ads. */
