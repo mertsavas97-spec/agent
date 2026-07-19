@@ -105,6 +105,16 @@ function RootLayoutNav() {
               headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
             }}
           />
+          <Stack.Screen
+            name="history/[attemptId]"
+            options={{
+              title: 'Geçmiş çözüm',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </BootstrapGate>

@@ -132,6 +132,9 @@ export type AttemptListItem = {
   topicId: string | null;
   status: AttemptStatus;
   thumbnailUrl: string | null;
+  /** Present on dogfood local history + server when persisted */
+  examType?: ExamType;
+  solutionId?: string | null;
 };
 
 export type ListAttemptsResponse = {

@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
 import { ADS_LIMITS, runInterstitialIfNeeded } from '@/src/features/ads';
+import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import {
   MultiSolutionScreen,
@@ -111,6 +112,17 @@ export default function SolveBatchScreen() {
 
             if (response.status === 'solved') {
               patchSlot(slot.id, { status: 'ready', result: response });
+              void recordLocalAttempt({
+                attemptId: response.attemptId,
+                solutionId: response.solutionId,
+                examType: resolvedExam,
+                subject: response.subject,
+                topicId: response.topicId,
+                imageUri: img.uri,
+                steps: response.steps,
+                answer: response.answer ?? null,
+                transparencyNote: response.transparencyNote,
+              }).catch((err) => console.warn('local history save failed', err));
               ready += 1;
               setStatusLine(`${ready}/${initial.length} hazır`);
               if (!openedRef.current) {

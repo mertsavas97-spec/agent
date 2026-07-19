@@ -37,7 +37,7 @@ import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
-import { subjectLabel, topicsForExam } from '@/src/data';
+import { findTopic, subjectLabel, topicsForExam } from '@/src/data';
 import { EmptyState } from '@/src/ui/EmptyState';
 
 export default function HomeScreen() {
@@ -273,9 +273,9 @@ export default function HomeScreen() {
           testID="home-topics-link"
           onPress={() => router.push('/(tabs)/topics')}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.topicsLinkTitle}>Konu anlatımı & örnek soru</Text>
+            <Text style={styles.topicsLinkTitle}>Konu anlatımı</Text>
             <Text style={styles.topicsLinkBody}>
-              Ders seç, konuyu oku, adım adım örnek çözümü aç.
+              LGS · YGS · KPSS sekmeleri → ders → konu ve örnek sorular.
             </Text>
           </View>
           <Text style={styles.topicsChevron}>›</Text>
@@ -297,10 +297,25 @@ export default function HomeScreen() {
             testID="home-recent-list"
             scrollEnabled={false}
             renderItem={({ item }) => (
-              <View style={styles.recentRow}>
-                <Text style={styles.recentTopic}>{item.topicId ?? 'Konu yok'}</Text>
-                <Text style={styles.recentMeta}>{item.subject}</Text>
-              </View>
+              <Pressable
+                style={styles.recentRow}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({
+                    pathname: '/history/[attemptId]',
+                    params: { attemptId: item.attemptId },
+                  })
+                }>
+                <Text style={styles.recentTopic}>
+                  {item.topicId
+                    ? (findTopic(item.topicId)?.nameTr ?? item.topicId)
+                    : 'Konu yok'}
+                </Text>
+                <Text style={styles.recentMeta}>
+                  {subjectLabel(item.subject)}
+                  {item.examType ? ` · ${EXAM_LABEL[item.examType]}` : ''}
+                </Text>
+              </Pressable>
             )}
           />
         )}

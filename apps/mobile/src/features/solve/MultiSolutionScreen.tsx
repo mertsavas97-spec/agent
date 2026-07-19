@@ -87,6 +87,7 @@ export function MultiSolutionScreen({
             }
             examType={examType}
             subject={active.result.subject}
+            topicId={active.result.topicId}
             topicName={
               active.result.topicId
                 ? findTopic(active.result.topicId)?.nameTr ?? null

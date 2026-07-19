@@ -9,6 +9,7 @@ import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
+import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { ExamMismatchSheet } from '@/src/features/solve/ExamMismatchSheet';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
@@ -178,6 +179,21 @@ export default function SolveFlowScreen() {
       cancelled = true;
     };
   }, [params.uri, params.mimeType, params.subjectHint]);
+
+  useEffect(() => {
+    if (phase !== 'result' || !result || result.status !== 'solved') return;
+    void recordLocalAttempt({
+      attemptId: result.attemptId,
+      solutionId: result.solutionId,
+      examType,
+      subject: result.subject,
+      topicId: result.topicId,
+      imageUri: typeof params.uri === 'string' ? params.uri : null,
+      steps: result.steps,
+      answer: result.answer ?? null,
+      transparencyNote: result.transparencyNote,
+    }).catch((err) => console.warn('local history save failed', err));
+  }, [phase, result, examType, params.uri]);
 
   function continueAfterExam(nextExam: ExamType) {
     if (!result || result.status !== 'solved') return;
@@ -357,6 +373,7 @@ export default function SolveFlowScreen() {
           solutionId={canExplain ? result.solutionId : null}
           examType={examType}
           subject={result.subject}
+          topicId={result.topicId}
           topicName={topicName}
           topicLesson={topicLesson}
           onExplainAgain={

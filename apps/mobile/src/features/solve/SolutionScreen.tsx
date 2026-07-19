@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,6 +36,7 @@ export type SolutionScreenProps = {
   solutionId?: string | null;
   examType?: ExamType | null;
   subject?: Subject | null;
+  topicId?: string | null;
   topicName?: string | null;
   topicLesson?: TopicLesson | null;
   onExplainAgain?: () => Promise<string>;
@@ -57,11 +59,13 @@ export function SolutionScreen({
   solutionId,
   examType,
   subject,
+  topicId,
   topicName,
   topicLesson,
   onExplainAgain,
   onDone,
 }: SolutionScreenProps) {
+  const router = useRouter();
   const [followUp, setFollowUp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +184,7 @@ export function SolutionScreen({
       {tab === 'lesson' ? (
         <>
           <Text style={styles.tabLead} testID="lesson-lead">
-            Bu konuyu hatırla
+            {topicName ? topicName : 'Bu konuyu hatırla'}
           </Text>
           <View style={styles.lessonCard} testID="topic-lesson">
             {topicLesson ? (
@@ -217,6 +221,16 @@ export function SolutionScreen({
                 </Text>
               </>
             )}
+            {topicId ? (
+              <Pressable
+                style={styles.fullLessonLink}
+                testID="open-full-topic-lesson"
+                onPress={() =>
+                  router.push({ pathname: '/topic/[id]', params: { id: topicId } })
+                }>
+                <Text style={styles.fullLessonLinkText}>Tam konu anlatımına git →</Text>
+              </Pressable>
+            ) : null}
           </View>
         </>
       ) : null}
@@ -435,6 +449,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
+  },
+  fullLessonLink: {
+    marginTop: space.md,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  fullLessonLinkText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.navy,
   },
   stepTitle: {
     fontFamily: typography.fontFamilySemiBold,

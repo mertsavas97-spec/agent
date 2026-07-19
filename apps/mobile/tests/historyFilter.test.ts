@@ -9,6 +9,7 @@ const items: AttemptListItem[] = [
     topicId: 'lgs-math-kesirler',
     status: 'solved',
     thumbnailUrl: null,
+    examType: 'lgs',
   },
   {
     attemptId: '2',
@@ -17,6 +18,16 @@ const items: AttemptListItem[] = [
     topicId: 'lgs-turkish-paragraf',
     status: 'solved',
     thumbnailUrl: null,
+    examType: 'lgs',
+  },
+  {
+    attemptId: '3',
+    createdAt: '2026-07-18T12:00:00Z',
+    subject: 'turkish',
+    topicId: 'kpss-turkish-anlam',
+    status: 'solved',
+    thumbnailUrl: null,
+    examType: 'kpss',
   },
 ];
 
@@ -31,7 +42,13 @@ describe('filterAttempts', () => {
     ]);
   });
 
+  it('filters by examType', () => {
+    expect(filterAttempts(items, { examType: 'kpss' })).toEqual([items[2]]);
+  });
+
   it('all passes through', () => {
-    expect(filterAttempts(items, { subject: 'all', topicId: 'all' })).toHaveLength(2);
+    expect(
+      filterAttempts(items, { examType: 'all', subject: 'all', topicId: 'all' }),
+    ).toHaveLength(3);
   });
 });

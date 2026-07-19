@@ -10,7 +10,7 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
  * Do not wrap <Tabs> in an outer View — that breaks the tab bar on device.
  * Banner lives inside individual screens (see home).
  * Tabs: Ana Sayfa / Konular / Geçmiş / İstatistik / Profil
- * (Konular = T069 örnek soru + anlatım; moodboard 4-tab + product item-bank UI)
+ * (Konular = sınav sekmeli konu anlatımı + örnek soru)
  */
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -48,7 +48,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="topics"
         options={{
-          title: 'Anlatım',
+          title: 'Konular',
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{

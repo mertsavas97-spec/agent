@@ -209,6 +209,8 @@
 - [ ] T065 Verification-before-completion: all SC-001–SC-006 evidence noted
 - [x] T071 [P] Verbal OCR: anlam ilgisi → amaç-sonuç (ve benzeri) cevap hero + `kpss/ygs/lgs-turkish-anlam` konu anlatımı
 - [x] T072 [P] Exam mismatch gate: profil KPSS + yüksek soru no / YGS kitapçığı → `ExamMismatchSheet` + topic remap
+- [x] T073 [P] Konular: sınav sekmeli (LGS/YGS/KPSS) → ders → konu listesi + örnekler; “Bu dersten soru çek” kaldırıldı
+- [x] T074 [P] Geçmiş: localHistory (proxy/local solves) + sınav filtresi + tıklanabilir çözüm detayı + UI polish
 
 ### Mini item bank (MVP 1.0 — telifsiz)
 

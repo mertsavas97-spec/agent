@@ -9,8 +9,7 @@ import {
 } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
-import { EXAM_LABEL } from '@/src/features/exam/examLabels';
-import { setPendingSubjectHint } from '@/src/features/solve/subjectHintStore';
+import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
 import { itemsForExamSubject } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import {
@@ -65,83 +64,85 @@ export default function TopicsScreen() {
     [examType, subject],
   );
 
+  function switchExam(next: ExamType) {
+    setExamType(next);
+    const nextSubjects = subjectsForExam(next);
+    setSubject(nextSubjects[0] ?? 'math');
+  }
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       testID="topics-screen">
-      <Text style={styles.eyebrow}>Müfredat · anlatım</Text>
+      <Text style={styles.eyebrow}>Müfredat</Text>
       <Text style={styles.title}>Konu anlatımı</Text>
       <Text style={styles.subtitle}>
-        {EXAM_LABEL[examType]} için konuyu seç → kısa öğretmen anlatımı + örnek soru.
-        Telifsiz, özgün içerik.
+        Sınav seç → ders → konu. Kısa öğretmen özeti ve örnek sorular.
       </Text>
 
-      <Text style={styles.filterLabel}>Ders</Text>
+      <Text style={styles.filterLabel}>Sınav</Text>
+      <SegmentedTabs
+        testID="topics-exam-tabs"
+        itemTestIDPrefix="topics-exam"
+        variant="track"
+        value={examType}
+        onChange={switchExam}
+        items={EXAM_OPTIONS.map((o) => ({
+          id: o.id,
+          label: o.label,
+          caption: EXAM_SHORT[o.id],
+        }))}
+      />
+
+      <Text style={[styles.filterLabel, styles.spaced]}>Ders</Text>
       <SegmentedTabs
         testID="topics-subject-filters"
         itemTestIDPrefix="topics-subject"
         variant="chips"
         value={subject}
-        onChange={(id) => {
-          setSubject(id);
-          if (id !== 'unknown') setPendingSubjectHint(id);
-        }}
+        onChange={setSubject}
         items={subjects.map((s) => ({ id: s, label: subjectLabel(s) }))}
       />
 
-      <Text style={[styles.filterLabel, styles.spaced]}>Konular</Text>
+      <Text style={[styles.filterLabel, styles.spaced]}>
+        {EXAM_LABEL[examType]} · {subjectLabel(subject)} konuları
+      </Text>
       {topics.length === 0 ? (
         <EmptyState title="Bu derste konu yok" subtitle="Başka bir ders seç." />
       ) : (
-        <View style={styles.topicGrid} testID="topics-list">
+        <View style={styles.topicList} testID="topics-list">
           {topics.map((t) => {
             const hasLesson = Boolean(lessonForTopic(t.id));
             const sampleCount = samples.filter((s) => s.topicId === t.id).length;
             return (
               <Pressable
                 key={t.id}
-                style={[styles.topicChip, hasLesson && styles.topicChipRich]}
+                style={styles.topicRow}
                 testID={`catalog-topic-${t.id}`}
                 accessibilityRole="button"
                 onPress={() =>
                   router.push({ pathname: '/topic/[id]', params: { id: t.id } })
                 }>
-                <Text style={styles.topicChipText}>{t.nameTr}</Text>
-                <Text style={styles.topicChipMeta}>
-                  {hasLesson ? 'Anlatım' : 'Özet'}
-                  {sampleCount > 0 ? ` · ${sampleCount} örnek` : ''}
-                </Text>
+                <View style={styles.topicRowMain}>
+                  <Text style={styles.topicRowTitle}>{t.nameTr}</Text>
+                  <Text style={styles.topicRowMeta}>
+                    {hasLesson ? 'Anlatım hazır' : 'Kısa özet'}
+                    {sampleCount > 0 ? ` · ${sampleCount} örnek` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.topicChevron}>›</Text>
               </Pressable>
             );
           })}
         </View>
       )}
 
-      <Pressable
-        style={styles.photoCta}
-        testID="topics-photo-cta"
-        accessibilityRole="button"
-        onPress={() => {
-          if (subject !== 'unknown') setPendingSubjectHint(subject);
-          router.push('/(tabs)');
-        }}>
-        <Text style={styles.photoCtaText}>
-          Bu dersten soru çek ({subjectLabel(subject)})
-        </Text>
-        <Text style={styles.photoCtaSub}>
-          Ana sayfada kamera veya galeri — AI’ya ders ipucu gider
-        </Text>
-      </Pressable>
-
-      <Text style={[styles.filterLabel, styles.spaced]}>
-        Örnek soru & adım adım anlatım
-      </Text>
+      <Text style={[styles.filterLabel, styles.spaced]}>Örnek sorular</Text>
       {samples.length === 0 ? (
         <View style={styles.emptySamples}>
           <Text style={styles.hint}>
-            Bu ders için örnek madde henüz yok. Yukarıdan konu seçip kısa anlatımı oku veya
-            fotoğrafla canlı çözüm al.
+            Bu dal için örnek madde henüz yok. Yukarıdan bir konuya girip özeti oku.
           </Text>
         </View>
       ) : (
@@ -216,32 +217,36 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   spaced: { marginTop: space.lg },
-  topicGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  topicChip: {
+  topicList: { gap: space.sm },
+  topicRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.white,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: space.md,
-    paddingVertical: 10,
-    minWidth: '46%',
-    flexGrow: 1,
+    paddingVertical: 12,
+    ...shadows.soft,
   },
-  topicChipRich: {
-    borderColor: colors.orange,
-    backgroundColor: colors.orangeSoft,
-  },
-  topicChipText: {
+  topicRowMain: { flex: 1 },
+  topicRowTitle: {
     fontFamily: typography.fontFamily,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.navy,
   },
-  topicChipMeta: {
+  topicRowMeta: {
     fontFamily: typography.fontFamily,
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 3,
+  },
+  topicChevron: {
+    fontFamily: typography.fontFamily,
+    fontSize: 22,
+    color: colors.navy,
+    marginLeft: space.sm,
   },
   hint: {
     fontFamily: typography.fontFamily,
@@ -285,25 +290,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.navy,
-  },
-  photoCta: {
-    backgroundColor: colors.navy,
-    borderRadius: radii.xl,
-    padding: space.md,
-    marginTop: space.md,
-    marginBottom: space.sm,
-  },
-  photoCtaText: {
-    fontFamily: typography.fontFamily,
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  photoCtaSub: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 4,
-    lineHeight: 17,
   },
 });

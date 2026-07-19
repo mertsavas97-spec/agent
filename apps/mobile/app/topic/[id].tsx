@@ -5,7 +5,6 @@ import { findTopic, subjectLabel } from '@/src/data';
 import { itemsForTopic } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
-import { setPendingSubjectHint } from '@/src/features/solve/subjectHintStore';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 
 export default function TopicLessonScreen() {
@@ -71,20 +70,8 @@ export default function TopicLessonScreen() {
           ))}
         </>
       ) : (
-        <Text style={styles.noSample}>
-          Bu konuda örnek soru yakında. İstersen fotoğrafla canlı çözüm al.
-        </Text>
+        <Text style={styles.noSample}>Bu konuda örnek soru yakında eklenecek.</Text>
       )}
-
-      <Pressable
-        style={styles.photoCta}
-        testID="topic-photo-cta"
-        onPress={() => {
-          if (topic.subject !== 'unknown') setPendingSubjectHint(topic.subject);
-          router.push('/(tabs)');
-        }}>
-        <Text style={styles.photoCtaText}>Bu dersten soru çek</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -210,18 +197,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 19,
     marginBottom: space.md,
-  },
-  photoCta: {
-    marginTop: space.md,
-    backgroundColor: colors.navy,
-    borderRadius: radii.xl,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  photoCtaText: {
-    fontFamily: typography.fontFamily,
-    fontWeight: '700',
-    color: colors.white,
-    fontSize: 15,
   },
 });

@@ -11,6 +11,10 @@ import {
 import { httpsCallable } from 'firebase/functions';
 
 import { findTopic } from '@/src/data';
+import {
+  listLocalHistory,
+  toAttemptListItem,
+} from '@/src/features/history/localHistoryStore';
 import type {
   AttemptListItem,
   ListAttemptsRequest,
@@ -84,10 +88,26 @@ async function attemptsFromFirestore(
         topicId: (data.topicId as string | null) ?? null,
         status: data.status ?? 'solved',
         thumbnailUrl: null,
+        examType: data.examType,
+        solutionId: (data.solutionId as string | null) ?? null,
       };
     })
     .filter((i) => (req.topicId ? i.topicId === req.topicId : true));
   return { items, nextCursor: null };
+}
+
+function mergeAttempts(
+  remote: AttemptListItem[],
+  local: AttemptListItem[],
+  lim: number,
+): AttemptListItem[] {
+  const map = new Map<string, AttemptListItem>();
+  for (const item of [...local, ...remote]) {
+    if (!map.has(item.attemptId)) map.set(item.attemptId, item);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, lim);
 }
 
 export async function fetchProgressSummary(): Promise<ProgressSummary> {
@@ -114,18 +134,26 @@ export async function fetchProgressSummary(): Promise<ProgressSummary> {
 export async function fetchAttempts(
   req: ListAttemptsRequest = {},
 ): Promise<ListAttemptsResponse> {
+  const lim = Math.min(req.limit ?? 20, 50);
+  const local = (await listLocalHistory(lim)).map(toAttemptListItem);
+
   if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
     return {
-      items: [
-        {
-          attemptId: 'demo-1',
-          createdAt: new Date().toISOString(),
-          subject: 'math',
-          topicId: 'lgs-math-kesirler',
-          status: 'solved',
-          thumbnailUrl: null,
-        },
-      ],
+      items: mergeAttempts(
+        [
+          {
+            attemptId: 'demo-1',
+            createdAt: new Date().toISOString(),
+            subject: 'math',
+            topicId: 'lgs-math-kesirler',
+            status: 'solved',
+            thumbnailUrl: null,
+            examType: 'lgs',
+          },
+        ],
+        local,
+        lim,
+      ),
       nextCursor: null,
     };
   }
@@ -134,9 +162,11 @@ export async function fetchAttempts(
     const { functions } = getFirebase();
     const callable = httpsCallable(functions, 'listAttempts');
     const result = await callable(req);
-    return result.data as ListAttemptsResponse;
+    const remote = (result.data as ListAttemptsResponse).items ?? [];
+    return { items: mergeAttempts(remote, local, lim), nextCursor: null };
   } catch (err) {
     if (!isCallableBlocked(err)) throw err;
-    return attemptsFromFirestore(user.uid, req);
+    const remote = (await attemptsFromFirestore(user.uid, req)).items;
+    return { items: mergeAttempts(remote, local, lim), nextCursor: null };
   }
 }
