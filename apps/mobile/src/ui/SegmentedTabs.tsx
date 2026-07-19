@@ -16,6 +16,10 @@ export type SegmentedTabsProps<T extends string> = {
   testID?: string;
   itemTestIDPrefix?: string;
   variant?: 'track' | 'chips';
+  /** Selected fill (track variant) */
+  activeColor?: string;
+  /** Selected underline / chip accent */
+  accentColor?: string;
 };
 
 /**
@@ -30,6 +34,8 @@ export function SegmentedTabs<T extends string>({
   testID,
   itemTestIDPrefix = 'segment',
   variant = 'track',
+  activeColor = colors.navy,
+  accentColor = colors.orange,
 }: SegmentedTabsProps<T>) {
   if (variant === 'chips') {
     return (
@@ -43,9 +49,23 @@ export function SegmentedTabs<T extends string>({
               accessibilityRole="button"
               accessibilityState={{ selected, disabled: Boolean(disabled) }}
               disabled={disabled}
-              style={[styles.chip, selected && styles.chipOn]}
+              style={[
+                styles.chip,
+                selected && styles.chipOn,
+                selected && {
+                  borderColor: accentColor,
+                  backgroundColor: `${accentColor}22`,
+                },
+              ]}
               onPress={() => onChange(item.id)}>
-              <Text style={[styles.chipLabel, selected && styles.chipLabelOn]}>{item.label}</Text>
+              <Text
+                style={[
+                  styles.chipLabel,
+                  selected && styles.chipLabelOn,
+                  selected && { color: activeColor },
+                ]}>
+                {item.label}
+              </Text>
             </Pressable>
           );
         })}
@@ -64,7 +84,14 @@ export function SegmentedTabs<T extends string>({
             accessibilityRole="button"
             accessibilityState={{ selected, disabled: Boolean(disabled) }}
             disabled={disabled}
-            style={[styles.segment, selected ? styles.segmentOn : styles.segmentOff]}
+            style={[
+              styles.segment,
+              selected ? styles.segmentOn : styles.segmentOff,
+              selected && {
+                backgroundColor: activeColor,
+                borderColor: activeColor,
+              },
+            ]}
             onPress={() => onChange(item.id)}>
             <Text style={[styles.segmentLabel, selected && styles.segmentLabelOn]}>
               {item.label}
@@ -76,7 +103,9 @@ export function SegmentedTabs<T extends string>({
                 {item.caption}
               </Text>
             ) : null}
-            {selected ? <View style={styles.accent} /> : null}
+            {selected ? (
+              <View style={[styles.accent, { backgroundColor: accentColor }]} />
+            ) : null}
           </Pressable>
         );
       })}

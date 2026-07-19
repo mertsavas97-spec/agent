@@ -56,7 +56,7 @@ describe('HomeScreen', () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.getByText('Sınavın')).toBeTruthy();
+    expect(screen.getByText('Aktif sınav modu')).toBeTruthy();
     expect(screen.getByText(/sorunun fotoğrafını çek/i)).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toBeTruthy();
     expect(screen.getByText('Soru fotoğrafı çek')).toBeTruthy();
@@ -65,7 +65,9 @@ describe('HomeScreen', () => {
     expect(screen.getByTestId('home-topics-link')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
     await waitFor(() => {
-      expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri: 0 gün/);
+      expect(screen.getByTestId('exam-mode-chip')).toHaveTextContent('MOD: YGS');
+      expect(screen.getByTestId('home-streak')).toHaveTextContent(/MOD: YGS/);
+      expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri 0 gün/);
       expect(screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected).toBe(true);
     });
   });

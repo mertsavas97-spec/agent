@@ -19,6 +19,7 @@ import {
 } from '@/src/features/ads';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { examThemeFor } from '@/src/features/exam/examTheme';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import {
   pickFromCamera,
@@ -189,9 +190,12 @@ export default function HomeScreen() {
   const subjectCount =
     examType != null ? new Set(topicsForExam(examType).map((t) => t.subject)).size : 0;
   const topicCount = examType != null ? topicsForExam(examType).length : 0;
+  const examTheme = examThemeFor(examType);
 
   return (
-    <View style={styles.root} testID="home-screen">
+    <View
+      style={[styles.root, examTheme ? { backgroundColor: examTheme.soft } : null]}
+      testID="home-screen">
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}>
@@ -206,10 +210,14 @@ export default function HomeScreen() {
           disabled={switching}
         />
 
-        {examType ? (
-          <Text style={styles.metaLine} testID="home-streak">
-            Seri: {streak} gün · {EXAM_LABEL[examType]} · {subjectCount} ders · {topicCount} konu
-          </Text>
+        {examType && examTheme ? (
+          <View
+            style={[styles.metaChip, { backgroundColor: examTheme.solid }]}
+            testID="home-streak">
+            <Text style={styles.metaChipText}>
+              {examTheme.modeChip} · Seri {streak} gün · {subjectCount} ders · {topicCount} konu
+            </Text>
+          </View>
         ) : (
           <Text style={styles.metaLine} testID="home-streak">
             Seri: {streak} gün
@@ -222,16 +230,34 @@ export default function HomeScreen() {
           </Text>
         ) : null}
 
-        <View style={styles.actionCard}>
-          <Text style={styles.actionKicker}>Soru çöz</Text>
+        <View
+          style={[
+            styles.actionCard,
+            examTheme
+              ? { borderColor: examTheme.accent, borderWidth: 1.5 }
+              : null,
+          ]}>
+          <Text
+            style={[
+              styles.actionKicker,
+              examTheme ? { color: examTheme.solid } : null,
+            ]}>
+            Soru çöz · {examTheme ? examTheme.label : 'sınav seç'}
+          </Text>
           <Text style={styles.actionTitle}>Soru fotoğrafı gönder</Text>
           <Text style={styles.actionBody}>
             Kitap, defter veya deneme sayfasındaki soruyu kadraja al. Metin ve şıklar net
             görünsün.
+            {examTheme
+              ? ` Bu çözüm ${examTheme.label} (${examTheme.short}) dilinde işlenecek.`
+              : ''}
           </Text>
 
           <Pressable
-            style={styles.primaryBtn}
+            style={[
+              styles.primaryBtn,
+              examTheme ? { backgroundColor: examTheme.accent } : null,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Soru fotoğrafı çek"
             testID="capture-cta"
@@ -352,6 +378,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.navy,
     marginBottom: space.md,
+  },
+  metaChip: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: space.md,
+  },
+  metaChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: 0.2,
   },
   hintBanner: {
     fontFamily: typography.fontFamily,
