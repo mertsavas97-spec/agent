@@ -59,31 +59,37 @@ export async function fetchOnboardingStatus(): Promise<{
   };
 }
 
-export async function submitOnboarding(result: OnboardingResult): Promise<void> {
-  const user = await ensureSignedIn();
-  // Local preference first — home / settings read this immediately.
-  await writeExamPreference(result.examType);
+async function syncOnboardingCallable(result: OnboardingResult): Promise<void> {
   const { functions } = getFirebase();
-  try {
-    const complete = httpsCallable(functions, 'completeOnboarding');
-    await withTimeout(
-      complete({
-        examType: result.examType,
-        ageBand: result.ageBand,
-        parentalConsent: result.parentalConsent,
-      }),
-      8000,
-      'COMPLETE_ONBOARDING',
-    );
-  } catch {
-    await completeOnboardingLocal(user.uid, {
+  const complete = httpsCallable(functions, 'completeOnboarding');
+  await withTimeout(
+    complete({
       examType: result.examType,
       ageBand: result.ageBand,
       parentalConsent: result.parentalConsent,
-    });
-  }
-  // Unlock BootstrapGate before navigation (avoids stuck needs_onboarding race).
+    }),
+    8000,
+    'COMPLETE_ONBOARDING',
+  );
+}
+
+/**
+ * Persist onboarding — local Firestore + preference first, cloud sync best-effort.
+ * Always unlocks BootstrapGate after local write succeeds (demo replay safe).
+ */
+export async function submitOnboarding(result: OnboardingResult): Promise<void> {
+  const user = await ensureSignedIn();
+  await writeExamPreference(result.examType);
+  await ensureUserDocLocal(user.uid, result.examType);
+  await completeOnboardingLocal(user.uid, {
+    examType: result.examType,
+    ageBand: result.ageBand,
+    parentalConsent: result.parentalConsent,
+  });
+
   markOnboardingComplete();
+
+  void syncOnboardingCallable(result).catch(() => undefined);
 }
 
 /**

@@ -1,6 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
+jest.mock('expo-symbols', () => ({
+  SymbolView: () => null,
+}));
+
 import { OnboardingFlow } from '@/src/features/onboarding/OnboardingFlow';
 
 describe('OnboardingFlow', () => {
@@ -9,6 +13,8 @@ describe('OnboardingFlow', () => {
     render(<OnboardingFlow onComplete={onComplete} />);
 
     expect(screen.getByTestId('onboarding-step-0')).toBeTruthy();
+    expect(screen.getByTestId('onboarding-progress')).toBeTruthy();
+    expect(screen.getByTestId('onboarding-hero')).toBeTruthy();
     fireEvent.press(screen.getByTestId('onboarding-next'));
 
     expect(screen.getByTestId('onboarding-step-1')).toBeTruthy();
@@ -19,7 +25,6 @@ describe('OnboardingFlow', () => {
     expect(screen.getByTestId('exam-ygs')).toBeTruthy();
     expect(screen.getByTestId('exam-kpss')).toBeTruthy();
 
-    // None disabled
     expect(screen.getByTestId('exam-lgs').props.accessibilityState?.disabled).not.toBe(true);
     expect(screen.getByTestId('exam-ygs').props.accessibilityState?.disabled).not.toBe(true);
     expect(screen.getByTestId('exam-kpss').props.accessibilityState?.disabled).not.toBe(true);
@@ -63,5 +68,13 @@ describe('OnboardingFlow', () => {
     expect(onComplete).toHaveBeenCalledWith(
       expect.objectContaining({ examType: 'kpss' }),
     );
+  });
+
+  it('shows exam mode chip when an exam is selected', () => {
+    render(<OnboardingFlow onComplete={jest.fn()} />);
+    fireEvent.press(screen.getByTestId('onboarding-next'));
+    fireEvent.press(screen.getByTestId('onboarding-next'));
+    fireEvent.press(screen.getByTestId('exam-trafik'));
+    expect(screen.getByText('MOD: EHLİYET')).toBeTruthy();
   });
 });

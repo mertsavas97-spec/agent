@@ -2,22 +2,28 @@ import type { ExamType } from '@/src/lib/api/types';
 
 export const ONBOARDING_STEPS = [
   {
+    eyebrow: 'Fotoğraf',
     title: 'Fotoğrafla çöz',
-    body: 'Sorunun fotoğrafını çek veya galeriden seç; ÇözBil adım adım anlatsın.',
+    body: 'Sorunun fotoğrafını çek veya galeriden seç. ÇözBil adım adım anlatsın — ezber değil anlayış.',
+    icon: 'camera.fill' as const,
   },
   {
+    eyebrow: 'Anlatım',
     title: 'Adım adım anlatır',
-    body: 'Ezber değil anlayış: her adımı sade Türkçe ile görürsün. Anlamadın mı, tekrar sor.',
+    body: 'Her adım sade Türkçe. Anlamadığın yeri tekrar sor, konu anlatımına geç.',
+    icon: 'list.bullet.rectangle.fill' as const,
   },
   {
+    eyebrow: 'Mod seçimi',
     title: 'Hangi sınava hazırlanıyorsun?',
-    body: 'LGS, YGS, KPSS ve Ehliyet aktif. Seçimin çözüm dilini ve konu kataloğunu belirler.',
+    body: 'LGS, YGS, KPSS ve Ehliyet aktif. Seçimin renk temasını, müfredatı ve çözüm dilini belirler.',
+    icon: 'graduationcap.fill' as const,
   },
 ] as const;
 
 export const EXAM_OPTIONS: { id: ExamType; label: string; hint: string }[] = [
-  { id: 'lgs', label: 'LGS', hint: 'Lise giriş' },
-  { id: 'ygs', label: 'YGS', hint: 'Yükseköğretime geçiş' },
+  { id: 'lgs', label: 'LGS', hint: 'Lise giriş · 8. sınıf' },
+  { id: 'ygs', label: 'YGS', hint: 'Üniversite · TYT–AYT' },
   { id: 'kpss', label: 'KPSS', hint: 'Kamu personeli' },
   { id: 'trafik', label: 'Ehliyet', hint: 'Ehliyet / MTS' },
 ];

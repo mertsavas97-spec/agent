@@ -31,11 +31,13 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   const [replayToken, setReplayToken] = useState(0);
   const bootedForUid = useRef<string | null>(null);
   const navigatingRef = useRef(false);
+  const bootGenRef = useRef(0);
 
   useEffect(() => {
     return subscribeOnboardingGate((event) => {
       if (event.type === 'complete') {
-        // Local write already done — unlock tabs without waiting for a re-fetch race.
+        // Invalidate any in-flight boot fetch (demo replay race).
+        bootGenRef.current += 1;
         if (uid) bootedForUid.current = uid;
         setBootError(null);
         setState({ status: 'ready' });
@@ -73,11 +75,12 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
     }
 
     let alive = true;
+    const bootGen = ++bootGenRef.current;
     setState({ status: 'loading' });
     setBootError(null);
 
     const timer = setTimeout(() => {
-      if (!alive) return;
+      if (!alive || bootGen !== bootGenRef.current) return;
       setBootError('Bağlantı zaman aşımı — uygulama sınırlı açılıyor.');
       setState({ status: 'ready' });
     }, BOOT_TIMEOUT_MS);
@@ -88,14 +91,14 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
           fetchOnboardingStatus(),
           hydrateEntitlement().catch(() => null),
         ]);
-        if (!alive) return;
+        if (!alive || bootGen !== bootGenRef.current) return;
         clearTimeout(timer);
         if (uid) bootedForUid.current = uid;
         setState(
           status.done ? { status: 'ready' } : { status: 'needs_onboarding' },
         );
       } catch (err) {
-        if (!alive) return;
+        if (!alive || bootGen !== bootGenRef.current) return;
         clearTimeout(timer);
         const msg = err instanceof Error ? err.message : '';
         setBootError(
