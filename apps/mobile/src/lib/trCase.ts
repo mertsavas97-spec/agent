@@ -26,6 +26,7 @@ export const TR_EYEBROW = {
   legal: 'HUKUKİ',
   push: 'BİLDİRİMLER',
   profile: 'PROFİL',
+  modPicker: 'MOD SEÇİCİ',
   teacherTip: 'ÖĞRETMEN İPUCU',
   correct: 'DOĞRU',
 } as const;

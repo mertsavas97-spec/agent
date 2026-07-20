@@ -14,18 +14,21 @@ jest.mock('expo-router', () => {
   };
 });
 
+jest.mock('expo-symbols', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    SymbolView: (props: { testID?: string }) =>
+      React.createElement(View, { testID: props.testID ?? 'symbol-view' }),
+  };
+});
+
 jest.mock('@/src/features/solve/image', () => ({
   pickFromCamera: jest.fn(),
   pickFromLibrary: jest.fn(),
 }));
 
 jest.mock('@/src/lib/api/progressClient', () => ({
-  fetchProgressSummary: jest.fn().mockResolvedValue({
-    streakCount: 0,
-    weakestTopic: null,
-    topics: [],
-    weekly: [],
-  }),
   fetchAttempts: jest.fn().mockResolvedValue({ items: [], nextCursor: null }),
 }));
 
@@ -52,25 +55,21 @@ jest.mock('@/src/features/exam/updateExamClient', () => ({
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('renders action-first home without tutorial walls of text', async () => {
+  it('renders robot brand, mod picker, premium icon, and capture CTAs', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
+    expect(screen.getByTestId('home-brand-robot')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.queryByText(/Kitaptaki veya defterdeki/i)).toBeNull();
-    expect(screen.queryByText('AKTİF SINAV MODU')).toBeNull();
-    expect(screen.queryByText(/Soru fotoğrafı gönder/i)).toBeNull();
+    expect(screen.queryByTestId('home-streak')).toBeNull();
+    expect(screen.getByText('MOD SEÇİCİ')).toBeTruthy();
     expect(screen.getByTestId('home-premium-cta')).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toHaveTextContent('Soru fotoğrafı çek');
     expect(screen.getByTestId('gallery-cta')).toHaveTextContent('Galeriden seç');
     expect(screen.getByTestId('multi-batch-cta')).toHaveTextContent(/Çoklu soru/);
-    expect(screen.getByTestId('home-topics-link')).toHaveTextContent(/Konu anlatımı/);
-    expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
     await waitFor(() => {
       expect(
         screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected,
       ).toBe(true);
-      expect(screen.getByTestId('home-streak')).toHaveTextContent(/0 gün/);
-      expect(screen.getByTestId('home-recent-empty')).toHaveTextContent(/Henüz çözüm yok/);
     });
   });
 });

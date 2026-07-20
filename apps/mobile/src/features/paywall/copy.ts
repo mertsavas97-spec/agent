@@ -19,23 +19,27 @@ export const PAYWALL_COPY = {
       id: 'unlimited',
       title: 'Sınırsız soru çözümü',
       body: 'Günlük 5 hak sınırına takılma — deneme, kitap, defter; hepsi açık.',
+      icon: { ios: 'infinity', android: 'all_inclusive', web: 'all_inclusive' },
     },
     {
       id: 'ads',
       title: 'Reklamsız çalışma alanı',
       body: 'Banner ve ara reklamlar kapalı; odak bozulmasın.',
+      icon: { ios: 'eye.slash.fill', android: 'visibility_off', web: 'visibility_off' },
     },
     {
       id: 'analysis',
       title: 'Kişisel AI analiz özeti',
       body: 'Zayıf konular ve seri — sınavına özel geri bildirim.',
+      icon: { ios: 'chart.line.uptrend.xyaxis', android: 'insights', web: 'insights' },
     },
     {
       id: 'multi',
       title: 'Çoklu soru önceliği',
       body: 'Galeriden toplu seçimde daha akıcı hak yönetimi.',
+      icon: { ios: 'square.stack.3d.up.fill', android: 'layers', web: 'layers' },
     },
-  ],
+  ] as const,
   socialProof: 'Binlerce LGS · YGS · KPSS · Ehliyet adayı fotoğrafla çözüyor.',
   guarantee: 'Beğenmezsen iptal et — Play aboneliğinden yönetilir.',
 } as const;

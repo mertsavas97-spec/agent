@@ -26,6 +26,8 @@ export type SegmentedTabsProps<T extends string> = {
   activeColor?: string;
   /** Selected underline / chip accent */
   accentColor?: string;
+  /** Larger labels for home exam picker */
+  prominence?: 'default' | 'strong';
 };
 
 function captionColor(
@@ -55,7 +57,9 @@ export function SegmentedTabs<T extends string>({
   variant = 'track',
   activeColor = colors.navy,
   accentColor = colors.orange,
+  prominence = 'default',
 }: SegmentedTabsProps<T>) {
+  const strong = prominence === 'strong';
   if (variant === 'chips') {
     return (
       <View style={styles.chipsRow} testID={testID} accessibilityRole="toolbar">
@@ -110,6 +114,7 @@ export function SegmentedTabs<T extends string>({
             style={[
               styles.segment,
               compact && styles.segmentCompact,
+              strong && styles.segmentStrong,
               selected ? styles.segmentOn : styles.segmentOff,
               muted && styles.segmentMuted,
               selected && {
@@ -122,6 +127,8 @@ export function SegmentedTabs<T extends string>({
               style={[
                 styles.segmentLabel,
                 compact && styles.segmentLabelCompact,
+                strong && styles.segmentLabelStrong,
+                compact && strong && styles.segmentLabelCompactStrong,
                 selected && styles.segmentLabelOn,
                 muted && styles.segmentLabelMuted,
               ]}
@@ -177,6 +184,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     minHeight: 54,
   },
+  segmentStrong: {
+    minHeight: 60,
+    paddingVertical: 10,
+  },
   segmentOff: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -200,6 +211,14 @@ const styles = StyleSheet.create({
   },
   segmentLabelCompact: {
     fontSize: 12,
+  },
+  segmentLabelStrong: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  segmentLabelCompactStrong: {
+    fontSize: 13,
   },
   segmentLabelOn: {
     color: colors.white,

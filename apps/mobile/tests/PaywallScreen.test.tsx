@@ -1,6 +1,15 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
+jest.mock('expo-symbols', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    SymbolView: (props: { testID?: string }) =>
+      React.createElement(View, { testID: props.testID ?? 'symbol-view' }),
+  };
+});
+
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 
 describe('PaywallScreen', () => {

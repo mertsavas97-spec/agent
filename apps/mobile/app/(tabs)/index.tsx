@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -34,7 +35,7 @@ import {
   peekPendingSubjectHint,
   takePendingSubjectHint,
 } from '@/src/features/solve/subjectHintStore';
-import { fetchAttempts, fetchProgressSummary } from '@/src/lib/api/progressClient';
+import { fetchAttempts } from '@/src/lib/api/progressClient';
 import type { AttemptListItem, ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
@@ -46,14 +47,10 @@ import {
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { findTopic, subjectLabel } from '@/src/data';
 import { TR_EYEBROW } from '@/src/lib/trCase';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
-/**
- * Ana Sayfa redesign v2 (designer brief):
- * günlük araç — az metin, tek kahraman = turuncu kamera CTA.
- */
 export default function HomeScreen() {
   const router = useRouter();
-  const [streak, setStreak] = useState(0);
   const [recent, setRecent] = useState<AttemptListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [examType, setExamType] = useState<ExamType | null>(null);
@@ -71,15 +68,13 @@ export default function HomeScreen() {
         try {
           const user = await ensureSignedIn();
           const { db } = getFirebase();
-          const [progress, attempts, userSnap, entitlement] = await Promise.all([
-            fetchProgressSummary().catch(() => ({ streakCount: 0 })),
+          const [attempts, userSnap, entitlement] = await Promise.all([
             fetchAttempts({ limit: 5 }).catch(() => ({ items: [] as AttemptListItem[] })),
             getDoc(doc(db, 'users', user.uid)),
             hydrateEntitlement().catch(() => null),
           ]);
           if (!alive) return;
           setIsPremium(isPremiumActive(entitlement ?? undefined));
-          setStreak(progress.streakCount ?? 0);
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
           const preferred = await readExamPreference();
           const et = userSnap.data()?.examType;
@@ -96,7 +91,6 @@ export default function HomeScreen() {
           }
         } catch {
           if (!alive) return;
-          setStreak(0);
           setRecent([]);
           setExamType((prev) => prev ?? 'lgs');
         } finally {
@@ -221,9 +215,14 @@ export default function HomeScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
-          <Text style={styles.brand}>{brand.name}</Text>
-          <View style={styles.streakChip} testID="home-streak">
-            <Text style={styles.streakText}>{streak} gün</Text>
+          <View style={styles.brandRow}>
+            <CozbilRobot
+              size={40}
+              animate={false}
+              variant="onLight"
+              testID="home-brand-robot"
+            />
+            <Text style={styles.brand}>{brand.name}</Text>
           </View>
           <Pressable
             testID="home-premium-cta"
@@ -231,6 +230,16 @@ export default function HomeScreen() {
             accessibilityLabel={isPremium ? 'Premium planı gör' : 'Premium’a geç'}
             style={[styles.premiumPill, isPremium && styles.premiumPillOn]}
             onPress={() => router.push('/premium')}>
+            <SymbolView
+              name={{
+                ios: 'crown.fill',
+                android: 'workspace_premium',
+                web: 'workspace_premium',
+              }}
+              tintColor={colors.orange}
+              size={14}
+              style={styles.premiumIcon}
+            />
             <Text
               style={[
                 styles.premiumPillLabel,
@@ -276,12 +285,21 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={styles.multiLink}
+            style={styles.multiBtn}
             accessibilityRole="button"
             accessibilityLabel="Çoklu soru seç"
             testID="multi-batch-cta"
             onPress={() => void openMultiBatch()}>
-            <Text style={styles.multiLinkLabel}>
+            <SymbolView
+              name={{
+                ios: 'square.stack.3d.up.fill',
+                android: 'layers',
+                web: 'layers',
+              }}
+              tintColor={colors.navy}
+              size={16}
+            />
+            <Text style={styles.multiBtnLabel}>
               Çoklu soru (en fazla {MULTI_BATCH_MAX})
             </Text>
           </Pressable>
@@ -351,8 +369,14 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
+    justifyContent: 'space-between',
     marginBottom: space.md,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 1,
   },
   brand: {
     fontFamily: typography.fontFamilyBold,
@@ -360,22 +384,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.navy,
     letterSpacing: -0.3,
-    flexShrink: 0,
-  },
-  streakChip: {
-    backgroundColor: colors.orangeSoft,
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  streakText: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.orange,
   },
   premiumPill: {
-    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: colors.navy,
     borderRadius: radii.pill,
     paddingHorizontal: 12,
@@ -385,6 +398,10 @@ const styles = StyleSheet.create({
   },
   premiumPillOn: {
     backgroundColor: colors.navy,
+  },
+  premiumIcon: {
+    width: 14,
+    height: 14,
   },
   premiumPillLabel: {
     fontFamily: typography.fontFamilySemiBold,
@@ -439,15 +456,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  multiLink: {
-    marginTop: 2,
-    paddingVertical: 6,
+  multiBtn: {
+    marginTop: space.sm,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: radii.lg,
+    paddingVertical: 12,
+    paddingHorizontal: space.md,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  multiLinkLabel: {
-    fontFamily: typography.fontFamily,
-    color: colors.textSecondary,
-    fontSize: 13,
+  multiBtnLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.navy,
+    fontSize: 14,
+    fontWeight: '600',
   },
   topicsLink: {
     flexDirection: 'row',

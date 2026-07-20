@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   Pressable,
@@ -9,6 +10,7 @@ import {
 
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 import { Eyebrow } from '@/src/ui/Eyebrow';
 
 import { PAYWALL_COPY } from './copy';
@@ -27,7 +29,6 @@ export type PaywallScreenProps = {
   onRestore?: () => void;
   onOpenLegal?: (doc: 'privacy' | 'terms') => void;
   initialPlanId?: PlanId;
-  /** quota = hak bitti; browse = ayarlar/profil/ana sayfa */
   variant?: 'quota' | 'browse';
 };
 
@@ -54,83 +55,130 @@ export function PaywallScreen({
       testID="paywall-screen"
       showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
-        <Eyebrow tone="orange">{TR_EYEBROW.premium}</Eyebrow>
-        <Text style={styles.brand} testID="paywall-brand">
-          {PAYWALL_COPY.brand}
-        </Text>
+        <View style={styles.heroGlow} />
+        <View style={styles.heroTop}>
+          <CozbilRobot size={56} animate variant="onDark" testID="paywall-robot" />
+          <View style={styles.heroTitles}>
+            <Eyebrow tone="orange">{TR_EYEBROW.premium}</Eyebrow>
+            <Text style={styles.brand} testID="paywall-brand">
+              {PAYWALL_COPY.brand}
+            </Text>
+          </View>
+          <SymbolView
+            name={{ ios: 'crown.fill', android: 'workspace_premium', web: 'workspace_premium' }}
+            tintColor={colors.orange}
+            size={28}
+          />
+        </View>
         <Text style={styles.headline} testID="paywall-headline">
           {headline}
         </Text>
         <Text style={styles.support}>{support}</Text>
-        <Text style={styles.proof}>{PAYWALL_COPY.socialProof}</Text>
+        <View style={styles.proofRow}>
+          <SymbolView
+            name={{ ios: 'person.3.fill', android: 'groups', web: 'groups' }}
+            tintColor={colors.orange}
+            size={16}
+          />
+          <Text style={styles.proof}>{PAYWALL_COPY.socialProof}</Text>
+        </View>
       </View>
 
-      <View style={styles.benefits}>
-        {PAYWALL_COPY.benefits.map((b) => (
-          <View key={b.id} style={styles.benefitCard} testID={`paywall-benefit-${b.id}`}>
-            <Text style={styles.benefitTitle}>{b.title}</Text>
-            <Text style={styles.benefitBody}>{b.body}</Text>
+      <View style={styles.benefitsPanel}>
+        <Text style={styles.benefitsHeading}>Premium’da neler var?</Text>
+        {PAYWALL_COPY.benefits.map((b, index) => (
+          <View
+            key={b.id}
+            style={[
+              styles.benefitRow,
+              index < PAYWALL_COPY.benefits.length - 1 && styles.benefitRowBorder,
+            ]}
+            testID={`paywall-benefit-${b.id}`}>
+            <View style={styles.benefitIconWrap}>
+              <SymbolView name={b.icon} tintColor={colors.orange} size={20} />
+            </View>
+            <View style={styles.benefitCopy}>
+              <Text style={styles.benefitTitle}>{b.title}</Text>
+              <Text style={styles.benefitBody}>{b.body}</Text>
+            </View>
           </View>
         ))}
       </View>
 
-      <Text style={styles.plansLabel}>Planını seç</Text>
-      <View style={styles.plans} testID="paywall-plans">
-        {PLANS.map((plan) => {
-          const isOn = selected === plan.id;
-          return (
-            <Pressable
-              key={plan.id}
-              testID={`paywall-plan-${plan.id}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isOn }}
-              style={[styles.planRow, isOn && styles.planRowOn]}
-              onPress={() => setSelected(plan.id)}>
-              <View style={styles.planTextCol}>
-                <Text style={[styles.planTitle, isOn && styles.planTitleOn]}>
-                  {plan.title}
-                </Text>
-                <Text style={[styles.planPrice, isOn && styles.planPriceOn]}>
-                  {plan.priceLabel}
-                </Text>
-                {plan.effectiveMonthlyLabel ? (
-                  <Text style={styles.planMeta}>{plan.effectiveMonthlyLabel}</Text>
-                ) : null}
-                {plan.compareAtLabel ? (
-                  <Text style={styles.planCompare}>{plan.compareAtLabel}</Text>
-                ) : null}
-              </View>
-              <View style={styles.planBadges}>
+      <View style={styles.plansSection}>
+        <Text style={styles.plansLabel}>Planını seç</Text>
+        <View style={styles.plans} testID="paywall-plans">
+          {PLANS.map((plan) => {
+            const isOn = selected === plan.id;
+            const featured = plan.id === 'yearly';
+            return (
+              <Pressable
+                key={plan.id}
+                testID={`paywall-plan-${plan.id}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isOn }}
+                style={[
+                  styles.planRow,
+                  featured && styles.planRowFeatured,
+                  isOn && styles.planRowOn,
+                ]}
+                onPress={() => setSelected(plan.id)}>
+                <View style={[styles.radio, isOn && styles.radioOn]}>
+                  {isOn ? <View style={styles.radioDot} /> : null}
+                </View>
+                <View style={styles.planTextCol}>
+                  <View style={styles.planTitleRow}>
+                    <Text style={[styles.planTitle, isOn && styles.planTitleOn]}>
+                      {plan.title}
+                    </Text>
+                    {plan.badge ? (
+                      <Text style={styles.badge} testID={`paywall-badge-${plan.id}`}>
+                        {plan.badge}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={[styles.planPrice, isOn && styles.planPriceOn]}>
+                    {plan.priceLabel}
+                  </Text>
+                  {plan.effectiveMonthlyLabel ? (
+                    <Text style={styles.planMeta}>{plan.effectiveMonthlyLabel}</Text>
+                  ) : null}
+                  {plan.compareAtLabel ? (
+                    <Text style={styles.planCompare}>{plan.compareAtLabel}</Text>
+                  ) : null}
+                </View>
                 {plan.saveLabel ? (
                   <Text style={styles.saveBadge}>{plan.saveLabel}</Text>
                 ) : null}
-                {plan.badge ? (
-                  <Text style={styles.badge} testID={`paywall-badge-${plan.id}`}>
-                    {plan.badge}
-                  </Text>
-                ) : null}
-              </View>
-            </Pressable>
-          );
-        })}
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
-      <Text style={styles.selectedPrice} testID="paywall-price">
-        {selectedPlan.priceLabel}
-      </Text>
-      <Text style={styles.savingsHint} testID="paywall-yearly-savings">
-        Yıllıkta {yearlySavingsTry()} TL tasarruf · en avantajlı plan yıllık
-      </Text>
-
-      <Pressable
-        testID="paywall-cta"
-        accessibilityRole="button"
-        style={styles.cta}
-        onPress={() => onStart(selected)}>
-        <Text style={styles.ctaText}>
-          {selected === 'yearly' ? PAYWALL_COPY.ctaYearly : PAYWALL_COPY.cta}
+      <View style={styles.checkout}>
+        <Text style={styles.selectedPrice} testID="paywall-price">
+          {selectedPlan.priceLabel}
         </Text>
-      </Pressable>
+        <Text style={styles.savingsHint} testID="paywall-yearly-savings">
+          Yıllıkta {yearlySavingsTry()} TL tasarruf
+        </Text>
+
+        <Pressable
+          testID="paywall-cta"
+          accessibilityRole="button"
+          style={styles.cta}
+          onPress={() => onStart(selected)}>
+          <SymbolView
+            name={{ ios: 'crown.fill', android: 'workspace_premium', web: 'workspace_premium' }}
+            tintColor={colors.navy}
+            size={18}
+          />
+          <Text style={styles.ctaText}>
+            {selected === 'yearly' ? PAYWALL_COPY.ctaYearly : PAYWALL_COPY.cta}
+          </Text>
+        </Pressable>
+      </View>
 
       {onWatchRewarded ? (
         <Pressable
@@ -178,7 +226,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.surface },
   root: {
     paddingHorizontal: space.lg,
-    paddingTop: space.lg,
+    paddingTop: space.md,
     paddingBottom: space.xl * 2,
   },
   hero: {
@@ -186,64 +234,123 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     padding: space.lg,
     marginBottom: space.lg,
+    overflow: 'hidden',
     ...shadows.soft,
   },
+  heroGlow: {
+    position: 'absolute',
+    top: -40,
+    right: -30,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: colors.orange,
+    opacity: 0.12,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginBottom: space.md,
+  },
+  heroTitles: { flex: 1 },
   brand: {
     fontFamily: typography.fontFamilyBold,
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.orange,
-    marginBottom: 8,
-  },
-  headline: {
-    fontFamily: typography.fontFamilySemiBold,
     fontSize: 22,
     fontWeight: '700',
     color: colors.white,
+    marginTop: 2,
+  },
+  headline: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.white,
     marginBottom: space.sm,
-    lineHeight: 30,
+    lineHeight: 28,
   },
   support: {
     fontFamily: typography.fontFamily,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 21,
     color: '#CBD5E1',
     marginBottom: space.sm,
   },
-  proof: {
-    fontFamily: typography.fontFamilyMedium,
-    fontSize: 13,
-    color: colors.orange,
-    lineHeight: 18,
+  proofRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
   },
-  benefits: { gap: space.sm, marginBottom: space.lg },
-  benefitCard: {
+  proof: {
+    flex: 1,
+    fontFamily: typography.fontFamilyMedium,
+    fontSize: 12,
+    color: colors.orange,
+    lineHeight: 17,
+  },
+  benefitsPanel: {
     backgroundColor: colors.white,
-    borderRadius: radii.lg,
-    padding: space.md,
+    borderRadius: radii.xl,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    marginBottom: space.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.soft,
   },
+  benefitsHeading: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.navy,
+    paddingVertical: space.sm,
+    paddingHorizontal: 4,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.sm,
+    paddingVertical: space.sm,
+    paddingHorizontal: 4,
+  },
+  benefitRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  benefitIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.orangeSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  benefitCopy: { flex: 1, paddingTop: 2 },
   benefitTitle: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.navy,
+    marginBottom: 2,
+  },
+  benefitBody: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textSecondary,
+  },
+  plansSection: {
+    marginBottom: space.md,
+  },
+  plansLabel: {
     fontFamily: typography.fontFamilySemiBold,
     fontSize: 16,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: 4,
-  },
-  benefitBody: {
-    fontFamily: typography.fontFamily,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textSecondary,
-  },
-  plansLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 15,
-    color: colors.navy,
     marginBottom: space.sm,
   },
-  plans: { gap: space.sm, marginBottom: space.md },
+  plans: { gap: space.sm },
   planRow: {
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -252,26 +359,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: space.sm,
     backgroundColor: colors.white,
+  },
+  planRowFeatured: {
+    borderColor: '#FCD34D',
   },
   planRowOn: {
     borderColor: colors.orange,
     backgroundColor: colors.orangeSoft,
   },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOn: {
+    borderColor: colors.orange,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.orange,
+  },
   planTextCol: { flexShrink: 1, flex: 1 },
+  planTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   planTitle: {
     fontFamily: typography.fontFamilySemiBold,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textMuted,
-    marginBottom: 2,
   },
-  planTitleOn: { color: colors.navy },
+  planTitleOn: { color: colors.navy, fontWeight: '700' },
   planPrice: {
     fontFamily: typography.fontFamilySemiBold,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.navy,
+    marginTop: 2,
   },
   planPriceOn: { color: colors.navy },
   planMeta: {
@@ -287,27 +421,36 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
-  planBadges: { alignItems: 'flex-end', gap: 4 },
   saveBadge: {
     fontFamily: typography.fontFamilySemiBold,
     fontSize: 11,
     fontWeight: '700',
     color: colors.success,
+    alignSelf: 'flex-start',
   },
   badge: {
     fontFamily: typography.fontFamilySemiBold,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.navy,
     backgroundColor: colors.orange,
     overflow: 'hidden',
-    paddingHorizontal: space.sm,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: radii.sm,
   },
+  checkout: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: space.sm,
+    ...shadows.soft,
+  },
   selectedPrice: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 18,
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.navy,
     textAlign: 'center',
@@ -316,15 +459,19 @@ const styles = StyleSheet.create({
   savingsHint: {
     fontFamily: typography.fontFamilyMedium,
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.success,
     marginBottom: space.md,
     textAlign: 'center',
+    fontWeight: '600',
   },
   cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: colors.orange,
     borderRadius: radii.xl,
     paddingVertical: 16,
-    alignItems: 'center',
     ...shadows.cta,
   },
   ctaText: {
