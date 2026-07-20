@@ -88,7 +88,7 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   return (
     <View style={styles.container} testID="analyzing-view">
-      <CozbilRobot size={112} />
+      <CozbilRobot size={112} animate tone="onDark" />
       <Text style={styles.title} testID="analyzing-title">
         Sorun analiz ediliyor…
       </Text>

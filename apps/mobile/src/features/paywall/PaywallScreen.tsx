@@ -57,7 +57,7 @@ export function PaywallScreen({
       <View style={styles.hero}>
         <View style={styles.heroGlow} />
         <View style={styles.heroTop}>
-          <CozbilRobot size={56} animate variant="onDark" testID="paywall-robot" />
+          <CozbilRobot size={56} animate tone="onDark" testID="paywall-robot" />
           <View style={styles.heroTitles}>
             <Eyebrow tone="orange">{TR_EYEBROW.premium}</Eyebrow>
             <Text style={styles.brand} testID="paywall-brand">

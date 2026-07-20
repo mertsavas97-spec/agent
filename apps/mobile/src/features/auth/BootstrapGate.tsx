@@ -145,7 +145,7 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   if (state.status === 'loading') {
     return (
       <View style={styles.center} testID="bootstrap-loading">
-        <CozbilRobot size={72} animate variant="onLight" testID="bootstrap-robot" />
+        <CozbilRobot size={72} animate tone="onLight" testID="bootstrap-robot" />
         <Text style={styles.hint}>Hazırlanıyor…</Text>
       </View>
     );

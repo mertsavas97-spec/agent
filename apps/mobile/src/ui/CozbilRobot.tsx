@@ -3,44 +3,61 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { colors } from '@/src/theme';
 
+export type CozbilRobotTone = 'onDark' | 'onLight';
+
 export type CozbilRobotProps = {
-  /** Soft scale breathe — loading screens. */
+  /** Soft breathe + blink. Default true (Premium-style presence). */
   animate?: boolean;
   size?: number;
-  /** onDark = white head (navy loading). onLight = navy head (surface). */
-  variant?: 'onDark' | 'onLight';
+  /**
+   * Only swaps fill colors for contrast — silhouette stays identical.
+   * onDark → white head (navy / Premium / loading)
+   * onLight → navy head (surface / Ana Sayfa)
+   */
+  tone?: CozbilRobotTone;
+  /** @deprecated use `tone` */
+  variant?: CozbilRobotTone;
   testID?: string;
 };
 
 /**
- * Moodboard maskot: yuvarlak robot kafa, turuncu anten, gülümseyen ağız.
- * Sıcak AI arkadaşı — abartılı çocuk çizgi film değil.
+ * Tek tip ÇözBil maskot: yuvarlak kafa, turuncu anten, gülümseme.
+ * Tasarım sabit; yalnızca tone ile renkler arka plana uyum sağlar.
  */
 export function CozbilRobot({
   animate = true,
   size = 104,
-  variant = 'onDark',
+  tone,
+  variant,
   testID = 'cozbil-robot',
 }: CozbilRobotProps) {
+  const resolvedTone: CozbilRobotTone = tone ?? variant ?? 'onDark';
   const pulse = useRef(new Animated.Value(1)).current;
   const bounce = useRef(new Animated.Value(0)).current;
   const blink = useRef(new Animated.Value(1)).current;
-  const headBg = variant === 'onLight' ? colors.navy : colors.white;
-  const eyeBg = variant === 'onLight' ? colors.white : colors.navy;
+
+  // Single palette swap — same geometry everywhere
+  const headBg = resolvedTone === 'onLight' ? colors.navy : colors.white;
+  const eyeBg = resolvedTone === 'onLight' ? colors.white : colors.navy;
+  const accent = colors.orange;
+
+  // Motion intensity scales with size so home (40) stays subtle
+  const bouncePx = Math.max(2, Math.round(size * 0.055));
+  const pulseTo = size < 56 ? 1.03 : 1.05;
 
   useEffect(() => {
     if (!animate) return;
     const breathe = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 1.05,
-          duration: 1100,
+          toValue: pulseTo,
+          duration: 1200,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 1100,
+          duration: 1200,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -49,14 +66,14 @@ export function CozbilRobot({
     const hop = Animated.loop(
       Animated.sequence([
         Animated.timing(bounce, {
-          toValue: -6,
-          duration: 700,
+          toValue: -bouncePx,
+          duration: 750,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(bounce, {
           toValue: 0,
-          duration: 700,
+          duration: 750,
           easing: Easing.in(Easing.quad),
           useNativeDriver: true,
         }),
@@ -64,10 +81,10 @@ export function CozbilRobot({
     );
     const wink = Animated.loop(
       Animated.sequence([
-        Animated.delay(2400),
-        Animated.timing(blink, { toValue: 0.15, duration: 90, useNativeDriver: true }),
-        Animated.timing(blink, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.delay(1800),
+        Animated.delay(2600),
+        Animated.timing(blink, { toValue: 0.12, duration: 90, useNativeDriver: true }),
+        Animated.timing(blink, { toValue: 1, duration: 130, useNativeDriver: true }),
+        Animated.delay(2000),
       ]),
     );
     breathe.start();
@@ -78,12 +95,22 @@ export function CozbilRobot({
       hop.stop();
       wink.stop();
     };
-  }, [animate, blink, bounce, pulse]);
+  }, [animate, blink, bounce, bouncePx, pulse, pulseTo]);
 
-  const eye = Math.max(10, Math.round(size * 0.13));
-  const eyeGap = Math.round(size * 0.17);
+  // All facial metrics proportional to size (one silhouette)
   const antennaH = Math.round(size * 0.18);
-  const antennaBall = Math.max(8, Math.round(size * 0.1));
+  const antennaBall = Math.max(6, Math.round(size * 0.1));
+  const antennaStemW = Math.max(2, Math.round(size * 0.03));
+  const eye = Math.max(6, Math.round(size * 0.13));
+  const eyeGap = Math.round(size * 0.17);
+  const smileW = size * 0.34;
+  const smileH = size * 0.2;
+  const smileBorder = Math.max(2, size * 0.034);
+  const cheekW = Math.max(5, Math.round(size * 0.1));
+  const cheekH = Math.max(3, Math.round(size * 0.06));
+  const cheekInset = Math.round(size * 0.14);
+  const cheekTop = size * 0.52;
+  const radius = size * 0.28;
 
   return (
     <Animated.View
@@ -99,7 +126,17 @@ export function CozbilRobot({
             : undefined,
         },
       ]}>
-      <View style={[styles.antennaStem, { height: antennaH - antennaBall / 2 }]} />
+      <View
+        style={[
+          styles.antennaStem,
+          {
+            height: antennaH - antennaBall / 2,
+            width: antennaStemW,
+            top: Math.round(size * 0.1),
+            backgroundColor: accent,
+          },
+        ]}
+      />
       <View
         style={[
           styles.antennaBall,
@@ -108,6 +145,7 @@ export function CozbilRobot({
             height: antennaBall,
             borderRadius: antennaBall / 2,
             top: 0,
+            backgroundColor: accent,
           },
         ]}
       />
@@ -117,7 +155,7 @@ export function CozbilRobot({
           {
             width: size,
             height: size,
-            borderRadius: size * 0.28,
+            borderRadius: radius,
             marginTop: antennaH - 4,
             backgroundColor: headBg,
           },
@@ -148,21 +186,47 @@ export function CozbilRobot({
             ]}
           />
         </View>
-        <View style={styles.smileWrap}>
+        <View style={[styles.smileWrap, { height: smileH }]}>
           <View
             style={[
               styles.smile,
               {
-                width: size * 0.34,
-                height: size * 0.2,
-                borderBottomLeftRadius: size * 0.2,
-                borderBottomRightRadius: size * 0.2,
+                width: smileW,
+                height: smileH,
+                borderBottomLeftRadius: smileH,
+                borderBottomRightRadius: smileH,
+                borderWidth: smileBorder,
+                borderColor: accent,
               },
             ]}
           />
         </View>
-        <View style={[styles.cheek, styles.cheekL, { top: size * 0.52 }]} />
-        <View style={[styles.cheek, styles.cheekR, { top: size * 0.52 }]} />
+        <View
+          style={[
+            styles.cheek,
+            {
+              width: cheekW,
+              height: cheekH,
+              borderRadius: cheekH / 2,
+              top: cheekTop,
+              left: cheekInset,
+              backgroundColor: 'rgba(245, 158, 11, 0.35)',
+            },
+          ]}
+        />
+        <View
+          style={[
+            styles.cheek,
+            {
+              width: cheekW,
+              height: cheekH,
+              borderRadius: cheekH / 2,
+              top: cheekTop,
+              right: cheekInset,
+              backgroundColor: 'rgba(245, 158, 11, 0.35)',
+            },
+          ]}
+        />
       </View>
     </Animated.View>
   );
@@ -171,18 +235,13 @@ export function CozbilRobot({
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-    marginBottom: 8,
   },
   antennaStem: {
     position: 'absolute',
-    top: 10,
-    width: 3,
-    backgroundColor: colors.orange,
     zIndex: 1,
   },
   antennaBall: {
     position: 'absolute',
-    backgroundColor: colors.orange,
     zIndex: 2,
   },
   head: {
@@ -198,21 +257,12 @@ const styles = StyleSheet.create({
   smileWrap: {
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: 18,
   },
   smile: {
-    borderWidth: 3.5,
-    borderColor: colors.orange,
     borderTopWidth: 0,
     backgroundColor: 'transparent',
   },
   cheek: {
     position: 'absolute',
-    width: 10,
-    height: 6,
-    borderRadius: 5,
-    backgroundColor: 'rgba(245, 158, 11, 0.35)',
   },
-  cheekL: { left: 14 },
-  cheekR: { right: 14 },
 });

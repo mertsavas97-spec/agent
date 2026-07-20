@@ -218,8 +218,8 @@ export default function HomeScreen() {
           <View style={styles.brandRow}>
             <CozbilRobot
               size={40}
-              animate={false}
-              variant="onLight"
+              animate
+              tone="onLight"
               testID="home-brand-robot"
             />
             <Text style={styles.brand}>{brand.name}</Text>
