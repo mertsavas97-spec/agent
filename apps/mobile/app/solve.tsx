@@ -16,6 +16,7 @@ import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
 import { uriToBase64 } from '@/src/features/solve/imageBase64';
+import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import {
@@ -128,10 +129,16 @@ export default function SolveFlowScreen() {
         }
 
         if (response.status === 'solved') {
-          const solved = response as SolvedWithClassification;
-          const examForSubject = shouldConfirmExamMismatch(solved.examHint, resolvedExam)
-            ? solved.examHint?.suggested ?? resolvedExam
+          const examForSubject = shouldConfirmExamMismatch(
+            response.examHint,
+            resolvedExam,
+          )
+            ? response.examHint?.suggested ?? resolvedExam
             : resolvedExam;
+          const solved = normalizeSolvedBranch(
+            response,
+            examForSubject,
+          ) as SolvedWithClassification;
           const suggested =
             solved.subject !== 'unknown' &&
             subjectsForExam(examForSubject).includes(

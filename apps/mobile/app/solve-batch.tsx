@@ -19,6 +19,7 @@ import {
 } from '@/src/features/solve/multiBatchStore';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
+import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
 import { shouldConfirmExamMismatch } from '@/src/features/solve/subjectClassification';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -207,21 +208,22 @@ export default function SolveBatchScreen() {
 
             if (response.status === 'solved') {
               const slotExam = examFromSolved(response, examForSolve);
+              const normalized = normalizeSolvedBranch(response, slotExam);
               patchSlot(slot.id, {
                 status: 'ready',
-                result: response,
+                result: normalized,
                 examType: slotExam,
               });
               void recordLocalAttempt({
-                attemptId: response.attemptId,
-                solutionId: response.solutionId,
+                attemptId: normalized.attemptId,
+                solutionId: normalized.solutionId,
                 examType: slotExam,
-                subject: response.subject,
-                topicId: response.topicId,
+                subject: normalized.subject,
+                topicId: normalized.topicId,
                 imageUri: img.uri,
-                steps: response.steps,
-                answer: response.answer ?? null,
-                transparencyNote: response.transparencyNote,
+                steps: normalized.steps,
+                answer: normalized.answer ?? null,
+                transparencyNote: normalized.transparencyNote,
               }).catch((err) => console.warn('local history save failed', err));
               ready += 1;
               setStatusLine(`${ready}/${initial.length} hazır`);

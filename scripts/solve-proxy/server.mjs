@@ -181,18 +181,29 @@ const server = http.createServer(async (req, res) => {
     if (classified.subject !== 'math') {
       const verbal = tryVerbalSolve(ocrText, classified);
       if (verbal?.steps?.length) {
+        // Solver may override branş (e.g. şaft → vehicle) for konu anlatımı / meta
+        const subject = verbal.subject || classified.subject;
+        const topicKey = verbal.topicKey || classified.topicKey;
+        const resolvedTopicId = topicIdFor(solveExam, subject, topicKey);
+        const classification = {
+          ...classified,
+          subject,
+          topicKey,
+          confidence: verbal.subject ? 'high' : classified.confidence,
+          needsConfirm: verbal.subject ? false : classified.needsConfirm,
+        };
         send(
           res,
           200,
           solvedPayload({
             requestId,
-            topicId,
-            subject: classified.subject,
+            topicId: resolvedTopicId,
+            subject,
             steps: verbal.steps,
             ocrText,
             note:
               'Metinden okunarak çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
-            classification: classified,
+            classification,
             answer: verbal.answerText
               ? { text: verbal.answerText, label: verbal.answerLabel }
               : undefined,

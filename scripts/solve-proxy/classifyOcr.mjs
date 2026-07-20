@@ -22,7 +22,7 @@ const CIVICS_STEM = /anayasa|tbmm|vatandaş|temel hak|seçim|cumhurbaşkan/i;
 const TRAFFIC_STEM =
   /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|işaret|dur işareti|yol çizgi|yerleşim yeri|ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı ışık|yeşil ışık|geçiş üstün|emniyet şeridi|sollama|park yasağı|kırmızı\s*[x×]|şerit kontrol|yeşil ok|çarpı işaret/i;
 const VEHICLE_STEM =
-  /abs|esp|fren|süspansiyon|motor|debriyaj|şanzıman|akü|far|silecek|emniyet kemeri|hava yastığı/i;
+  /abs|esp|fren|süspansiyon|motor|debriyaj|şanzıman|akü|far|silecek|emniyet kemeri|hava yastığı|şaft|diferansiyel|güç aktarma|\baks\b|aktarma organ/i;
 const FIRSTAID_STEM =
   /ilk yardım|kanama|şok|kırık|yanık|bilinç|abc|solunum|kalp masajı|kazazede/i;
 
@@ -205,6 +205,16 @@ export function classifyOcr(ocrText, examType = 'lgs') {
       confidence = 'high';
       score = Math.max(score, 8);
     }
+  }
+
+  // Güç aktarma organları — trafik kelimesi olsa bile araç tekniği
+  if (
+    allowed.has('vehicle') &&
+    /şaft|diferansiyel|güç aktarma|aktarma organ/i.test(t)
+  ) {
+    subject = 'vehicle';
+    confidence = 'high';
+    score = Math.max(score, 9);
   }
 
   const needsConfirm = confidence !== 'high';

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -72,6 +72,13 @@ export function SolutionScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('steps');
+
+  // Multi-batch tab switch / new solution → reset inner tabs & follow-up
+  useEffect(() => {
+    setTab('steps');
+    setFollowUp(null);
+    setError(null);
+  }, [solutionId, topicId, imageUri]);
 
   const answer = useMemo(
     () => resolveSolutionAnswer(answerProp, steps),
@@ -208,9 +215,34 @@ export function SolutionScreen({
       {tab === 'lesson' ? (
         <>
           <Text style={styles.tabLead} testID="lesson-lead">
-            {topicName ? topicName : 'Bu konuyu hatırla'}
+            {topicName
+              ? topicName
+              : subject && subject !== 'unknown'
+                ? subjectLabel(subject)
+                : 'Bu konuyu hatırla'}
           </Text>
-          <View style={styles.lessonCard} testID="topic-lesson">
+          <View
+            style={[
+              styles.lessonCard,
+              examTheme ? { borderColor: examTheme.accent, borderWidth: 1.5 } : null,
+            ]}
+            testID="topic-lesson">
+            {examType || (subject && subject !== 'unknown') ? (
+              <Text
+                style={[
+                  styles.lessonExamChip,
+                  examTheme ? { color: examTheme.solid } : null,
+                ]}
+                testID="lesson-exam-chip">
+                {[
+                  examType ? EXAM_TITLE[examType] : null,
+                  subject && subject !== 'unknown' ? subjectLabel(subject) : null,
+                  topicName,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            ) : null}
             {topicLesson ? (
               <>
                 <Text style={styles.lessonHeadline}>{topicLesson.headline}</Text>
@@ -425,6 +457,15 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  lessonExamChip: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    color: colors.orange,
+    marginBottom: space.sm,
   },
   lessonHeadline: {
     fontFamily: typography.fontFamilySemiBold,
