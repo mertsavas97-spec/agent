@@ -1,8 +1,9 @@
 /**
- * Auth/onboarding gate. Always keeps the Stack mounted after boot —
- * never replace the navigator tree with <Redirect> (expo-router update loop).
+ * Auth/onboarding gate. Keeps the Stack mounted but covers it until the
+ * destination route is ready — avoids a one-frame home flash before onboarding.
  */
 import { usePathname, useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -20,6 +21,10 @@ type GateState =
 
 const BOOT_TIMEOUT_MS = 12_000;
 
+function pathIsOnboarding(pathname: string): boolean {
+  return pathname.includes('onboarding');
+}
+
 export function BootstrapGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -33,10 +38,15 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   const navigatingRef = useRef(false);
   const bootGenRef = useRef(0);
 
+  const onOnboarding = pathIsOnboarding(pathname);
+  /** Cover the stack until we know where to go / until onboarding is on screen. */
+  const blocking =
+    state.status === 'loading' ||
+    (state.status === 'needs_onboarding' && !onOnboarding);
+
   useEffect(() => {
     return subscribeOnboardingGate((event) => {
       if (event.type === 'complete') {
-        // Invalidate any in-flight boot fetch (demo replay race).
         bootGenRef.current += 1;
         if (uid) bootedForUid.current = uid;
         setBootError(null);
@@ -121,32 +131,13 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
     if (state.status === 'loading') return;
     if (navigatingRef.current) return;
 
-    const onOnboarding = pathname.includes('onboarding');
-
     if (state.status === 'needs_onboarding' && !onOnboarding) {
-      let alive = true;
-      void (async () => {
-        try {
-          const status = await fetchOnboardingStatus();
-          if (!alive) return;
-          if (status.done) {
-            if (uid) bootedForUid.current = uid;
-            setState({ status: 'ready' });
-            return;
-          }
-        } catch {
-          /* fall through to onboarding */
-        }
-        if (!alive) return;
-        navigatingRef.current = true;
-        routerRef.current.replace('/onboarding');
-        requestAnimationFrame(() => {
-          navigatingRef.current = false;
-        });
-      })();
-      return () => {
-        alive = false;
-      };
+      navigatingRef.current = true;
+      routerRef.current.replace('/onboarding');
+      requestAnimationFrame(() => {
+        navigatingRef.current = false;
+      });
+      return;
     }
 
     if (state.status === 'ready' && onOnboarding) {
@@ -156,36 +147,41 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
         navigatingRef.current = false;
       });
     }
-  }, [state.status, pathname, uid]);
+  }, [state.status, onOnboarding]);
 
-  if (state.status === 'loading') {
-    return (
-      <View style={styles.center} testID="bootstrap-loading">
-        <CozbilRobot size={72} animate tone="onLight" testID="bootstrap-robot" />
-        <Text style={styles.hint}>Hazırlanıyor…</Text>
-      </View>
-    );
-  }
+  useEffect(() => {
+    if (!blocking) {
+      void SplashScreen.hideAsync();
+    }
+  }, [blocking]);
 
   return (
     <>
-      {bootError ? (
+      {bootError && !blocking ? (
         <View style={styles.banner} pointerEvents="none">
           <Text style={styles.bannerText}>{bootError}</Text>
         </View>
       ) : null}
       {children}
+      {blocking ? (
+        <View style={styles.blocker} testID="bootstrap-loading">
+          <CozbilRobot size={72} animate tone="onLight" testID="bootstrap-robot" />
+          <Text style={styles.hint}>Hazırlanıyor…</Text>
+        </View>
+      ) : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
+  blocker: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
     gap: space.md,
+    zIndex: 100,
+    elevation: 100,
   },
   hint: {
     color: colors.textSecondary,
@@ -198,6 +194,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
+    zIndex: 50,
   },
   bannerText: {
     color: colors.navy,

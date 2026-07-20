@@ -42,11 +42,8 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+  // Splash stays up until BootstrapGate resolves destination (avoids home flash).
+  // Fonts still gate first paint below.
 
   if (!loaded) {
     return null;
