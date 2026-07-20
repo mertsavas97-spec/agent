@@ -60,7 +60,8 @@ export default function CaptureConfirmBatchScreen() {
       </Eyebrow>
       <Text style={styles.title}>Bu fotoğraflarla devam edilsin mi?</Text>
       <Text style={styles.hint}>
-        Her karede soru metni ve şıklar net görünsün. Değilse yeniden seç.
+        Hepsi {EXAM_LABEL[examType]} sorusu olmalı. Farklı bir sınav (ör. Ehliyet) karışırsa
+        sistem uyarır. Her karede soru metni ve şıklar net görünsün.
       </Text>
 
       <ScrollView

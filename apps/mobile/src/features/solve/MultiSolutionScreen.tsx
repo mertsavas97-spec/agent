@@ -17,10 +17,12 @@ export type MultiSolveSlot = {
   id: string;
   status: MultiSlotStatus;
   imageUri: string;
-  /** Per-question exam package (may differ from profile after OCR hint). */
+  /** Always the active profile exam in multi-batch (no cross-mode solve). */
   examType?: ExamType;
   result?: SolveQuestionResponse;
   errorMessage?: string;
+  /** When set, slot failed because photo belongs to another exam package. */
+  errorKind?: 'exam_mismatch' | 'generic';
 };
 
 export type MultiSolutionScreenProps = {
@@ -37,7 +39,9 @@ function slotExam(slot: MultiSolveSlot, fallback: ExamType): ExamType {
 }
 
 function slotCaption(slot: MultiSolveSlot, fallback: ExamType): string {
-  if (slot.status === 'error') return 'Hata';
+  if (slot.status === 'error') {
+    return slot.errorKind === 'exam_mismatch' ? 'Uymuyor' : 'Hata';
+  }
   if (slot.status === 'solving') return '…';
   if (slot.status === 'pending') return 'Sırada';
   const exam = EXAM_LABEL[slotExam(slot, fallback)];
@@ -138,7 +142,11 @@ export function MultiSolutionScreen({
         </View>
       ) : active.status === 'error' ? (
         <View style={styles.center} testID="multi-slot-error" key={active.id}>
-          <Text style={styles.errorTitle}>Bu soru çözülemedi</Text>
+          <Text style={styles.errorTitle}>
+            {active.errorKind === 'exam_mismatch'
+              ? 'Seçili moda uymuyor'
+              : 'Bu soru çözülemedi'}
+          </Text>
           <Text style={styles.errorBody}>
             {active.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
           </Text>

@@ -98,4 +98,31 @@ describe('MultiSolutionScreen', () => {
     expect(screen.getByTestId('answer-hero')).toHaveTextContent(/Durur/);
     expect(screen.queryByText(/öyküleme/)).toBeNull();
   });
+
+  it('shows exam mismatch warning on wrong-mode slot', () => {
+    render(
+      <MultiSolutionScreen
+        examType="ygs"
+        activeId="q-bad"
+        onChangeActive={jest.fn()}
+        slots={[
+          {
+            id: 'q-bad',
+            status: 'error',
+            imageUri: 'file://ehliyet.jpg',
+            examType: 'ygs',
+            errorKind: 'exam_mismatch',
+            errorMessage:
+              'Bu soru YGS’ye ait değil; Ehliyet sorusu gibi görünüyor. Ayarlar’dan modu değiştir veya bu fotoğrafı çıkar.',
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId('multi-slot-error')).toBeTruthy();
+    expect(screen.getByText('Seçili moda uymuyor')).toBeTruthy();
+    expect(screen.getByText(/YGS/)).toBeTruthy();
+    expect(screen.getByText(/Ehliyet/)).toBeTruthy();
+    expect(screen.getByText('Uymuyor')).toBeTruthy();
+  });
 });

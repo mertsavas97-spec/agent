@@ -20,14 +20,10 @@ import {
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
-import { shouldConfirmExamMismatch } from '@/src/features/solve/subjectClassification';
+import { shouldRejectBatchSlotForExamMode } from '@/src/features/solve/examModeGuard';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
-import type {
-  ExamHintMeta,
-  ExamType,
-  SolveQuestionResponse,
-} from '@/src/lib/api/types';
+import type { ExamType, SolveQuestionResponse } from '@/src/lib/api/types';
 import { colors, space, typography } from '@/src/theme';
 
 /** Sequential — avoids Vision OCR races that leave Q2+ as generic fallback. */
@@ -37,43 +33,6 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   if (result.status !== 'solved') return 0;
   if (result.quota.unlimited) return 0;
   return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
-}
-
-function examHintFromResponse(
-  response: SolveQuestionResponse,
-): ExamHintMeta | undefined {
-  return 'examHint' in response ? response.examHint : undefined;
-}
-
-function responseHasAnswer(response: SolveQuestionResponse): boolean {
-  if (response.status !== 'solved') return false;
-  if (response.answer?.text?.trim()) return true;
-  return response.steps.some((s) =>
-    /^(cevap|sonuç|doğru)/i.test((s.title ?? '').trim()),
-  );
-}
-
-/** Infer package from subject/topic when proxy auto-switched exam. */
-function examFromSolved(
-  response: Extract<SolveQuestionResponse, { status: 'solved' }>,
-  fallback: ExamType,
-): ExamType {
-  if (
-    response.subject === 'traffic' ||
-    response.subject === 'vehicle' ||
-    response.subject === 'firstaid'
-  ) {
-    return 'trafik';
-  }
-  const tid = response.topicId ?? '';
-  if (tid.startsWith('lgs-')) return 'lgs';
-  if (tid.startsWith('ygs-')) return 'ygs';
-  if (tid.startsWith('kpss-')) return 'kpss';
-  if (tid.startsWith('trafik-')) return 'trafik';
-  if (response.examHint?.suggested && !response.examHint.mismatchesProfile) {
-    return response.examHint.suggested;
-  }
-  return fallback;
 }
 
 export default function SolveBatchScreen() {
@@ -161,63 +120,41 @@ export default function SolveBatchScreen() {
           try {
             const img = batch.images[index]!;
             const baseId = `${stamp}-${index}-${Math.random().toString(36).slice(2, 8)}`;
-            let examForSolve: ExamType = resolvedExam;
-            let response = await solveWithExam(img, index, examForSolve, baseId);
+            const response = await solveWithExam(img, index, resolvedExam, baseId);
             if (!response || cancelledRef.current || runId !== runIdRef.current) return;
 
-            // OCR suggests another package → re-solve once with that exam.
-            const hint = examHintFromResponse(response);
-            if (shouldConfirmExamMismatch(hint, examForSolve) && hint?.suggested) {
-              const suggested = hint.suggested;
+            // Stay on selected mode — never auto-switch packages in multi-batch.
+            const modeCheck = shouldRejectBatchSlotForExamMode(resolvedExam, response);
+            if (modeCheck.reject) {
               setStatusLine(
-                `Soru ${index + 1}: ${EXAM_LABEL[suggested]} algılandı, yeniden…`,
+                `Soru ${index + 1}: ${EXAM_LABEL[resolvedExam]}’ye uymuyor`,
               );
-              const again = await solveWithExam(
-                img,
-                index,
-                suggested,
-                `${baseId}-re`,
-              );
-              if (!again || cancelledRef.current || runId !== runIdRef.current) return;
-              response = again;
-              examForSolve = suggested;
-            }
-
-            // Still no answer but OCR named another exam — last chance re-solve.
-            const hint2 = examHintFromResponse(response);
-            if (
-              !responseHasAnswer(response) &&
-              hint2?.suggested &&
-              hint2.suggested !== examForSolve &&
-              (hint2.confidence === 'high' || hint2.confidence === 'medium')
-            ) {
-              const suggested = hint2.suggested;
-              setStatusLine(
-                `Soru ${index + 1}: ${EXAM_LABEL[suggested]} ile tekrar…`,
-              );
-              const again = await solveWithExam(
-                img,
-                index,
-                suggested,
-                `${baseId}-re2`,
-              );
-              if (!again || cancelledRef.current || runId !== runIdRef.current) return;
-              response = again;
-              examForSolve = suggested;
+              patchSlot(slot.id, {
+                status: 'error',
+                errorKind: 'exam_mismatch',
+                errorMessage: modeCheck.message,
+                result: response,
+                examType: resolvedExam,
+              });
+              if (!openedRef.current) {
+                openedRef.current = true;
+                setActiveId(slot.id);
+                setPhase('results');
+              }
+              return;
             }
 
             if (response.status === 'solved') {
-              const slotExam = examFromSolved(response, examForSolve);
-              const normalized = normalizeSolvedBranch(response, slotExam);
+              const normalized = normalizeSolvedBranch(response, resolvedExam);
               patchSlot(slot.id, {
                 status: 'ready',
                 result: normalized,
-                examType: slotExam,
+                examType: resolvedExam,
               });
               void recordLocalAttempt({
                 attemptId: normalized.attemptId,
                 solutionId: normalized.solutionId,
-                examType: slotExam,
+                examType: resolvedExam,
                 subject: normalized.subject,
                 topicId: normalized.topicId,
                 imageUri: img.uri,
@@ -237,7 +174,7 @@ export default function SolveBatchScreen() {
                 status: 'error',
                 errorMessage: response.userMessage,
                 result: response,
-                examType: examForSolve,
+                examType: resolvedExam,
               });
             }
           } catch (err) {
