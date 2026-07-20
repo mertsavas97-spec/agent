@@ -19,6 +19,8 @@ export function buildDefaultUserDoc(input: BootstrapInput): UserDoc {
     examType,
     ageBand: input.ageBand,
     parentalConsentAt: null,
+    consentAcceptedAt: null,
+    onboardingCompletedAt: null,
     streakCount: 0,
     streakLastActiveDate: null,
     dailySolveCount: 0,
@@ -26,6 +28,7 @@ export function buildDefaultUserDoc(input: BootstrapInput): UserDoc {
     subscriptionStatus: 'free',
     invalidImageScore: 0,
     restrictedUntil: null,
+    deleteRequestedAt: null,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };

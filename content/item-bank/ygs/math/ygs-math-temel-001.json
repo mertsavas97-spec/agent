@@ -1,0 +1,37 @@
+{
+  "id": "ygs-math-temel-001",
+  "examType": "ygs",
+  "subject": "math",
+  "topicId": "ygs-math-temel-kavramlar",
+  "difficulty": "easy",
+  "format": "multiple_choice",
+  "stem": "|−7| + |3| işleminin sonucu kaçtır?",
+  "choices": {
+    "A": "−10",
+    "B": "−4",
+    "C": "4",
+    "D": "10",
+    "E": "21"
+  },
+  "answerKey": "D",
+  "explanationSteps": [
+    {
+      "title": "1. Mutlak değer",
+      "body": "|−7| = 7, |3| = 3."
+    },
+    {
+      "title": "2. Topla",
+      "body": "7 + 3 = 10. Cevap D."
+    }
+  ],
+  "styleRefNote": "YGS mutlak değer; özgün",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

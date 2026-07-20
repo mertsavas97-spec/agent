@@ -3,8 +3,11 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.7",
+    "expo-blob": "^57.0.1",
     "expo-constants": "~57.0.6",
+    "expo-dev-client": "~57.0.7",
     "expo-font": "~57.0.1",
     "expo-image-picker": "~57.0.5",
     "expo-linking": "~57.0.3",
@@ -24,6 +27,7 @@
     "react-native-worklets": "0.10.0"
   },
   "devDependencies": {
+    "@expo/ngrok": "^4.1.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
@@ -33,9 +37,13 @@
     "typescript": "~5.9.2"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "start": "expo start --dev-client",
+    "start:tunnel": "expo start --dev-client --tunnel",
+    "android": "expo run:android --device",
+    "ios": "expo run:ios --device",
+    "android:emu": "expo run:android",
+    "ios:sim": "expo run:ios",
+    "prebuild": "expo prebuild",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'lint: eslint not configured yet (Phase 1)'",

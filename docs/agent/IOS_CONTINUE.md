@@ -6,32 +6,28 @@ Sohbet geçmişi telefona taşınmaz. **Kaynak gerçek: GitHub repo.**
 
 1. Cursor iOS → aynı hesap  
 2. **Cloud Agents** / repo: `mertsavas97-spec/agent`  
-3. Branch: **`main`** (kit + ÇözBil spec burada)
+3. Branch: açık PR veya `main`
 
-PR (arşiv): https://github.com/mertsavas97-spec/agent/pull/2
+## 2) Durum
 
-## 2) İlk mesaj (kopyala)
+US1–US5 tamam. **Google Cloud kurulumu bekleniyor** (owner).  
+Rehber: `docs/setup/GOOGLE_CLOUD_SETUP.md`
+
+## 3) İlk mesaj (kurulum bitince)
 
 ```
-@koordinatör devam — iOS handoff
+@koordinatör devam — GCP hazır
 
-Oku: SPRINT_STATE.md, PROJECT_BRIEF.md, docs/agent/COORDINATOR.md, docs/agent/TEAM_ROSTER.md
+Oku: SPRINT_STATE.md, docs/setup/GOOGLE_CLOUD_SETUP.md
 
-Mod: Koordinatör. Skill map: cozbil-team-skills. QA Gate zorunlu.
-Exam: LGS+YGS+KPSS. Moodboard: docs/design/moodboard/
+Project ID: <...>
+Region: <...>
+aiMode live doğrulandı.
 
-Aktif hedef: specs/002-cozbil-mvp/tasks.md US2 — Anlamadım tekrar açıkla (T025+).
-
-İlk iş: SPRINT_STATE oku, US1’in main’de olduğunu doğrula, US2’ye başla.
+Sonraki: US6 paywall (T047+). QA Gate zorunlu.
 ```
-
-## 3) Sonraki iş sırası
-
-1. ~~Phase 1–2~~  
-2. ~~US1 fotoğrafla çöz~~  
-3. US2 explainAgain · US3 onboarding  
 
 ## 4) Dokunma
 
-- Secrets: `.cursor/mcp.json` (Context7) — iOS Cloud Agent ortamına ayrı eklenmeli  
+- Chat’e API key yapıştırma  
 - Force push / store submit yok  

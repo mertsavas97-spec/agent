@@ -1,23 +1,74 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, waitFor } from '@testing-library/react-native';
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
-}));
+jest.mock('expo-router', () => {
+  const React = require('react');
+  return {
+    useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+    useFocusEffect: (cb: () => void | (() => void)) => {
+      React.useEffect(() => {
+        const cleanup = cb();
+        return typeof cleanup === 'function' ? cleanup : undefined;
+      }, [cb]);
+    },
+  };
+});
 
 jest.mock('@/src/features/solve/image', () => ({
   pickFromCamera: jest.fn(),
   pickFromLibrary: jest.fn(),
 }));
 
+jest.mock('@/src/lib/api/progressClient', () => ({
+  fetchProgressSummary: jest.fn().mockResolvedValue({
+    streakCount: 0,
+    weakestTopic: null,
+    topics: [],
+    weekly: [],
+  }),
+  fetchAttempts: jest.fn().mockResolvedValue({ items: [], nextCursor: null }),
+}));
+
+jest.mock('@/src/lib/auth', () => ({
+  ensureSignedIn: jest.fn().mockResolvedValue({ uid: 'test-user' }),
+}));
+
+jest.mock('@/src/lib/firebase', () => ({
+  getFirebase: () => ({ db: {} }),
+}));
+
+jest.mock('firebase/firestore', () => ({
+  doc: jest.fn(),
+  getDoc: jest.fn().mockResolvedValue({
+    exists: () => true,
+    data: () => ({ examType: 'ygs' }),
+  }),
+}));
+
+jest.mock('@/src/features/exam/updateExamClient', () => ({
+  callUpdateExamType: jest.fn().mockResolvedValue('ygs'),
+}));
+
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('renders brand and capture CTA', () => {
+  it('renders clear photo CTAs, exam switcher, and topics entry', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
+    expect(screen.getByText('Aktif sınav modu')).toBeTruthy();
+    expect(screen.getByText(/sorunun fotoğrafını çek/i)).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toBeTruthy();
-    expect(screen.getByText('LGS · YGS · KPSS')).toBeTruthy();
+    expect(screen.getByText('Soru fotoğrafı çek')).toBeTruthy();
+    expect(screen.getByTestId('gallery-cta')).toBeTruthy();
+    expect(screen.getByText('Galeriden soru seç')).toBeTruthy();
+    expect(screen.getByTestId('home-topics-link')).toBeTruthy();
+    expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('exam-mode-chip')).toHaveTextContent('MOD: YGS');
+      expect(screen.getByTestId('home-streak')).toHaveTextContent(/MOD: YGS/);
+      expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri 0 gün/);
+      expect(screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected).toBe(true);
+    });
   });
 });
