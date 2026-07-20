@@ -36,7 +36,10 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
     reason = 'ocr_keyword_lgs';
   } else if (
     /\b(?:ehliyet|MTS|trafik levha|azami hız|geçiş üstünlüğü)\b/i.test(t) ||
-    /\bilk\s*yardım\b/i.test(t)
+    /\bilk\s*yardım\b/i.test(t) ||
+    /ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı (?:ile )?sarı|yeşil ışık yan/i.test(
+      t,
+    )
   ) {
     suggested = 'trafik';
     confidence = 'high';

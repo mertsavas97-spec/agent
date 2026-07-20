@@ -1,9 +1,9 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
 
 import { ADS_LIMITS, runInterstitialIfNeeded } from '@/src/features/ads';
+import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import {
@@ -18,7 +18,6 @@ import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
 import type { ExamType, SolveQuestionResponse } from '@/src/lib/api/types';
-import { getFirebase } from '@/src/lib/firebase';
 import { colors, space, typography } from '@/src/theme';
 
 const SOLVE_CONCURRENCY = 2;
@@ -61,17 +60,10 @@ export default function SolveBatchScreen() {
     void (async () => {
       try {
         const user = await ensureSignedIn();
-        let resolvedExam: ExamType = 'lgs';
-        try {
-          const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
-          const et = snap.data()?.examType;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') {
-            resolvedExam = et;
-            setExamType(et);
-          }
-        } catch {
-          /* optional */
-        }
+        const { examType: resolvedExam } = await resolveActiveExamType(
+          batch.examType ?? null,
+        );
+        setExamType(resolvedExam);
 
         const subjectHint = batch.subjectHint;
         let cursor = 0;

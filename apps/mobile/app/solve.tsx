@@ -1,9 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
 
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
+import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
@@ -30,7 +30,6 @@ import { findTopic, isKnownSubject, subjectsForExam } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { ensureSignedIn } from '@/src/lib/auth';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
-import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space, typography } from '@/src/theme';
 
@@ -55,6 +54,7 @@ export default function SolveFlowScreen() {
     mimeType?: string;
     source?: string;
     subjectHint?: string;
+    examType?: string;
   }>();
   const [phase, setPhase] = useState<Phase>('analyzing');
   const [analyzeStep, setAnalyzeStep] = useState<AnalyzeStepId>('upload');
@@ -80,18 +80,12 @@ export default function SolveFlowScreen() {
       try {
         setAnalyzeStep('upload');
         const user = await ensureSignedIn();
-        let resolvedExam: ExamType = 'lgs';
-        try {
-          const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
-          const et = snap.data()?.examType;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') {
-            resolvedExam = et;
-            setExamType(et);
-            setProfileExam(et);
-          }
-        } catch {
-          /* optional */
-        }
+        const resolved = await resolveActiveExamType(
+          typeof params.examType === 'string' ? params.examType : null,
+        );
+        const resolvedExam = resolved.examType;
+        setExamType(resolvedExam);
+        setProfileExam(resolvedExam);
         const localId = `${Date.now()}`;
         const hintRaw = typeof params.subjectHint === 'string' ? params.subjectHint : '';
         const subjectHint: Exclude<Subject, 'unknown'> | undefined =
@@ -178,7 +172,7 @@ export default function SolveFlowScreen() {
     return () => {
       cancelled = true;
     };
-  }, [params.uri, params.mimeType, params.subjectHint]);
+  }, [params.uri, params.mimeType, params.subjectHint, params.examType]);
 
   useEffect(() => {
     if (phase !== 'result' || !result || result.status !== 'solved') return;

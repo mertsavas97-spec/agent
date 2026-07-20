@@ -20,7 +20,7 @@ const GEO_STEM = /coğrafya|iklim|nüfus|akarsu|dağ|ova|bölge|maden|tarım/i;
 const CIVICS_STEM = /anayasa|tbmm|vatandaş|temel hak|seçim|cumhurbaşkan/i;
 
 const TRAFFIC_STEM =
-  /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|işaret|dur işareti|yol çizgi|yerleşim yeri/i;
+  /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|işaret|dur işareti|yol çizgi|yerleşim yeri|ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı ışık|yeşil ışık|geçiş üstün|emniyet şeridi|sollama|park yasağı/i;
 const VEHICLE_STEM =
   /abs|esp|fren|süspansiyon|motor|debriyaj|şanzıman|akü|far|silecek|emniyet kemeri|hava yastığı/i;
 const FIRSTAID_STEM =
@@ -43,12 +43,13 @@ function topicKeyFor(subject, t) {
     return 'temel';
   }
   if (subject === 'traffic') {
-    if (/hız|mesafe/.test(lower)) return 'hiz-mesafe';
-    if (/kavşak|geçiş/.test(lower)) return 'kavsak';
+    if (/hız|mesafe|takip/.test(lower)) return 'hiz-mesafe';
+    if (/kavşak|geçiş üstün/.test(lower)) return 'kavsak';
+    if (/ışık|ışıklı|sarı|kırmızı|yeşil|sinyal/.test(lower)) return 'kurallar';
     if (/uyarı/.test(lower)) return 'isaretler-uyari';
-    if (/yasak/.test(lower)) return 'isaretler-yasak';
+    if (/yasak|park yasağı|sollama yasağı/.test(lower)) return 'isaretler-yasak';
     if (/bilgi|çizgi/.test(lower)) return 'isaretler-bilgi';
-    if (/çevre/.test(lower)) return 'cevre';
+    if (/çevre|emisyon|gürültü/.test(lower)) return 'cevre';
     return 'kurallar';
   }
   if (subject === 'vehicle') {

@@ -138,6 +138,7 @@ export default function HomeScreen() {
         uri: picked.uri,
         mimeType: picked.mimeType ?? 'image/jpeg',
         source,
+        examType: examType!,
         ...(subjectHint ? { subjectHint } : {}),
       },
     });
@@ -182,12 +183,17 @@ export default function HomeScreen() {
                   uri: picked[0]!.uri,
                   mimeType: picked[0]!.mimeType ?? 'image/jpeg',
                   source: 'library',
+                  examType: examType!,
                   ...(subjectHint ? { subjectHint } : {}),
                 },
               });
               return;
             }
-            setPendingMultiBatch({ images: picked, subjectHint });
+            setPendingMultiBatch({
+              images: picked,
+              subjectHint,
+              examType: examType ?? undefined,
+            });
             router.push('/solve-batch');
           })();
         },

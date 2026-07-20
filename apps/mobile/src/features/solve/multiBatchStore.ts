@@ -1,4 +1,4 @@
-import type { Subject } from '@/src/lib/api/types';
+import type { ExamType, Subject } from '@/src/lib/api/types';
 
 import type { PickedImage } from './image';
 import { MULTI_BATCH_MAX } from './multiBatchPolicy';
@@ -6,6 +6,7 @@ import { MULTI_BATCH_MAX } from './multiBatchPolicy';
 export type MultiBatchPayload = {
   images: PickedImage[];
   subjectHint?: Exclude<Subject, 'unknown'>;
+  examType?: ExamType;
   createdAt: number;
 };
 
@@ -14,6 +15,7 @@ let pending: MultiBatchPayload | null = null;
 export function setPendingMultiBatch(input: {
   images: PickedImage[];
   subjectHint?: Exclude<Subject, 'unknown'>;
+  examType?: ExamType;
 }): void {
   const images = input.images.slice(0, MULTI_BATCH_MAX);
   if (images.length === 0) {
@@ -23,6 +25,7 @@ export function setPendingMultiBatch(input: {
   pending = {
     images,
     subjectHint: input.subjectHint,
+    examType: input.examType,
     createdAt: Date.now(),
   };
 }
