@@ -174,9 +174,9 @@ export default function HomeScreen() {
               Alert.alert('Seçim yok', SAFETY_MESSAGES.permissionLibrary);
               return;
             }
-            const subjectHint = takePendingSubjectHint() ?? undefined;
             setSubjectHintBanner(null);
             if (picked.length === 1) {
+              const subjectHint = takePendingSubjectHint() ?? undefined;
               router.push({
                 pathname: '/capture-confirm',
                 params: {
@@ -189,9 +189,10 @@ export default function HomeScreen() {
               });
               return;
             }
+            // Multi: clear ders ipucu — her fotoğraf kendi sınav/branşını algılar.
+            takePendingSubjectHint();
             setPendingMultiBatch({
               images: picked,
-              subjectHint,
               examType: examType ?? undefined,
             });
             router.push('/capture-confirm-batch');

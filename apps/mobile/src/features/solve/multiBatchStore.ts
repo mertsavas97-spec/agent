@@ -11,6 +11,8 @@ export type MultiBatchPayload = {
 };
 
 let pending: MultiBatchPayload | null = null;
+/** Survives React Strict Mode remount so workers are not cancelled mid-flight. */
+let claimed: MultiBatchPayload | null = null;
 
 export function setPendingMultiBatch(input: {
   images: PickedImage[];
@@ -28,23 +30,37 @@ export function setPendingMultiBatch(input: {
     examType: input.examType,
     createdAt: Date.now(),
   };
+  claimed = null;
 }
 
+/**
+ * Claim pending batch for solve-batch. Re-entrant: returns the same claim
+ * if effect remounts before release (React Strict Mode).
+ */
 export function takePendingMultiBatch(): MultiBatchPayload | null {
-  const out = pending;
-  pending = null;
-  return out;
+  if (pending) {
+    claimed = pending;
+    pending = null;
+  }
+  return claimed;
 }
 
 export function peekPendingMultiBatch(): MultiBatchPayload | null {
-  return pending;
+  return pending ?? claimed;
 }
 
 export function clearPendingMultiBatch(): void {
   pending = null;
+  claimed = null;
+}
+
+/** Call when batch solve screen finishes or unmounts after completion. */
+export function releaseClaimedMultiBatch(): void {
+  claimed = null;
 }
 
 /** Test helper */
 export function __resetMultiBatchStoreForTests(): void {
   pending = null;
+  claimed = null;
 }

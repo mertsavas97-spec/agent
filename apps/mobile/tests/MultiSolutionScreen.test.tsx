@@ -1,11 +1,50 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
 }));
 
 import { MultiSolutionScreen } from '@/src/features/solve/MultiSolutionScreen';
+
+const slotsReady = [
+  {
+    id: 'q1',
+    status: 'ready' as const,
+    imageUri: 'file://a.jpg',
+    examType: 'kpss' as const,
+    result: {
+      attemptId: 'a1',
+      solutionId: 'proxy-sol-1',
+      status: 'solved' as const,
+      cached: false,
+      topicId: 'kpss-turkish-paragraf',
+      subject: 'turkish' as const,
+      steps: [{ title: '1', body: 'birinci' }],
+      answer: { text: 'öyküleme', label: 'A' },
+      transparencyNote: 'ok',
+      quota: { remainingToday: 5, unlimited: false },
+    },
+  },
+  {
+    id: 'q2',
+    status: 'ready' as const,
+    imageUri: 'file://b.jpg',
+    examType: 'trafik' as const,
+    result: {
+      attemptId: 'a2',
+      solutionId: 'proxy-sol-2',
+      status: 'solved' as const,
+      cached: false,
+      topicId: 'trafik-traffic-kurallar',
+      subject: 'traffic' as const,
+      steps: [{ title: '1', body: 'ikinci' }],
+      answer: { text: 'Durur', label: 'C' },
+      transparencyNote: 'ok',
+      quota: { remainingToday: 4, unlimited: false },
+    },
+  },
+];
 
 describe('MultiSolutionScreen', () => {
   it('switches question tabs without stacking bodies', () => {
@@ -16,24 +55,7 @@ describe('MultiSolutionScreen', () => {
         activeId="q1"
         onChangeActive={onChange}
         slots={[
-          {
-            id: 'q1',
-            status: 'ready',
-            imageUri: 'file://a.jpg',
-            examType: 'kpss',
-            result: {
-              attemptId: 'a1',
-              solutionId: 'proxy-sol-1',
-              status: 'solved',
-              cached: false,
-              topicId: 'kpss-turkish-paragraf',
-              subject: 'turkish',
-              steps: [{ title: '1', body: 'birinci' }],
-              answer: { text: 'öyküleme' },
-              transparencyNote: 'ok',
-              quota: { remainingToday: 5, unlimited: false },
-            },
-          },
+          slotsReady[0]!,
           {
             id: 'q2',
             status: 'solving',
@@ -49,104 +71,33 @@ describe('MultiSolutionScreen', () => {
     expect(onChange).toHaveBeenCalledWith('q2');
   });
 
-  it('shows per-question exam caption and remounts answer when active changes', () => {
+  it('shows per-question exam/subject caption and swaps active answer pane', () => {
     const { rerender } = render(
       <MultiSolutionScreen
         examType="kpss"
         activeId="q1"
         onChangeActive={jest.fn()}
-        slots={[
-          {
-            id: 'q1',
-            status: 'ready',
-            imageUri: 'file://a.jpg',
-            examType: 'kpss',
-            result: {
-              attemptId: 'a1',
-              solutionId: 'proxy-sol-1',
-              status: 'solved',
-              cached: false,
-              topicId: 'kpss-turkish-paragraf',
-              subject: 'turkish',
-              steps: [{ title: '1', body: 'birinci' }],
-              answer: { text: 'öyküleme', label: 'A' },
-              transparencyNote: 'ok',
-              quota: { remainingToday: 5, unlimited: false },
-            },
-          },
-          {
-            id: 'q2',
-            status: 'ready',
-            imageUri: 'file://b.jpg',
-            examType: 'trafik',
-            result: {
-              attemptId: 'a2',
-              solutionId: 'proxy-sol-2',
-              status: 'solved',
-              cached: false,
-              topicId: 'trafik-traffic-kurallar',
-              subject: 'traffic',
-              steps: [{ title: '1', body: 'ikinci' }],
-              answer: { text: 'Durur', label: 'C' },
-              transparencyNote: 'ok',
-              quota: { remainingToday: 4, unlimited: false },
-            },
-          },
-        ]}
+        slots={slotsReady}
       />,
     );
 
-    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/öyküleme/);
-    expect(screen.getByText('KPSS')).toBeTruthy();
-    expect(screen.getByText('Ehliyet')).toBeTruthy();
+    expect(within(screen.getByTestId('multi-active-ready')).getByTestId('answer-hero')).toHaveTextContent(
+      /öyküleme/,
+    );
+    expect(screen.getByText(/KPSS · Türkçe/)).toBeTruthy();
+    expect(screen.getByText(/Ehliyet · Trafik/)).toBeTruthy();
 
     rerender(
       <MultiSolutionScreen
         examType="kpss"
         activeId="q2"
         onChangeActive={jest.fn()}
-        slots={[
-          {
-            id: 'q1',
-            status: 'ready',
-            imageUri: 'file://a.jpg',
-            examType: 'kpss',
-            result: {
-              attemptId: 'a1',
-              solutionId: 'proxy-sol-1',
-              status: 'solved',
-              cached: false,
-              topicId: 'kpss-turkish-paragraf',
-              subject: 'turkish',
-              steps: [{ title: '1', body: 'birinci' }],
-              answer: { text: 'öyküleme', label: 'A' },
-              transparencyNote: 'ok',
-              quota: { remainingToday: 5, unlimited: false },
-            },
-          },
-          {
-            id: 'q2',
-            status: 'ready',
-            imageUri: 'file://b.jpg',
-            examType: 'trafik',
-            result: {
-              attemptId: 'a2',
-              solutionId: 'proxy-sol-2',
-              status: 'solved',
-              cached: false,
-              topicId: 'trafik-traffic-kurallar',
-              subject: 'traffic',
-              steps: [{ title: '1', body: 'ikinci' }],
-              answer: { text: 'Durur', label: 'C' },
-              transparencyNote: 'ok',
-              quota: { remainingToday: 4, unlimited: false },
-            },
-          },
-        ]}
+        slots={slotsReady}
       />,
     );
 
-    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/Durur/);
-    expect(screen.queryByText(/öyküleme/)).toBeNull();
+    expect(within(screen.getByTestId('multi-active-ready')).getByTestId('answer-hero')).toHaveTextContent(
+      /Durur/,
+    );
   });
 });

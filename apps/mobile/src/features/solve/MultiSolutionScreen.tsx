@@ -1,6 +1,6 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { findTopic } from '@/src/data';
+import { findTopic, subjectLabel } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
@@ -32,9 +32,68 @@ export type MultiSolutionScreenProps = {
   onDone?: () => void;
 };
 
-function slotExamLabel(slot: MultiSolveSlot, fallback: ExamType): string {
-  const exam = slot.examType ?? fallback;
-  return EXAM_LABEL[exam] ?? exam;
+function slotExam(slot: MultiSolveSlot, fallback: ExamType): ExamType {
+  return slot.examType ?? fallback;
+}
+
+function slotCaption(slot: MultiSolveSlot, fallback: ExamType): string {
+  if (slot.status === 'error') return 'Hata';
+  if (slot.status === 'solving') return '…';
+  if (slot.status === 'pending') return 'Sırada';
+  const exam = EXAM_LABEL[slotExam(slot, fallback)];
+  if (slot.result?.status === 'solved' && slot.result.subject !== 'unknown') {
+    return `${exam} · ${subjectLabel(slot.result.subject)}`;
+  }
+  return exam;
+}
+
+function ReadyPane({
+  slot,
+  examType,
+  onExplainAgain,
+  onDone,
+}: {
+  slot: MultiSolveSlot;
+  examType: ExamType;
+  onExplainAgain?: (solutionId: string) => Promise<string>;
+  onDone?: () => void;
+}) {
+  const result = slot.result;
+  if (!result || result.status !== 'solved') return null;
+  const activeExam = slotExam(slot, examType);
+
+  return (
+    <SolutionScreen
+      steps={result.steps}
+      answer={result.answer ?? null}
+      transparencyNote={result.transparencyNote ?? SAFETY_MESSAGES.transparency}
+      imageUri={slot.imageUri}
+      solutionId={isOfflineSolutionId(result.solutionId) ? null : result.solutionId}
+      examType={activeExam}
+      subject={result.subject}
+      topicId={result.topicId}
+      topicName={result.topicId ? findTopic(result.topicId)?.nameTr ?? null : null}
+      topicLesson={lessonForTopic(
+        result.topicId,
+        result.subject && result.subject !== 'unknown'
+          ? {
+              nameTr:
+                (result.topicId ? findTopic(result.topicId)?.nameTr : null) ?? 'Konu',
+              subject: result.subject as Exclude<Subject, 'unknown'>,
+              examType: activeExam,
+            }
+          : undefined,
+      )}
+      onExplainAgain={
+        onExplainAgain &&
+        result.solutionId &&
+        !isOfflineSolutionId(result.solutionId)
+          ? () => onExplainAgain(result.solutionId)
+          : undefined
+      }
+      onDone={onDone}
+    />
+  );
 }
 
 export function MultiSolutionScreen({
@@ -47,24 +106,12 @@ export function MultiSolutionScreen({
 }: MultiSolutionScreenProps) {
   const active = slots.find((s) => s.id === activeId) ?? slots[0];
   const readyCount = slots.filter((s) => s.status === 'ready').length;
-  const activeExam = active?.examType ?? examType;
 
-  const tabItems = slots.map((s, i) => {
-    const examCaption = slotExamLabel(s, examType);
-    const statusCaption =
-      s.status === 'ready'
-        ? examCaption
-        : s.status === 'error'
-          ? 'Hata'
-          : s.status === 'solving'
-            ? '…'
-            : 'Sırada';
-    return {
-      id: s.id,
-      label: `Soru ${i + 1}`,
-      caption: statusCaption,
-    };
-  });
+  const tabItems = slots.map((s, i) => ({
+    id: s.id,
+    label: `Soru ${i + 1}`,
+    caption: slotCaption(s, examType),
+  }));
 
   return (
     <View style={styles.root} testID="multi-solution-screen">
@@ -72,88 +119,67 @@ export function MultiSolutionScreen({
         <Text style={styles.batchMeta} testID="multi-batch-progress">
           {readyCount}/{slots.length} hazır
         </Text>
-        <SegmentedTabs
-          items={tabItems}
-          value={active?.id ?? null}
-          onChange={onChangeActive}
-          testID="multi-question-tabs"
-          itemTestIDPrefix="multi-q"
-          variant="track"
-        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsScroll}>
+          <View style={styles.tabsInner}>
+            <SegmentedTabs
+              items={tabItems}
+              value={active?.id ?? null}
+              onChange={onChangeActive}
+              testID="multi-question-tabs"
+              itemTestIDPrefix="multi-q"
+              variant="track"
+            />
+          </View>
+        </ScrollView>
       </View>
 
-      {!active ? null : active.status === 'ready' &&
-        active.result &&
-        active.result.status === 'solved' ? (
-        <View style={styles.solutionPane} key={active.id}>
-          <SolutionScreen
-            key={active.id}
-            steps={active.result.steps}
-            answer={active.result.answer ?? null}
-            transparencyNote={
-              active.result.transparencyNote ?? SAFETY_MESSAGES.transparency
-            }
-            imageUri={active.imageUri}
-            solutionId={
-              isOfflineSolutionId(active.result.solutionId)
-                ? null
-                : active.result.solutionId
-            }
-            examType={activeExam}
-            subject={active.result.subject}
-            topicId={active.result.topicId}
-            topicName={
-              active.result.topicId
-                ? findTopic(active.result.topicId)?.nameTr ?? null
-                : null
-            }
-            topicLesson={lessonForTopic(
-              active.result.topicId,
-              active.result.subject && active.result.subject !== 'unknown'
-                ? {
-                    nameTr:
-                      (active.result.topicId
-                        ? findTopic(active.result.topicId)?.nameTr
-                        : null) ?? 'Konu',
-                    subject: active.result.subject as Exclude<Subject, 'unknown'>,
-                    examType: activeExam,
-                  }
-                : undefined,
-            )}
-            onExplainAgain={
-              onExplainAgain &&
-              active.result.status === 'solved' &&
-              active.result.solutionId &&
-              !isOfflineSolutionId(active.result.solutionId)
-                ? () => {
-                    const sol = active.result;
-                    if (sol && sol.status === 'solved') {
-                      return onExplainAgain(sol.solutionId);
-                    }
-                    return Promise.resolve('');
-                  }
-                : undefined
-            }
-            onDone={onDone}
-          />
-        </View>
-      ) : active.status === 'error' ? (
-        <View style={styles.center} testID="multi-slot-error" key={active.id}>
-          <Text style={styles.errorTitle}>Bu soru çözülemedi</Text>
-          <Text style={styles.errorBody}>
-            {active.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.center} testID="multi-slot-loading" key={active.id}>
-          <ActivityIndicator color={colors.orange} size="large" />
-          <Text style={styles.loadingTitle}>Bu soru hazırlanıyor</Text>
-          <Text style={styles.loadingBody}>
-            Diğer sekmelerdeki hazır cevaplara geçebilirsin — bu arada arka planda devam
-            ediyoruz.
-          </Text>
-        </View>
-      )}
+      <View style={styles.panes}>
+        {slots.map((slot) => {
+          const isActive = slot.id === (active?.id ?? '');
+          if (slot.status === 'ready' && slot.result?.status === 'solved') {
+            return (
+              <View
+                key={slot.id}
+                style={[styles.pane, isActive ? styles.paneActive : styles.paneHidden]}
+                pointerEvents={isActive ? 'auto' : 'none'}
+                testID={isActive ? 'multi-active-ready' : `multi-ready-${slot.id}`}
+                accessibilityElementsHidden={!isActive}
+                importantForAccessibility={isActive ? 'yes' : 'no-hide-descendants'}>
+                <ReadyPane
+                  slot={slot}
+                  examType={examType}
+                  onExplainAgain={onExplainAgain}
+                  onDone={onDone}
+                />
+              </View>
+            );
+          }
+          if (!isActive) return null;
+          if (slot.status === 'error') {
+            return (
+              <View key={slot.id} style={styles.center} testID="multi-slot-error">
+                <Text style={styles.errorTitle}>Bu soru çözülemedi</Text>
+                <Text style={styles.errorBody}>
+                  {slot.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
+                </Text>
+              </View>
+            );
+          }
+          return (
+            <View key={slot.id} style={styles.center} testID="multi-slot-loading">
+              <ActivityIndicator color={colors.orange} size="large" />
+              <Text style={styles.loadingTitle}>Bu soru hazırlanıyor</Text>
+              <Text style={styles.loadingBody}>
+                Diğer sekmelerdeki hazır cevaplara geçebilirsin — bu arada arka planda
+                devam ediyoruz.
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -172,7 +198,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
   },
-  solutionPane: { flex: 1 },
+  tabsScroll: {
+    flexGrow: 1,
+  },
+  tabsInner: {
+    minWidth: '100%',
+    flexGrow: 1,
+  },
+  panes: {
+    flex: 1,
+    position: 'relative',
+  },
+  pane: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  paneActive: {
+    opacity: 1,
+    zIndex: 2,
+  },
+  paneHidden: {
+    opacity: 0,
+    zIndex: 0,
+  },
   center: {
     flex: 1,
     alignItems: 'center',

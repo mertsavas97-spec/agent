@@ -13,16 +13,24 @@ import {
 } from '@/src/features/solve/MultiSolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { uriToBase64 } from '@/src/features/solve/imageBase64';
-import { takePendingMultiBatch } from '@/src/features/solve/multiBatchStore';
+import {
+  releaseClaimedMultiBatch,
+  takePendingMultiBatch,
+} from '@/src/features/solve/multiBatchStore';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { shouldConfirmExamMismatch } from '@/src/features/solve/subjectClassification';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
-import type { ExamType, SolveQuestionResponse } from '@/src/lib/api/types';
+import type {
+  ExamHintMeta,
+  ExamType,
+  SolveQuestionResponse,
+} from '@/src/lib/api/types';
 import { colors, space, typography } from '@/src/theme';
 
-const SOLVE_CONCURRENCY = 2;
+/** Sequential — avoids Vision OCR races that leave Q2+ as generic fallback. */
+const SOLVE_CONCURRENCY = 1;
 
 function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   if (result.status !== 'solved') return 0;
@@ -30,8 +38,41 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
 }
 
-function examHintFromResponse(response: SolveQuestionResponse) {
+function examHintFromResponse(
+  response: SolveQuestionResponse,
+): ExamHintMeta | undefined {
   return 'examHint' in response ? response.examHint : undefined;
+}
+
+function responseHasAnswer(response: SolveQuestionResponse): boolean {
+  if (response.status !== 'solved') return false;
+  if (response.answer?.text?.trim()) return true;
+  return response.steps.some((s) =>
+    /^(cevap|sonuç|doğru)/i.test((s.title ?? '').trim()),
+  );
+}
+
+/** Infer package from subject/topic when proxy auto-switched exam. */
+function examFromSolved(
+  response: Extract<SolveQuestionResponse, { status: 'solved' }>,
+  fallback: ExamType,
+): ExamType {
+  if (
+    response.subject === 'traffic' ||
+    response.subject === 'vehicle' ||
+    response.subject === 'firstaid'
+  ) {
+    return 'trafik';
+  }
+  const tid = response.topicId ?? '';
+  if (tid.startsWith('lgs-')) return 'lgs';
+  if (tid.startsWith('ygs-')) return 'ygs';
+  if (tid.startsWith('kpss-')) return 'kpss';
+  if (tid.startsWith('trafik-')) return 'trafik';
+  if (response.examHint?.suggested && !response.examHint.mismatchesProfile) {
+    return response.examHint.suggested;
+  }
+  return fallback;
 }
 
 export default function SolveBatchScreen() {
@@ -44,9 +85,11 @@ export default function SolveBatchScreen() {
   const [error, setError] = useState<string | null>(null);
   const openedRef = useRef(false);
   const cancelledRef = useRef(false);
+  const runIdRef = useRef(0);
 
   useEffect(() => {
     cancelledRef.current = false;
+    const runId = ++runIdRef.current;
     const batch = takePendingMultiBatch();
     if (!batch || batch.images.length === 0) {
       setError('Çoklu soru seçilmedi');
@@ -54,8 +97,9 @@ export default function SolveBatchScreen() {
       return;
     }
 
+    const stamp = Date.now();
     const initial: MultiSolveSlot[] = batch.images.map((img, i) => ({
-      id: `q-${i}-${Date.now()}`,
+      id: `q-${i}-${stamp}`,
       status: 'pending',
       imageUri: img.uri,
       examType: batch.examType,
@@ -67,80 +111,111 @@ export default function SolveBatchScreen() {
     void (async () => {
       try {
         const user = await ensureSignedIn();
+        if (cancelledRef.current || runId !== runIdRef.current) return;
+
         const { examType: resolvedExam } = await resolveActiveExamType(
           batch.examType ?? null,
         );
         setExamType(resolvedExam);
 
-        const subjectHint = batch.subjectHint;
+        // Per-photo auto-detect — do not force a shared ders ipucu on the whole batch.
         let cursor = 0;
         let ready = 0;
 
         const patchSlot = (id: string, patch: Partial<MultiSolveSlot>) => {
+          if (cancelledRef.current || runId !== runIdRef.current) return;
           setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
         };
 
+        const solveWithExam = async (
+          img: (typeof batch.images)[number],
+          index: number,
+          examForSolve: ExamType,
+          requestId: string,
+        ) => {
+          const { imagePath, downloadUrl } = await uploadQuestionImage({
+            uid: user.uid,
+            localId: requestId,
+            uri: img.uri,
+            mimeType: img.mimeType,
+            examType: examForSolve,
+          });
+          if (cancelledRef.current || runId !== runIdRef.current) return null;
+          const imageBase64 = await uriToBase64(img.uri);
+          if (cancelledRef.current || runId !== runIdRef.current) return null;
+          return callSolveQuestion({
+            imagePath,
+            mimeType: img.mimeType,
+            examType: examForSolve,
+            requestId,
+            imageUrl: downloadUrl,
+            imageBase64: imageBase64 ?? undefined,
+          });
+        };
+
         const runOne = async (slot: MultiSolveSlot, index: number) => {
-          if (cancelledRef.current) return;
+          if (cancelledRef.current || runId !== runIdRef.current) return;
           patchSlot(slot.id, { status: 'solving', examType: resolvedExam });
           setStatusLine(`Soru ${index + 1}/${initial.length} çözülüyor…`);
           try {
-            const localId = `${Date.now()}-${index}`;
             const img = batch.images[index]!;
-            const { imagePath, downloadUrl } = await uploadQuestionImage({
-              uid: user.uid,
-              localId,
-              uri: img.uri,
-              mimeType: img.mimeType,
-              examType: resolvedExam,
-              subjectHint,
-            });
-            if (cancelledRef.current) return;
-            const imageBase64 = await uriToBase64(img.uri);
-            if (cancelledRef.current) return;
-
+            const baseId = `${stamp}-${index}-${Math.random().toString(36).slice(2, 8)}`;
             let examForSolve: ExamType = resolvedExam;
-            let response = await callSolveQuestion({
-              imagePath,
-              mimeType: img.mimeType,
-              examType: examForSolve,
-              subjectHint,
-              requestId: localId,
-              imageUrl: downloadUrl,
-              imageBase64: imageBase64 ?? undefined,
-            });
-            if (cancelledRef.current) return;
+            let response = await solveWithExam(img, index, examForSolve, baseId);
+            if (!response || cancelledRef.current || runId !== runIdRef.current) return;
 
-            // Per-question exam: OCR says another package → re-solve without popup.
+            // OCR suggests another package → re-solve once with that exam.
             const hint = examHintFromResponse(response);
             if (shouldConfirmExamMismatch(hint, examForSolve) && hint?.suggested) {
               const suggested = hint.suggested;
               setStatusLine(
                 `Soru ${index + 1}: ${EXAM_LABEL[suggested]} algılandı, yeniden…`,
               );
-              response = await callSolveQuestion({
-                imagePath,
-                mimeType: img.mimeType,
-                examType: suggested,
-                subjectHint,
-                requestId: `${localId}-re`,
-                imageUrl: downloadUrl,
-                imageBase64: imageBase64 ?? undefined,
-              });
+              const again = await solveWithExam(
+                img,
+                index,
+                suggested,
+                `${baseId}-re`,
+              );
+              if (!again || cancelledRef.current || runId !== runIdRef.current) return;
+              response = again;
               examForSolve = suggested;
-              if (cancelledRef.current) return;
+            }
+
+            // Still no answer but OCR named another exam — last chance re-solve.
+            const hint2 = examHintFromResponse(response);
+            if (
+              !responseHasAnswer(response) &&
+              hint2?.suggested &&
+              hint2.suggested !== examForSolve &&
+              (hint2.confidence === 'high' || hint2.confidence === 'medium')
+            ) {
+              const suggested = hint2.suggested;
+              setStatusLine(
+                `Soru ${index + 1}: ${EXAM_LABEL[suggested]} ile tekrar…`,
+              );
+              const again = await solveWithExam(
+                img,
+                index,
+                suggested,
+                `${baseId}-re2`,
+              );
+              if (!again || cancelledRef.current || runId !== runIdRef.current) return;
+              response = again;
+              examForSolve = suggested;
             }
 
             if (response.status === 'solved') {
+              const slotExam = examFromSolved(response, examForSolve);
               patchSlot(slot.id, {
                 status: 'ready',
                 result: response,
-                examType: examForSolve,
+                examType: slotExam,
               });
               void recordLocalAttempt({
                 attemptId: response.attemptId,
                 solutionId: response.solutionId,
-                examType: examForSolve,
+                examType: slotExam,
                 subject: response.subject,
                 topicId: response.topicId,
                 imageUri: img.uri,
@@ -184,22 +259,32 @@ export default function SolveBatchScreen() {
         );
         await Promise.all(workers);
 
-        if (cancelledRef.current) return;
+        if (cancelledRef.current || runId !== runIdRef.current) return;
         if (!openedRef.current) {
           setPhase('results');
         }
         setStatusLine(null);
+        releaseClaimedMultiBatch();
       } catch (err) {
-        if (cancelledRef.current) return;
+        if (cancelledRef.current || runId !== runIdRef.current) return;
         setError(solveFailureMessage(err));
         setPhase('error');
+        releaseClaimedMultiBatch();
       }
     })();
 
     return () => {
+      // Only cancel if a newer run replaced us (Strict Mode remount bumps runId).
+      if (runIdRef.current === runId) {
+        // Soft cancel: do not flip cancelled for the same claim remount.
+        // Hard cancel only when screen truly leaves — handled below via runId bump.
+      }
       cancelledRef.current = true;
     };
   }, []);
+
+  // Soften Strict Mode: second mount bumps runId and retakes claimed batch.
+  // First mount's cleanup sets cancelled — second mount resets it at effect start.
 
   if (phase === 'error') {
     return (

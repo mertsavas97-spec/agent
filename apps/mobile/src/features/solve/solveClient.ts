@@ -95,6 +95,8 @@ export async function callSolveQuestion(
           'topicId' in proxy && typeof proxy.topicId === 'string' ? proxy.topicId : null;
         const classMeta = (proxy as { classification?: SubjectClassificationMeta })
           .classification;
+        const examHint =
+          'examHint' in proxy && proxy.examHint ? proxy.examHint : undefined;
         console.warn('solve proxy unsupported_type → local fallback', detected);
         const fallback = buildLocalSolveFallback({
           examType: request.examType,
@@ -107,6 +109,7 @@ export async function callSolveQuestion(
           const confidence = classMeta?.confidence ?? 'low';
           return {
             ...fallback,
+            examHint,
             classification: {
               subject: detected ?? fallback.subject,
               confidence,
@@ -116,7 +119,7 @@ export async function callSolveQuestion(
             },
           };
         }
-        return fallback;
+        return examHint ? { ...fallback, examHint } : fallback;
       }
       return proxy;
     } catch (proxyErr) {

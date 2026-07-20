@@ -22,16 +22,22 @@ function pickChoice(choices, predicates) {
   return null;
 }
 
+const LOOKS_TRAFFIC =
+  /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı ışık|yeşil ışık|emniyet şeridi|sollama|park yasağı|abs|esp|emniyet kemeri|hava yastığı|ilk yardım|kanama|kazazede/i;
+
 /**
  * @returns {{ steps: object[], answerLabel?: string, answerText?: string } | null}
  */
 export function tryTrafficSolve(ocrText, classification) {
+  const text = String(ocrText || '');
   const subject = classification?.subject;
-  if (subject !== 'traffic' && subject !== 'vehicle' && subject !== 'firstaid') {
+  const branşOk =
+    subject === 'traffic' || subject === 'vehicle' || subject === 'firstaid';
+  // Allow when OCR clearly looks like ehliyet even if profile exam misclassified subject
+  if (!branşOk && !LOOKS_TRAFFIC.test(text)) {
     return null;
   }
 
-  const text = String(ocrText || '');
   const blob = text.toLocaleLowerCase('tr-TR');
   const choices = parseChoices(text);
 

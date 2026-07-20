@@ -142,9 +142,40 @@ const server = http.createServer(async (req, res) => {
 
     const ocrText = await ocrImageBase64(imageBase64, mimeType);
     const examHint = detectExamHint(ocrText, examType);
-    // Classify against profile exam; client may switch after examHint confirm.
-    const classified = classifyOcr(ocrText, examType);
-    const topicId = topicIdFor(examType, classified.subject, classified.topicKey);
+    // Per-question: if OCR strongly suggests another package, classify/solve with it.
+    const useHintExam =
+      examHint.mismatchesProfile &&
+      examHint.suggested &&
+      (examHint.confidence === 'high' || examHint.confidence === 'medium');
+    let solveExam = useHintExam ? examHint.suggested : examType;
+    let hintForClient = useHintExam
+      ? { ...examHint, mismatchesProfile: false, suggested: solveExam }
+      : examHint;
+
+    let classified = classifyOcr(ocrText, solveExam);
+    // Ehliyet metni KPSS/LGS profilinde yanlış branşa düşmesin — trafik solver önce dene.
+    if (
+      solveExam !== 'trafik' &&
+      /trafik|ehliyet|ışıklı|kavşak|azami hız|geçiş üstün|ilk yardım|abs\b|hava yastığı/i.test(
+        ocrText,
+      )
+    ) {
+      const trafficClass = classifyOcr(ocrText, 'trafik');
+      const trafficVerbal = tryVerbalSolve(ocrText, trafficClass);
+      if (trafficVerbal?.steps?.length) {
+        solveExam = 'trafik';
+        classified = trafficClass;
+        hintForClient = {
+          suggested: 'trafik',
+          confidence: 'high',
+          reason: 'ocr_traffic_solver',
+          questionNumber: examHint.questionNumber ?? null,
+          mismatchesProfile: false,
+        };
+      }
+    }
+
+    const topicId = topicIdFor(solveExam, classified.subject, classified.topicKey);
 
     // Non-math first when classification is verbal — avoid false arith matches
     if (classified.subject !== 'math') {
@@ -165,7 +196,7 @@ const server = http.createServer(async (req, res) => {
             answer: verbal.answerText
               ? { text: verbal.answerText, label: verbal.answerLabel }
               : undefined,
-            examHint,
+            examHint: hintForClient,
           }),
         );
         return;
@@ -205,14 +236,14 @@ const server = http.createServer(async (req, res) => {
           requestId,
           topicId:
             mathClass.subject === 'math'
-              ? topicIdFor(examType, 'math', mathClass.topicKey || 'temel')
+              ? topicIdFor(solveExam, 'math', mathClass.topicKey || 'temel')
               : topicId,
           subject: 'math',
           steps: mathSteps,
           ocrText,
           classification: mathClass,
           answer: mathAnswer,
-          examHint,
+          examHint: hintForClient,
         }),
       );
       return;
@@ -220,6 +251,7 @@ const server = http.createServer(async (req, res) => {
 
     console.warn(
       'solve-proxy unsupported_type',
+      solveExam,
       classified.subject,
       JSON.stringify(ocrText.slice(0, 400)),
     );
@@ -234,7 +266,8 @@ const server = http.createServer(async (req, res) => {
       debugOcrPreview: ocrText.slice(0, 240),
       detectedSubject: classified.subject,
       topicId,
-      examHint,
+      examHint: hintForClient,
+      solvedExamType: solveExam,
       classification: {
         subject: classified.subject,
         topicKey: classified.topicKey,

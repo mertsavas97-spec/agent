@@ -37,4 +37,15 @@ CEVAP:`;
   console.log('ok kpss + low Q number → no mismatch');
 }
 
+{
+  const hint = detectExamHint(
+    '12. Işıklı trafikte sarı ve kırmızı birlikte yanıyorsa sürücü ne yapmalıdır?',
+    'kpss',
+  );
+  assert.equal(hint.suggested, 'trafik');
+  assert.equal(hint.mismatchesProfile, true);
+  assert.equal(hint.confidence, 'high');
+  console.log('ok kpss profile + trafik OCR → trafik mismatch');
+}
+
 console.log('all examHint tests passed');
