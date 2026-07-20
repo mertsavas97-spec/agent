@@ -1,11 +1,21 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 
 import {
   LEGAL_DOCS,
   type LegalDocId,
 } from '@/src/features/legal/legalCopy';
+import { replayOnboardingForDemo } from '@/src/features/onboarding/completeClient';
 import {
   hydrateEntitlement,
   isPremiumActive,
@@ -25,6 +35,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [prefs, setPrefs] = useState<PushPrefs | null>(null);
   const [ent, setEnt] = useState<EntitlementSnapshot | null>(null);
+  const [replaying, setReplaying] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -39,6 +50,34 @@ export default function SettingsScreen() {
       return;
     }
     setPrefs(await setPushCategory(id, value));
+  }
+
+  function onReplayOnboarding() {
+    Alert.alert(
+      'Onboarding’i yeniden yükle',
+      'Demo için onboarding baştan açılır. Onay ve tamamlanma kaydı temizlenir.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Yeniden yükle',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              setReplaying(true);
+              try {
+                await replayOnboardingForDemo();
+              } catch {
+                Alert.alert(
+                  'Yeniden yüklenemedi',
+                  'Bağlantını kontrol edip tekrar dene.',
+                );
+                setReplaying(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
   }
 
   const premium = isPremiumActive(ent ?? undefined);
@@ -130,6 +169,25 @@ export default function SettingsScreen() {
             <Text style={styles.chevron}>›</Text>
           </Pressable>
         ))}
+      </View>
+
+      <View style={styles.card} testID="settings-demo">
+        <Text style={styles.demoKicker}>DEMO · KİŞİSEL CİHAZ</Text>
+        <Text style={styles.cardTitle}>Onboarding</Text>
+        <Text style={styles.cardBody}>
+          Şimdilik yalnızca demo için. Onboarding akışını baştan gösterir.
+        </Text>
+        <Pressable
+          testID="settings-replay-onboarding"
+          style={[styles.demoBtn, replaying && styles.demoBtnDisabled]}
+          disabled={replaying}
+          onPress={onReplayOnboarding}>
+          {replaying ? (
+            <ActivityIndicator color={colors.navy} />
+          ) : (
+            <Text style={styles.demoBtnLabel}>Onboarding’i yeniden yükle</Text>
+          )}
+        </Pressable>
       </View>
 
       <Text style={styles.version} testID="settings-version">
@@ -224,6 +282,29 @@ const styles = StyleSheet.create({
     color: colors.navy,
   },
   chevron: { fontSize: 22, color: colors.navy },
+  demoKicker: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: colors.orange,
+    marginBottom: 6,
+  },
+  demoBtn: {
+    borderWidth: 1.5,
+    borderColor: colors.navy,
+    borderRadius: radii.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: colors.navySoft,
+  },
+  demoBtnDisabled: { opacity: 0.6 },
+  demoBtnLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '700',
+    color: colors.navy,
+    fontSize: 15,
+  },
   version: {
     marginTop: space.md,
     textAlign: 'center',

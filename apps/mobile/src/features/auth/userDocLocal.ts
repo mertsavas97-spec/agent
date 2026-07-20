@@ -85,3 +85,17 @@ export async function completeOnboardingLocal(
     updatedAt: serverTimestamp(),
   });
 }
+
+/** Demo / kişisel cihaz: onboarding bayrağını temizler (gate yeniden sorar). */
+export async function resetOnboardingLocal(uid: string): Promise<void> {
+  const { db } = getFirebase();
+  const ref = doc(db, 'users', uid);
+  await ensureUserDocLocal(uid);
+  await updateDoc(ref, {
+    onboardingCompletedAt: null,
+    consentAcceptedAt: null,
+    parentalConsentAt: null,
+    ageBand: null,
+    updatedAt: serverTimestamp(),
+  });
+}

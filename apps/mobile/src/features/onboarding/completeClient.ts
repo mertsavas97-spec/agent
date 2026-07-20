@@ -5,12 +5,14 @@ import {
   completeOnboardingLocal,
   ensureUserDocLocal,
   isExamType,
+  resetOnboardingLocal,
 } from '@/src/features/auth/userDocLocal';
 import type { ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
 import type { OnboardingResult } from './OnboardingFlow';
+import { requestOnboardingReplay } from './onboardingReplay';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -77,4 +79,14 @@ export async function submitOnboarding(result: OnboardingResult): Promise<void> 
       parentalConsent: result.parentalConsent,
     });
   }
+}
+
+/**
+ * Demo (kişisel telefon): onboarding’i sıfırla ve BootstrapGate’i yeniden yükle.
+ * Store / prod UI’da kalıcı özellik değil — şimdilik Ayarlar’da.
+ */
+export async function replayOnboardingForDemo(): Promise<void> {
+  const user = await withTimeout(ensureSignedIn(), 8000, 'AUTH');
+  await withTimeout(resetOnboardingLocal(user.uid), 8000, 'RESET_ONBOARDING');
+  requestOnboardingReplay();
 }

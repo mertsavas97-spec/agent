@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient';
+import { subscribeOnboardingReplay } from '@/src/features/onboarding/onboardingReplay';
 import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
 import { colors, space } from '@/src/theme';
@@ -27,8 +28,16 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   const [uid, setUid] = useState<string | null>(null);
   const [state, setState] = useState<GateState>({ status: 'loading' });
   const [bootError, setBootError] = useState<string | null>(null);
+  const [replayToken, setReplayToken] = useState(0);
   const bootedForUid = useRef<string | null>(null);
   const navigatingRef = useRef(false);
+
+  useEffect(() => {
+    return subscribeOnboardingReplay(() => {
+      bootedForUid.current = null;
+      setReplayToken((n) => n + 1);
+    });
+  }, []);
 
   useEffect(() => {
     if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
@@ -52,6 +61,7 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
       setState({ status: 'ready' });
       return;
     }
+    // Already booted for this uid — skip. Demo replay clears bootedForUid first.
     if (uid && bootedForUid.current === uid && state.status !== 'loading') {
       return;
     }
@@ -95,8 +105,8 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
       alive = false;
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-boot on auth uid
-  }, [uid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot on uid or demo replay
+  }, [uid, replayToken]);
 
   // Imperative navigation — keep Stack mounted (avoids Redirect update-depth loop)
   useEffect(() => {
