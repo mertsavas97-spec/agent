@@ -70,13 +70,66 @@ type Draft = {
   difficulty?: ItemBankItem['difficulty'];
 };
 
-function pack(
-  topic: Topic,
-  drafts: Draft[],
-): ItemBankItem[] {
-  return drafts.slice(0, MIN_SAMPLES_PER_TOPIC).map((d, i) =>
-    item(topic, i, d.stem, d.choices, d.answerKey, d.steps, d.difficulty ?? 'easy'),
-  );
+const CHOICE_KEYS: ItemBankChoiceKey[] = ['A', 'B', 'C', 'D', 'E'];
+
+/**
+ * Place the correct choice at `targetKey` and keep distractors in relative order.
+ * Used so sample banks don't always mark A as correct (real exams rotate keys).
+ */
+export function placeCorrectAt(
+  choices: ItemBankItem['choices'],
+  answerKey: ItemBankChoiceKey,
+  targetKey: ItemBankChoiceKey,
+): { choices: ItemBankItem['choices']; answerKey: ItemBankChoiceKey } {
+  if (answerKey === targetKey) return { choices: { ...choices }, answerKey };
+  const correctText = choices[answerKey];
+  const distractors = CHOICE_KEYS.filter((k) => k !== answerKey).map((k) => choices[k]);
+  const next = {} as ItemBankItem['choices'];
+  let di = 0;
+  for (const k of CHOICE_KEYS) {
+    if (k === targetKey) next[k] = correctText;
+    else next[k] = distractors[di++];
+  }
+  return { choices: next, answerKey: targetKey };
+}
+
+function targetKeyFor(topicId: string, index: number): ItemBankChoiceKey {
+  let hash = 0;
+  for (let i = 0; i < topicId.length; i++) {
+    hash = (hash * 31 + topicId.charCodeAt(i)) >>> 0;
+  }
+  return CHOICE_KEYS[(hash + index) % CHOICE_KEYS.length];
+}
+
+function rewriteAnswerLetter(
+  steps: ItemBankItem['explanationSteps'],
+  fromKey: ItemBankChoiceKey,
+  toKey: ItemBankChoiceKey,
+): ItemBankItem['explanationSteps'] {
+  if (fromKey === toKey) return steps;
+  return steps.map((s) => ({
+    ...s,
+    body: s.body
+      .replace(new RegExp(`Cevap\\s+${fromKey}\\b`, 'gi'), `Cevap ${toKey}`)
+      .replace(new RegExp(`\\b${fromKey}\\s+şıkk`, 'gi'), `${toKey} şıkk`),
+  }));
+}
+
+function pack(topic: Topic, drafts: Draft[]): ItemBankItem[] {
+  return drafts.slice(0, MIN_SAMPLES_PER_TOPIC).map((d, i) => {
+    const target = targetKeyFor(topic.id, i);
+    const placed = placeCorrectAt(d.choices, d.answerKey, target);
+    const steps = rewriteAnswerLetter(d.steps, d.answerKey, placed.answerKey);
+    return item(
+      topic,
+      i,
+      d.stem,
+      placed.choices,
+      placed.answerKey,
+      steps,
+      d.difficulty ?? 'easy',
+    );
+  });
 }
 
 function mathDrafts(topic: Topic): Draft[] {
@@ -824,7 +877,7 @@ function trafikTrafficDrafts(topic: Topic): Draft[] {
           E: 'Yalnızca yağmurda artırılmalıdır',
         },
         answerKey: 'B',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Güvenlik', body: 'Hız arttıkça fren mesafesi uzar → takip mesafesi artar.' },
           { title: '2. Sonuç', body: `${brand}. Cevap B.` },
@@ -840,7 +893,7 @@ function trafikTrafficDrafts(topic: Topic): Draft[] {
           E: 'Emniyet kemerini çıkarıp manevra kolaylığı sağlamak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Koşul', body: 'Görüş ve tutunma azalır → hız düşürülür.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -861,7 +914,7 @@ function trafikTrafficDrafts(topic: Topic): Draft[] {
           E: 'Sollama yapan araca',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Kural', body: 'Kontrollü kavşakta düzenleyici unsur üstündür.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -877,7 +930,7 @@ function trafikTrafficDrafts(topic: Topic): Draft[] {
           E: 'İşaret yoksa geri geri girmek gerekir',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Kural', body: 'Dönel içindeki trafik önceliklidir (genel kural).' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -893,7 +946,7 @@ function trafikTrafficDrafts(topic: Topic): Draft[] {
           E: 'Arkadan gelen aracın plakası',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Güvenlik', body: 'Sola dönüşte karşı trafik ve yaya kontrolü şarttır.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1150,7 +1203,7 @@ function trafikVehicleDrafts(topic: Topic): Draft[] {
           E: 'Yakıt tüketimini azaltmak',
         },
         answerKey: 'B',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Kavram', body: 'ABS kilitlenmeyi önleyerek yön kontrolünü korur.' },
           { title: '2. Eleme', body: 'ABS her zaman mesafeyi kısaltmaz; amaç kilitlenmeyi önlemektir.' },
@@ -1167,7 +1220,7 @@ function trafikVehicleDrafts(topic: Topic): Draft[] {
           E: 'Hava yastığı kemerin yerine geçer',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Güvenlik', body: 'Hava yastığı kemerin yerine geçmez; birlikte çalışır.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1183,7 +1236,7 @@ function trafikVehicleDrafts(topic: Topic): Draft[] {
           E: 'Cam buğusunu tek başına çözmeye',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. İşlev', body: 'ESP araç dengesini korumaya yardımcı olur.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1304,7 +1357,7 @@ function trafikVehicleDrafts(topic: Topic): Draft[] {
         E: 'Fren hidroliğinin artması',
       },
       answerKey: 'A',
-      difficulty: 'medium',
+      difficulty: 'mid',
       steps: [
         { title: '1. Yağ', body: 'Yağ yağlama ve soğutmaya yardımcı olur.' },
         { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1320,7 +1373,7 @@ function trafikVehicleDrafts(topic: Topic): Draft[] {
         E: 'Egzoz gazını süzmek için kullanılan filtredir',
       },
       answerKey: 'A',
-      difficulty: 'medium',
+      difficulty: 'mid',
       steps: [
         { title: '1. Görev', body: 'Debriyaj güç aktarımını kontrol eder.' },
         { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1336,7 +1389,7 @@ function trafikVehicleDrafts(topic: Topic): Draft[] {
         E: 'Yağ eklemeden yüksek devirde sürmeye devam etmek',
       },
       answerKey: 'A',
-      difficulty: 'medium',
+      difficulty: 'mid',
       steps: [
         { title: '1. Güvenlik', body: 'Hararette önce güvenli duruş ve soğuma.' },
         { title: '2. Eleme', body: 'Sıcak kapak açmak ve gaza basmak tehlikelidir.' },
@@ -1362,7 +1415,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Küçük kesiklerde bile hemen turnike uygulamak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Baskı', body: 'Dış kanamada ilk adım temiz bezle doğrudan baskıdır.' },
           { title: '2. Eleme', body: 'Turnike istisnadır; ovuşturma ve erken taşıma zararlıdır.' },
@@ -1379,7 +1432,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'İlk iş olarak ağrı kesici veya ilaç vermeye çalışmak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Şok', body: 'Isı kaybını önle, uygun pozisyon ver, 112’yi ara.' },
           { title: '2. Eleme', body: 'Ayağa kaldırma, bilinç kapalıyken sıvı ve ilaç zararlıdır.' },
@@ -1396,7 +1449,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Kazazedeyi sakin tutmaya çalışmak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Yapma', body: 'Kirli müdahale enfeksiyon ve ek hasar riski yaratır.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1417,7 +1470,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Ağrıyı kesmek için üzerine sıcak su uygulamak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Sabitle', body: 'Kırık şüphesinde gereksiz hareket dokuya zarar verir.' },
           { title: '2. Eleme', body: 'Zorla düzeltme, masaj ve ısıtma yanlış yaklaşımlardır.' },
@@ -1434,7 +1487,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Hemen sıkı bandajla komple kapatıp ısıtmak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Soğut', body: 'Erken soğutma doku hasarını azaltır.' },
           { title: '2. Eleme', body: 'Ev ilaçları, buz ve kabarcık patlatma önerilmez.' },
@@ -1451,7 +1504,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Hiçbir durumda hiçbir kaynakta yer almaz',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Uyarı', body: 'Turnike istisnaidir; bilinçli ve sınırlı kullanılır.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1472,7 +1525,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Önce su içirme, sonra bilinç kontrolü',
         },
         answerKey: 'B',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. ABC', body: 'Sıra: hava yolu, solunum, dolaşım.' },
           { title: '2. Eleme', body: 'Ters sıra ve erken taşıma/sıvı yanlış önceliktir.' },
@@ -1489,7 +1542,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Ayağa kaldırıp yürümeye zorlayarak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. Kontrol', body: 'Sesli uyarı + omuzdan hafif uyarma yeterlidir.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1505,7 +1558,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
           E: 'Önce ilaç verip sonra yardım çağırmak',
         },
         answerKey: 'A',
-        difficulty: 'medium',
+        difficulty: 'mid',
         steps: [
           { title: '1. TYD', body: 'Eğitim ve protokole uygun yardım + TYD.' },
           { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1525,7 +1578,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
         E: 'Trafiği hızlandırıp yolu bir an önce açmak',
       },
       answerKey: 'A',
-      difficulty: 'medium',
+      difficulty: 'mid',
       steps: [
         { title: '1. Güvenlik', body: 'Önce kendin, sonra olay yeri, sonra kazazede.' },
         { title: '2. Sonuç', body: `${brand}. Cevap A.` },
@@ -1541,7 +1594,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
         E: 'Susuzluk giderilmeden diğer adımlara geçilmez',
       },
       answerKey: 'A',
-      difficulty: 'medium',
+      difficulty: 'mid',
       steps: [
         { title: '1. Yapma', body: 'Bilinç kapalıysa ağızdan sıvı verilmez.' },
         { title: '2. Eleme', body: '“Su toparlatır” yanılgısı aspirasyon riskini gizler.' },
@@ -1558,7 +1611,7 @@ function firstaidDrafts(topic: Topic): Draft[] {
         E: 'Önce hava durumu, sonra olay bilgisi',
       },
       answerKey: 'A',
-      difficulty: 'medium',
+      difficulty: 'mid',
       steps: [
         { title: '1. Bildirim', body: 'Konum + olay + durum ekibin yönlendirilmesi içindir.' },
         { title: '2. Sonuç', body: `${brand}. Cevap A.` },
