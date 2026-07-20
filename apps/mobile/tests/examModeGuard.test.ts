@@ -106,10 +106,12 @@ describe('shouldRejectBatchSlotForExamMode', () => {
     expect(out.reject).toBe(false);
   });
 
-  it('rejects unsupported status with strong mismatch hint', () => {
+  it('rejects unsupported_type status with strong mismatch hint', () => {
     const unsupported: SolveQuestionResponse = {
-      status: 'unsupported',
+      attemptId: 'a-unsup',
+      status: 'unsupported_type',
       userMessage: 'okunamadı',
+      quota: { remainingToday: 5, unlimited: false },
       examHint: {
         suggested: 'lgs',
         confidence: 'medium',

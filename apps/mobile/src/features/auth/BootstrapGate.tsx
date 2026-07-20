@@ -175,7 +175,7 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   blocker: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
