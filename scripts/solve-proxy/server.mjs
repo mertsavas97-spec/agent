@@ -228,12 +228,13 @@ const server = http.createServer(async (req, res) => {
       attemptId: `proxy-${requestId}`,
       userMessage:
         classified.subject === 'turkish'
-          ? 'Bu Türkçe sorusu okundu ama otomatik cevap üretilemedi. Şıkları da kadraja alıp tekrar dene.'
-          : 'Bu görseldeki soru şu an otomatik çözülemedi. Soruyu ve şıkları daha net kadraja alıp tekrar dene.',
+          ? 'Bu Türkçe sorusu okundu ama otomatik cevap üretilemedi. Şıkları da net görünecek şekilde yeniden dene.'
+          : 'Bu görseldeki soru şu an otomatik çözülemedi. Soruyu ve şıkları daha net görünecek şekilde yeniden dene.',
       quota: { remainingToday: 5, unlimited: false },
       debugOcrPreview: ocrText.slice(0, 240),
       detectedSubject: classified.subject,
       topicId,
+      examHint,
       classification: {
         subject: classified.subject,
         topicKey: classified.topicKey,

@@ -40,6 +40,10 @@ export function peekPendingMultiBatch(): MultiBatchPayload | null {
   return pending;
 }
 
+export function clearPendingMultiBatch(): void {
+  pending = null;
+}
+
 /** Test helper */
 export function __resetMultiBatchStoreForTests(): void {
   pending = null;

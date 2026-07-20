@@ -2,6 +2,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { findTopic } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space, typography } from '@/src/theme';
@@ -16,6 +17,8 @@ export type MultiSolveSlot = {
   id: string;
   status: MultiSlotStatus;
   imageUri: string;
+  /** Per-question exam package (may differ from profile after OCR hint). */
+  examType?: ExamType;
   result?: SolveQuestionResponse;
   errorMessage?: string;
 };
@@ -29,6 +32,11 @@ export type MultiSolutionScreenProps = {
   onDone?: () => void;
 };
 
+function slotExamLabel(slot: MultiSolveSlot, fallback: ExamType): string {
+  const exam = slot.examType ?? fallback;
+  return EXAM_LABEL[exam] ?? exam;
+}
+
 export function MultiSolutionScreen({
   slots,
   activeId,
@@ -39,19 +47,24 @@ export function MultiSolutionScreen({
 }: MultiSolutionScreenProps) {
   const active = slots.find((s) => s.id === activeId) ?? slots[0];
   const readyCount = slots.filter((s) => s.status === 'ready').length;
+  const activeExam = active?.examType ?? examType;
 
-  const tabItems = slots.map((s, i) => ({
-    id: s.id,
-    label: `Soru ${i + 1}`,
-    caption:
+  const tabItems = slots.map((s, i) => {
+    const examCaption = slotExamLabel(s, examType);
+    const statusCaption =
       s.status === 'ready'
-        ? 'Hazır'
+        ? examCaption
         : s.status === 'error'
           ? 'Hata'
           : s.status === 'solving'
             ? '…'
-            : 'Sırada',
-  }));
+            : 'Sırada';
+    return {
+      id: s.id,
+      label: `Soru ${i + 1}`,
+      caption: statusCaption,
+    };
+  });
 
   return (
     <View style={styles.root} testID="multi-solution-screen">
@@ -72,8 +85,9 @@ export function MultiSolutionScreen({
       {!active ? null : active.status === 'ready' &&
         active.result &&
         active.result.status === 'solved' ? (
-        <View style={styles.solutionPane}>
+        <View style={styles.solutionPane} key={active.id}>
           <SolutionScreen
+            key={active.id}
             steps={active.result.steps}
             answer={active.result.answer ?? null}
             transparencyNote={
@@ -85,7 +99,7 @@ export function MultiSolutionScreen({
                 ? null
                 : active.result.solutionId
             }
-            examType={examType}
+            examType={activeExam}
             subject={active.result.subject}
             topicId={active.result.topicId}
             topicName={
@@ -102,7 +116,7 @@ export function MultiSolutionScreen({
                         ? findTopic(active.result.topicId)?.nameTr
                         : null) ?? 'Konu',
                     subject: active.result.subject as Exclude<Subject, 'unknown'>,
-                    examType,
+                    examType: activeExam,
                   }
                 : undefined,
             )}
@@ -124,14 +138,14 @@ export function MultiSolutionScreen({
           />
         </View>
       ) : active.status === 'error' ? (
-        <View style={styles.center} testID="multi-slot-error">
+        <View style={styles.center} testID="multi-slot-error" key={active.id}>
           <Text style={styles.errorTitle}>Bu soru çözülemedi</Text>
           <Text style={styles.errorBody}>
             {active.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
           </Text>
         </View>
       ) : (
-        <View style={styles.center} testID="multi-slot-loading">
+        <View style={styles.center} testID="multi-slot-loading" key={active.id}>
           <ActivityIndicator color={colors.orange} size="large" />
           <Text style={styles.loadingTitle}>Bu soru hazırlanıyor</Text>
           <Text style={styles.loadingBody}>
@@ -155,7 +169,7 @@ const styles = StyleSheet.create({
   },
   batchMeta: {
     fontFamily: typography.fontFamilyMedium,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textMuted,
   },
   solutionPane: { flex: 1 },
@@ -174,10 +188,10 @@ const styles = StyleSheet.create({
   },
   loadingBody: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   errorTitle: {
     fontFamily: typography.fontFamilySemiBold,
@@ -186,8 +200,9 @@ const styles = StyleSheet.create({
   },
   errorBody: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

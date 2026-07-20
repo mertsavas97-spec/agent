@@ -94,6 +94,9 @@ export type SolveQuestionRejected = {
   status: 'rejected_moderation' | 'rejected_not_question' | 'unsupported_type';
   userMessage: string;
   quota: QuotaInfo;
+  /** Dogfood / proxy: OCR may still suggest a better exam package */
+  examHint?: ExamHintMeta;
+  classification?: SubjectClassificationMeta;
 };
 
 export type SolveQuestionResponse = SolveQuestionSuccess | SolveQuestionRejected;

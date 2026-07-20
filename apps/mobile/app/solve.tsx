@@ -324,7 +324,7 @@ export default function SolveFlowScreen() {
   if (result && result.status !== 'solved') {
     const rejectMsg =
       result.userMessage?.replace(/canlı AI deploy[’']?unu bekle\.?/gi, '').trim() ||
-      'Bu görseldeki işlem şu an otomatik çözülemedi. Daha net bir kadraj dene.';
+      'Bu görseldeki işlem şu an otomatik çözülemedi. Daha net bir fotoğrafla dene.';
     return (
       <View style={styles.center} testID="solve-rejected">
         <Text style={styles.errorTitle}>Bu görsel işlenemedi</Text>

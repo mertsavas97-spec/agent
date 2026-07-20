@@ -50,7 +50,7 @@ export const EXAM_THEME: Record<ExamType, ExamTheme> = {
     solid: '#B91C1C',
     soft: '#FEE2E2',
     accent: '#EF4444',
-    modeChip: 'MOD: TRAFİK',
+    modeChip: 'MOD: EHLİYET',
   },
 };
 

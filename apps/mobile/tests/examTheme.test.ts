@@ -5,7 +5,7 @@ describe('examTheme', () => {
     expect(EXAM_THEME.lgs.modeChip).toBe('MOD: LGS');
     expect(EXAM_THEME.ygs.modeChip).toBe('MOD: YGS');
     expect(EXAM_THEME.kpss.modeChip).toBe('MOD: KPSS');
-    expect(EXAM_THEME.trafik.modeChip).toBe('MOD: TRAFİK');
+    expect(EXAM_THEME.trafik.modeChip).toBe('MOD: EHLİYET');
     const solids = new Set([
       EXAM_THEME.lgs.solid,
       EXAM_THEME.ygs.solid,

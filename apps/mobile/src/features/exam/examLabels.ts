@@ -8,14 +8,14 @@ export const EXAM_OPTIONS: {
   { id: 'lgs', label: 'LGS', short: 'Lise giriş' },
   { id: 'ygs', label: 'YGS', short: 'Üniversite' },
   { id: 'kpss', label: 'KPSS', short: 'Kamu' },
-  { id: 'trafik', label: 'Trafik', short: 'Ehliyet' },
+  { id: 'trafik', label: 'Ehliyet', short: 'MTS' },
 ];
 
 export const EXAM_LABEL: Record<ExamType, string> = {
   lgs: 'LGS',
   ygs: 'YGS',
   kpss: 'KPSS',
-  trafik: 'Trafik',
+  trafik: 'Ehliyet',
 };
 
 export const EXAM_SHORT: Record<ExamType, string> = {

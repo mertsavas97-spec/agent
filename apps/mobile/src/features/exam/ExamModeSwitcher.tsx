@@ -13,7 +13,7 @@ export type ExamModeSwitcherProps = {
   disabled?: boolean;
 };
 
-/** LGS / YGS / KPSS / Trafik — labeled exam mode with per-exam color + MOD chip. */
+/** LGS / YGS / KPSS / Ehliyet — labeled exam mode with per-exam color + MOD chip. */
 export function ExamModeSwitcher({ value, onChange, disabled }: ExamModeSwitcherProps) {
   const theme = examThemeFor(value);
 
@@ -36,7 +36,8 @@ export function ExamModeSwitcher({ value, onChange, disabled }: ExamModeSwitcher
             Aktif sınav modu
           </Text>
           <Text style={styles.help}>
-            Seçtiğin sınava göre çözüm dili, konular ve istatistikler değişir.
+            LGS, YGS, KPSS veya Ehliyet seç; çözüm dili, konular ve istatistikler buna göre
+            ayarlanır.
           </Text>
         </View>
         {theme ? (
@@ -123,9 +124,9 @@ const styles = StyleSheet.create({
   },
   help: {
     fontFamily: typography.fontFamily,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 19,
+    lineHeight: 20,
   },
   modeChip: {
     borderRadius: radii.pill,

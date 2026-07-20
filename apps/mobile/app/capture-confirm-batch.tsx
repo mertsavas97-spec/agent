@@ -1,53 +1,41 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
 import { isExamType } from '@/src/features/exam/examTypes';
+import {
+  clearPendingMultiBatch,
+  peekPendingMultiBatch,
+} from '@/src/features/solve/multiBatchStore';
 import type { ExamType } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 
 /**
- * Preview after camera/gallery — user confirms before solve loading starts.
+ * Preview after multi-select — user confirms before batch solve starts.
  */
-export default function CaptureConfirmScreen() {
+export default function CaptureConfirmBatchScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{
-    uri?: string;
-    mimeType?: string;
-    source?: string;
-    examType?: string;
-    subjectHint?: string;
-  }>();
-
-  const uri = typeof params.uri === 'string' ? params.uri : '';
-  const examType: ExamType = isExamType(params.examType) ? params.examType : 'lgs';
+  const batch = peekPendingMultiBatch();
+  const images = batch?.images ?? [];
+  const examType: ExamType =
+    batch?.examType && isExamType(batch.examType) ? batch.examType : 'lgs';
   const theme = examThemeFor(examType)!;
-  const sourceLabel =
-    params.source === 'camera' ? 'Kameradan' : 'Galeriden';
 
   function goSolve() {
-    if (!uri) return;
-    router.replace({
-      pathname: '/solve',
-      params: {
-        uri,
-        mimeType: params.mimeType ?? 'image/jpeg',
-        source: params.source ?? 'library',
-        examType,
-        ...(params.subjectHint ? { subjectHint: params.subjectHint } : {}),
-      },
-    });
+    if (images.length === 0) return;
+    router.replace('/solve-batch');
   }
 
   function retake() {
+    clearPendingMultiBatch();
     router.back();
   }
 
-  if (!uri) {
+  if (images.length === 0) {
     return (
       <View style={styles.missing}>
-        <Text style={styles.missingText}>Fotoğraf bulunamadı.</Text>
+        <Text style={styles.missingText}>Fotoğraf seçilmedi.</Text>
         <Pressable onPress={() => router.back()} style={styles.secondaryBtn}>
           <Text style={styles.secondaryText}>Geri dön</Text>
         </Pressable>
@@ -56,46 +44,55 @@ export default function CaptureConfirmScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.soft }]} testID="capture-confirm">
+    <View style={[styles.root, { backgroundColor: theme.soft }]} testID="capture-confirm-batch">
       <Stack.Screen
         options={{
-          title: 'Fotoğrafı kontrol et',
+          title: 'Fotoğrafları kontrol et',
           headerStyle: { backgroundColor: theme.solid },
           headerTintColor: '#fff',
         }}
       />
 
       <Text style={[styles.kicker, { color: theme.solid }]}>
-        {sourceLabel} · {EXAM_LABEL[examType]}
+        Galeriden · {images.length} soru · {EXAM_LABEL[examType]}
       </Text>
-      <Text style={styles.title}>Bu fotoğrafla devam edilsin mi?</Text>
+      <Text style={styles.title}>Bu fotoğraflarla devam edilsin mi?</Text>
       <Text style={styles.hint}>
-        Soru metni ve şıklar net görünsün. Değilse yeniden seç.
+        Her karede soru metni ve şıklar net görünsün. Değilse yeniden seç.
       </Text>
 
-      <View style={[styles.frame, { borderColor: theme.accent }]}>
-        <Image
-          source={{ uri }}
-          style={styles.image}
-          resizeMode="contain"
-          accessibilityLabel="Seçilen soru fotoğrafı"
-        />
-      </View>
+      <ScrollView
+        style={styles.gridScroll}
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}>
+        {images.map((img, i) => (
+          <View
+            key={`${img.uri}-${i}`}
+            style={[styles.thumbWrap, { borderColor: theme.accent }]}
+            testID={`capture-batch-thumb-${i}`}>
+            <Text style={[styles.thumbLabel, { color: theme.solid }]}>Soru {i + 1}</Text>
+            <Image
+              source={{ uri: img.uri }}
+              style={styles.thumb}
+              resizeMode="cover"
+              accessibilityLabel={`Seçilen soru ${i + 1}`}
+            />
+          </View>
+        ))}
+      </ScrollView>
 
       <Pressable
-        testID="capture-confirm-solve"
+        testID="capture-batch-confirm-solve"
         style={[styles.primaryBtn, { backgroundColor: theme.solid }]}
         onPress={goSolve}>
-        <Text style={styles.primaryText}>Evet, çöz</Text>
+        <Text style={styles.primaryText}>Evet, çöz ({images.length})</Text>
       </Pressable>
 
       <Pressable
-        testID="capture-confirm-retake"
+        testID="capture-batch-retake"
         style={[styles.secondaryBtn, { borderColor: theme.solid }]}
         onPress={retake}>
-        <Text style={[styles.secondaryText, { color: theme.solid }]}>
-          Yeniden seç
-        </Text>
+        <Text style={[styles.secondaryText, { color: theme.solid }]}>Yeniden seç</Text>
       </Pressable>
     </View>
   );
@@ -136,25 +133,43 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 6,
     marginBottom: space.md,
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  frame: {
+  gridScroll: {
     flex: 1,
-    minHeight: 280,
+    marginBottom: space.md,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    paddingBottom: space.sm,
+  },
+  thumbWrap: {
+    width: '47%',
+    flexGrow: 1,
     backgroundColor: colors.white,
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     borderWidth: 2,
     overflow: 'hidden',
-    marginBottom: space.lg,
     ...shadows.soft,
   },
-  image: {
+  thumbLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  thumb: {
     width: '100%',
-    height: '100%',
+    aspectRatio: 3 / 4,
+    backgroundColor: colors.navySoft,
   },
   primaryBtn: {
     borderRadius: radii.xl,

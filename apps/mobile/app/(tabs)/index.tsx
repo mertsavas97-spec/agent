@@ -116,7 +116,7 @@ export default function HomeScreen() {
 
   async function openPicker(source: 'camera' | 'library') {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Trafik seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
       return;
     }
     const picked =
@@ -146,7 +146,7 @@ export default function HomeScreen() {
 
   async function openMultiBatch() {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Trafik seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
       return;
     }
     const copy = multiBatchUserCopy();
@@ -194,7 +194,7 @@ export default function HomeScreen() {
               subjectHint,
               examType: examType ?? undefined,
             });
-            router.push('/solve-batch');
+            router.push('/capture-confirm-batch');
           })();
         },
       },
@@ -260,10 +260,10 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.actionTitle}>Soru fotoğrafı gönder</Text>
           <Text style={styles.actionBody}>
-            Kitap, defter veya deneme sayfasındaki soruyu kadraja al. Metin ve şıklar net
-            görünsün.
+            Kitap, defter veya denemedeki soruyu net çek. Soru metni ve şıklar okunaklı
+            olsun.
             {examTheme
-              ? ` Bu çözüm ${examTheme.label} (${examTheme.short}) dilinde işlenecek.`
+              ? ` Çözüm ${examTheme.label} (${examTheme.short}) paketine göre işlenir.`
               : ''}
           </Text>
 
@@ -298,12 +298,12 @@ export default function HomeScreen() {
               Çoklu soru · en fazla {MULTI_BATCH_MAX}
             </Text>
             <Text style={styles.multiBtnCaption}>
-              İlk cevap hemen açılır · diğerleri arka planda
+              Önce önizleme, sonra çözüm · her soru ayrı sekmede
             </Text>
           </Pressable>
 
           <Text style={styles.micro}>
-            AI destekli çözüm üretilir; sonucu mutlaka kontrol et.
+            Yapay zekâ destekli anlatım üretilir; cevabı mutlaka kontrol et.
           </Text>
         </View>
 
@@ -315,7 +315,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.topicsLinkTitle}>Konu anlatımı</Text>
             <Text style={styles.topicsLinkBody}>
-              LGS · YGS · KPSS sekmeleri → ders → konu ve örnek sorular.
+              LGS · YGS · KPSS · Ehliyet → ders → konu ve örnek sorular.
             </Text>
           </View>
           <Text style={styles.topicsChevron}>›</Text>
@@ -380,11 +380,11 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontFamily: typography.fontFamily,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 6,
     marginBottom: space.lg,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   metaLine: {
     fontFamily: typography.fontFamily,
@@ -442,9 +442,9 @@ const styles = StyleSheet.create({
   },
   actionBody: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
-    lineHeight: 21,
+    lineHeight: 22,
     marginBottom: space.md,
   },
   primaryBtn: {
@@ -494,15 +494,17 @@ const styles = StyleSheet.create({
   multiBtnCaption: {
     fontFamily: typography.fontFamily,
     color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+    textAlign: 'center',
   },
   micro: {
     fontFamily: typography.fontFamily,
     marginTop: space.md,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textMuted,
-    lineHeight: 17,
+    lineHeight: 19,
     textAlign: 'center',
   },
   topicsLink: {
@@ -522,10 +524,10 @@ const styles = StyleSheet.create({
   },
   topicsLinkBody: {
     fontFamily: typography.fontFamily,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 18,
+    marginTop: 3,
+    lineHeight: 20,
   },
   topicsChevron: {
     fontSize: 28,

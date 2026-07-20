@@ -38,9 +38,9 @@ describe('ExamModeSwitcher', () => {
     expect(screen.getByText(/KPSS modundasın/i)).toBeTruthy();
   });
 
-  it('updates MOD chip when value is Trafik', () => {
+  it('updates MOD chip when value is Ehliyet', () => {
     render(<ExamModeSwitcher value="trafik" onChange={jest.fn()} />);
-    expect(screen.getByText('MOD: TRAFİK')).toBeTruthy();
-    expect(screen.getByText(/Trafik modundasın/i)).toBeTruthy();
+    expect(screen.getByText('MOD: EHLİYET')).toBeTruthy();
+    expect(screen.getByText(/Ehliyet modundasın/i)).toBeTruthy();
   });
 });

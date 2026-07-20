@@ -19,7 +19,7 @@ export type AnalyzingViewProps = {
 
 const TIPS = [
   'Birkaç saniye — öğretmen gibi adım adım hazırlıyorum.',
-  'Net kadraj = daha net çözüm. Soru + şıklar framesinde olsun.',
+  'Net fotoğraf = daha net çözüm. Soru ve şıklar tam görünsün.',
   'Diyagramlı sorularda metin yetmezse dürüstçe söylerim.',
   'Sonra “Anlamadım” dersen daha sade anlatırım.',
 ];

@@ -1,8 +1,9 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ADS_LIMITS, runInterstitialIfNeeded } from '@/src/features/ads';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
@@ -15,6 +16,7 @@ import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import { takePendingMultiBatch } from '@/src/features/solve/multiBatchStore';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
+import { shouldConfirmExamMismatch } from '@/src/features/solve/subjectClassification';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { ensureSignedIn } from '@/src/lib/auth';
 import type { ExamType, SolveQuestionResponse } from '@/src/lib/api/types';
@@ -26,6 +28,10 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   if (result.status !== 'solved') return 0;
   if (result.quota.unlimited) return 0;
   return Math.max(0, ADS_LIMITS.freeDailySolves - result.quota.remainingToday);
+}
+
+function examHintFromResponse(response: SolveQuestionResponse) {
+  return 'examHint' in response ? response.examHint : undefined;
 }
 
 export default function SolveBatchScreen() {
@@ -52,6 +58,7 @@ export default function SolveBatchScreen() {
       id: `q-${i}-${Date.now()}`,
       status: 'pending',
       imageUri: img.uri,
+      examType: batch.examType,
     }));
     setSlots(initial);
     setActiveId(initial[0]!.id);
@@ -75,7 +82,7 @@ export default function SolveBatchScreen() {
 
         const runOne = async (slot: MultiSolveSlot, index: number) => {
           if (cancelledRef.current) return;
-          patchSlot(slot.id, { status: 'solving' });
+          patchSlot(slot.id, { status: 'solving', examType: resolvedExam });
           setStatusLine(`Soru ${index + 1}/${initial.length} çözülüyor…`);
           try {
             const localId = `${Date.now()}-${index}`;
@@ -91,10 +98,12 @@ export default function SolveBatchScreen() {
             if (cancelledRef.current) return;
             const imageBase64 = await uriToBase64(img.uri);
             if (cancelledRef.current) return;
-            const response = await callSolveQuestion({
+
+            let examForSolve: ExamType = resolvedExam;
+            let response = await callSolveQuestion({
               imagePath,
               mimeType: img.mimeType,
-              examType: resolvedExam,
+              examType: examForSolve,
               subjectHint,
               requestId: localId,
               imageUrl: downloadUrl,
@@ -102,12 +111,36 @@ export default function SolveBatchScreen() {
             });
             if (cancelledRef.current) return;
 
+            // Per-question exam: OCR says another package → re-solve without popup.
+            const hint = examHintFromResponse(response);
+            if (shouldConfirmExamMismatch(hint, examForSolve) && hint?.suggested) {
+              const suggested = hint.suggested;
+              setStatusLine(
+                `Soru ${index + 1}: ${EXAM_LABEL[suggested]} algılandı, yeniden…`,
+              );
+              response = await callSolveQuestion({
+                imagePath,
+                mimeType: img.mimeType,
+                examType: suggested,
+                subjectHint,
+                requestId: `${localId}-re`,
+                imageUrl: downloadUrl,
+                imageBase64: imageBase64 ?? undefined,
+              });
+              examForSolve = suggested;
+              if (cancelledRef.current) return;
+            }
+
             if (response.status === 'solved') {
-              patchSlot(slot.id, { status: 'ready', result: response });
+              patchSlot(slot.id, {
+                status: 'ready',
+                result: response,
+                examType: examForSolve,
+              });
               void recordLocalAttempt({
                 attemptId: response.attemptId,
                 solutionId: response.solutionId,
-                examType: resolvedExam,
+                examType: examForSolve,
                 subject: response.subject,
                 topicId: response.topicId,
                 imageUri: img.uri,
@@ -127,15 +160,14 @@ export default function SolveBatchScreen() {
                 status: 'error',
                 errorMessage: response.userMessage,
                 result: response,
+                examType: examForSolve,
               });
-              if (!openedRef.current && index === 0) {
-                // Keep analyzing until any success; if all fail, surface later
-              }
             }
           } catch (err) {
             patchSlot(slot.id, {
               status: 'error',
               errorMessage: solveFailureMessage(err),
+              examType: resolvedExam,
             });
           }
         };
@@ -154,7 +186,6 @@ export default function SolveBatchScreen() {
 
         if (cancelledRef.current) return;
         if (!openedRef.current) {
-          // No success — show results shell with errors
           setPhase('results');
         }
         setStatusLine(null);

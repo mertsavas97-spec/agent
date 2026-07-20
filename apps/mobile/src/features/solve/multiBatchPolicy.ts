@@ -14,7 +14,7 @@ export function multiBatchUserCopy(): {
 } {
   return {
     title: `Çoklu soru (en fazla ${MULTI_BATCH_MAX})`,
-    freeBody: `Galeriden en fazla ${MULTI_BATCH_MAX} soru seç. Free hesapta açmak için kısa bir reklam izlenir; her soru günlük hakkından düşer.`,
-    premiumBody: `Galeriden en fazla ${MULTI_BATCH_MAX} soru seç. Reklam yok; ilk hazır cevap hemen açılır, diğerleri arka planda yüklenir.`,
+    freeBody: `Galeriden en fazla ${MULTI_BATCH_MAX} soru seç; önce önizleme, sonra çözüm. Free hesapta açmak için kısa bir reklam izlenir; her soru günlük hakkından düşer.`,
+    premiumBody: `Galeriden en fazla ${MULTI_BATCH_MAX} soru seç; önce önizleme, sonra çözüm. Reklam yok; ilk hazır cevap hemen açılır, diğerleri arka planda yüklenir.`,
   };
 }

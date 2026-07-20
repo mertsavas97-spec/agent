@@ -48,7 +48,7 @@ const EXAM_TITLE: Record<ExamType, string> = {
   lgs: 'LGS',
   ygs: 'YGS (YKS)',
   kpss: 'KPSS',
-  trafik: 'Trafik',
+  trafik: 'Ehliyet',
 };
 
 type TabId = 'steps' | 'short' | 'lesson';

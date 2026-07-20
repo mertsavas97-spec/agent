@@ -28,7 +28,7 @@ describe('topicLessons', () => {
         subject: 'traffic',
         examType: 'trafik',
       }).headline,
-    ).toMatch(/Trafik/);
+    ).toMatch(/Ehliyet/);
     expect(
       buildFallbackLesson({
         topicId: 'ygs-math-x',

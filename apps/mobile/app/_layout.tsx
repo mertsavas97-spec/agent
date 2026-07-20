@@ -76,6 +76,16 @@ function RootLayoutNav() {
             }}
           />
           <Stack.Screen
+            name="capture-confirm-batch"
+            options={{
+              title: 'Fotoğrafları kontrol et',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
+          <Stack.Screen
             name="solve"
             options={{
               title: 'Çözüm',

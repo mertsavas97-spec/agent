@@ -38,7 +38,7 @@ function examBrand(exam: ExamType): ExamBrand {
       };
     case 'trafik':
       return {
-        short: 'Trafik',
+        short: 'Ehliyet',
         voice: 'ehliyet / MTS adayı dilinde',
         audience: 'ehliyet adayı',
       };
@@ -452,7 +452,7 @@ function brandRegex(exam: ExamType): RegExp {
     case 'kpss':
       return /\bKPSS\b/i;
     case 'trafik':
-      return /\bTrafik\b|\behliyet\b|\bMTS\b/i;
+      return /\bEhliyet\b|\behliyet\b|\bMTS\b|\bTrafik\b/i;
     default: {
       const _e: never = exam;
       return _e;

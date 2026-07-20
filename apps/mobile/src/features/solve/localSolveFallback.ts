@@ -66,8 +66,8 @@ export function buildLocalSolveFallback(input: {
   const transparencyNote =
     input.reason === 'unsupported'
       ? isVerbal
-        ? 'Bu sözel soru tam otomatik çözülemedi. Şıkları da kadraja alıp tekrar dene.'
-        : 'Bu kadrajdaki soru otomatik çözülemedi. Dersini onayla; soru ve şıklar net olsun.'
+        ? 'Bu sözel soru tam otomatik çözülemedi. Şıkları da net görünecek şekilde yeniden dene.'
+        : 'Bu fotoğraftaki soru otomatik çözülemedi. Dersini onayla; soru ve şıklar net olsun.'
       : 'Şu an otomatik çözüme ulaşılamadı; genel hatırlatma gösteriyoruz. Biraz sonra tekrar dener misin?';
 
   return {
@@ -85,7 +85,7 @@ export function buildLocalSolveFallback(input: {
           },
           {
             title: '2. Soruyu oku',
-            body: 'Kök cümleyi ve şıkları ayır; kadrajda tam görünsünler.',
+            body: 'Kök cümleyi ve şıkları ayır; fotoğrafta tam görünsünler.',
           },
           {
             title: '3. Tekrar dene',
@@ -125,7 +125,7 @@ export function buildLocalSolveFallback(input: {
           : [
               {
                 title: '1. Soruyu oku',
-                body: 'Verilenleri ve isteneni ayır. Şıklar ve işlem tamamen kadrajda olsun.',
+                body: 'Verilenleri ve isteneni ayır. Şıklar ve işlem fotoğrafta tam görünsün.',
               },
               {
                 title: '2. İşlemi kur',
