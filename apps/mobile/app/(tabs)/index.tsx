@@ -19,7 +19,9 @@ import {
 } from '@/src/features/ads';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { readExamPreference } from '@/src/features/exam/examPreference';
 import { examThemeFor } from '@/src/features/exam/examTheme';
+import { isExamType } from '@/src/features/exam/examTypes';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import {
   pickFromCamera,
@@ -68,8 +70,14 @@ export default function HomeScreen() {
           if (!alive) return;
           setStreak(progress.streakCount ?? 0);
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
+          const preferred = await readExamPreference();
           const et = userSnap.data()?.examType;
-          if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') {
+          if (preferred) {
+            setExamType(preferred);
+            if (et !== preferred) {
+              void callUpdateExamType(preferred).catch(() => undefined);
+            }
+          } else if (isExamType(et)) {
             setExamType(et);
           } else {
             // Ensure a visible selected exam (bootstrap default).
@@ -108,7 +116,7 @@ export default function HomeScreen() {
 
   async function openPicker(source: 'camera' | 'library') {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS veya KPSS seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Trafik seçmeden soru gönderilemez.');
       return;
     }
     const picked =
@@ -137,7 +145,7 @@ export default function HomeScreen() {
 
   async function openMultiBatch() {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS veya KPSS seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Trafik seçmeden soru gönderilemez.');
       return;
     }
     const copy = multiBatchUserCopy();

@@ -6,7 +6,9 @@ import { itemsForTopic } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
+import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 
 export default function TopicLessonScreen() {
   const router = useRouter();
@@ -21,6 +23,7 @@ export default function TopicLessonScreen() {
     : null;
   const samples = topic ? itemsForTopic(topic.id) : [];
   const theme = topic ? examThemeFor(topic.examType) : null;
+  const subjectTheme = topic ? subjectThemeFor(topic.subject) : null;
 
   if (!topic || !lesson) {
     return (
@@ -35,6 +38,13 @@ export default function TopicLessonScreen() {
       style={[styles.root, theme ? { backgroundColor: theme.soft } : null]}
       contentContainerStyle={styles.content}
       testID="topic-lesson-screen">
+      <CatalogBreadcrumb
+        examType={topic.examType}
+        examLabel={EXAM_LABEL[topic.examType]}
+        subject={topic.subject}
+        subjectLabel={subjectLabel(topic.subject)}
+        topicLabel={topic.nameTr}
+      />
       <View
         style={[
           styles.modeChip,
@@ -42,31 +52,49 @@ export default function TopicLessonScreen() {
         ]}>
         <Text style={styles.modeChipText}>{theme?.modeChip ?? EXAM_LABEL[topic.examType]}</Text>
       </View>
-      <Text style={[styles.kicker, theme ? { color: theme.solid } : null]}>
-        {EXAM_LABEL[topic.examType]} · {subjectLabel(topic.subject)}
+      <Text style={[styles.kicker, subjectTheme ? { color: subjectTheme.solid } : null]}>
+        {subjectLabel(topic.subject)}
       </Text>
-      <Text style={styles.title}>{topic.nameTr}</Text>
+      <Text style={[styles.title, theme ? { color: theme.solid } : null]}>{topic.nameTr}</Text>
       <Text style={styles.headline}>{lesson.headline}</Text>
 
       {lesson.bullets.map((b, i) => (
-        <View key={i} style={styles.bulletCard}>
-          <Text style={styles.bulletIndex}>{i + 1}</Text>
+        <View
+          key={i}
+          style={[
+            styles.bulletCard,
+            subjectTheme ? { borderLeftColor: subjectTheme.solid, borderLeftWidth: 3 } : null,
+          ]}>
+          <Text style={[styles.bulletIndex, theme ? { color: theme.solid } : null]}>
+            {i + 1}
+          </Text>
           <Text style={styles.bulletBody}>{b}</Text>
         </View>
       ))}
 
-      <View style={styles.tipBox}>
-        <Text style={styles.tipLabel}>Öğretmen ipucu</Text>
+      <View
+        style={[
+          styles.tipBox,
+          theme ? { borderColor: theme.accent, backgroundColor: theme.soft } : null,
+        ]}>
+        <Text style={[styles.tipLabel, theme ? { color: theme.solid } : null]}>
+          Öğretmen ipucu
+        </Text>
         <Text style={styles.tipBody}>{lesson.tip}</Text>
       </View>
 
       {samples.length > 0 ? (
         <>
-          <Text style={styles.section}>Bu konudan örnek</Text>
+          <Text style={[styles.section, theme ? { color: theme.solid } : null]}>
+            Bu konudan örnek
+          </Text>
           {samples.map((item) => (
             <Pressable
               key={item.id}
-              style={styles.sampleCard}
+              style={[
+                styles.sampleCard,
+                subjectTheme ? { borderColor: subjectTheme.solid } : null,
+              ]}
               testID={`topic-sample-${item.id}`}
               onPress={() =>
                 router.push({ pathname: '/sample/[id]', params: { id: item.id } })
@@ -74,7 +102,9 @@ export default function TopicLessonScreen() {
               <Text style={styles.sampleStem} numberOfLines={3}>
                 {item.stem}
               </Text>
-              <Text style={styles.sampleCta}>Çözümü aç →</Text>
+              <Text style={[styles.sampleCta, theme ? { color: theme.solid } : null]}>
+                Çözümü aç →
+              </Text>
             </Pressable>
           ))}
         </>

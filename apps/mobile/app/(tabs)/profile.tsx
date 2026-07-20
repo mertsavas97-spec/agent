@@ -5,6 +5,8 @@ import { Alert } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
 import { topicsForExam } from '@/src/data';
+import { readExamPreference } from '@/src/features/exam/examPreference';
+import { isExamType } from '@/src/features/exam/examTypes';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import { callRequestAccountDeletion } from '@/src/features/profile/deleteRequestClient';
 import { ProfilePanel } from '@/src/features/profile/ProfilePanel';
@@ -31,8 +33,10 @@ export default function ProfileScreen() {
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (!snap.exists()) return;
     const data = snap.data();
+    const preferred = await readExamPreference();
     const et = data.examType;
-    if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') setExamType(et);
+    if (preferred) setExamType(preferred);
+    else if (isExamType(et)) setExamType(et);
     setQuotaLabel(
       formatRemainingQuota(
         remainingFreeSolves({

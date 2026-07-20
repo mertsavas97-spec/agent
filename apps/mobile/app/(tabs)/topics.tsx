@@ -10,6 +10,7 @@ import {
 
 import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
+import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { itemsForExamSubject } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import {
@@ -20,6 +21,7 @@ import {
 } from '@/src/data';
 import type { ExamType, Subject } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
@@ -33,6 +35,7 @@ export default function TopicsScreen() {
   const [panel, setPanel] = useState<PanelId>('topics');
 
   const theme = examThemeFor(examType)!;
+  const subjectTheme = subjectThemeFor(subject);
 
   const topics = useMemo(
     () => topicsForExamSubject(examType, subject),
@@ -121,8 +124,15 @@ export default function TopicsScreen() {
         ]}
       />
 
+      <CatalogBreadcrumb
+        testID="topics-branch-crumb"
+        examType={examType}
+        examLabel={EXAM_LABEL[examType]}
+        subject={subject}
+        subjectLabel={subjectLabel(subject)}
+      />
       <Text style={[styles.branchTitle, { color: theme.solid }]}>
-        {EXAM_LABEL[examType]} · {subjectLabel(subject)}
+        {panel === 'topics' ? 'Konu anlatımları' : 'Örnek sorular'}
       </Text>
 
       {panel === 'topics' ? (
@@ -140,14 +150,32 @@ export default function TopicsScreen() {
               return (
                 <Pressable
                   key={t.id}
-                  style={[styles.topicRow, { borderColor: theme.accent }]}
+                  style={[
+                    styles.topicRow,
+                    {
+                      borderColor: subjectTheme.solid,
+                      backgroundColor: colors.white,
+                    },
+                  ]}
                   testID={`catalog-topic-${t.id}`}
                   accessibilityRole="button"
                   onPress={() =>
                     router.push({ pathname: '/topic/[id]', params: { id: t.id } })
                   }>
+                  <View
+                    style={[styles.topicAccent, { backgroundColor: subjectTheme.solid }]}
+                  />
                   <View style={styles.topicRowMain}>
-                    <Text style={styles.topicRowTitle}>{t.nameTr}</Text>
+                    <CatalogBreadcrumb
+                      examType={examType}
+                      examLabel={EXAM_LABEL[examType]}
+                      subject={t.subject}
+                      subjectLabel={subjectLabel(t.subject)}
+                      topicLabel={t.nameTr}
+                    />
+                    <Text style={[styles.topicRowTitle, { color: theme.solid }]}>
+                      {t.nameTr}
+                    </Text>
                     <Text style={styles.topicRowMeta}>
                       {lesson ? 'Anlatım hazır' : 'Özet'}
                       {sampleCount > 0 ? ` · ${sampleCount} örnek` : ' · örnek yok'}
@@ -169,28 +197,34 @@ export default function TopicsScreen() {
         <View testID="topics-samples-list">
           {samples.map((item) => {
             const topic = findTopic(item.topicId);
+            const itemSubjectTheme = subjectThemeFor(item.subject);
             return (
               <Pressable
                 key={item.id}
-                style={[styles.card, { borderColor: theme.accent }]}
+                style={[
+                  styles.card,
+                  {
+                    borderColor: itemSubjectTheme.solid,
+                    borderLeftWidth: 4,
+                  },
+                ]}
                 testID={`topic-item-${item.id}`}
                 accessibilityRole="button"
                 onPress={() =>
                   router.push({ pathname: '/sample/[id]', params: { id: item.id } })
                 }>
-                <Text style={[styles.cardKicker, { color: theme.solid }]}>
-                  {subjectLabel(item.subject)}
-                  {topic ? ` · ${topic.nameTr}` : ''}
-                  {item.difficulty === 'easy'
-                    ? ' · kolay'
-                    : item.difficulty === 'mid'
-                      ? ' · orta'
-                      : ' · zor'}
-                </Text>
-                <Text style={styles.cardTitle} numberOfLines={3}>
+                <CatalogBreadcrumb
+                  examType={examType}
+                  examLabel={EXAM_LABEL[examType]}
+                  subject={item.subject}
+                  subjectLabel={subjectLabel(item.subject)}
+                  topicLabel={topic?.nameTr}
+                  difficulty={item.difficulty}
+                />
+                <Text style={[styles.cardTitle, { color: theme.solid }]} numberOfLines={3}>
                   {item.stem}
                 </Text>
-                <Text style={[styles.cardCta, { color: theme.solid }]}>
+                <Text style={[styles.cardCta, { color: itemSubjectTheme.solid }]}>
                   Konuyu + çözümü gör →
                 </Text>
               </Pressable>
@@ -267,14 +301,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radii.lg,
     borderWidth: 1.5,
-    paddingHorizontal: space.md,
+    paddingRight: space.md,
     paddingVertical: 12,
+    overflow: 'hidden',
     ...shadows.soft,
   },
-  topicRowMain: { flex: 1 },
+  topicAccent: {
+    width: 5,
+    alignSelf: 'stretch',
+    marginRight: space.md,
+    borderTopLeftRadius: radii.lg,
+    borderBottomLeftRadius: radii.lg,
+  },
+  topicRowMain: { flex: 1, paddingLeft: 0 },
   topicRowTitle: {
-    fontFamily: typography.fontFamily,
-    fontSize: 15,
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.navy,
   },
@@ -310,12 +352,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     ...shadows.soft,
   },
-  cardKicker: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
   cardTitle: {
     fontFamily: typography.fontFamily,
     fontSize: 15,
@@ -324,7 +360,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   cardCta: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     marginTop: space.md,
     fontSize: 13,
     fontWeight: '700',

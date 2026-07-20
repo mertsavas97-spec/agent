@@ -5,7 +5,10 @@ import { findItem } from '@/src/data/itemBank';
 import { findTopic, subjectLabel } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { examThemeFor } from '@/src/features/exam/examTheme';
+import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 
 export default function SampleItemScreen() {
   const router = useRouter();
@@ -22,6 +25,8 @@ export default function SampleItemScreen() {
       : item
         ? lessonForTopic(item.topicId)
         : null;
+  const examTheme = item ? examThemeFor(item.examType) : null;
+  const subjectTheme = item ? subjectThemeFor(item.subject) : null;
 
   if (!item) {
     return (
@@ -33,14 +38,20 @@ export default function SampleItemScreen() {
 
   return (
     <ScrollView
-      style={styles.root}
+      style={[styles.root, examTheme ? { backgroundColor: examTheme.soft } : null]}
       contentContainerStyle={styles.content}
       testID="sample-item-screen">
-      <Text style={styles.kicker}>
-        {EXAM_LABEL[item.examType]} · {subjectLabel(item.subject)}
-        {topic ? ` · ${topic.nameTr}` : ''}
+      <CatalogBreadcrumb
+        examType={item.examType}
+        examLabel={EXAM_LABEL[item.examType]}
+        subject={item.subject}
+        subjectLabel={subjectLabel(item.subject)}
+        topicLabel={topic?.nameTr}
+        difficulty={item.difficulty}
+      />
+      <Text style={[styles.stem, examTheme ? { color: examTheme.solid } : null]}>
+        {item.stem}
       </Text>
-      <Text style={styles.stem}>{item.stem}</Text>
 
       {lesson ? (
         <View style={styles.lessonBlock} testID="sample-topic-lesson">
