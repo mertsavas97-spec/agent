@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,18 +9,16 @@ import {
   View,
 } from 'react-native';
 
-import { EXAM_LABEL, EXAM_OPTIONS } from '@/src/features/exam/examLabels';
-import { EXAM_THEME, examThemeFor } from '@/src/features/exam/examTheme';
-import { EXAM_TYPES } from '@/src/features/exam/examTypes';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { useActiveExam } from '@/src/features/exam/useActiveExam';
 import {
   fetchProgressAttempts,
   progressForExam,
 } from '@/src/lib/api/progressClient';
-import type { AttemptListItem, ExamType, ProgressSummary } from '@/src/lib/api/types';
+import type { AttemptListItem } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { Eyebrow } from '@/src/ui/Eyebrow';
-import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 
 /** Hafta başı Pazartesi → Pzt … Paz */
@@ -32,7 +30,11 @@ function streakBlurb(n: number): string {
   return 'Serin devam ediyor. Bir gün koparsa sıfırlanır — bugün bir soru yeter.';
 }
 
-function summaryHasData(s: ProgressSummary | null): boolean {
+function summaryHasData(s: {
+  totalSolved?: number;
+  topics: unknown[];
+  weekly: { solvedCount: number }[];
+} | null): boolean {
   if (!s) return false;
   return (
     (s.totalSolved ?? 0) > 0 ||
@@ -41,18 +43,10 @@ function summaryHasData(s: ProgressSummary | null): boolean {
   );
 }
 
-function pickDefaultExam(items: AttemptListItem[]): ExamType {
-  for (const exam of EXAM_TYPES) {
-    if (summaryHasData(progressForExam(items, exam))) return exam;
-  }
-  return 'lgs';
-}
-
 export default function StatsScreen() {
   const router = useRouter();
+  const { examType, theme } = useActiveExam();
   const [items, setItems] = useState<AttemptListItem[]>([]);
-  const [examType, setExamType] = useState<ExamType>('lgs');
-  const seededRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,10 +60,6 @@ export default function StatsScreen() {
           const data = await fetchProgressAttempts();
           if (!alive) return;
           setItems(data);
-          if (!seededRef.current) {
-            setExamType(pickDefaultExam(data));
-            seededRef.current = true;
-          }
         } catch {
           if (alive) {
             setItems([]);
@@ -85,19 +75,10 @@ export default function StatsScreen() {
     }, []),
   );
 
-  const theme = examThemeFor(examType)!;
   const summary = useMemo(
     () => progressForExam(items, examType),
     [items, examType],
   );
-
-  const examsWithData = useMemo(() => {
-    const set = new Set<ExamType>();
-    for (const exam of EXAM_TYPES) {
-      if (summaryHasData(progressForExam(items, exam))) set.add(exam);
-    }
-    return set;
-  }, [items]);
 
   const maxAttempts = Math.max(
     1,
@@ -107,9 +88,6 @@ export default function StatsScreen() {
   const maxWeekly = Math.max(1, ...summary.weekly.map((w) => w.solvedCount), 1);
   const topTopics = summary.topics.slice(0, 5);
   const hasData = summaryHasData(summary);
-  const otherWithData = EXAM_TYPES.filter(
-    (e) => e !== examType && examsWithData.has(e),
-  );
 
   return (
     <ScrollView
@@ -121,29 +99,8 @@ export default function StatsScreen() {
       </Eyebrow>
       <Text style={styles.title}>İstatistik</Text>
       <Text style={styles.subtitle}>
-        Sınav sekmeleri bağımsız. Hafta Pazartesi başlar.
+        {EXAM_LABEL[examType]} ilerlemen. Hafta Pazartesi başlar. Mod için Ayarlar.
       </Text>
-
-      <Text style={styles.filterLabel}>{TR_EYEBROW.exam}</Text>
-      <SegmentedTabs
-        testID="stats-exam-tabs"
-        itemTestIDPrefix="stats-exam"
-        variant="track"
-        value={examType}
-        onChange={setExamType}
-        activeColor={theme.solid}
-        accentColor={theme.accent}
-        items={EXAM_OPTIONS.map((o) => {
-          const has = examsWithData.has(o.id);
-          return {
-            id: o.id,
-            label: o.label,
-            caption: has ? 'Veriler Hazır' : 'Veri yok',
-            captionTone: has ? ('ready' as const) : ('empty' as const),
-            muted: !has,
-          };
-        })}
-      />
 
       <View
         style={[styles.modeChip, { backgroundColor: theme.solid }]}
@@ -159,36 +116,14 @@ export default function StatsScreen() {
         <View style={styles.emptyBlock} testID="stats-empty">
           <EmptyState
             title={`${EXAM_LABEL[examType]} · Veri yok`}
-            subtitle={
-              otherWithData.length > 0
-                ? `Bu sınavda henüz soru çözülmedi. ${otherWithData
-                    .map((e) => EXAM_LABEL[e])
-                    .join(', ')} sekmesinde verilerin hazır — oraya geç veya ${EXAM_LABEL[examType]} sorusu çöz.`
-                : `${EXAM_LABEL[examType]} modunda henüz soru çözülmedi. Bir soru çözünce seri ve bar’lar burada oluşur.`
-            }
+            subtitle={`${EXAM_LABEL[examType]} modunda henüz soru çözülmedi. Bir soru çözünce seri ve bar’lar burada oluşur.`}
           />
-          {otherWithData.length > 0 ? (
-            <View style={styles.otherRow}>
-              {otherWithData.map((e) => (
-                <Pressable
-                  key={e}
-                  style={[styles.otherChip, { backgroundColor: EXAM_THEME[e].solid }]}
-                  testID={`stats-jump-${e}`}
-                  onPress={() => setExamType(e)}>
-                  <Text style={styles.otherChipText}>
-                    {EXAM_THEME[e].modeChip} verisine git
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <Pressable
-              style={styles.primaryCta}
-              testID="stats-empty-cta"
-              onPress={() => router.push('/(tabs)')}>
-              <Text style={styles.primaryCtaText}>Ana sayfada soru çöz</Text>
-            </Pressable>
-          )}
+          <Pressable
+            style={styles.primaryCta}
+            testID="stats-empty-cta"
+            onPress={() => router.push('/(tabs)')}>
+            <Text style={styles.primaryCtaText}>Ana sayfada soru çöz</Text>
+          </Pressable>
         </View>
       ) : (
         <>
@@ -364,21 +299,11 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
     lineHeight: 22,
   },
-  filterLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    color: colors.navy,
-    marginBottom: space.sm,
-    opacity: 0.72,
-  },
   modeChip: {
     alignSelf: 'flex-start',
     borderRadius: radii.pill,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    marginTop: space.md,
     marginBottom: space.md,
   },
   modeChipText: {
@@ -388,19 +313,6 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   emptyBlock: { marginTop: space.sm },
-  otherRow: { gap: space.sm, marginTop: space.md },
-  otherChip: {
-    borderRadius: radii.lg,
-    paddingVertical: 12,
-    paddingHorizontal: space.md,
-    alignItems: 'center',
-  },
-  otherChipText: {
-    fontFamily: typography.fontFamilySemiBold,
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
   streakHero: { alignItems: 'center', marginBottom: space.lg },
   streakRing: {
     width: 132,

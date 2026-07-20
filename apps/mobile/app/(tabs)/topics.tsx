@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,8 +8,8 @@ import {
   View,
 } from 'react-native';
 
-import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
-import { examThemeFor } from '@/src/features/exam/examTheme';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { useActiveExam } from '@/src/features/exam/useActiveExam';
 import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { itemsForExamSubject } from '@/src/data/itemBank';
 import { lessonForTopic } from '@/src/data/topicLessons';
@@ -19,7 +19,7 @@ import {
   subjectsForExam,
   topicsForExamSubject,
 } from '@/src/data';
-import type { ExamType, Subject } from '@/src/lib/api/types';
+import type { Subject } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 import { EmptyState } from '@/src/ui/EmptyState';
@@ -31,12 +31,17 @@ type PanelId = 'topics' | 'samples';
 
 export default function TopicsScreen() {
   const router = useRouter();
-  const [examType, setExamType] = useState<ExamType>('lgs');
+  const { examType, theme } = useActiveExam();
   const subjects = useMemo(() => subjectsForExam(examType), [examType]);
   const [subject, setSubject] = useState<Subject>(subjects[0] ?? 'math');
   const [panel, setPanel] = useState<PanelId>('topics');
 
-  const theme = examThemeFor(examType)!;
+  useEffect(() => {
+    const next = subjectsForExam(examType);
+    setSubject(next[0] ?? 'math');
+    setPanel('topics');
+  }, [examType]);
+
   const subjectTheme = subjectThemeFor(subject);
 
   const topics = useMemo(
@@ -48,13 +53,6 @@ export default function TopicsScreen() {
     [examType, subject],
   );
 
-  function switchExam(next: ExamType) {
-    setExamType(next);
-    const nextSubjects = subjectsForExam(next);
-    setSubject(nextSubjects[0] ?? 'math');
-    setPanel('topics');
-  }
-
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.soft }]}
@@ -65,7 +63,8 @@ export default function TopicsScreen() {
       </Eyebrow>
       <Text style={styles.title}>Konu anlatımı</Text>
       <Text style={styles.subtitle}>
-        Sınav seç → ders → konu veya örnek soru. Ana sayfa modundan bağımsız gez.
+        {EXAM_LABEL[examType]} müfredatı. Ders seç → konu veya örnek soru.
+        Mod değiştirmek için Ayarlar.
       </Text>
 
       <View
@@ -74,23 +73,7 @@ export default function TopicsScreen() {
         <Text style={styles.modeChipText}>{theme.modeChip}</Text>
       </View>
 
-      <Text style={styles.filterLabel}>Sınav</Text>
-      <SegmentedTabs
-        testID="topics-exam-tabs"
-        itemTestIDPrefix="topics-exam"
-        variant="track"
-        value={examType}
-        onChange={switchExam}
-        activeColor={theme.solid}
-        accentColor={theme.accent}
-        items={EXAM_OPTIONS.map((o) => ({
-          id: o.id,
-          label: o.label,
-          caption: EXAM_SHORT[o.id],
-        }))}
-      />
-
-      <Text style={[styles.filterLabel, styles.spaced]}>Ders</Text>
+      <Text style={styles.filterLabel}>Ders</Text>
       <SegmentedTabs
         testID="topics-subject-filters"
         itemTestIDPrefix="topics-subject"

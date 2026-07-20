@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { render, screen, waitFor } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -14,6 +14,13 @@ jest.mock('expo-router', () => {
   };
 });
 
+jest.mock('@/src/features/exam/resolveActiveExam', () => ({
+  resolveActiveExamType: jest.fn().mockResolvedValue({
+    examType: 'kpss',
+    source: 'preference',
+  }),
+}));
+
 jest.mock('@/src/lib/api/progressClient', () => {
   const { buildProgressFromAttempts } = require('@/src/features/stats/buildProgressFromAttempts');
   return {
@@ -27,6 +34,15 @@ jest.mock('@/src/lib/api/progressClient', () => {
         thumbnailUrl: null,
         examType: 'kpss',
       },
+      {
+        attemptId: 'a-ygs',
+        createdAt: new Date().toISOString(),
+        subject: 'math',
+        topicId: 'ygs-math-001',
+        status: 'solved',
+        thumbnailUrl: null,
+        examType: 'ygs',
+      },
     ]),
     progressForExam: (items: unknown, exam: string) =>
       buildProgressFromAttempts(items, exam),
@@ -36,25 +52,15 @@ jest.mock('@/src/lib/api/progressClient', () => {
 import StatsScreen from '@/app/(tabs)/stats';
 
 describe('StatsScreen', () => {
-  it('defaults to exam with data and keeps empty wording on other tabs', async () => {
+  it('locks to active exam and ignores other-exam attempts', async () => {
     render(<StatsScreen />);
     expect(screen.getByTestId('stats-screen')).toBeTruthy();
-    expect(screen.getByTestId('stats-exam-tabs')).toBeTruthy();
+    expect(screen.queryByTestId('stats-exam-tabs')).toBeNull();
 
     await waitFor(() => {
       expect(screen.getByTestId('stats-mode-chip')).toHaveTextContent('MOD: KPSS');
       expect(screen.getByTestId('stats-streak')).toBeTruthy();
-      expect(screen.getByText('Veriler Hazır')).toBeTruthy();
-      expect(screen.getAllByText('Veri yok').length).toBeGreaterThanOrEqual(1);
     });
-
-    fireEvent.press(screen.getByTestId('stats-exam-ygs'));
-    await waitFor(() => {
-      expect(screen.getByTestId('stats-empty')).toBeTruthy();
-      expect(screen.getByText(/YGS · Veri yok/i)).toBeTruthy();
-      expect(screen.getByText(/henüz soru çözülmedi/i)).toBeTruthy();
-      expect(screen.getByTestId('stats-jump-kpss')).toBeTruthy();
-    });
+    expect(screen.queryByTestId('stats-jump-ygs')).toBeNull();
   });
 });
-

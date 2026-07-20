@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -8,15 +8,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
 
 import { filterAttempts } from '@/src/features/history/filterAttempts';
-import { EXAM_LABEL, EXAM_OPTIONS } from '@/src/features/exam/examLabels';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { useActiveExam } from '@/src/features/exam/useActiveExam';
 import { findTopic, subjectLabel, subjectsForExam } from '@/src/data';
 import { fetchAttempts } from '@/src/lib/api/progressClient';
-import type { AttemptListItem, ExamType, Subject } from '@/src/lib/api/types';
-import { ensureSignedIn } from '@/src/lib/auth';
-import { getFirebase } from '@/src/lib/firebase';
+import type { AttemptListItem, Subject } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { Eyebrow } from '@/src/ui/Eyebrow';
@@ -39,12 +37,10 @@ function formatWhen(iso: string): string {
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const { examType, theme } = useActiveExam();
   const [items, setItems] = useState<AttemptListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [examType, setExamType] = useState<ExamType | 'all'>('all');
-  const [profileExam, setProfileExam] = useState<ExamType>('lgs');
-  const examSeededRef = useRef(false);
   const [subject, setSubject] = useState<Subject | 'all'>('all');
   const [topicId, setTopicId] = useState<string | 'all'>('all');
 
@@ -55,20 +51,6 @@ export default function HistoryScreen() {
         setLoading(true);
         setError(null);
         try {
-          const user = await ensureSignedIn();
-          try {
-            const snap = await getDoc(doc(getFirebase().db, 'users', user.uid));
-            const et = snap.data()?.examType;
-            if (et === 'lgs' || et === 'ygs' || et === 'kpss' || et === 'trafik') {
-              setProfileExam(et);
-              if (!examSeededRef.current) {
-                setExamType(et);
-                examSeededRef.current = true;
-              }
-            }
-          } catch {
-            /* keep */
-          }
           const res = await fetchAttempts({ limit: 50 });
           if (!alive) return;
           setItems(res.items);
@@ -87,21 +69,24 @@ export default function HistoryScreen() {
     }, []),
   );
 
-  const examForSubjects = examType === 'all' ? profileExam : examType;
+  useEffect(() => {
+    setSubject('all');
+    setTopicId('all');
+  }, [examType]);
 
   const subjectFilters = useMemo(() => {
-    const list = subjectsForExam(examForSubjects);
+    const list = subjectsForExam(examType);
     return [
       { id: 'all' as const, label: 'Tümü' },
       ...list.map((s) => ({ id: s, label: subjectLabel(s) })),
     ];
-  }, [examForSubjects]);
+  }, [examType]);
 
   const topics = useMemo(() => {
     const ids = new Set<string>();
     for (const i of items) {
       if (i.topicId) {
-        if (examType !== 'all' && i.examType && i.examType !== examType) continue;
+        if (i.examType && i.examType !== examType) continue;
         if (subject !== 'all' && i.subject !== subject) continue;
         ids.add(i.topicId);
       }
@@ -115,32 +100,31 @@ export default function HistoryScreen() {
     topicId,
   });
 
+  const examItems = useMemo(
+    () => items.filter((i) => !i.examType || i.examType === examType),
+    [items, examType],
+  );
+
   return (
-    <View style={styles.container} testID="history-screen">
-      <Eyebrow style={styles.eyebrow}>{TR_EYEBROW.records}</Eyebrow>
+    <View
+      style={[styles.container, { backgroundColor: theme.soft }]}
+      testID="history-screen">
+      <Eyebrow color={theme.solid} style={styles.eyebrow}>
+        {TR_EYEBROW.records}
+      </Eyebrow>
       <Text style={styles.title}>Geçmiş</Text>
       <Text style={styles.subtitle}>
-        Çözdüğün sorular burada. Sınav ve dersle filtrele; satıra dokununca çözümü aç.
+        {EXAM_LABEL[examType]} çözümlerin. Dersle filtrele; satıra dokununca çözümü aç.
+        Mod için Ayarlar.
       </Text>
 
-      <Text style={styles.filterLabel}>Sınav</Text>
-      <SegmentedTabs
-        testID="history-exam-filters"
-        itemTestIDPrefix="filter-exam"
-        variant="chips"
-        value={examType}
-        onChange={(id) => {
-          setExamType(id);
-          setSubject('all');
-          setTopicId('all');
-        }}
-        items={[
-          { id: 'all' as const, label: 'Tümü' },
-          ...EXAM_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
-        ]}
-      />
+      <View
+        style={[styles.modeChip, { backgroundColor: theme.solid }]}
+        testID="history-mode-chip">
+        <Text style={styles.modeChipText}>{theme.modeChip}</Text>
+      </View>
 
-      <Text style={[styles.filterLabel, styles.filterLabelSpaced]}>Ders</Text>
+      <Text style={styles.filterLabel}>Ders</Text>
       <SegmentedTabs
         testID="history-subject-filters"
         itemTestIDPrefix="filter-subject"
@@ -150,6 +134,8 @@ export default function HistoryScreen() {
           setSubject(id);
           setTopicId('all');
         }}
+        activeColor={theme.solid}
+        accentColor={theme.accent}
         items={subjectFilters}
       />
 
@@ -162,6 +148,8 @@ export default function HistoryScreen() {
             variant="chips"
             value={topicId}
             onChange={setTopicId}
+            activeColor={theme.solid}
+            accentColor={theme.accent}
             items={topics.map((t) => ({
               id: t,
               label:
@@ -173,18 +161,18 @@ export default function HistoryScreen() {
 
       <View style={styles.listArea}>
         {loading ? (
-          <ActivityIndicator color={colors.navy} style={{ marginTop: space.lg }} />
+          <ActivityIndicator color={theme.solid} style={{ marginTop: space.lg }} />
         ) : error ? (
           <EmptyState title="Yüklenemedi" subtitle={error} />
-        ) : items.length === 0 ? (
+        ) : examItems.length === 0 ? (
           <EmptyState
             title="Henüz kayıt yok"
-            subtitle="Ana sayfadan soru fotoğrafı çek — çözümler burada listelenir."
+            subtitle={`${EXAM_LABEL[examType]} modunda henüz soru çözülmedi. Ana sayfadan fotoğraf çek.`}
           />
         ) : filtered.length === 0 ? (
           <EmptyState
             title="Filtreye uygun kayıt yok"
-            subtitle="Sınav veya ders filtresini genişlet."
+            subtitle="Ders veya konu filtresini genişlet."
           />
         ) : (
           <FlatList
@@ -196,7 +184,6 @@ export default function HistoryScreen() {
               const topicName = item.topicId
                 ? findTopic(item.topicId)?.nameTr ?? item.topicId
                 : 'Konu yok';
-              const examChip = item.examType ? EXAM_LABEL[item.examType] : null;
               return (
                 <Pressable
                   style={styles.row}
@@ -215,7 +202,6 @@ export default function HistoryScreen() {
                     <Text style={styles.rowChevron}>›</Text>
                   </View>
                   <Text style={styles.rowMeta}>
-                    {examChip ? `${examChip} · ` : ''}
                     {subjectLabel(item.subject)}
                     {' · '}
                     {item.status === 'solved' ? 'Çözüldü' : item.status}
@@ -256,6 +242,19 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: space.md,
     lineHeight: 22,
+  },
+  modeChip: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: space.md,
+  },
+  modeChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
   },
   filterLabel: {
     fontFamily: typography.fontFamilySemiBold,
