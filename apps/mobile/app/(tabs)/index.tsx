@@ -42,6 +42,8 @@ import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { findTopic, subjectLabel, topicsForExam } from '@/src/data';
 import { EmptyState } from '@/src/ui/EmptyState';
+import { Eyebrow } from '@/src/ui/Eyebrow';
+import { trUpper } from '@/src/lib/trCase';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -252,13 +254,13 @@ export default function HomeScreen() {
               ? { borderColor: examTheme.accent, borderWidth: 1.5 }
               : null,
           ]}>
-          <Text
+          <Eyebrow
             style={[
               styles.actionKicker,
               examTheme ? { color: examTheme.solid } : null,
             ]}>
-            Soru çöz · {examTheme ? examTheme.label : 'sınav seç'}
-          </Text>
+            {trUpper(`Soru çöz · ${examTheme ? examTheme.label : 'sınav seç'}`)}
+          </Eyebrow>
           <Text style={styles.actionTitle}>Soru fotoğrafı gönder</Text>
           <Text style={styles.actionBody}>
             Kitap, defter veya denemedeki soruyu net çek. Soru metni ve şıklar okunaklı
@@ -426,12 +428,7 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   actionKicker: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: 6,
   },
   actionTitle: {

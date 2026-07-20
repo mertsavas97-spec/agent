@@ -9,6 +9,8 @@ import { examThemeFor } from '@/src/features/exam/examTheme';
 import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
+import { Eyebrow } from '@/src/ui/Eyebrow';
+import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 
 export default function TopicLessonScreen() {
   const router = useRouter();
@@ -52,9 +54,9 @@ export default function TopicLessonScreen() {
         ]}>
         <Text style={styles.modeChipText}>{theme?.modeChip ?? EXAM_LABEL[topic.examType]}</Text>
       </View>
-      <Text style={[styles.kicker, subjectTheme ? { color: subjectTheme.solid } : null]}>
-        {subjectLabel(topic.subject)}
-      </Text>
+      <Eyebrow style={[styles.kicker, subjectTheme ? { color: subjectTheme.solid } : null]}>
+        {trUpper(subjectLabel(topic.subject))}
+      </Eyebrow>
       <Text style={[styles.title, theme ? { color: theme.solid } : null]}>{topic.nameTr}</Text>
       <Text style={styles.headline}>{lesson.headline}</Text>
 
@@ -77,9 +79,9 @@ export default function TopicLessonScreen() {
           styles.tipBox,
           theme ? { borderColor: theme.accent, backgroundColor: theme.soft } : null,
         ]}>
-        <Text style={[styles.tipLabel, theme ? { color: theme.solid } : null]}>
-          Öğretmen ipucu
-        </Text>
+        <Eyebrow style={[styles.tipLabel, theme ? { color: theme.solid } : null]}>
+          {TR_EYEBROW.teacherTip}
+        </Eyebrow>
         <Text style={styles.tipBody}>{lesson.tip}</Text>
       </View>
 
@@ -139,12 +141,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   kicker: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: space.sm,
   },
   title: {
@@ -200,12 +197,7 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   tipLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontWeight: '700',
-    color: colors.orange,
-    fontSize: 12,
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
     marginBottom: 6,
   },
   tipBody: {

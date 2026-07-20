@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ExamType } from '@/src/lib/api/types';
+import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
 import { EXAM_OPTIONS } from './examLabels';
@@ -32,9 +34,9 @@ export function ExamModeSwitcher({ value, onChange, disabled }: ExamModeSwitcher
       testID="exam-mode-switcher-wrap">
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
-          <Text style={[styles.kicker, theme ? { color: theme.solid } : null]}>
-            Aktif sınav modu
-          </Text>
+          <Eyebrow style={[styles.kicker, theme ? { color: theme.solid } : null]}>
+            {TR_EYEBROW.activeExamMode}
+          </Eyebrow>
           <Text style={styles.help}>
             LGS, YGS, KPSS veya Ehliyet seç; çözüm dili, konular ve istatistikler buna göre
             ayarlanır.
@@ -114,12 +116,8 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1 },
   kicker: {
-    fontFamily: typography.fontFamily,
-    fontWeight: '700',
     fontSize: 13,
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: 6,
   },
   help: {

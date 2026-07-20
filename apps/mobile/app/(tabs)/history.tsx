@@ -19,7 +19,9 @@ import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
+import { TR_EYEBROW } from '@/src/lib/trCase';
 
 function formatWhen(iso: string): string {
   try {
@@ -115,7 +117,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container} testID="history-screen">
-      <Text style={styles.eyebrow}>Kayıtlar</Text>
+      <Eyebrow style={styles.eyebrow}>{TR_EYEBROW.records}</Eyebrow>
       <Text style={styles.title}>Geçmiş</Text>
       <Text style={styles.subtitle}>
         Çözdüğün sorular burada. Sınav ve dersle filtrele; satıra dokununca çözümü aç.
@@ -237,12 +239,7 @@ const styles = StyleSheet.create({
     paddingTop: space.lg,
   },
   eyebrow: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.orange,
     marginBottom: 4,
   },
   title: {

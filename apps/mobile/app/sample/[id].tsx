@@ -9,6 +9,7 @@ import { examThemeFor } from '@/src/features/exam/examTheme';
 import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
+import { TR_EYEBROW } from '@/src/lib/trCase';
 
 export default function SampleItemScreen() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function SampleItemScreen() {
             <Text style={[styles.choiceBody, correct && styles.choiceBodyOn]}>
               {item.choices[key]}
             </Text>
-            {correct ? <Text style={styles.correctBadge}>doğru</Text> : null}
+            {correct ? <Text style={styles.correctBadge}>{TR_EYEBROW.correct}</Text> : null}
           </View>
         );
       })}
@@ -121,7 +122,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
     color: colors.orange,
     marginBottom: space.sm,
   },
@@ -213,7 +213,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: colors.orange,
-    textTransform: 'uppercase',
   },
   step: {
     backgroundColor: colors.white,

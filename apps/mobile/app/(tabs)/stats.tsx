@@ -19,7 +19,9 @@ import {
 import type { AttemptListItem, ExamType, ProgressSummary } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { EmptyState } from '@/src/ui/EmptyState';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
+import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 
 /** Hafta başı Pazartesi → Pzt … Paz */
 const WEEK_LABELS_MON = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as const;
@@ -114,13 +116,15 @@ export default function StatsScreen() {
       style={[styles.container, { backgroundColor: theme.soft }]}
       contentContainerStyle={styles.content}
       testID="stats-screen">
-      <Text style={[styles.eyebrow, { color: theme.solid }]}>İlerleme</Text>
+      <Eyebrow color={theme.solid} style={styles.eyebrow}>
+        {TR_EYEBROW.progress}
+      </Eyebrow>
       <Text style={styles.title}>İstatistik</Text>
       <Text style={styles.subtitle}>
         Sınav sekmeleri bağımsız. Hafta Pazartesi başlar.
       </Text>
 
-      <Text style={styles.filterLabel}>Sınav</Text>
+      <Text style={styles.filterLabel}>{TR_EYEBROW.exam}</Text>
       <SegmentedTabs
         testID="stats-exam-tabs"
         itemTestIDPrefix="stats-exam"
@@ -309,7 +313,7 @@ export default function StatsScreen() {
               style={[styles.focusCard, { borderColor: theme.accent }]}
               testID="weakest-topic">
               <Text style={[styles.focusEyebrow, { color: theme.accent }]}>
-                Bugünkü odak · {EXAM_LABEL[examType]}
+                {trUpper(`Bugünkü odak · ${EXAM_LABEL[examType]}`)}
               </Text>
               <Text style={styles.focusName}>{summary.weakestTopic.nameTr}</Text>
               <Text style={styles.focusHint}>
@@ -340,11 +344,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: space.lg, paddingBottom: space.xl * 2 },
   eyebrow: {
-    fontFamily: typography.fontFamilySemiBold,
     fontSize: 11,
-    fontWeight: '700',
     letterSpacing: 1,
-    textTransform: 'uppercase',
     marginBottom: 6,
   },
   title: {
@@ -368,7 +369,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
     color: colors.navy,
     marginBottom: space.sm,
     opacity: 0.72,
@@ -543,7 +543,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
     marginBottom: 6,
   },
   focusName: {

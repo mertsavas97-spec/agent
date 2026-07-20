@@ -23,7 +23,9 @@ import type { ExamType, Subject } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 import { EmptyState } from '@/src/ui/EmptyState';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
+import { TR_EYEBROW } from '@/src/lib/trCase';
 
 type PanelId = 'topics' | 'samples';
 
@@ -58,7 +60,9 @@ export default function TopicsScreen() {
       style={[styles.container, { backgroundColor: theme.soft }]}
       contentContainerStyle={styles.content}
       testID="topics-screen">
-      <Text style={[styles.eyebrow, { color: theme.solid }]}>Müfredat</Text>
+      <Eyebrow color={theme.solid} style={styles.eyebrow}>
+        {TR_EYEBROW.curriculum}
+      </Eyebrow>
       <Text style={styles.title}>Konu anlatımı</Text>
       <Text style={styles.subtitle}>
         Sınav seç → ders → konu veya örnek soru. Ana sayfa modundan bağımsız gez.
@@ -244,11 +248,7 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl * 2,
   },
   eyebrow: {
-    fontFamily: typography.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.6,
-    textTransform: 'uppercase',
     marginBottom: 4,
   },
   title: {

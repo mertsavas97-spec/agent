@@ -9,7 +9,9 @@ import {
   peekPendingMultiBatch,
 } from '@/src/features/solve/multiBatchStore';
 import type { ExamType } from '@/src/lib/api/types';
+import { trUpper } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 
 /**
  * Preview after multi-select — user confirms before batch solve starts.
@@ -53,9 +55,9 @@ export default function CaptureConfirmBatchScreen() {
         }}
       />
 
-      <Text style={[styles.kicker, { color: theme.solid }]}>
-        Galeriden · {images.length} soru · {EXAM_LABEL[examType]}
-      </Text>
+      <Eyebrow style={[styles.kicker, { color: theme.solid }]}>
+        {trUpper(`Galeriden · ${images.length} soru · ${EXAM_LABEL[examType]}`)}
+      </Eyebrow>
       <Text style={styles.title}>Bu fotoğraflarla devam edilsin mi?</Text>
       <Text style={styles.hint}>
         Her karede soru metni ve şıklar net görünsün. Değilse yeniden seç.
@@ -117,11 +119,7 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   kicker: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
     marginBottom: 6,
   },
   title: {

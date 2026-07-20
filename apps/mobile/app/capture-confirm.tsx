@@ -5,7 +5,9 @@ import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
 import { isExamType } from '@/src/features/exam/examTypes';
 import type { ExamType } from '@/src/lib/api/types';
+import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 
 /**
  * Preview after camera/gallery — user confirms before solve loading starts.
@@ -24,7 +26,7 @@ export default function CaptureConfirmScreen() {
   const examType: ExamType = isExamType(params.examType) ? params.examType : 'lgs';
   const theme = examThemeFor(examType)!;
   const sourceLabel =
-    params.source === 'camera' ? 'Kameradan' : 'Galeriden';
+    params.source === 'camera' ? TR_EYEBROW.fromCamera : TR_EYEBROW.fromGallery;
 
   function goSolve() {
     if (!uri) return;
@@ -65,9 +67,9 @@ export default function CaptureConfirmScreen() {
         }}
       />
 
-      <Text style={[styles.kicker, { color: theme.solid }]}>
-        {sourceLabel} · {EXAM_LABEL[examType]}
-      </Text>
+      <Eyebrow style={[styles.kicker, { color: theme.solid }]}>
+        {`${sourceLabel} · ${trUpper(EXAM_LABEL[examType])}`}
+      </Eyebrow>
       <Text style={styles.title}>Bu fotoğrafla devam edilsin mi?</Text>
       <Text style={styles.hint}>
         Soru metni ve şıklar net görünsün. Değilse yeniden seç.
@@ -120,11 +122,7 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   kicker: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
     marginBottom: 6,
   },
   title: {

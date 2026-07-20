@@ -20,7 +20,9 @@ import type {
   Subject,
 } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
+import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 import { colors, radii, space, typography } from '@/src/theme';
+import { Eyebrow } from '@/src/ui/Eyebrow';
 
 import {
   buildShortSummary,
@@ -132,8 +134,9 @@ export function SolutionScreen({
                 styles.metaExam,
                 examTheme ? { color: examTheme.solid } : null,
               ]}>
-              {EXAM_TITLE[examType]}
-              {examTheme ? ` · ${examTheme.modeChip}` : ''}
+              {trUpper(
+                `${EXAM_TITLE[examType]}${examTheme ? ` · ${examTheme.modeChip}` : ''}`,
+              )}
             </Text>
           ) : null}
           {subject && subject !== 'unknown' ? (
@@ -160,7 +163,7 @@ export function SolutionScreen({
 
       {answer ? (
         <View style={styles.answerHero} testID="answer-hero">
-          <Text style={styles.answerEyebrow}>Doğru cevap</Text>
+          <Eyebrow style={styles.answerEyebrow}>{TR_EYEBROW.correctAnswer}</Eyebrow>
           <Text style={styles.answerText} accessibilityRole="header">
             {formatAnswerDisplay(answer)}
           </Text>
@@ -234,13 +237,15 @@ export function SolutionScreen({
                   examTheme ? { color: examTheme.solid } : null,
                 ]}
                 testID="lesson-exam-chip">
-                {[
-                  examType ? EXAM_TITLE[examType] : null,
-                  subject && subject !== 'unknown' ? subjectLabel(subject) : null,
-                  topicName,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+                {trUpper(
+                  [
+                    examType ? EXAM_TITLE[examType] : null,
+                    subject && subject !== 'unknown' ? subjectLabel(subject) : null,
+                    topicName,
+                  ]
+                    .filter(Boolean)
+                    .join(' · '),
+                )}
               </Text>
             ) : null}
             {topicLesson ? (
@@ -262,7 +267,7 @@ export function SolutionScreen({
                   );
                 })}
                 <View style={styles.tipBox}>
-                  <Text style={styles.tipLabel}>İpucu</Text>
+                  <Eyebrow style={styles.tipLabel}>{TR_EYEBROW.tip}</Eyebrow>
                   <Text style={styles.stepBody}>{topicLesson.tip}</Text>
                 </View>
               </>
@@ -353,7 +358,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.orange,
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
   },
   metaSubject: {
     fontFamily: typography.fontFamilySemiBold,
@@ -383,12 +387,8 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   answerEyebrow: {
-    fontFamily: typography.fontFamilySemiBold,
     fontSize: 11,
-    fontWeight: '700',
-    color: colors.orange,
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
     marginBottom: 4,
   },
   answerText: {
@@ -463,7 +463,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.3,
-    textTransform: 'uppercase',
     color: colors.orange,
     marginBottom: space.sm,
   },
@@ -507,13 +506,8 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   tipLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontWeight: '700',
-    color: colors.orange,
-    fontSize: 12,
     marginBottom: 4,
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
   },
   fullLessonLink: {
     marginTop: space.md,
