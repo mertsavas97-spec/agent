@@ -45,7 +45,8 @@ export async function pickFromCamera(): Promise<PickedImage | null> {
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
     quality: 0.85,
-    allowsEditing: true,
+    // Full frame as-is — no forced crop UI
+    allowsEditing: false,
   });
   if (result.canceled || !result.assets[0]) return null;
   return mapAsset(result.assets[0]);
@@ -58,14 +59,15 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     quality: 0.85,
-    allowsEditing: true,
+    // Full photo as-is — no forced crop UI
+    allowsEditing: false,
   });
   if (result.canceled || !result.assets[0]) return null;
   return mapAsset(result.assets[0]);
 }
 
 /**
- * Multi-select gallery for batch solve. Editing disabled (Expo multi constraint).
+ * Multi-select gallery for batch solve. No crop (Expo multi + product choice).
  * Caps at `selectionLimit` (product: MULTI_BATCH_MAX).
  */
 export async function pickMultipleFromLibrary(
