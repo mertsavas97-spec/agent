@@ -5,10 +5,10 @@ export const EXAM_OPTIONS: {
   label: string;
   short: string;
 }[] = [
-  { id: 'lgs', label: 'LGS', short: 'Lise giriş' },
+  { id: 'lgs', label: 'LGS', short: 'Lise' },
   { id: 'ygs', label: 'YGS', short: 'Üniversite' },
   { id: 'kpss', label: 'KPSS', short: 'Kamu' },
-  { id: 'trafik', label: 'Ehliyet', short: 'MTS' },
+  { id: 'trafik', label: 'Ehliyet', short: 'Sürücü' },
 ];
 
 export const EXAM_LABEL: Record<ExamType, string> = {

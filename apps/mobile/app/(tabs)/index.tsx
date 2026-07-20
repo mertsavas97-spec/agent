@@ -44,11 +44,13 @@ import {
   isPremiumActive,
 } from '@/src/features/paywall/entitlement';
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
-import { findTopic, subjectLabel, topicsForExam } from '@/src/data';
-import { EmptyState } from '@/src/ui/EmptyState';
-import { Eyebrow } from '@/src/ui/Eyebrow';
-import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
+import { findTopic, subjectLabel } from '@/src/data';
+import { TR_EYEBROW } from '@/src/lib/trCase';
 
+/**
+ * Ana Sayfa redesign v2 (designer brief):
+ * günlük araç — az metin, tek kahraman = turuncu kamera CTA.
+ */
 export default function HomeScreen() {
   const router = useRouter();
   const [streak, setStreak] = useState(0);
@@ -89,7 +91,6 @@ export default function HomeScreen() {
           } else if (isExamType(et)) {
             setExamType(et);
           } else {
-            // Ensure a visible selected exam (bootstrap default).
             setExamType('lgs');
             void callUpdateExamType('lgs').catch(() => undefined);
           }
@@ -198,7 +199,6 @@ export default function HomeScreen() {
               });
               return;
             }
-            // Multi: clear ders ipucu — her fotoğraf kendi sınav/branşını algılar.
             takePendingSubjectHint();
             setPendingMultiBatch({
               images: picked,
@@ -211,9 +211,6 @@ export default function HomeScreen() {
     ]);
   }
 
-  const subjectCount =
-    examType != null ? new Set(topicsForExam(examType).map((t) => t.subject)).size : 0;
-  const topicCount = examType != null ? topicsForExam(examType).length : 0;
   const examTheme = examThemeFor(examType);
 
   return (
@@ -224,11 +221,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
-          <View style={styles.topBrandCol}>
-            <Text style={styles.brand}>{brand.name}</Text>
-            <Text style={styles.tagline}>
-              Kitaptaki veya defterdeki sorunun fotoğrafını çek, adım adım anlatılsın.
-            </Text>
+          <Text style={styles.brand}>{brand.name}</Text>
+          <View style={styles.streakChip} testID="home-streak">
+            <Text style={styles.streakText}>{streak} gün</Text>
           </View>
           <Pressable
             testID="home-premium-cta"
@@ -252,49 +247,13 @@ export default function HomeScreen() {
           disabled={switching}
         />
 
-        {examType && examTheme ? (
-          <View
-            style={[styles.metaChip, { backgroundColor: examTheme.solid }]}
-            testID="home-streak">
-            <Text style={styles.metaChipText}>
-              {examTheme.modeChip} · Seri {streak} gün · {subjectCount} ders · {topicCount} konu
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.metaLine} testID="home-streak">
-            Seri: {streak} gün
-          </Text>
-        )}
-
         {subjectHintBanner ? (
-          <Text style={styles.hintBanner} testID="home-subject-hint">
-            Ders ipucu: {subjectHintBanner} — sonraki fotoğrafa eklenecek
-          </Text>
+          <View style={styles.hintChip} testID="home-subject-hint">
+            <Text style={styles.hintChipText}>Ders ipucu: {subjectHintBanner}</Text>
+          </View>
         ) : null}
 
-        <View
-          style={[
-            styles.actionCard,
-            examTheme
-              ? { borderColor: examTheme.accent, borderWidth: 1.5 }
-              : null,
-          ]}>
-          <Eyebrow
-            style={[
-              styles.actionKicker,
-              examTheme ? { color: examTheme.solid } : null,
-            ]}>
-            {trUpper(`Soru çöz · ${examTheme ? examTheme.label : 'sınav seç'}`)}
-          </Eyebrow>
-          <Text style={styles.actionTitle}>Soru fotoğrafı gönder</Text>
-          <Text style={styles.actionBody}>
-            Kitap, defter veya denemedeki soruyu net çek. Soru metni ve şıklar okunaklı
-            olsun.
-            {examTheme
-              ? ` Çözüm ${examTheme.label} (${examTheme.short}) paketine göre işlenir.`
-              : ''}
-          </Text>
-
+        <View style={styles.hero}>
           <Pressable
             style={[
               styles.primaryBtn,
@@ -308,31 +267,24 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={styles.secondaryBtn}
+            style={styles.secondaryLink}
             accessibilityRole="button"
             accessibilityLabel="Galeriden soru fotoğrafı seç"
             testID="gallery-cta"
             onPress={() => void openPicker('library')}>
-            <Text style={styles.secondaryBtnLabel}>Galeriden soru seç</Text>
+            <Text style={styles.secondaryLinkLabel}>Galeriden seç</Text>
           </Pressable>
 
           <Pressable
-            style={styles.multiBtn}
+            style={styles.multiLink}
             accessibilityRole="button"
             accessibilityLabel="Çoklu soru seç"
             testID="multi-batch-cta"
             onPress={() => void openMultiBatch()}>
-            <Text style={styles.multiBtnLabel}>
-              Çoklu soru · en fazla {MULTI_BATCH_MAX}
-            </Text>
-            <Text style={styles.multiBtnCaption}>
-              Önce önizleme, sonra çözüm · her soru ayrı sekmede
+            <Text style={styles.multiLinkLabel}>
+              Çoklu soru (en fazla {MULTI_BATCH_MAX})
             </Text>
           </Pressable>
-
-          <Text style={styles.micro}>
-            Yapay zekâ destekli anlatım üretilir; cevabı mutlaka kontrol et.
-          </Text>
         </View>
 
         <Pressable
@@ -342,9 +294,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/(tabs)/topics')}>
           <View style={{ flex: 1 }}>
             <Text style={styles.topicsLinkTitle}>Konu anlatımı</Text>
-            <Text style={styles.topicsLinkBody}>
-              LGS · YGS · KPSS · Ehliyet → ders → konu ve örnek sorular.
-            </Text>
+            <Text style={styles.topicsLinkBody}>Derse göre konu ve örnek soru</Text>
           </View>
           <Text style={styles.topicsChevron}>›</Text>
         </Pressable>
@@ -353,11 +303,9 @@ export default function HomeScreen() {
         {loading ? (
           <ActivityIndicator color={colors.navy} />
         ) : recent.length === 0 ? (
-          <EmptyState
-            testID="home-recent-empty"
-            title="Henüz çözülmüş soru yok"
-            subtitle="Yukarıdan soru fotoğrafı çekerek ilk çözümünü başlat."
-          />
+          <Text style={styles.recentEmpty} testID="home-recent-empty">
+            Henüz çözüm yok · İlk sorunu çek
+          </Text>
         ) : (
           <FlatList
             data={recent}
@@ -396,203 +344,151 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   container: {
-    padding: space.lg,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
     paddingBottom: space.xl,
   },
   topRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: space.sm,
-    marginBottom: space.lg,
+    marginBottom: space.md,
   },
-  topBrandCol: { flex: 1 },
   brand: {
-    fontFamily: typography.fontFamily,
-    fontSize: 32,
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.navy,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
+    flexShrink: 0,
   },
-  tagline: {
-    fontFamily: typography.fontFamily,
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 6,
-    lineHeight: 23,
+  streakChip: {
+    backgroundColor: colors.orangeSoft,
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  streakText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.orange,
   },
   premiumPill: {
-    backgroundColor: colors.orange,
+    marginLeft: 'auto',
+    backgroundColor: colors.navy,
     borderRadius: radii.pill,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 4,
-    ...shadows.cta,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: colors.orange,
   },
   premiumPillOn: {
     backgroundColor: colors.navy,
-    borderWidth: 1.5,
-    borderColor: colors.orange,
   },
   premiumPillLabel: {
     fontFamily: typography.fontFamilySemiBold,
     fontSize: 12,
     fontWeight: '700',
-    color: colors.navy,
+    color: colors.orange,
     letterSpacing: 0.3,
   },
   premiumPillLabelOn: {
     color: colors.orange,
   },
-  metaLine: {
-    fontFamily: typography.fontFamily,
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.navy,
-    marginBottom: space.md,
-  },
-  metaChip: {
+  hintChip: {
     alignSelf: 'flex-start',
+    backgroundColor: colors.orangeSoft,
     borderRadius: radii.pill,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: space.md,
+    paddingVertical: 6,
+    marginTop: space.md,
   },
-  metaChipText: {
+  hintChipText: {
     fontFamily: typography.fontFamilySemiBold,
     fontSize: 12,
-    fontWeight: '700',
-    color: colors.white,
-    letterSpacing: 0.2,
-  },
-  hintBanner: {
-    fontFamily: typography.fontFamily,
-    fontSize: 13,
     fontWeight: '600',
     color: colors.orange,
-    marginBottom: space.md,
-    lineHeight: 18,
   },
-  actionCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    padding: space.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: space.md,
-    ...shadows.soft,
-  },
-  actionKicker: {
-    letterSpacing: 0.6,
-    marginBottom: 6,
-  },
-  actionTitle: {
-    fontFamily: typography.fontFamily,
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.navy,
-    marginBottom: 8,
-  },
-  actionBody: {
-    fontFamily: typography.fontFamily,
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: space.md,
+  hero: {
+    marginTop: space.xl,
+    marginBottom: space.lg,
+    alignItems: 'stretch',
   },
   primaryBtn: {
     backgroundColor: colors.orange,
     borderRadius: radii.lg,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
     ...shadows.cta,
   },
   primaryBtnLabel: {
-    fontFamily: typography.fontFamily,
-    color: colors.white,
-    fontSize: 16,
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.navy,
+    fontSize: 17,
     fontWeight: '700',
   },
-  secondaryBtn: {
-    marginTop: space.sm,
-    borderRadius: radii.lg,
-    paddingVertical: 14,
+  secondaryLink: {
+    marginTop: space.md,
+    paddingVertical: 8,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.navy,
-    backgroundColor: colors.white,
   },
-  secondaryBtnLabel: {
-    fontFamily: typography.fontFamily,
+  secondaryLinkLabel: {
+    fontFamily: typography.fontFamilySemiBold,
     color: colors.navy,
     fontSize: 15,
     fontWeight: '600',
   },
-  multiBtn: {
-    marginTop: space.sm,
-    borderRadius: radii.lg,
-    paddingVertical: 12,
-    paddingHorizontal: space.md,
+  multiLink: {
+    marginTop: 2,
+    paddingVertical: 6,
     alignItems: 'center',
-    backgroundColor: colors.navySoft,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  multiBtnLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    color: colors.navy,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  multiBtnCaption: {
+  multiLinkLabel: {
     fontFamily: typography.fontFamily,
     color: colors.textSecondary,
     fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  micro: {
-    fontFamily: typography.fontFamily,
-    marginTop: space.md,
-    fontSize: 13,
-    color: colors.textMuted,
-    lineHeight: 19,
-    textAlign: 'center',
   },
   topicsLink: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.navySoft,
     borderRadius: radii.lg,
-    padding: space.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
     marginBottom: space.lg,
     gap: space.sm,
   },
   topicsLinkTitle: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontWeight: '700',
     fontSize: 15,
     color: colors.navy,
   },
   topicsLinkBody: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 3,
-    lineHeight: 20,
+    marginTop: 2,
   },
   topicsChevron: {
-    fontSize: 28,
+    fontSize: 26,
     color: colors.navy,
     fontWeight: '300',
     paddingLeft: space.sm,
   },
   section: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontWeight: '700',
     color: colors.navy,
     fontSize: 17,
     marginBottom: space.sm,
+  },
+  recentEmpty: {
+    fontFamily: typography.fontFamily,
+    fontSize: 14,
+    color: colors.textMuted,
+    paddingVertical: space.md,
   },
   recentRow: {
     backgroundColor: colors.white,
@@ -603,7 +499,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   recentTopic: {
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fontFamilySemiBold,
     fontWeight: '600',
     color: colors.navy,
   },

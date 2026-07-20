@@ -4,16 +4,17 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 
 describe('ExamModeSwitcher', () => {
-  it('shows MOD chip and per-exam selection', () => {
+  it('shows compact segmented exam selection without tutorial copy', () => {
     const onChange = jest.fn();
     render(<ExamModeSwitcher value="ygs" onChange={onChange} />);
 
-    expect(screen.getByText('AKTİF SINAV MODU')).toBeTruthy();
-    expect(screen.getByTestId('exam-mode-chip')).toBeTruthy();
-    expect(screen.getByText('MOD: YGS')).toBeTruthy();
-    expect(screen.getByTestId('exam-mode-active-line')).toBeTruthy();
-    expect(screen.getByText(/YGS modundasın/i)).toBeTruthy();
     expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
+    expect(screen.queryByText('AKTİF SINAV MODU')).toBeNull();
+    expect(screen.queryByTestId('exam-mode-chip')).toBeNull();
+    expect(screen.queryByTestId('exam-mode-active-line')).toBeNull();
+    expect(screen.queryByTestId('exam-mode-legend')).toBeNull();
+    expect(screen.queryByText(/modundasın/i)).toBeNull();
+
     expect(screen.getByTestId('exam-mode-lgs')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-ygs')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-kpss')).toBeTruthy();
@@ -32,15 +33,13 @@ describe('ExamModeSwitcher', () => {
     expect(onChange).toHaveBeenCalledWith('trafik');
   });
 
-  it('updates MOD chip when value is KPSS', () => {
-    render(<ExamModeSwitcher value="kpss" onChange={jest.fn()} />);
-    expect(screen.getByText('MOD: KPSS')).toBeTruthy();
-    expect(screen.getByText(/KPSS modundasın/i)).toBeTruthy();
+  it('shows idle hint when no exam selected', () => {
+    render(<ExamModeSwitcher value={null} onChange={jest.fn()} />);
+    expect(screen.getByTestId('exam-mode-idle-hint')).toHaveTextContent('Sınavını seç');
   });
 
-  it('updates MOD chip when value is Ehliyet', () => {
-    render(<ExamModeSwitcher value="trafik" onChange={jest.fn()} />);
-    expect(screen.getByText('MOD: EHLİYET')).toBeTruthy();
-    expect(screen.getByText(/Ehliyet modundasın/i)).toBeTruthy();
+  it('hides idle hint when an exam is selected', () => {
+    render(<ExamModeSwitcher value="kpss" onChange={jest.fn()} />);
+    expect(screen.queryByTestId('exam-mode-idle-hint')).toBeNull();
   });
 });

@@ -52,24 +52,25 @@ jest.mock('@/src/features/exam/updateExamClient', () => ({
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('renders clear photo CTAs, exam switcher, and topics entry', async () => {
+  it('renders action-first home without tutorial walls of text', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.getByText('AKTİF SINAV MODU')).toBeTruthy();
-    expect(screen.getByText(/sorunun fotoğrafını çek/i)).toBeTruthy();
+    expect(screen.queryByText(/Kitaptaki veya defterdeki/i)).toBeNull();
+    expect(screen.queryByText('AKTİF SINAV MODU')).toBeNull();
+    expect(screen.queryByText(/Soru fotoğrafı gönder/i)).toBeNull();
     expect(screen.getByTestId('home-premium-cta')).toBeTruthy();
-    expect(screen.getByTestId('capture-cta')).toBeTruthy();
-    expect(screen.getByText('Soru fotoğrafı çek')).toBeTruthy();
-    expect(screen.getByTestId('gallery-cta')).toBeTruthy();
-    expect(screen.getByText('Galeriden soru seç')).toBeTruthy();
-    expect(screen.getByTestId('home-topics-link')).toBeTruthy();
+    expect(screen.getByTestId('capture-cta')).toHaveTextContent('Soru fotoğrafı çek');
+    expect(screen.getByTestId('gallery-cta')).toHaveTextContent('Galeriden seç');
+    expect(screen.getByTestId('multi-batch-cta')).toHaveTextContent(/Çoklu soru/);
+    expect(screen.getByTestId('home-topics-link')).toHaveTextContent(/Konu anlatımı/);
     expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
     await waitFor(() => {
-      expect(screen.getByTestId('exam-mode-chip')).toHaveTextContent('MOD: YGS');
-      expect(screen.getByTestId('home-streak')).toHaveTextContent(/MOD: YGS/);
-      expect(screen.getByTestId('home-streak')).toHaveTextContent(/Seri 0 gün/);
-      expect(screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected).toBe(true);
+      expect(
+        screen.getByTestId('exam-mode-ygs').props.accessibilityState?.selected,
+      ).toBe(true);
+      expect(screen.getByTestId('home-streak')).toHaveTextContent(/0 gün/);
+      expect(screen.getByTestId('home-recent-empty')).toHaveTextContent(/Henüz çözüm yok/);
     });
   });
 });
