@@ -38,7 +38,7 @@
   },
   "scripts": {
     "start": "expo start --dev-client",
-    "start:tunnel": "expo start --dev-client --tunnel",
+    "start:tunnel": "bash scripts/start-metro-tunnel.sh",
     "android": "expo run:android --device",
     "ios": "expo run:ios --device",
     "android:emu": "expo run:android",
