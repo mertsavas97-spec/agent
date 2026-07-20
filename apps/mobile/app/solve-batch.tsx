@@ -19,6 +19,7 @@ import {
 } from '@/src/features/solve/multiBatchStore';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
+import { enforceExamPipeline } from '@/src/features/solve/examPipelineIsolation';
 import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
 import { shouldRejectBatchSlotForExamMode } from '@/src/features/solve/examModeGuard';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
@@ -145,7 +146,10 @@ export default function SolveBatchScreen() {
             }
 
             if (response.status === 'solved') {
-              const normalized = normalizeSolvedBranch(response, resolvedExam);
+              const normalized = enforceExamPipeline(
+                normalizeSolvedBranch(response, resolvedExam),
+                resolvedExam,
+              );
               patchSlot(slot.id, {
                 status: 'ready',
                 result: normalized,

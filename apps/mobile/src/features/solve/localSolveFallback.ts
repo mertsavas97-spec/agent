@@ -47,19 +47,35 @@ export function buildLocalSolveFallback(input: {
   reason?: 'unavailable' | 'unsupported';
 }): SolveQuestionResponse {
   const examType = input.examType ?? 'lgs';
-  const subject: Subject =
-    input.subjectHint && input.subjectHint !== 'unknown'
-      ? input.subjectHint
-      : examType === 'trafik'
-        ? 'traffic'
-        : input.reason === 'unsupported' || input.reason === 'unavailable'
-          ? 'unknown'
-          : 'math';
+  const hint = input.subjectHint && input.subjectHint !== 'unknown' ? input.subjectHint : null;
+  const trafikSubjects = new Set<Subject>(['traffic', 'vehicle', 'firstaid']);
+  let subject: Subject =
+    hint ??
+    (examType === 'trafik'
+      ? 'traffic'
+      : input.reason === 'unsupported' || input.reason === 'unavailable'
+        ? 'unknown'
+        : 'math');
 
-  const topicId =
+  // Never cross packages in offline fallback
+  if (examType === 'trafik' && !trafikSubjects.has(subject) && subject !== 'unknown') {
+    subject = 'traffic';
+  } else if (examType !== 'trafik' && trafikSubjects.has(subject)) {
+    subject = 'turkish';
+  }
+
+  let topicId =
     input.topicId !== undefined && input.topicId !== null
       ? input.topicId
       : defaultTopicId(examType, subject);
+
+  if (examType === 'trafik') {
+    if (!topicId || !topicId.startsWith('trafik-')) {
+      topicId = defaultTopicId(examType, subject) ?? 'trafik-traffic-kurallar';
+    }
+  } else if (topicId?.startsWith('trafik-')) {
+    topicId = defaultTopicId(examType, subject);
+  }
   const isVerbal = subject === 'turkish' || subject === 'literature';
   const isTrafik =
     subject === 'traffic' || subject === 'vehicle' || subject === 'firstaid';

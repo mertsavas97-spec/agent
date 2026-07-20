@@ -234,17 +234,27 @@ export function topicIdFor(examType, subject, topicKey) {
     ? examType
     : 'lgs';
 
-  if (subject === 'traffic') {
-    const slug = topicKey || 'kurallar';
-    return `trafik-traffic-${slug}`;
+  // Trafik branş id'leri yalnızca Ehliyet paketinde
+  if (exam === 'trafik') {
+    if (subject === 'traffic') {
+      const slug = topicKey || 'kurallar';
+      return `trafik-traffic-${slug}`;
+    }
+    if (subject === 'vehicle') {
+      const slug = topicKey || 'motor';
+      return `trafik-vehicle-${slug}`;
+    }
+    if (subject === 'firstaid') {
+      const slug = topicKey || 'temel';
+      return `trafik-firstaid-${slug}`;
+    }
+    // Non-trafik subject under Ehliyet → stay in package
+    return 'trafik-traffic-kurallar';
   }
-  if (subject === 'vehicle') {
-    const slug = topicKey || 'motor';
-    return `trafik-vehicle-${slug}`;
-  }
-  if (subject === 'firstaid') {
-    const slug = topicKey || 'temel';
-    return `trafik-firstaid-${slug}`;
+
+  // Other exams must never emit trafik-* topic ids
+  if (subject === 'traffic' || subject === 'vehicle' || subject === 'firstaid') {
+    return topicIdFor(exam, 'turkish', 'paragraf');
   }
 
   if (subject === 'turkish' || subject === 'literature') {

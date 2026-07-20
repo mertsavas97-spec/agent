@@ -69,6 +69,33 @@ describe('localSolveFallback', () => {
     expect(res.steps[0]?.body).toMatch(/kural|işaret|ilk yardım/i);
   });
 
+  it('never keeps Ehliyet branş/topic under LGS/YGS/KPSS', () => {
+    const res = buildLocalSolveFallback({
+      examType: 'kpss',
+      subjectHint: 'traffic',
+      topicId: 'trafik-traffic-kurallar',
+      requestId: 'x1',
+    });
+    expect(res.status).toBe('solved');
+    if (res.status !== 'solved') throw new Error('expected solved');
+    expect(res.subject).toBe('turkish');
+    expect(res.topicId?.startsWith('trafik-')).toBe(false);
+    expect(res.topicId?.startsWith('kpss-')).toBe(true);
+  });
+
+  it('never keeps turkish topic under Ehliyet', () => {
+    const res = buildLocalSolveFallback({
+      examType: 'trafik',
+      subjectHint: 'turkish',
+      topicId: 'kpss-turkish-paragraf',
+      requestId: 'x2',
+    });
+    expect(res.status).toBe('solved');
+    if (res.status !== 'solved') throw new Error('expected solved');
+    expect(['traffic', 'vehicle', 'firstaid']).toContain(res.subject);
+    expect(res.topicId?.startsWith('trafik-')).toBe(true);
+  });
+
   it('detects server unavailable errors', () => {
     expect(
       isServerSolveUnavailable(

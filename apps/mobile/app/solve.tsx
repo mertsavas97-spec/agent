@@ -20,6 +20,7 @@ import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
 import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
+import { enforceExamPipeline } from '@/src/features/solve/examPipelineIsolation';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import {
@@ -132,23 +133,19 @@ export default function SolveFlowScreen() {
         }
 
         if (response.status === 'solved') {
-          const examForSubject = shouldConfirmExamMismatch(
-            response.examHint,
+          // Always isolate against the *profile* exam until the user confirms a switch.
+          // OCR examHint must never remount the result into another package's pipeline.
+          const solved = enforceExamPipeline(
+            normalizeSolvedBranch(response, resolvedExam),
             resolvedExam,
-          )
-            ? response.examHint?.suggested ?? resolvedExam
-            : resolvedExam;
-          const solved = normalizeSolvedBranch(
-            response,
-            examForSubject,
           ) as SolvedWithClassification;
           const suggested =
             solved.subject !== 'unknown' &&
-            subjectsForExam(examForSubject).includes(
+            subjectsForExam(resolvedExam).includes(
               solved.subject as Exclude<Subject, 'unknown'>,
             )
               ? (solved.subject as Exclude<Subject, 'unknown'>)
-              : subjectsForExam(examForSubject)[0];
+              : subjectsForExam(resolvedExam)[0];
           setSelectedSubject(suggested);
           setResult(solved);
 
@@ -201,7 +198,10 @@ export default function SolveFlowScreen() {
 
   function continueAfterExam(nextExam: ExamType) {
     if (!result || result.status !== 'solved') return;
-    let next = applyExamOverride(result, profileExam, nextExam);
+    let next = enforceExamPipeline(
+      applyExamOverride(result, profileExam, nextExam),
+      nextExam,
+    );
     setExamType(nextExam);
     if (pendingSubjectHint && subjectsForExam(nextExam).includes(pendingSubjectHint)) {
       next = applySubjectOverride(next, nextExam, pendingSubjectHint);

@@ -9,6 +9,12 @@ import http from 'node:http';
 import { evaluateExpression, buildStepsFromEval } from './arithSolve.mjs';
 import { classifyOcr, topicIdFor } from './classifyOcr.mjs';
 import { detectExamHint } from './examHint.mjs';
+import {
+  assertPipelineIsolation,
+  mayRunMathSolver,
+  normalizeExamType,
+  resolveSolveExam,
+} from './examPipeline.mjs';
 import { ocrImageBase64 } from './visionOcr.mjs';
 import { tryVerbalSolve } from './verbalSolve.mjs';
 
@@ -141,47 +147,21 @@ const server = http.createServer(async (req, res) => {
     }
 
     const ocrText = await ocrImageBase64(imageBase64, mimeType);
-    const examHint = detectExamHint(ocrText, examType);
-    // Per-question: if OCR strongly suggests another package, classify/solve with it.
-    const useHintExam =
-      examHint.mismatchesProfile &&
-      examHint.suggested &&
-      (examHint.confidence === 'high' || examHint.confidence === 'medium');
-    let solveExam = useHintExam ? examHint.suggested : examType;
-    let hintForClient = useHintExam
-      ? { ...examHint, mismatchesProfile: false, suggested: solveExam }
-      : examHint;
+    const profileExam = normalizeExamType(examType);
+    // Hint is for the client mismatch sheet only — never switches the solve pipeline.
+    const examHint = detectExamHint(ocrText, profileExam);
+    const solveExam = resolveSolveExam(profileExam);
+    const hintForClient = examHint;
 
     let classified = classifyOcr(ocrText, solveExam);
-    // Ehliyet metni KPSS/LGS profilinde yanlış branşa düşmesin — trafik solver önce dene.
-    if (
-      solveExam !== 'trafik' &&
-      /trafik|ehliyet|ışıklı|kavşak|azami hız|geçiş üstün|ilk yardım|abs\b|hava yastığı/i.test(
-        ocrText,
-      )
-    ) {
-      const trafficClass = classifyOcr(ocrText, 'trafik');
-      const trafficVerbal = tryVerbalSolve(ocrText, trafficClass);
-      if (trafficVerbal?.steps?.length) {
-        solveExam = 'trafik';
-        classified = trafficClass;
-        hintForClient = {
-          suggested: 'trafik',
-          confidence: 'high',
-          reason: 'ocr_traffic_solver',
-          questionNumber: examHint.questionNumber ?? null,
-          mismatchesProfile: false,
-        };
-      }
-    }
 
     const topicId = topicIdFor(solveExam, classified.subject, classified.topicKey);
 
     // Non-math first when classification is verbal — avoid false arith matches
     if (classified.subject !== 'math') {
-      const verbal = tryVerbalSolve(ocrText, classified);
+      const verbal = tryVerbalSolve(ocrText, classified, solveExam);
       if (verbal?.steps?.length) {
-        // Solver may override branş (e.g. şaft → vehicle) for konu anlatımı / meta
+        // Solver may override branş (e.g. şaft → vehicle) within the SAME exam package
         const subject = verbal.subject || classified.subject;
         const topicKey = verbal.topicKey || classified.topicKey;
         const resolvedTopicId = topicIdFor(solveExam, subject, topicKey);
@@ -192,58 +172,58 @@ const server = http.createServer(async (req, res) => {
           confidence: verbal.subject ? 'high' : classified.confidence,
           needsConfirm: verbal.subject ? false : classified.needsConfirm,
         };
-        send(
-          res,
-          200,
-          solvedPayload({
-            requestId,
-            topicId: resolvedTopicId,
-            subject,
-            steps: verbal.steps,
-            ocrText,
-            note:
-              'Metinden okunarak çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
-            classification,
-            answer: verbal.answerText
-              ? { text: verbal.answerText, label: verbal.answerLabel }
-              : undefined,
-            examHint: hintForClient,
-          }),
-        );
-        return;
+        const payload = solvedPayload({
+          requestId,
+          topicId: resolvedTopicId,
+          subject,
+          steps: verbal.steps,
+          ocrText,
+          note:
+            'Metinden okunarak çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
+          classification,
+          answer: verbal.answerText
+            ? { text: verbal.answerText, label: verbal.answerLabel }
+            : undefined,
+          examHint: hintForClient,
+        });
+        const iso = assertPipelineIsolation(payload, solveExam);
+        if (!iso.ok) {
+          console.warn('solve-proxy isolation reject', solveExam, iso.issues);
+        } else {
+          send(res, 200, payload);
+          return;
+        }
       }
     }
 
-    const evaluated = evaluateExpression(ocrText);
-    if (evaluated) {
-      const mathClass =
-        classified.subject === 'math' || classified.subject === 'geometry'
-          ? classified
-          : {
-              ...classified,
-              subject: 'math',
-              topicKey: 'temel',
-              confidence: 'high',
-              needsConfirm: false,
-              score: Math.max(classified.score || 0, 8),
-              alternatives: classified.alternatives || [],
-            };
-      const mathSteps = buildStepsFromEval(evaluated);
-      const cevap = mathSteps.find((s) => s.title === 'Cevap');
-      const mathAnswer = { text: String(evaluated.value), label: evaluated.choice };
-      const choiceMatch = cevap?.body?.match(/Doğru şık:\s*([A-E])\)\s*(.+?)\./);
-      if (choiceMatch) {
-        mathAnswer.label = choiceMatch[1];
-        mathAnswer.text = choiceMatch[2].trim();
-      } else if (cevap?.body) {
-        const m = cevap.body.match(/Sonuç\s+([0-9]+(?:\/[0-9]+)?)/);
-        if (m) mathAnswer.text = m[1];
-      }
+    if (mayRunMathSolver(solveExam)) {
+      const evaluated = evaluateExpression(ocrText);
+      if (evaluated) {
+        const mathClass =
+          classified.subject === 'math' || classified.subject === 'geometry'
+            ? classified
+            : {
+                ...classified,
+                subject: 'math',
+                topicKey: 'temel',
+                confidence: 'high',
+                needsConfirm: false,
+                score: Math.max(classified.score || 0, 8),
+                alternatives: classified.alternatives || [],
+              };
+        const mathSteps = buildStepsFromEval(evaluated);
+        const cevap = mathSteps.find((s) => s.title === 'Cevap');
+        const mathAnswer = { text: String(evaluated.value), label: evaluated.choice };
+        const choiceMatch = cevap?.body?.match(/Doğru şık:\s*([A-E])\)\s*(.+?)\./);
+        if (choiceMatch) {
+          mathAnswer.label = choiceMatch[1];
+          mathAnswer.text = choiceMatch[2].trim();
+        } else if (cevap?.body) {
+          const m = cevap.body.match(/Sonuç\s+([0-9]+(?:\/[0-9]+)?)/);
+          if (m) mathAnswer.text = m[1];
+        }
 
-      send(
-        res,
-        200,
-        solvedPayload({
+        const payload = solvedPayload({
           requestId,
           topicId:
             mathClass.subject === 'math'
@@ -255,9 +235,15 @@ const server = http.createServer(async (req, res) => {
           classification: mathClass,
           answer: mathAnswer,
           examHint: hintForClient,
-        }),
-      );
-      return;
+        });
+        const iso = assertPipelineIsolation(payload, solveExam);
+        if (!iso.ok) {
+          console.warn('solve-proxy isolation reject math', solveExam, iso.issues);
+        } else {
+          send(res, 200, payload);
+          return;
+        }
+      }
     }
 
     console.warn(

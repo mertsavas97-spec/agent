@@ -1,6 +1,10 @@
 /**
  * Deterministic verbal (Türkçe) solvers for dogfood OCR — no LLM.
  */
+import {
+  mayRunTrafficSolver,
+  mayRunTurkishSolver,
+} from './examPipeline.mjs';
 import { tryTrafficSolve } from './trafficSolve.mjs';
 
 function parseChoices(ocrText) {
@@ -194,15 +198,23 @@ function titleAnlam(answer) {
 }
 
 /**
- * @returns {{ steps: object[], answerLabel?: string, answerText?: string } | null}
+ * @param {string} ocrText
+ * @param {{ subject?: string } | null} classification
+ * @param {'lgs'|'ygs'|'kpss'|'trafik'} [examType]
+ * @returns {{ steps: object[], answerLabel?: string, answerText?: string, subject?: string, topicKey?: string } | null}
  */
-export function tryVerbalSolve(ocrText, classification) {
+export function tryVerbalSolve(ocrText, classification, examType = 'lgs') {
   if (!classification) return null;
 
-  const traffic = tryTrafficSolve(ocrText, classification);
-  if (traffic?.steps?.length) return traffic;
+  if (mayRunTrafficSolver(examType, classification.subject)) {
+    const traffic = tryTrafficSolve(ocrText, classification);
+    if (traffic?.steps?.length) return traffic;
+  }
 
-  if (classification.subject !== 'turkish') return null;
+  // Ehliyet package never falls through to LGS/YGS/KPSS Turkish solvers
+  if (!mayRunTurkishSolver(examType, classification.subject)) {
+    return null;
+  }
 
   const { passage, stem } = extractPassageAndStem(ocrText);
   const choices = parseChoices(ocrText);

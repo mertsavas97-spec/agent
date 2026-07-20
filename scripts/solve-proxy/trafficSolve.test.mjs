@@ -42,9 +42,13 @@ assert.ok(ln?.answerLabel);
 assert.equal(ln.answerLabel, 'B');
 assert.equal(ln.subject, 'traffic');
 
-const viaVerbal = tryVerbalSolve(redYellow, classTraffic);
+const viaVerbal = tryVerbalSolve(redYellow, classTraffic, 'trafik');
 assert.equal(viaVerbal?.answerLabel, 'A');
 assert.equal(viaVerbal?.subject, 'traffic');
+
+// Cross-package: same OCR under KPSS must not run Ehliyet solver
+const blockedKpss = tryVerbalSolve(redYellow, classTraffic, 'kpss');
+assert.equal(blockedKpss, null);
 
 const pt = tryTrafficSolve(powertrain, classTraffic);
 assert.equal(pt?.answerLabel, 'A');
