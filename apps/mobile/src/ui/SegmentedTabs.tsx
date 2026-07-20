@@ -2,10 +2,16 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, space, typography } from '@/src/theme';
 
+export type SegmentedTabCaptionTone = 'ready' | 'empty' | 'default';
+
 export type SegmentedTabItem<T extends string> = {
   id: T;
   label: string;
   caption?: string;
+  /** Caption color: ready=green, empty=muted gray */
+  captionTone?: SegmentedTabCaptionTone;
+  /** Closed / gray visual for tabs without data (still tappable) */
+  muted?: boolean;
 };
 
 export type SegmentedTabsProps<T extends string> = {
@@ -21,6 +27,19 @@ export type SegmentedTabsProps<T extends string> = {
   /** Selected underline / chip accent */
   accentColor?: string;
 };
+
+function captionColor(
+  tone: SegmentedTabCaptionTone | undefined,
+  selected: boolean,
+): string | undefined {
+  if (tone === 'ready') {
+    return selected ? '#BBF7D0' : colors.success;
+  }
+  if (tone === 'empty') {
+    return selected ? 'rgba(255,255,255,0.55)' : colors.textMuted;
+  }
+  return undefined;
+}
 
 /**
  * Segmented control — selected: navy fill + white text + orange bar.
@@ -79,6 +98,8 @@ export function SegmentedTabs<T extends string>({
     <View style={styles.track} testID={testID} accessibilityRole="toolbar">
       {items.map((item) => {
         const selected = value === item.id;
+        const muted = Boolean(item.muted) && !selected;
+        const toneColor = captionColor(item.captionTone, selected);
         return (
           <Pressable
             key={item.id}
@@ -90,6 +111,7 @@ export function SegmentedTabs<T extends string>({
               styles.segment,
               compact && styles.segmentCompact,
               selected ? styles.segmentOn : styles.segmentOff,
+              muted && styles.segmentMuted,
               selected && {
                 backgroundColor: activeColor,
                 borderColor: activeColor,
@@ -101,6 +123,7 @@ export function SegmentedTabs<T extends string>({
                 styles.segmentLabel,
                 compact && styles.segmentLabelCompact,
                 selected && styles.segmentLabelOn,
+                muted && styles.segmentLabelMuted,
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -112,7 +135,9 @@ export function SegmentedTabs<T extends string>({
                 style={[
                   styles.segmentCaption,
                   compact && styles.segmentCaptionCompact,
-                  selected && styles.segmentCaptionOn,
+                  selected && !toneColor ? styles.segmentCaptionOn : null,
+                  muted && !toneColor ? styles.segmentCaptionMuted : null,
+                  toneColor ? { color: toneColor, fontWeight: '700' } : null,
                 ]}
                 numberOfLines={1}>
                 {item.caption}
@@ -162,6 +187,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.navy,
   },
+  segmentMuted: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
+    opacity: 0.85,
+  },
   segmentLabel: {
     fontFamily: typography.fontFamily,
     fontWeight: '700',
@@ -173,6 +203,9 @@ const styles = StyleSheet.create({
   },
   segmentLabelOn: {
     color: colors.white,
+  },
+  segmentLabelMuted: {
+    color: colors.textMuted,
   },
   segmentCaption: {
     fontFamily: typography.fontFamily,
@@ -186,6 +219,9 @@ const styles = StyleSheet.create({
   },
   segmentCaptionOn: {
     color: 'rgba(255,255,255,0.85)',
+  },
+  segmentCaptionMuted: {
+    color: colors.textMuted,
   },
   accent: {
     position: 'absolute',

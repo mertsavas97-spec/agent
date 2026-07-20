@@ -44,13 +44,17 @@ describe('StatsScreen', () => {
     await waitFor(() => {
       expect(screen.getByTestId('stats-mode-chip')).toHaveTextContent('MOD: KPSS');
       expect(screen.getByTestId('stats-streak')).toBeTruthy();
+      expect(screen.getByText('Veriler Hazır')).toBeTruthy();
+      expect(screen.getAllByText('Veri yok').length).toBeGreaterThanOrEqual(1);
     });
 
     fireEvent.press(screen.getByTestId('stats-exam-ygs'));
     await waitFor(() => {
       expect(screen.getByTestId('stats-empty')).toBeTruthy();
-      expect(screen.getByText(/YGS için henüz iz yok/i)).toBeTruthy();
+      expect(screen.getByText(/YGS · Veri yok/i)).toBeTruthy();
+      expect(screen.getByText(/henüz soru çözülmedi/i)).toBeTruthy();
       expect(screen.getByTestId('stats-jump-kpss')).toBeTruthy();
     });
   });
 });
+

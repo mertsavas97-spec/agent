@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { EXAM_LABEL, EXAM_OPTIONS, EXAM_SHORT } from '@/src/features/exam/examLabels';
+import { EXAM_LABEL, EXAM_OPTIONS } from '@/src/features/exam/examLabels';
 import { EXAM_THEME, examThemeFor } from '@/src/features/exam/examTheme';
 import { EXAM_TYPES } from '@/src/features/exam/examTypes';
 import {
@@ -129,11 +129,16 @@ export default function StatsScreen() {
         onChange={setExamType}
         activeColor={theme.solid}
         accentColor={theme.accent}
-        items={EXAM_OPTIONS.map((o) => ({
-          id: o.id,
-          label: o.label,
-          caption: examsWithData.has(o.id) ? 'veri var' : EXAM_SHORT[o.id],
-        }))}
+        items={EXAM_OPTIONS.map((o) => {
+          const has = examsWithData.has(o.id);
+          return {
+            id: o.id,
+            label: o.label,
+            caption: has ? 'Veriler Hazır' : 'Veri yok',
+            captionTone: has ? ('ready' as const) : ('empty' as const),
+            muted: !has,
+          };
+        })}
       />
 
       <View
@@ -149,13 +154,13 @@ export default function StatsScreen() {
       ) : !hasData ? (
         <View style={styles.emptyBlock} testID="stats-empty">
           <EmptyState
-            title={`${EXAM_LABEL[examType]} için henüz iz yok`}
+            title={`${EXAM_LABEL[examType]} · Veri yok`}
             subtitle={
               otherWithData.length > 0
-                ? `Bu sekmede veri yok. ${otherWithData
+                ? `Bu sınavda henüz soru çözülmedi. ${otherWithData
                     .map((e) => EXAM_LABEL[e])
-                    .join(', ')} sekmesinde kayıtların var — oraya geç veya ${EXAM_LABEL[examType]} sorusu çöz.`
-                : `${EXAM_LABEL[examType]} modunda bir soru çözünce seri ve bar’lar burada oluşur.`
+                    .join(', ')} sekmesinde verilerin hazır — oraya geç veya ${EXAM_LABEL[examType]} sorusu çöz.`
+                : `${EXAM_LABEL[examType]} modunda henüz soru çözülmedi. Bir soru çözünce seri ve bar’lar burada oluşur.`
             }
           />
           {otherWithData.length > 0 ? (
