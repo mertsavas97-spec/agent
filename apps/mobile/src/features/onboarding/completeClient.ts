@@ -12,7 +12,8 @@ import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
 import type { OnboardingResult } from './OnboardingFlow';
-import { requestOnboardingReplay } from './onboardingReplay';
+import { markOnboardingComplete, requestOnboardingReplay } from './onboardingReplay';
+import { writeExamPreference } from '@/src/features/exam/examPreference';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -60,6 +61,8 @@ export async function fetchOnboardingStatus(): Promise<{
 
 export async function submitOnboarding(result: OnboardingResult): Promise<void> {
   const user = await ensureSignedIn();
+  // Local preference first — home / settings read this immediately.
+  await writeExamPreference(result.examType);
   const { functions } = getFirebase();
   try {
     const complete = httpsCallable(functions, 'completeOnboarding');
@@ -79,6 +82,8 @@ export async function submitOnboarding(result: OnboardingResult): Promise<void> 
       parentalConsent: result.parentalConsent,
     });
   }
+  // Unlock BootstrapGate before navigation (avoids stuck needs_onboarding race).
+  markOnboardingComplete();
 }
 
 /**

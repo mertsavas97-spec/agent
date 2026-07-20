@@ -1,9 +1,13 @@
+/**
+ * Auth/onboarding gate. Always keeps the Stack mounted after boot —
+ * never replace the navigator tree with <Redirect> (expo-router update loop).
+ */
 import { usePathname, useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient';
-import { subscribeOnboardingReplay } from '@/src/features/onboarding/onboardingReplay';
+import { subscribeOnboardingGate } from '@/src/features/onboarding/onboardingReplay';
 import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
 import { colors, space } from '@/src/theme';
@@ -16,10 +20,6 @@ type GateState =
 
 const BOOT_TIMEOUT_MS = 12_000;
 
-/**
- * Auth/onboarding gate. Always keeps the Stack mounted after boot —
- * never replace the navigator tree with <Redirect> (expo-router update loop).
- */
 export function BootstrapGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -33,11 +33,18 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
   const navigatingRef = useRef(false);
 
   useEffect(() => {
-    return subscribeOnboardingReplay(() => {
+    return subscribeOnboardingGate((event) => {
+      if (event.type === 'complete') {
+        // Local write already done — unlock tabs without waiting for a re-fetch race.
+        if (uid) bootedForUid.current = uid;
+        setBootError(null);
+        setState({ status: 'ready' });
+        return;
+      }
       bootedForUid.current = null;
       setReplayToken((n) => n + 1);
     });
-  }, []);
+  }, [uid]);
 
   useEffect(() => {
     if (process.env.EXPO_PUBLIC_SCREENSHOT_MODE === '1') {
@@ -61,7 +68,6 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
       setState({ status: 'ready' });
       return;
     }
-    // Already booted for this uid — skip. Demo replay clears bootedForUid first.
     if (uid && bootedForUid.current === uid && state.status !== 'loading') {
       return;
     }
@@ -108,7 +114,6 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- boot on uid or demo replay
   }, [uid, replayToken]);
 
-  // Imperative navigation — keep Stack mounted (avoids Redirect update-depth loop)
   useEffect(() => {
     if (state.status === 'loading') return;
     if (navigatingRef.current) return;
@@ -116,7 +121,6 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
     const onOnboarding = pathname.includes('onboarding');
 
     if (state.status === 'needs_onboarding' && !onOnboarding) {
-      // Might have just finished onboarding — re-check before bouncing back
       let alive = true;
       void (async () => {
         try {
@@ -149,7 +153,6 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
         navigatingRef.current = false;
       });
     }
-    // router omitted from deps — unstable identity would re-fire navigation every render
   }, [state.status, pathname, uid]);
 
   if (state.status === 'loading') {

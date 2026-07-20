@@ -18,7 +18,7 @@ import {
   isPremiumAudience,
   runRewardedMultiBatchUnlock,
 } from '@/src/features/ads';
-import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
+import { ActiveExamBadge } from '@/src/features/exam/ActiveExamBadge';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { readExamPreference } from '@/src/features/exam/examPreference';
 import { examThemeFor } from '@/src/features/exam/examTheme';
@@ -54,7 +54,6 @@ export default function HomeScreen() {
   const [recent, setRecent] = useState<AttemptListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [examType, setExamType] = useState<ExamType | null>(null);
-  const [switching, setSwitching] = useState(false);
   const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
 
@@ -78,6 +77,7 @@ export default function HomeScreen() {
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
           const preferred = await readExamPreference();
           const et = userSnap.data()?.examType;
+          // Preference (set at onboarding) wins; else Firestore examType.
           if (preferred) {
             setExamType(preferred);
             if (et !== preferred) {
@@ -85,6 +85,7 @@ export default function HomeScreen() {
             }
           } else if (isExamType(et)) {
             setExamType(et);
+            void callUpdateExamType(et).catch(() => undefined);
           } else {
             setExamType('lgs');
             void callUpdateExamType('lgs').catch(() => undefined);
@@ -102,21 +103,6 @@ export default function HomeScreen() {
       };
     }, []),
   );
-
-  async function onExamChange(next: ExamType) {
-    if (next === examType || switching) return;
-    setSwitching(true);
-    const previous = examType;
-    setExamType(next);
-    try {
-      await callUpdateExamType(next);
-    } catch {
-      setExamType(previous);
-      Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
-    } finally {
-      setSwitching(false);
-    }
-  }
 
   async function openPicker(source: 'camera' | 'library') {
     if (!examType) {
@@ -250,10 +236,9 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <ExamModeSwitcher
-          value={examType}
-          onChange={(e) => void onExamChange(e)}
-          disabled={switching}
+        <ActiveExamBadge
+          examType={examType}
+          onPressChange={() => router.push('/settings')}
         />
 
         {subjectHintBanner ? (
@@ -428,7 +413,7 @@ const styles = StyleSheet.create({
     color: colors.orange,
   },
   hero: {
-    marginTop: space.xl,
+    marginTop: space.md,
     marginBottom: space.lg,
     alignItems: 'stretch',
   },

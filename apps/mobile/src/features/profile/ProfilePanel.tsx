@@ -1,6 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import type { ExamType } from '@/src/lib/api/types';
 import { TR_EYEBROW } from '@/src/lib/trCase';
@@ -9,8 +8,6 @@ import { Eyebrow } from '@/src/ui/Eyebrow';
 
 export type ProfilePanelProps = {
   examType: ExamType | null;
-  onExamChange: (exam: ExamType) => void;
-  examSwitchDisabled?: boolean;
   quotaLabel: string;
   consentLabel: string;
   catalogCount: number;
@@ -25,8 +22,6 @@ export type ProfilePanelProps = {
 
 export function ProfilePanel({
   examType,
-  onExamChange,
-  examSwitchDisabled,
   quotaLabel,
   consentLabel,
   catalogCount,
@@ -84,14 +79,17 @@ export function ProfilePanel({
         <Text style={styles.meta} testID="profile-exam">
           {examType ? EXAM_LABEL[examType] : 'Henüz seçilmedi'}
         </Text>
-        <ExamModeSwitcher
-          value={examType}
-          onChange={onExamChange}
-          disabled={examSwitchDisabled}
-        />
         <Text style={styles.note}>
-          Sınav değiştirmek geçmişi silmez; yeni çözümler seçili moda göre üretilir.
+          Paket değiştirmek için Ayarlar’a git. Ücretsiz planda her geçişte bir
+          reklam izlenir.
         </Text>
+        <Pressable
+          testID="profile-change-exam"
+          style={styles.linkRow}
+          onPress={onOpenSettings}>
+          <Text style={styles.linkLabel}>Sınav paketini değiştir</Text>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
       </View>
 
       <View style={styles.card}>
@@ -242,6 +240,7 @@ const styles = StyleSheet.create({
   },
   note: {
     marginTop: space.sm,
+    marginBottom: space.sm,
     color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 20,

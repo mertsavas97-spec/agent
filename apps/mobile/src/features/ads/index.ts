@@ -10,5 +10,6 @@ export {
 } from './policy';
 export { isPremiumAudience } from './premiumGate';
 export { runInterstitialIfNeeded } from './runInterstitialIfNeeded';
+export { runRewardedExamSwitch } from './runRewardedExamSwitch';
 export { runRewardedExtra } from './runRewardedExtra';
 export { runRewardedMultiBatchUnlock } from './runRewardedMultiBatch';

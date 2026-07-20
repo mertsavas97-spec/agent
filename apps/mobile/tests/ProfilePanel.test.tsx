@@ -5,7 +5,6 @@ import { ProfilePanel } from '@/src/features/profile/ProfilePanel';
 
 const base = {
   examType: 'ygs' as const,
-  onExamChange: jest.fn(),
   quotaLabel: '3 / 5',
   consentLabel: 'Aydınlatma onayı alındı',
   catalogCount: 10,
@@ -19,7 +18,7 @@ const base = {
 };
 
 describe('ProfilePanel', () => {
-  it('shows quota, consent, exam switcher, settings, premium, sign-out and delete', () => {
+  it('shows quota, consent, exam label, settings link — no inline switcher', () => {
     const onSignOut = jest.fn();
     const onRequestDelete = jest.fn();
     const onOpenPremium = jest.fn();
@@ -37,12 +36,14 @@ describe('ProfilePanel', () => {
     expect(screen.getByTestId('profile-screen')).toBeTruthy();
     expect(screen.getByTestId('profile-quota')).toHaveTextContent(/3 \/ 5/);
     expect(screen.getByTestId('profile-consent')).toHaveTextContent(/Aydınlatma/);
-    expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
-    expect(screen.getByTestId('profile-settings-btn')).toBeTruthy();
-    expect(screen.getByTestId('profile-premium-card')).toBeTruthy();
+    expect(screen.getByTestId('profile-exam')).toHaveTextContent(/YGS/);
+    expect(screen.queryByTestId('exam-mode-switcher')).toBeNull();
+    expect(screen.getByTestId('profile-change-exam')).toBeTruthy();
 
-    fireEvent.press(screen.getByTestId('profile-settings-btn'));
+    fireEvent.press(screen.getByTestId('profile-change-exam'));
     expect(onOpenSettings).toHaveBeenCalled();
+    fireEvent.press(screen.getByTestId('profile-settings-btn'));
+    expect(onOpenSettings).toHaveBeenCalledTimes(2);
     fireEvent.press(screen.getByTestId('profile-premium-card'));
     expect(onOpenPremium).toHaveBeenCalled();
     fireEvent.press(screen.getByTestId('profile-sign-out'));
@@ -55,17 +56,5 @@ describe('ProfilePanel', () => {
     render(<ProfilePanel {...base} examType="lgs" deleteRequested />);
     expect(screen.getByTestId('profile-delete-pending')).toBeTruthy();
     expect(screen.queryByTestId('profile-delete-request')).toBeNull();
-  });
-
-  it('shows active premium copy on card', () => {
-    render(
-      <ProfilePanel
-        {...base}
-        isPremium
-        planLabel="Yıllık plan · 279 TL / yıl"
-      />,
-    );
-    expect(screen.getByTestId('profile-premium-card')).toHaveTextContent(/PREMİUM AKTİF/);
-    expect(screen.getByTestId('profile-premium-card')).toHaveTextContent(/279 TL/);
   });
 });

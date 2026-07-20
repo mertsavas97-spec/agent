@@ -1,16 +1,20 @@
 import {
+  markOnboardingComplete,
   requestOnboardingReplay,
-  subscribeOnboardingReplay,
+  subscribeOnboardingGate,
 } from '@/src/features/onboarding/onboardingReplay';
 
-describe('onboardingReplay bus', () => {
-  it('notifies subscribers when demo replay is requested', () => {
-    const fn = jest.fn();
-    const unsub = subscribeOnboardingReplay(fn);
+describe('onboardingGate bus', () => {
+  it('notifies complete and replay separately', () => {
+    const events: string[] = [];
+    const unsub = subscribeOnboardingGate((ev) => {
+      events.push(ev.type);
+    });
+    markOnboardingComplete();
     requestOnboardingReplay();
-    expect(fn).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(['complete', 'replay']);
     unsub();
-    requestOnboardingReplay();
-    expect(fn).toHaveBeenCalledTimes(1);
+    markOnboardingComplete();
+    expect(events).toEqual(['complete', 'replay']);
   });
 });

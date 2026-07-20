@@ -10,7 +10,14 @@ import {
   Text,
   View,
 } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
 
+import { runRewardedExamSwitch } from '@/src/features/ads';
+import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
+import { readExamPreference } from '@/src/features/exam/examPreference';
+import { isExamType } from '@/src/features/exam/examTypes';
+import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import {
   LEGAL_DOCS,
   type LegalDocId,
@@ -27,6 +34,9 @@ import {
   setPushCategory,
   type PushPrefs,
 } from '@/src/features/push/pushPrefs';
+import type { ExamType } from '@/src/lib/api/types';
+import { ensureSignedIn } from '@/src/lib/auth';
+import { getFirebase } from '@/src/lib/firebase';
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, space, typography } from '@/src/theme';
 import { Eyebrow } from '@/src/ui/Eyebrow';
@@ -35,12 +45,27 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [prefs, setPrefs] = useState<PushPrefs | null>(null);
   const [ent, setEnt] = useState<EntitlementSnapshot | null>(null);
+  const [examType, setExamType] = useState<ExamType | null>(null);
+  const [switching, setSwitching] = useState(false);
   const [replaying, setReplaying] = useState(false);
 
   useEffect(() => {
     void (async () => {
       setPrefs(await loadPushPrefs());
       setEnt(await hydrateEntitlement());
+      try {
+        const user = await ensureSignedIn();
+        const { db } = getFirebase();
+        const [preferred, snap] = await Promise.all([
+          readExamPreference(),
+          getDoc(doc(db, 'users', user.uid)),
+        ]);
+        const et = snap.data()?.examType;
+        if (preferred) setExamType(preferred);
+        else if (isExamType(et)) setExamType(et);
+      } catch {
+        /* keep null */
+      }
     })();
   }, []);
 
@@ -50,6 +75,61 @@ export default function SettingsScreen() {
       return;
     }
     setPrefs(await setPushCategory(id, value));
+  }
+
+  function onExamChange(next: ExamType) {
+    if (next === examType || switching) return;
+    const premium = isPremiumActive(ent ?? undefined);
+    const label = EXAM_LABEL[next];
+
+    if (premium) {
+      void applyExam(next);
+      return;
+    }
+
+    Alert.alert(
+      'Mod değiştir',
+      `${label} paketine geçmek için bir reklam izlemen gerekir.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Reklam izle ve geç',
+          onPress: () => {
+            void (async () => {
+              setSwitching(true);
+              try {
+                const unlock = await runRewardedExamSwitch();
+                if (!unlock.allowed) {
+                  Alert.alert(
+                    'Devam edilmedi',
+                    'Reklam tamamlanmadan sınav paketi değiştirilemez.',
+                  );
+                  return;
+                }
+                await callUpdateExamType(next);
+                setExamType(next);
+              } catch {
+                Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
+              } finally {
+                setSwitching(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }
+
+  async function applyExam(next: ExamType) {
+    setSwitching(true);
+    try {
+      await callUpdateExamType(next);
+      setExamType(next);
+    } catch {
+      Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
+    } finally {
+      setSwitching(false);
+    }
   }
 
   function onReplayOnboarding() {
@@ -98,8 +178,23 @@ export default function SettingsScreen() {
       <Eyebrow>{TR_EYEBROW.settings}</Eyebrow>
       <Text style={styles.title}>Ayarlar</Text>
       <Text style={styles.sub}>
-        Bildirimler, Premium ve hukuki metinler — 1.0 için temel kontroller.
+        Sınav paketi, bildirimler, Premium ve hukuki metinler.
       </Text>
+
+      <View style={styles.card} testID="settings-exam">
+        <Eyebrow tone="navy">{TR_EYEBROW.modPicker}</Eyebrow>
+        <Text style={styles.cardTitle}>Sınav paketi</Text>
+        <Text style={styles.cardBody}>
+          {premium
+            ? 'Premium: paketi reklamsız değiştirebilirsin.'
+            : 'Her paket değişiminde bir reklam izlemen gerekir.'}
+        </Text>
+        <ExamModeSwitcher
+          value={examType}
+          onChange={onExamChange}
+          disabled={switching}
+        />
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Premium</Text>

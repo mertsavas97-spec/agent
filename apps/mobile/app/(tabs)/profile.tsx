@@ -7,7 +7,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { topicsForExam } from '@/src/data';
 import { readExamPreference } from '@/src/features/exam/examPreference';
 import { isExamType } from '@/src/features/exam/examTypes';
-import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import {
   hydrateEntitlement,
   isPremiumActive,
@@ -28,7 +27,6 @@ import type { ExamType } from '@/src/lib/api/types';
 export default function ProfileScreen() {
   const router = useRouter();
   const [examType, setExamType] = useState<ExamType | null>(null);
-  const [switching, setSwitching] = useState(false);
   const [quotaLabel, setQuotaLabel] = useState('—');
   const [consentText, setConsentText] = useState('—');
   const [deleteRequested, setDeleteRequested] = useState(false);
@@ -83,21 +81,6 @@ export default function ProfileScreen() {
       };
     }, [reload]),
   );
-
-  async function onExamChange(next: ExamType) {
-    if (next === examType || switching) return;
-    setSwitching(true);
-    const previous = examType;
-    setExamType(next);
-    try {
-      await callUpdateExamType(next);
-    } catch {
-      setExamType(previous);
-      Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
-    } finally {
-      setSwitching(false);
-    }
-  }
 
   function onSignOut() {
     Alert.alert('Çıkış', 'Hesabından çıkmak istiyor musun?', [
@@ -154,8 +137,6 @@ export default function ProfileScreen() {
   return (
     <ProfilePanel
       examType={examType}
-      onExamChange={(e) => void onExamChange(e)}
-      examSwitchDisabled={switching}
       quotaLabel={quotaLabel}
       consentLabel={consentText}
       catalogCount={catalogCount}
