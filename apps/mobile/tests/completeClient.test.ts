@@ -3,7 +3,10 @@ import { markOnboardingComplete } from '@/src/features/onboarding/onboardingRepl
 const mockCompleteOnboardingLocal = jest.fn().mockResolvedValue(undefined);
 const mockEnsureUserDocLocal = jest.fn().mockResolvedValue({ created: false, examType: 'lgs' });
 const mockWriteExamPreference = jest.fn().mockResolvedValue(undefined);
+const mockReadExamPreference = jest.fn().mockResolvedValue(null);
 const mockEnsureSignedIn = jest.fn().mockResolvedValue({ uid: 'u1' });
+const mockWriteOnboardingDoneLocal = jest.fn().mockResolvedValue(undefined);
+const mockReadOnboardingDoneLocal = jest.fn().mockResolvedValue(false);
 const mockCallable = jest.fn();
 
 jest.mock('@/src/features/auth/userDocLocal', () => ({
@@ -15,6 +18,12 @@ jest.mock('@/src/features/auth/userDocLocal', () => ({
 
 jest.mock('@/src/features/exam/examPreference', () => ({
   writeExamPreference: (...args: unknown[]) => mockWriteExamPreference(...args),
+  readExamPreference: (...args: unknown[]) => mockReadExamPreference(...args),
+}));
+
+jest.mock('@/src/features/onboarding/onboardingPreference', () => ({
+  writeOnboardingDoneLocal: (...args: unknown[]) => mockWriteOnboardingDoneLocal(...args),
+  readOnboardingDoneLocal: (...args: unknown[]) => mockReadOnboardingDoneLocal(...args),
 }));
 
 jest.mock('@/src/lib/auth', () => ({
@@ -40,6 +49,8 @@ describe('submitOnboarding', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCallable.mockRejectedValue(new Error('CLOUD_BLOCKED'));
+    mockEnsureSignedIn.mockResolvedValue({ uid: 'u1' });
+    mockCompleteOnboardingLocal.mockResolvedValue(undefined);
   });
 
   it('writes local profile, unlocks gate, and does not fail when cloud sync fails', async () => {
@@ -56,11 +67,38 @@ describe('submitOnboarding', () => {
     });
 
     expect(mockWriteExamPreference).toHaveBeenCalledWith('ygs');
+    expect(mockWriteOnboardingDoneLocal).toHaveBeenCalledWith(true);
     expect(mockCompleteOnboardingLocal).toHaveBeenCalledWith(
       'u1',
       expect.objectContaining({ examType: 'ygs' }),
     );
     expect(events).toContain('complete');
+    unsub();
+  });
+
+  it('still unlocks when Auth/Firestore remote persist fails', async () => {
+    mockEnsureSignedIn.mockRejectedValue(new Error('AUTH_TIMEOUT'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const events: string[] = [];
+    const unsub = jest.requireActual('@/src/features/onboarding/onboardingReplay')
+      .subscribeOnboardingGate((ev: { type: string }) => {
+        events.push(ev.type);
+      });
+
+    await expect(
+      submitOnboarding({
+        examType: 'trafik',
+        ageBand: '18plus',
+        parentalConsent: false,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(mockWriteExamPreference).toHaveBeenCalledWith('trafik');
+    expect(mockWriteOnboardingDoneLocal).toHaveBeenCalledWith(true);
+    expect(mockCompleteOnboardingLocal).not.toHaveBeenCalled();
+    expect(events).toContain('complete');
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
     unsub();
   });
 });
