@@ -1,6 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+}));
+
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 
 describe('SolutionScreen', () => {
@@ -20,7 +24,7 @@ describe('SolutionScreen', () => {
     );
 
     expect(screen.getByTestId('answer-hero')).toHaveTextContent(/öyküleme/);
-    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/Doğru cevap/);
+    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/DOĞRU CEVAP/);
     expect(screen.getByTestId('solution-meta')).toHaveTextContent(/Türkçe/);
     // Cevap card should not duplicate in steps tab
     expect(screen.queryByText('En uygun anlatım biçimi: öyküleme')).toBeNull();

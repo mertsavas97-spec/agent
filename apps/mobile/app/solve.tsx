@@ -5,7 +5,10 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
-import { startPremiumPurchase } from '@/src/features/paywall/entitlement';
+import {
+  activateLocalPremium,
+  hydrateEntitlement,
+} from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
@@ -280,18 +283,21 @@ export default function SolveFlowScreen() {
   if (phase === 'paywall') {
     return (
       <PaywallScreen
+        variant="quota"
         onStart={(planId) => {
-          void startPremiumPurchase(planId).then((outcome) => {
+          void activateLocalPremium(planId).then(async (outcome) => {
+            await hydrateEntitlement();
             if (outcome.ok) {
               Alert.alert(
-                'Premium (sandbox)',
-                `Sandbox abonelik aktif (${outcome.productId}). Sunucu entitlement senkronu sonraki adımda bağlanacak.`,
+                'Premium aktif',
+                'Sınırsız çözüm ve reklamsız alan açıldı. Yeni bir soru çekebilirsin.',
+                [{ text: 'Tamam', onPress: () => router.back() }],
               );
               return;
             }
             Alert.alert(
-              'Yakında',
-              'Google Play Billing henüz bu derlemede bağlı değil. License tester sandbox için quickstart notuna bak.',
+              'Satın alma hazır değil',
+              'Play Billing bağlanınca burada tamamlanır.',
             );
           });
         }}
@@ -311,6 +317,9 @@ export default function SolveFlowScreen() {
             Alert.alert('Tamamlanmadı', 'Reklam izlenmeden ekstra hak verilmedi.');
           });
         }}
+        onOpenLegal={(doc) =>
+          router.push({ pathname: '/settings/legal/[id]', params: { id: doc } })
+        }
         onDismiss={() => router.back()}
       />
     );

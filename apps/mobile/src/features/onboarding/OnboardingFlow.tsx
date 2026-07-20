@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ExamType } from '@/src/lib/api/types';
-import { colors, radii, space } from '@/src/theme';
+import { colors, radii, space, typography } from '@/src/theme';
 
 import { EXAM_OPTIONS, LEGAL_COPY, ONBOARDING_STEPS } from './copy';
 
@@ -40,6 +40,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   return (
     <View style={styles.container} testID={`onboarding-step-${step}`}>
       <Text style={styles.brand}>ÇözBil</Text>
+      <Text style={styles.progress}>
+        Adım {step + 1} / {ONBOARDING_STEPS.length}
+      </Text>
       <Text style={styles.title}>{ONBOARDING_STEPS[step].title}</Text>
       <Text style={styles.body}>{ONBOARDING_STEPS[step].body}</Text>
 
@@ -91,7 +94,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           style={[styles.cta, (!examType || !consented) && styles.ctaDisabled]}
           disabled={!examType || !consented}
           onPress={finish}>
-          <Text style={styles.ctaLabel}>Ana Sayfaya git</Text>
+          <Text style={styles.ctaLabel}>Ana sayfaya git</Text>
         </Pressable>
       )}
     </View>
@@ -106,18 +109,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brand: {
-    fontSize: 28,
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 32,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: space.md,
+    marginBottom: space.sm,
+    letterSpacing: -0.4,
+  },
+  progress: {
+    fontFamily: typography.fontFamilyMedium,
+    fontSize: 13,
+    color: colors.orange,
+    marginBottom: space.sm,
+    fontWeight: '600',
   },
   title: {
+    fontFamily: typography.fontFamilySemiBold,
     fontSize: 24,
     fontWeight: '700',
     color: colors.navy,
     marginBottom: space.sm,
   },
   body: {
+    fontFamily: typography.fontFamily,
     fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 24,
@@ -125,19 +139,29 @@ const styles = StyleSheet.create({
   },
   examList: { gap: space.sm, marginBottom: space.lg },
   examBtn: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: space.md,
     backgroundColor: colors.white,
   },
   examSelected: {
     borderColor: colors.orange,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: colors.orangeSoft,
   },
-  examLabel: { fontSize: 18, fontWeight: '700', color: colors.navy },
-  examLabelSelected: { color: colors.orange },
-  examHint: { color: colors.textSecondary, marginTop: 2 },
+  examLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  examLabelSelected: { color: colors.navy },
+  examHint: {
+    fontFamily: typography.fontFamily,
+    color: colors.textSecondary,
+    marginTop: 2,
+    fontSize: 13,
+  },
   consentRow: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
   checkbox: {
     width: 22,
@@ -148,13 +172,24 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkboxOn: { backgroundColor: colors.orange, borderColor: colors.orange },
-  consentText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  consentText: {
+    flex: 1,
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
   cta: {
     backgroundColor: colors.orange,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     paddingVertical: space.md,
     alignItems: 'center',
   },
   ctaDisabled: { opacity: 0.45 },
-  ctaLabel: { color: colors.white, fontWeight: '700', fontSize: 16 },
+  ctaLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.navy,
+    fontWeight: '700',
+    fontSize: 16,
+  },
 });

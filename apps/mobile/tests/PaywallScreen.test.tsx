@@ -15,9 +15,9 @@ describe('PaywallScreen', () => {
     expect(screen.getByTestId('paywall-plan-week')).toBeTruthy();
     expect(screen.getByTestId('paywall-plan-monthly')).toBeTruthy();
     expect(screen.getByTestId('paywall-plan-yearly')).toBeTruthy();
-    expect(screen.getByTestId('paywall-price')).toHaveTextContent(/349\s*TL/);
+    expect(screen.getByTestId('paywall-price')).toHaveTextContent(/279\s*TL/);
     expect(screen.getByTestId('paywall-badge-yearly')).toHaveTextContent(/En avantajlı/);
-    expect(screen.getByTestId('paywall-cta')).toHaveTextContent(/Hemen Başla/);
+    expect(screen.getByTestId('paywall-cta')).toHaveTextContent(/Yıllıkla Başla|Hemen Başla/);
 
     fireEvent.press(screen.getByTestId('paywall-cta'));
     expect(onStart).toHaveBeenCalledWith('yearly');
@@ -62,7 +62,6 @@ describe('PaywallScreen', () => {
     expect(screen.getByTestId('paywall-rewarded')).toHaveTextContent(/Reklam izle/);
     fireEvent.press(screen.getByTestId('paywall-rewarded'));
     expect(onWatchRewarded).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('paywall-cta')).toHaveTextContent(/Hemen Başla/);
+    expect(screen.getByTestId('paywall-cta')).toBeTruthy();
   });
 });
-

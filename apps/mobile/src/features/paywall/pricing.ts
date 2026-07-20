@@ -1,6 +1,6 @@
 /**
- * Canonical Premium pricing — see docs/product/pricing-policy.md
- * Amounts in TRY major units (display). Play Console mirrors these SKUs.
+ * Canonical Premium pricing — docs/product/pricing-policy.md
+ * Aylık kilit: 39 TL. Yıllıkta güçlü indirim (%40).
  */
 
 export type PlanId = 'week' | 'monthly' | 'yearly';
@@ -11,10 +11,14 @@ export type PricingPlan = {
   priceTry: number;
   periodLabel: string;
   priceLabel: string;
+  title: string;
   badge?: string;
   effectiveMonthlyLabel?: string;
+  saveLabel?: string;
+  compareAtLabel?: string;
 };
 
+/** 12 × 39 = 468 → yıllık 279 = %40 indirim (ayda ≈23,25 TL) */
 export const PRICING = {
   currency: 'TRY',
   freeDailySolves: 5,
@@ -23,23 +27,29 @@ export const PRICING = {
     productId: 'cozbil_premium_weekly_intro',
     priceTry: 14.9,
     periodLabel: '7 gün',
+    title: 'Haftalık',
     priceLabel: '14,90 TL / 7 gün',
+    badge: 'Dene',
   },
   monthly: {
     id: 'monthly' as const,
     productId: 'cozbil_premium_monthly',
     priceTry: 39,
     periodLabel: 'ay',
+    title: 'Aylık',
     priceLabel: '39 TL / ay',
   },
   yearly: {
     id: 'yearly' as const,
     productId: 'cozbil_premium_yearly',
-    priceTry: 349,
+    priceTry: 279,
     periodLabel: 'yıl',
-    priceLabel: '349 TL / yıl',
+    title: 'Yıllık',
+    priceLabel: '279 TL / yıl',
     badge: 'En avantajlı',
-    effectiveMonthlyLabel: 'Ayda ≈29 TL',
+    effectiveMonthlyLabel: 'Ayda yalnızca ≈23 TL',
+    saveLabel: '%40 indirim',
+    compareAtLabel: '468 TL yerine',
   },
 } as const;
 
@@ -49,4 +59,8 @@ export const PLANS: PricingPlan[] = [PRICING.week, PRICING.monthly, PRICING.year
 
 export function planById(id: PlanId): PricingPlan {
   return PLANS.find((p) => p.id === id) ?? PRICING.yearly;
+}
+
+export function yearlySavingsTry(): number {
+  return Math.round(PRICING.monthly.priceTry * 12 - PRICING.yearly.priceTry);
 }

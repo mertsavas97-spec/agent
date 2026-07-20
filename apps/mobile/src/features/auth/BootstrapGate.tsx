@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient';
+import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
 import { colors, space } from '@/src/theme';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
@@ -67,7 +68,10 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const status = await fetchOnboardingStatus();
+        const [status] = await Promise.all([
+          fetchOnboardingStatus(),
+          hydrateEntitlement().catch(() => null),
+        ]);
         if (!alive) return;
         clearTimeout(timer);
         if (uid) bootedForUid.current = uid;

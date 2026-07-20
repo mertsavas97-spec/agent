@@ -8,6 +8,12 @@ import { topicsForExam } from '@/src/data';
 import { readExamPreference } from '@/src/features/exam/examPreference';
 import { isExamType } from '@/src/features/exam/examTypes';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
+import {
+  hydrateEntitlement,
+  isPremiumActive,
+  type EntitlementSnapshot,
+} from '@/src/features/paywall/entitlement';
+import { planById } from '@/src/features/paywall/pricing';
 import { callRequestAccountDeletion } from '@/src/features/profile/deleteRequestClient';
 import { ProfilePanel } from '@/src/features/profile/ProfilePanel';
 import {
@@ -26,25 +32,31 @@ export default function ProfileScreen() {
   const [quotaLabel, setQuotaLabel] = useState('—');
   const [consentText, setConsentText] = useState('—');
   const [deleteRequested, setDeleteRequested] = useState(false);
+  const [ent, setEnt] = useState<EntitlementSnapshot | null>(null);
 
   const reload = useCallback(async () => {
     const user = await ensureSignedIn();
     const { db } = getFirebase();
     const snap = await getDoc(doc(db, 'users', user.uid));
+    const entitlement = await hydrateEntitlement();
+    setEnt(entitlement);
     if (!snap.exists()) return;
     const data = snap.data();
     const preferred = await readExamPreference();
     const et = data.examType;
     if (preferred) setExamType(preferred);
     else if (isExamType(et)) setExamType(et);
+    const premium = isPremiumActive(entitlement);
     setQuotaLabel(
-      formatRemainingQuota(
-        remainingFreeSolves({
-          dailySolveCount: Number(data.dailySolveCount ?? 0),
-          dailySolveDate: (data.dailySolveDate as string | null) ?? null,
-          subscriptionStatus: String(data.subscriptionStatus ?? 'free'),
-        }),
-      ),
+      premium
+        ? 'Sınırsız (Premium)'
+        : formatRemainingQuota(
+            remainingFreeSolves({
+              dailySolveCount: Number(data.dailySolveCount ?? 0),
+              dailySolveDate: (data.dailySolveDate as string | null) ?? null,
+              subscriptionStatus: String(data.subscriptionStatus ?? 'free'),
+            }),
+          ),
     );
     setConsentText(
       consentLabel({
@@ -133,6 +145,11 @@ export default function ProfileScreen() {
   }
 
   const catalogCount = examType ? topicsForExam(examType).length : 0;
+  const premium = isPremiumActive(ent ?? undefined);
+  const planLabel =
+    premium && ent?.planId
+      ? `${planById(ent.planId).title} plan · ${planById(ent.planId).priceLabel}`
+      : 'Premium aktif';
 
   return (
     <ProfilePanel
@@ -143,8 +160,12 @@ export default function ProfileScreen() {
       consentLabel={consentText}
       catalogCount={catalogCount}
       deleteRequested={deleteRequested}
+      isPremium={premium}
+      planLabel={planLabel}
       onSignOut={onSignOut}
       onRequestDelete={onRequestDelete}
+      onOpenPremium={() => router.push('/premium')}
+      onOpenSettings={() => router.push('/settings')}
     />
   );
 }

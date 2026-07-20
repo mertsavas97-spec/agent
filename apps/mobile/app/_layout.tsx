@@ -86,6 +86,36 @@ function RootLayoutNav() {
             }}
           />
           <Stack.Screen
+            name="premium"
+            options={{
+              title: 'Premium',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
+          <Stack.Screen
+            name="settings/index"
+            options={{
+              title: 'Ayarlar',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
+          <Stack.Screen
+            name="settings/legal/[id]"
+            options={{
+              title: 'Hukuki',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
+          <Stack.Screen
             name="solve"
             options={{
               title: 'Çözüm',

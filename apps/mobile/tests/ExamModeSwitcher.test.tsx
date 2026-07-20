@@ -8,7 +8,7 @@ describe('ExamModeSwitcher', () => {
     const onChange = jest.fn();
     render(<ExamModeSwitcher value="ygs" onChange={onChange} />);
 
-    expect(screen.getByText('Aktif sınav modu')).toBeTruthy();
+    expect(screen.getByText('AKTİF SINAV MODU')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-chip')).toBeTruthy();
     expect(screen.getByText('MOD: YGS')).toBeTruthy();
     expect(screen.getByTestId('exam-mode-active-line')).toBeTruthy();

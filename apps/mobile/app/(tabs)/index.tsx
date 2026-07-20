@@ -39,11 +39,15 @@ import type { AttemptListItem, ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
+import {
+  hydrateEntitlement,
+  isPremiumActive,
+} from '@/src/features/paywall/entitlement';
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { findTopic, subjectLabel, topicsForExam } from '@/src/data';
 import { EmptyState } from '@/src/ui/EmptyState';
 import { Eyebrow } from '@/src/ui/Eyebrow';
-import { trUpper } from '@/src/lib/trCase';
+import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -53,6 +57,7 @@ export default function HomeScreen() {
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [switching, setSwitching] = useState(false);
   const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -64,12 +69,14 @@ export default function HomeScreen() {
         try {
           const user = await ensureSignedIn();
           const { db } = getFirebase();
-          const [progress, attempts, userSnap] = await Promise.all([
+          const [progress, attempts, userSnap, entitlement] = await Promise.all([
             fetchProgressSummary().catch(() => ({ streakCount: 0 })),
             fetchAttempts({ limit: 5 }).catch(() => ({ items: [] as AttemptListItem[] })),
             getDoc(doc(db, 'users', user.uid)),
+            hydrateEntitlement().catch(() => null),
           ]);
           if (!alive) return;
+          setIsPremium(isPremiumActive(entitlement ?? undefined));
           setStreak(progress.streakCount ?? 0);
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
           const preferred = await readExamPreference();
@@ -216,10 +223,28 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}>
-        <Text style={styles.brand}>{brand.name}</Text>
-        <Text style={styles.tagline}>
-          Kitaptaki veya defterdeki sorunun fotoğrafını çek, adım adım anlatılsın.
-        </Text>
+        <View style={styles.topRow}>
+          <View style={styles.topBrandCol}>
+            <Text style={styles.brand}>{brand.name}</Text>
+            <Text style={styles.tagline}>
+              Kitaptaki veya defterdeki sorunun fotoğrafını çek, adım adım anlatılsın.
+            </Text>
+          </View>
+          <Pressable
+            testID="home-premium-cta"
+            accessibilityRole="button"
+            accessibilityLabel={isPremium ? 'Premium planı gör' : 'Premium’a geç'}
+            style={[styles.premiumPill, isPremium && styles.premiumPillOn]}
+            onPress={() => router.push('/premium')}>
+            <Text
+              style={[
+                styles.premiumPillLabel,
+                isPremium && styles.premiumPillLabelOn,
+              ]}>
+              {isPremium ? TR_EYEBROW.premium : 'Premium'}
+            </Text>
+          </Pressable>
+        </View>
 
         <ExamModeSwitcher
           value={examType}
@@ -374,6 +399,13 @@ const styles = StyleSheet.create({
     padding: space.lg,
     paddingBottom: space.xl,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.sm,
+    marginBottom: space.lg,
+  },
+  topBrandCol: { flex: 1 },
   brand: {
     fontFamily: typography.fontFamily,
     fontSize: 32,
@@ -386,8 +418,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     marginTop: 6,
-    marginBottom: space.lg,
     lineHeight: 23,
+  },
+  premiumPill: {
+    backgroundColor: colors.orange,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+    ...shadows.cta,
+  },
+  premiumPillOn: {
+    backgroundColor: colors.navy,
+    borderWidth: 1.5,
+    borderColor: colors.orange,
+  },
+  premiumPillLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.navy,
+    letterSpacing: 0.3,
+  },
+  premiumPillLabelOn: {
+    color: colors.orange,
   },
   metaLine: {
     fontFamily: typography.fontFamily,
