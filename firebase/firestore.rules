@@ -9,26 +9,51 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    // Server-owned: quota, abuse, streak, subscription — client update forbidden
+    function profileUpdateKeysOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly([
+          'displayName', 'examType', 'ageBand',
+          'parentalConsentAt', 'consentAcceptedAt', 'onboardingCompletedAt',
+          'updatedAt', 'deleteRequestedAt'
+        ]);
+    }
+
+    function bootstrapDefaultsOk() {
+      return request.resource.data.subscriptionStatus == 'free'
+        && request.resource.data.dailySolveCount == 0
+        && request.resource.data.invalidImageScore == 0
+        && request.resource.data.streakCount == 0
+        && request.resource.data.restrictedUntil == null
+        && request.resource.data.examType in ['lgs', 'ygs', 'kpss', 'trafik'];
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
-      // Client may create/update limited profile fields; server (Admin) does bootstrap
+
       allow create: if isOwner(uid)
+        && bootstrapDefaultsOk()
         && request.resource.data.keys().hasOnly([
           'displayName', 'examType', 'ageBand', 'parentalConsentAt',
+          'consentAcceptedAt', 'onboardingCompletedAt',
           'streakCount', 'streakLastActiveDate', 'dailySolveCount', 'dailySolveDate',
           'subscriptionStatus', 'invalidImageScore', 'restrictedUntil',
           'createdAt', 'updatedAt', 'deleteRequestedAt'
-        ])
-        && request.resource.data.examType in ['lgs', 'ygs', 'kpss']
-        && request.resource.data.subscriptionStatus == 'free';
+        ]);
+
       allow update: if isOwner(uid)
-        && request.resource.data.examType in ['lgs', 'ygs', 'kpss']
-        && (!('subscriptionStatus' in request.resource.data.diff(resource.data).affectedKeys())
-            || request.resource.data.subscriptionStatus == resource.data.subscriptionStatus);
+        && profileUpdateKeysOnly()
+        && request.resource.data.examType in ['lgs', 'ygs', 'kpss', 'trafik']
+        && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
+        && request.resource.data.dailySolveCount == resource.data.dailySolveCount
+        && request.resource.data.dailySolveDate == resource.data.dailySolveDate
+        && request.resource.data.invalidImageScore == resource.data.invalidImageScore
+        && request.resource.data.restrictedUntil == resource.data.restrictedUntil
+        && request.resource.data.streakCount == resource.data.streakCount;
 
       match /attempts/{attemptId} {
         allow read: if isOwner(uid);
-        allow write: if false; // Cloud Functions only
+        allow write: if false;
       }
       match /solutions/{solutionId} {
         allow read: if isOwner(uid);
@@ -38,6 +63,17 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow write: if false;
       }
+
+      // Dogfood solve path (org-policy bypass). Client: create pending only.
+      // Server (Admin SDK trigger): updates status/response — bypasses rules.
+      match /solveRequests/{requestId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasAll(['imagePath', 'status'])
+          && request.resource.data.status == 'pending'
+          && request.resource.data.imagePath is string;
+        allow update, delete: if false;
+      }
     }
 
     match /topicStats/{uid}/topics/{topicId} {
@@ -45,8 +81,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Global cache is server-only
     match /solutionCache/{cacheKey} {
+      allow read, write: if false;
+    }
+
+    match /rateLimits/{limitId} {
       allow read, write: if false;
     }
 

@@ -1,0 +1,37 @@
+{
+  "id": "lgs-turkish-paragraf-001",
+  "examType": "lgs",
+  "subject": "turkish",
+  "topicId": "lgs-turkish-paragraf",
+  "difficulty": "easy",
+  "format": "multiple_choice",
+  "stem": "“Yağmur dinince sokaklar yine doldu; çocuklar birikintilerde gülerek koştu.” Bu cümleden kesin olarak çıkarılabilecek yargı hangisidir?",
+  "choices": {
+    "A": "Yağmur hiç dinmemiştir.",
+    "B": "Yağmur dinmiştir ve çocuklar dışarıdadır.",
+    "C": "Sokaklar boş kalmıştır.",
+    "D": "Çocuklar üzgündür.",
+    "E": "Hava karanlıktır."
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. Metni ayıkla",
+      "body": "“Yağmur dinince” → dinmiştir. “çocuklar … koştu” → dışarıda."
+    },
+    {
+      "title": "2. Eleme",
+      "body": "A, C, D, E metinden desteklenmez. Kesin yargı B'dir."
+    }
+  ],
+  "styleRefNote": "LGS paragraf çıkarım; özgün cümle",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

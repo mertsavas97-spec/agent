@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cozbil.local/schemas/item-bank-item.json",
+  "title": "CozBilItemBankItem",
+  "type": "object",
+  "required": [
+    "id",
+    "examType",
+    "subject",
+    "topicId",
+    "difficulty",
+    "format",
+    "stem",
+    "choices",
+    "answerKey",
+    "explanationSteps",
+    "source",
+    "license",
+    "review",
+    "version"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 8 },
+    "examType": { "enum": ["lgs", "ygs", "kpss"] },
+    "subject": { "enum": ["math", "turkish"] },
+    "topicId": { "type": "string" },
+    "difficulty": { "enum": ["easy", "mid", "hard"] },
+    "format": { "enum": ["multiple_choice", "open_short"] },
+    "stem": { "type": "string", "minLength": 20 },
+    "choices": {
+      "type": "object",
+      "required": ["A", "B", "C", "D", "E"],
+      "additionalProperties": { "type": "string" }
+    },
+    "answerKey": { "enum": ["A", "B", "C", "D", "E"] },
+    "explanationSteps": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["title", "body"],
+        "properties": {
+          "title": { "type": "string" },
+          "body": { "type": "string" }
+        }
+      }
+    },
+    "transparencyNote": { "type": "string" },
+    "source": { "const": "original" },
+    "license": { "enum": ["owned"] },
+    "styleRefNote": { "type": "string" },
+    "review": {
+      "type": "object",
+      "required": ["author", "reviewedAt", "similarityCheck"],
+      "properties": {
+        "author": { "type": "string" },
+        "reviewedAt": { "type": "string" },
+        "similarityCheck": { "enum": ["pass", "fail", "pending"] }
+      }
+    },
+    "version": { "type": "integer", "minimum": 1 }
+  },
+  "additionalProperties": false
+}

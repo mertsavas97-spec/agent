@@ -12,6 +12,7 @@ Türkçe anlatan AI çalışma arkadaşı (Android-first).
 - Onboarding: LGS / YGS / KPSS (üçü aktif)
 - Geçmiş, istatistik/zayıflık, streak
 - Freemium (5/gün) + paywall
+- Mini özgün soru–cevap–anlatım arşivi (telifsiz; büyütülebilir) — `docs/architecture/item-bank.md`
 - Moodboard UI: navy `#1E1B4B`, orange `#F59E0B`, Poppins, robot loading
 
 ## v1 scope OUT
@@ -22,7 +23,8 @@ Türkçe anlatan AI çalışma arkadaşı (Android-first).
 
 ## Monetization
 
-Freemium → Premium (~49 TL/ay vitrin); günlük 5 ücretsiz soru.
+Freemium → Premium (14,90 TL/7g · 39 TL/ay · 349 TL/yıl); günlük 5 ücretsiz soru.
+Detay: `docs/product/pricing-policy.md`.
 
 ## Design north star
 
