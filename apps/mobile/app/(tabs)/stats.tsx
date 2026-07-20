@@ -183,7 +183,7 @@ export default function StatsScreen() {
             </View>
           ) : (
             <Pressable
-              style={[styles.primaryCta, { backgroundColor: theme.solid }]}
+              style={styles.primaryCta}
               testID="stats-empty-cta"
               onPress={() => router.push('/(tabs)')}>
               <Text style={styles.primaryCtaText}>Ana sayfada soru çöz</Text>
@@ -566,14 +566,16 @@ const styles = StyleSheet.create({
   },
   primaryCta: {
     marginTop: space.md,
-    borderRadius: radii.xl,
-    paddingVertical: 14,
+    backgroundColor: colors.orange,
+    borderRadius: radii.lg,
+    paddingVertical: 16,
     alignItems: 'center',
+    ...shadows.cta,
   },
   primaryCtaText: {
     fontFamily: typography.fontFamilySemiBold,
-    color: colors.white,
+    color: colors.navy,
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: 16,
   },
 });

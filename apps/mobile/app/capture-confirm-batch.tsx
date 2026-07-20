@@ -85,7 +85,7 @@ export default function CaptureConfirmBatchScreen() {
 
       <Pressable
         testID="capture-batch-confirm-solve"
-        style={[styles.primaryBtn, { backgroundColor: theme.solid }]}
+        style={styles.primaryBtn}
         onPress={goSolve}>
         <Text style={styles.primaryText}>Evet, çöz ({images.length})</Text>
       </Pressable>
@@ -170,19 +170,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navySoft,
   },
   primaryBtn: {
-    borderRadius: radii.xl,
+    backgroundColor: colors.orange,
+    borderRadius: radii.lg,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: space.sm,
+    ...shadows.cta,
   },
   primaryText: {
     fontFamily: typography.fontFamilySemiBold,
-    color: colors.white,
+    color: colors.navy,
     fontSize: 16,
     fontWeight: '700',
   },
   secondaryBtn: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1.5,

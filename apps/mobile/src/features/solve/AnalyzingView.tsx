@@ -150,14 +150,15 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: 22,
-    fontFamily: typography.fontFamilySemiBold,
-    fontWeight: typography.headingWeight,
+    fontFamily: typography.fontFamilyBold,
+    fontWeight: '700',
     textAlign: 'center',
     marginTop: space.sm,
+    letterSpacing: -0.3,
   },
   wait: {
-    marginTop: 8,
-    color: '#E2E8F0',
+    marginTop: space.sm,
+    color: colors.border,
     fontSize: 15,
     fontFamily: typography.fontFamily,
     textAlign: 'center',
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     height: 10,
     borderRadius: radii.pill,
-    backgroundColor: '#2A2660',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
   },
   barFill: {
@@ -188,13 +189,13 @@ const styles = StyleSheet.create({
   pct: {
     marginTop: space.sm,
     color: colors.orange,
-    fontFamily: typography.fontFamilyMedium,
-    fontWeight: typography.captionWeight,
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '700',
     fontSize: 14,
   },
   tip: {
     marginTop: space.lg,
-    color: '#CBD5E1',
+    color: colors.border,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -216,16 +217,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
   },
   stepItem: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 14,
     fontFamily: typography.fontFamily,
   },
   stepActive: {
     color: colors.white,
-    fontFamily: typography.fontFamilyMedium,
-    fontWeight: typography.captionWeight,
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '700',
   },
   stepDone: {
-    color: '#94A3B8',
+    color: colors.textMuted,
   },
 });
