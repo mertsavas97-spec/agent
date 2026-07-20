@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
@@ -81,9 +81,8 @@ describe('MultiSolutionScreen', () => {
       />,
     );
 
-    expect(within(screen.getByTestId('multi-active-ready')).getByTestId('answer-hero')).toHaveTextContent(
-      /öyküleme/,
-    );
+    expect(screen.getByTestId('multi-active-ready')).toBeTruthy();
+    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/öyküleme/);
     expect(screen.getByText(/KPSS · Türkçe/)).toBeTruthy();
     expect(screen.getByText(/Ehliyet · Trafik/)).toBeTruthy();
 
@@ -96,8 +95,7 @@ describe('MultiSolutionScreen', () => {
       />,
     );
 
-    expect(within(screen.getByTestId('multi-active-ready')).getByTestId('answer-hero')).toHaveTextContent(
-      /Durur/,
-    );
+    expect(screen.getByTestId('answer-hero')).toHaveTextContent(/Durur/);
+    expect(screen.queryByText(/öyküleme/)).toBeNull();
   });
 });

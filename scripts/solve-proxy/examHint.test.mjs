@@ -48,4 +48,26 @@ CEVAP:`;
   console.log('ok kpss profile + trafik OCR → trafik mismatch');
 }
 
+{
+  const hint = detectExamHint(
+    '96. Sokakta başı boş dolaşan köpeklere yiyecek vermeyi ihmal etmeyen komşumuz…\nBu parçanın anlatım biçimi nedir?',
+    'trafik',
+  );
+  // Q96 ≥ 80 → YGS (KPSS Türkçe blokları genelde ~30 soru)
+  assert.equal(hint.suggested, 'ygs');
+  assert.equal(hint.mismatchesProfile, true);
+  assert.equal(hint.confidence, 'high');
+  console.log('ok trafik profile + anlatım biçimi Q96 → ygs');
+}
+
+{
+  const hint = detectExamHint(
+    '97. Yıllık planlarını yapmak için saatlerce çalışma masasında çalışmıştı.\nBu parçadaki anlam ilgisi nedir?',
+    'trafik',
+  );
+  assert.equal(hint.suggested, 'ygs');
+  assert.equal(hint.mismatchesProfile, true);
+  console.log('ok trafik profile + Q97 anlam ilgisi → ygs');
+}
+
 console.log('all examHint tests passed');

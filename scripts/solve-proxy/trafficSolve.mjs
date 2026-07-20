@@ -23,7 +23,7 @@ function pickChoice(choices, predicates) {
 }
 
 const LOOKS_TRAFFIC =
-  /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı ışık|yeşil ışık|emniyet şeridi|sollama|park yasağı|abs|esp|emniyet kemeri|hava yastığı|ilk yardım|kanama|kazazede/i;
+  /trafik|hız sınırı|azami hız|kavşak|geçiş üstünlüğü|ehliyet|levha|ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı ışık|yeşil ışık|emniyet şeridi|sollama|park yasağı|abs|esp|emniyet kemeri|hava yastığı|ilk yardım|kanama|kazazede|şaft|diferansiyel|güç aktarma|\baks\b/i;
 
 /**
  * @returns {{ steps: object[], answerLabel?: string, answerText?: string } | null}
@@ -150,8 +150,51 @@ export function tryTrafficSolve(ocrText, classification) {
     };
   }
 
+  // --- Güç aktarma: şaft / diferansiyel / aks ---
+  if (/şaft|diferansiyel|aks|güç aktarma/i.test(blob)) {
+    const hit =
+      pickChoice(choices, [
+        /şaft.*diferansiyel.*aks|i\.\s*şaft.*ii\.\s*diferansiyel.*iii\.\s*aks/i,
+      ]) ||
+      // Multi-line OCR: choice body may be short; prefer labeled order in blob
+      null;
+    // Parse labeled blocks like "A) I. Şaft II. Diferansiyel III. Aks"
+    let bestLabel = hit?.label;
+    let bestText = hit?.text;
+    if (!bestLabel) {
+      const block = text.match(
+        /([A-E])\)\s*I\.\s*Şaft\s*II\.\s*Diferansiyel\s*III\.\s*Aks/i,
+      );
+      if (block) {
+        bestLabel = block[1].toUpperCase();
+        bestText = 'I. Şaft · II. Diferansiyel · III. Aks';
+      }
+    }
+    const answerText = bestText ?? 'I. Şaft, II. Diferansiyel, III. Aks';
+    return {
+      steps: [
+        {
+          title: '1. Güç yolu',
+          body: 'Motor → şanzıman sonrası güç şaft ile diferansiyele, oradan aks ile tekerleklere gider.',
+        },
+        {
+          title: '2. Sıra',
+          body: 'Doğru adlar: I. Şaft, II. Diferansiyel, III. Aks.',
+        },
+        {
+          title: 'Cevap',
+          body: bestLabel
+            ? `Doğru şık: ${bestLabel}) ${answerText}`
+            : `Doğru sıra: ${answerText}`,
+        },
+      ],
+      answerLabel: bestLabel,
+      answerText,
+    };
+  }
+
   // --- ABS ---
-  if (/\babs\b/i.test(blob) && subject === 'vehicle') {
+  if (/\babs\b/i.test(blob) && (subject === 'vehicle' || LOOKS_TRAFFIC.test(text))) {
     const hit = pickChoice(choices, [
       /kilitlen/i,
       /yön kontrol/i,

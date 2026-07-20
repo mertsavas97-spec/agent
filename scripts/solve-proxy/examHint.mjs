@@ -1,7 +1,11 @@
 /**
  * Soft exam-type hints from OCR vs profile exam.
  * Q97 in a KPSS profile is a classic mismatch (KPSS Türkçe ~30 Q).
+ * Ehliyet profilinde anlatım/anlam soruları → KPSS/YGS.
  */
+
+const TURKISH_STEM =
+  /anlatım biçimi|anlatim bicimi|paragraf|ana düşünce|ana dusunce|ana fikir|cümlede anlam|cumlede anlam|anlam ilgisi|anlam ilişkisi|sözcükte|sozcukte|dil bilgisi|fiilims|özne|nesne|yüklem|anlamca|hangisi çıkarılamaz|çıkarılabilecek|anlatımında|düşünceyi geliştirme|yazım yanlışı|noktalama/i;
 
 /**
  * @returns {{
@@ -44,6 +48,15 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
     suggested = 'trafik';
     confidence = 'high';
     reason = 'ocr_keyword_trafik';
+  } else if (
+    profile === 'trafik' &&
+    TURKISH_STEM.test(t) &&
+    !/trafik|ehliyet|kavşak|levha|sürücü/i.test(t)
+  ) {
+    // Ehliyet modunda KPSS/YGS Türkçe sorusu — branşı traffic sanma
+    suggested = 'kpss';
+    confidence = 'high';
+    reason = 'turkish_under_trafik';
   }
 
   const qMatch = t.match(/(?:^|\n)\s*(\d{1,3})\.\s+\S/);
@@ -59,7 +72,21 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
       suggested = 'ygs';
       confidence = 'medium';
       reason = 'question_number_vs_lgs';
+    } else if (profile === 'trafik' && questionNumber >= 40) {
+      suggested = questionNumber >= 80 ? 'ygs' : 'kpss';
+      confidence = 'medium';
+      reason = 'question_number_vs_trafik';
     }
+  }
+
+  if (
+    suggested === 'kpss' &&
+    reason === 'turkish_under_trafik' &&
+    questionNumber != null &&
+    questionNumber >= 80
+  ) {
+    suggested = 'ygs';
+    reason = 'turkish_high_q_under_trafik';
   }
 
   const mismatchesProfile = Boolean(suggested && suggested !== profile);
