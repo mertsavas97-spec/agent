@@ -1,0 +1,41 @@
+{
+  "id": "kpss-math-yuzde-001",
+  "examType": "kpss",
+  "subject": "math",
+  "topicId": "kpss-math-yuzde",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "Bir ürün önce %20 indirilir, sonra oluşan fiyat üzerinden %10 indirilir. Toplam indirim oranı yüzde kaçtır?",
+  "choices": {
+    "A": "28",
+    "B": "30",
+    "C": "32",
+    "D": "18",
+    "E": "22"
+  },
+  "answerKey": "A",
+  "explanationSteps": [
+    {
+      "title": "1. Adım",
+      "body": "Başlangıç fiyatını 100 al. İlk indirim sonrası: 80."
+    },
+    {
+      "title": "2. Adım",
+      "body": "İkinci indirim %10: 80 × 0,90 = 72. Ödenen 72."
+    },
+    {
+      "title": "3. Adım",
+      "body": "Toplam indirim 28; oran %28. İndirimler toplanmaz (20+10≠30). Cevap A."
+    }
+  ],
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "KPSS GY yüzde; özgün sayısal senaryo",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-18",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

@@ -1,0 +1,37 @@
+{
+  "id": "kpss-math-problem-001",
+  "examType": "kpss",
+  "subject": "math",
+  "topicId": "kpss-math-problemler",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "Bir otobüs 120 km yolu 2 saatte gidiyor. Aynı hızla 180 km yolu kaç saatte gider?",
+  "choices": {
+    "A": "2",
+    "B": "2,5",
+    "C": "3",
+    "D": "3,5",
+    "E": "4"
+  },
+  "answerKey": "C",
+  "explanationSteps": [
+    {
+      "title": "1. Hız",
+      "body": "Hız = 120 / 2 = 60 km/saat."
+    },
+    {
+      "title": "2. Süre",
+      "body": "180 / 60 = 3 saat. Cevap C."
+    }
+  ],
+  "styleRefNote": "KPSS hız problemi; özgün",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

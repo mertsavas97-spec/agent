@@ -27,7 +27,10 @@ function deps(vision: VisionClient = cleanVision) {
         dailySolveDate: null,
         subscriptionStatus: 'free' as const,
       }),
-    persistSolved: async () => ({ attemptId: `a${(n += 1)}` }),
+    persistSolved: async () => ({
+      attemptId: `a${(n += 1)}`,
+      solutionId: `s${n}`,
+    }),
     persistRejected: async () => ({ attemptId: `r${(n += 1)}` }),
   };
 }
@@ -68,7 +71,7 @@ describe('runSolveQuestion', () => {
   });
 
   it('returns cached solution on second identical image', async () => {
-    const d = deps();
+    const d = { ...deps(), writeCacheEnabled: true as const };
     const buf = Buffer.from('same-bytes-for-cache');
     const input = {
       uid: 'u1',

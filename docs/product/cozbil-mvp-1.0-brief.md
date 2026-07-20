@@ -67,7 +67,8 @@ Prompt ve konu kataloğu **examType**’a göre seçilir.
 
 ## 9–16. Yol haritası, güvenlik, monetizasyon, riskler
 
-Önceki brief ile uyumlu. Freemium varsayılan: **5**/gün, **49 TL**/ay.  
+Önceki brief ile uyumlu. Freemium varsayılan: **5**/gün; Premium:
+**14,90 TL**/7 gün, **39 TL**/ay, **349 TL**/yıl (`docs/product/pricing-policy.md`).  
 KVKK: yaş bandına göre (LGS minor vs yetişkin KPSS/YGS).
 
 ---

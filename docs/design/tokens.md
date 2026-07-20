@@ -6,9 +6,11 @@ Code: `apps/mobile/src/theme/tokens.ts`
 | Token | Value |
 |-------|-------|
 | navy | `#1E1B4B` |
+| navySoft | `#EEF0F7` |
 | orange | `#F59E0B` |
-| surface | `#F8FAFC` |
+| orangeSoft | `#FFF7E6` |
+| surface | `#F5F6FA` |
 | font | Poppins |
 
-Note: `ui-ux-pro-max-cli` was not available in the scaffold environment;
-tokens were derived directly from the locked moodboard (T006).
+Note: moodboard HEX kilitli; soft yüzey / shadow ölçeği `ui-design-system`
+(modern) ile rafine edildi. Detay: `docs/design/premium-polish-brief.md`.
