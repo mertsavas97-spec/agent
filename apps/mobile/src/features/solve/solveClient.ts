@@ -104,12 +104,14 @@ export async function callSolveQuestion(
           reason: 'unsupported',
         });
         if (fallback.status === 'solved') {
+          const confidence = classMeta?.confidence ?? 'low';
           return {
             ...fallback,
             classification: {
               subject: detected ?? fallback.subject,
-              confidence: classMeta?.confidence ?? 'low',
-              needsConfirm: true,
+              confidence,
+              // High-confidence Trafik branşı için gereksiz ders popup'ı açma
+              needsConfirm: confidence !== 'high',
               alternatives: classMeta?.alternatives,
             },
           };

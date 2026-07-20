@@ -1,6 +1,7 @@
 /**
  * Deterministic verbal (Türkçe) solvers for dogfood OCR — no LLM.
  */
+import { tryTrafficSolve } from './trafficSolve.mjs';
 
 function parseChoices(ocrText) {
   const map = {};
@@ -196,7 +197,12 @@ function titleAnlam(answer) {
  * @returns {{ steps: object[], answerLabel?: string, answerText?: string } | null}
  */
 export function tryVerbalSolve(ocrText, classification) {
-  if (!classification || classification.subject !== 'turkish') return null;
+  if (!classification) return null;
+
+  const traffic = tryTrafficSolve(ocrText, classification);
+  if (traffic?.steps?.length) return traffic;
+
+  if (classification.subject !== 'turkish') return null;
 
   const { passage, stem } = extractPassageAndStem(ocrText);
   const choices = parseChoices(ocrText);

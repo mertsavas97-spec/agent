@@ -66,6 +66,16 @@ function RootLayoutNav() {
             options={{ headerShown: false, gestureEnabled: false }}
           />
           <Stack.Screen
+            name="capture-confirm"
+            options={{
+              title: 'Fotoğrafı kontrol et',
+              headerBackTitle: 'Geri',
+              headerStyle: { backgroundColor: colors.navy },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
+            }}
+          />
+          <Stack.Screen
             name="solve"
             options={{
               title: 'Çözüm',

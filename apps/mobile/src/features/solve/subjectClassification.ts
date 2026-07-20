@@ -68,8 +68,21 @@ export function shouldConfirmSubject(
     return false;
   }
   if (result.subject === 'unknown') return true;
+
+  const conf = result.classification?.confidence;
+  // Trafik paketinde branş (traffic/vehicle/firstaid) yüksek güvenle geldiyse popup atlama
+  if (
+    opts.examType === 'trafik' &&
+    conf === 'high' &&
+    (result.subject === 'traffic' ||
+      result.subject === 'vehicle' ||
+      result.subject === 'firstaid')
+  ) {
+    return false;
+  }
+
   if (result.classification?.needsConfirm) return true;
-  if (result.classification?.confidence && result.classification.confidence !== 'high') {
+  if (conf && conf !== 'high') {
     return true;
   }
   return false;
@@ -108,9 +121,14 @@ export function applySubjectOverride(
     (subject === 'math' || subject === 'geometry');
   const keepSteps =
     sameFamily ||
-    (result.subject === subject) ||
-    // Keep verbal solver steps when user confirms the predicted turkish subject family
-    (result.subject === 'turkish' && subject === 'turkish');
+    result.subject === subject ||
+    // Keep verbal solver steps when user confirms the predicted subject family
+    (result.subject === 'turkish' && subject === 'turkish') ||
+    ((result.subject === 'traffic' ||
+      result.subject === 'vehicle' ||
+      result.subject === 'firstaid') &&
+      (subject === 'traffic' || subject === 'vehicle' || subject === 'firstaid') &&
+      Boolean(result.answer?.text));
 
   return {
     ...result,

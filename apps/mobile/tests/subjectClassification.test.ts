@@ -63,6 +63,23 @@ describe('shouldConfirmSubject', () => {
       }),
     ).toBe(true);
   });
+
+  it('skips confirm for high-confidence Trafik branşı', () => {
+    expect(
+      shouldConfirmSubject(
+        baseSolved({
+          subject: 'traffic',
+          topicId: 'trafik-traffic-kurallar',
+          classification: {
+            subject: 'traffic',
+            confidence: 'high',
+            needsConfirm: true,
+          },
+        }),
+        { examType: 'trafik' },
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('shouldConfirmExamMismatch', () => {

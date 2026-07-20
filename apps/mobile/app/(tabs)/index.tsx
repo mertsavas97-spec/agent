@@ -133,7 +133,7 @@ export default function HomeScreen() {
     const subjectHint = takePendingSubjectHint() ?? undefined;
     setSubjectHintBanner(null);
     router.push({
-      pathname: '/solve',
+      pathname: '/capture-confirm',
       params: {
         uri: picked.uri,
         mimeType: picked.mimeType ?? 'image/jpeg',
@@ -178,7 +178,7 @@ export default function HomeScreen() {
             setSubjectHintBanner(null);
             if (picked.length === 1) {
               router.push({
-                pathname: '/solve',
+                pathname: '/capture-confirm',
                 params: {
                   uri: picked[0]!.uri,
                   mimeType: picked[0]!.mimeType ?? 'image/jpeg',
