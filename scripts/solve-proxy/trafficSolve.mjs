@@ -5,10 +5,25 @@
 
 function parseChoices(ocrText) {
   const map = {};
-  const re = /([A-E])\)\s*([^\n]{1,100})/gi;
+  const text = String(ocrText || '');
+
+  // Multiline blocks: A)\nI. Şaft\nII. ... until next letter or end
+  const multi = /([A-E])\)\s*\n([\s\S]*?)(?=(?:^|\n)\s*[A-E]\)|$)/gim;
   let m;
-  while ((m = re.exec(ocrText))) {
+  while ((m = multi.exec(text))) {
     const label = m[1].toUpperCase();
+    const body = m[2]
+      .replace(/\s+/g, ' ')
+      .replace(/\bABONE\b.*$/i, '')
+      .trim();
+    if (body.length >= 3 && !/^cevab/i.test(body)) map[label] = body.slice(0, 160);
+  }
+
+  // Inline A) text on same line
+  const re = /([A-E])\)\s*([^\n]{1,120})/gi;
+  while ((m = re.exec(text))) {
+    const label = m[1].toUpperCase();
+    if (map[label]) continue;
     const body = m[2].replace(/\s+/g, ' ').trim();
     if (body && !/^cevab/i.test(body)) map[label] = body;
   }
@@ -173,12 +188,29 @@ export function tryTrafficSolve(ocrText, classification) {
   }
 
   // --- Güç aktarma: şaft / diferansiyel / aks → Araç Tekniği ---
-  if (/şaft|diferansiyel|güç aktarma|aktarma organ/i.test(blob)) {
+  if (/şaft|saft|diferansiyel|güç aktarma|aktarma organ/i.test(blob)) {
     const hit = pickChoice(choices, [
-      /şaft.*diferansiyel.*aks|i\.\s*şaft.*ii\.\s*diferansiyel.*iii\.\s*aks/i,
+      /şaft.*diferansiyel.*aks|saft.*diferansiyel.*aks|i\.\s*şaft.*ii\.\s*diferansiyel.*iii\.\s*aks/i,
     ]);
     let bestLabel = hit?.label;
     let bestText = hit?.text;
+    if (!bestLabel) {
+      // Prefer the classic order even when OCR wraps lines
+      for (const [label, text] of Object.entries(choices)) {
+        const n = text.toLocaleLowerCase('tr-TR');
+        const hasShaft = /şaft|saft/.test(n);
+        const hasDiff = /diferansiyel/.test(n);
+        const hasAks = /\baks\b/.test(n);
+        const order =
+          n.search(/şaft|saft/) < n.search(/diferansiyel/) &&
+          n.search(/diferansiyel/) < n.search(/\baks\b/);
+        if (hasShaft && hasDiff && hasAks && order) {
+          bestLabel = label;
+          bestText = text;
+          break;
+        }
+      }
+    }
     if (!bestLabel) {
       const block = text.match(
         /([A-E])\)\s*I\.\s*Şaft\s*II\.\s*Diferansiyel\s*III\.\s*Aks/i,

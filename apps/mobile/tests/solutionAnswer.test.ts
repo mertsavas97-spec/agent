@@ -24,6 +24,20 @@ describe('solutionAnswer', () => {
     ).toEqual({ label: 'E', text: '7' });
   });
 
+  it('extracts Ehliyet choice without trailing period', () => {
+    expect(
+      extractAnswerFromSteps([
+        {
+          title: 'Cevap',
+          body: 'Doğru şık: A) I. Şaft · II. Diferansiyel · III. Aks',
+        },
+      ]),
+    ).toEqual({
+      label: 'A',
+      text: 'I. Şaft · II. Diferansiyel · III. Aks',
+    });
+  });
+
   it('extracts anlatım biçimi', () => {
     expect(
       extractAnswerFromSteps([

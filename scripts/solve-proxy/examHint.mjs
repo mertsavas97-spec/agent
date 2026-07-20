@@ -43,6 +43,9 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
     /\bilk\s*yardım\b/i.test(t) ||
     /ışıklı trafik|trafik işaret|sürücü ne yapmalı|sarı ve kırmızı|kırmızı (?:ile )?sarı|yeşil ışık yan/i.test(
       t,
+    ) ||
+    /şaft|diferansiyel|güç aktarma|aktarma organ|\babs\b|hava yastığı|emniyet kemeri/i.test(
+      t,
     )
   ) {
     suggested = 'trafik';
@@ -63,6 +66,7 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
   const questionNumber = qMatch ? Number(qMatch[1]) : null;
 
   // High question numbers rarely fit KPSS Türkçe (~30) or single LGS subject blocks.
+  // Do NOT use Q# alone against Ehliyet — booklets often run past 40/80.
   if (!suggested && questionNumber != null) {
     if (profile === 'kpss' && questionNumber >= 40) {
       suggested = 'ygs';
@@ -72,10 +76,6 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
       suggested = 'ygs';
       confidence = 'medium';
       reason = 'question_number_vs_lgs';
-    } else if (profile === 'trafik' && questionNumber >= 40) {
-      suggested = questionNumber >= 80 ? 'ygs' : 'kpss';
-      confidence = 'medium';
-      reason = 'question_number_vs_trafik';
     }
   }
 
@@ -87,6 +87,20 @@ export function detectExamHint(ocrText, profileExam = 'lgs') {
   ) {
     suggested = 'ygs';
     reason = 'turkish_high_q_under_trafik';
+  }
+
+  // Ehliyet OCR + traffic keywords → trust trafik even if a Q# heuristic fired earlier
+  if (
+    profile === 'trafik' &&
+    suggested &&
+    suggested !== 'trafik' &&
+    /şaft|diferansiyel|güç aktarma|abs\b|hava yastığı|kavşak|azami hız|ışıklı|sürücü ne yapmalı|ilk yardım|emniyet kemeri/i.test(
+      t,
+    )
+  ) {
+    suggested = 'trafik';
+    confidence = 'high';
+    reason = 'trafik_keywords_override';
   }
 
   const mismatchesProfile = Boolean(suggested && suggested !== profile);

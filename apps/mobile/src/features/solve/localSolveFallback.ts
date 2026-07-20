@@ -50,9 +50,11 @@ export function buildLocalSolveFallback(input: {
   const subject: Subject =
     input.subjectHint && input.subjectHint !== 'unknown'
       ? input.subjectHint
-      : input.reason === 'unsupported' || input.reason === 'unavailable'
-        ? 'unknown'
-        : 'math';
+      : examType === 'trafik'
+        ? 'traffic'
+        : input.reason === 'unsupported' || input.reason === 'unavailable'
+          ? 'unknown'
+          : 'math';
 
   const topicId =
     input.topicId !== undefined && input.topicId !== null

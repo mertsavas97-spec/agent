@@ -106,15 +106,23 @@ export async function callSolveQuestion(
           reason: 'unsupported',
         });
         if (fallback.status === 'solved') {
-          const confidence = classMeta?.confidence ?? 'low';
+          const detectedSubject = detected ?? fallback.subject;
+          const isTrafikBranch =
+            detectedSubject === 'traffic' ||
+            detectedSubject === 'vehicle' ||
+            detectedSubject === 'firstaid';
+          const confidence = classMeta?.confidence ?? (isTrafikBranch ? 'medium' : 'low');
           return {
             ...fallback,
             examHint,
             classification: {
-              subject: detected ?? fallback.subject,
+              subject: detectedSubject,
               confidence,
-              // High-confidence Trafik branşı için gereksiz ders popup'ı açma
-              needsConfirm: confidence !== 'high',
+              // High/medium Trafik branşı için gereksiz ders popup'ı açma
+              needsConfirm:
+                request.examType === 'trafik' && isTrafikBranch
+                  ? false
+                  : confidence !== 'high',
               alternatives: classMeta?.alternatives,
             },
           };
@@ -158,12 +166,17 @@ export async function callSolveQuestion(
           reason: proxyUnsupported ? 'unsupported' : 'unavailable',
         });
         if (fallback.status === 'solved' && !request.subjectHint) {
+          const isTrafik =
+            request.examType === 'trafik' ||
+            fallback.subject === 'traffic' ||
+            fallback.subject === 'vehicle' ||
+            fallback.subject === 'firstaid';
           return {
             ...fallback,
             classification: {
               subject: fallback.subject,
-              confidence: 'low',
-              needsConfirm: true,
+              confidence: isTrafik ? 'medium' : 'low',
+              needsConfirm: !isTrafik,
             },
           };
         }

@@ -56,6 +56,19 @@ describe('localSolveFallback', () => {
     expect(res.topicId).toBe('kpss-math-temel-islemler');
   });
 
+  it('defaults Ehliyet fallback to traffic branşı (no ders popup path)', () => {
+    const res = buildLocalSolveFallback({
+      examType: 'trafik',
+      requestId: 'eh1',
+      reason: 'unsupported',
+    });
+    expect(res.status).toBe('solved');
+    if (res.status !== 'solved') throw new Error('expected solved');
+    expect(res.subject).toBe('traffic');
+    expect(res.topicId).toBe('trafik-traffic-kurallar');
+    expect(res.steps[0]?.body).toMatch(/kural|işaret|ilk yardım/i);
+  });
+
   it('detects server unavailable errors', () => {
     expect(
       isServerSolveUnavailable(

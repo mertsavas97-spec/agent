@@ -14,6 +14,15 @@ export function shouldConfirmExamMismatch(
 ): boolean {
   if (!hint?.mismatchesProfile || !hint.suggested) return false;
   if (hint.suggested === profileExam) return false;
+  // Ehliyet booklet Q# alone used to false-trigger KPSS/YGS — ignore that reason client-side too
+  if (
+    profileExam === 'trafik' &&
+    (hint.reason === 'question_number_vs_trafik' ||
+      hint.reason === 'question_number_vs_kpss' ||
+      hint.reason === 'question_number_vs_lgs')
+  ) {
+    return false;
+  }
   return hint.confidence === 'high' || hint.confidence === 'medium';
 }
 
@@ -70,10 +79,11 @@ export function shouldConfirmSubject(
   if (result.subject === 'unknown') return true;
 
   const conf = result.classification?.confidence;
-  // Trafik paketinde branş (traffic/vehicle/firstaid) yüksek güvenle geldiyse popup atlama
+  // Ehliyet: traffic / vehicle / firstaid branşı geldiyse ders popup'ı atla
+  // (medium güven de yeterli — diğer sınavlar gibi net aksın)
   if (
     opts.examType === 'trafik' &&
-    conf === 'high' &&
+    (conf === 'high' || conf === 'medium' || !conf) &&
     (result.subject === 'traffic' ||
       result.subject === 'vehicle' ||
       result.subject === 'firstaid')

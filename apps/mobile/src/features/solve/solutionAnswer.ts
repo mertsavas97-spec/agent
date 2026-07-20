@@ -28,9 +28,26 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
   const body = (answerStep?.body ?? steps[steps.length - 1]?.body ?? '').trim();
   if (!body) return null;
 
-  const choice = body.match(/Doğru şık:\s*([A-E])\)\s*(.+?)(?:\.|$)/i);
+  const choice = body.match(
+    /Doğru şık\s*[:：]\s*([A-E])\)\s*(.+)$/im,
+  );
   if (choice) {
-    return { label: choice[1].toUpperCase(), text: choice[2].trim() };
+    return { label: choice[1].toUpperCase(), text: choice[2].replace(/\.\s*$/, '').trim() };
+  }
+
+  const choiceBare = body.match(
+    /Doğru şık\s*[:：]?\s*([A-E])\b(?:\s*[)．.]?\s*(.+))?$/im,
+  );
+  if (choiceBare) {
+    return {
+      label: choiceBare[1].toUpperCase(),
+      text: (choiceBare[2] ?? choiceBare[1]).replace(/\.\s*$/, '').trim(),
+    };
+  }
+
+  const cevapLetter = body.match(/Cevap\s+([A-E])\b/i);
+  if (cevapLetter) {
+    return { label: cevapLetter[1].toUpperCase(), text: cevapLetter[1].toUpperCase() };
   }
 
   const anlatim = body.match(

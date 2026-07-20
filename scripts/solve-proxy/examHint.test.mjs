@@ -53,7 +53,7 @@ CEVAP:`;
     '96. Sokakta başı boş dolaşan köpeklere yiyecek vermeyi ihmal etmeyen komşumuz…\nBu parçanın anlatım biçimi nedir?',
     'trafik',
   );
-  // Q96 ≥ 80 → YGS (KPSS Türkçe blokları genelde ~30 soru)
+  // Türkçe anlatım kökü → YGS (Q# alone no longer flips Ehliyet)
   assert.equal(hint.suggested, 'ygs');
   assert.equal(hint.mismatchesProfile, true);
   assert.equal(hint.confidence, 'high');
@@ -68,6 +68,27 @@ CEVAP:`;
   assert.equal(hint.suggested, 'ygs');
   assert.equal(hint.mismatchesProfile, true);
   console.log('ok trafik profile + Q97 anlam ilgisi → ygs');
+}
+
+{
+  const hint = detectExamHint(
+    '52. Şekildeki araç güç aktarma organlarının adları hangi seçenekte doğru olarak verilmiştir?\nA) I. Şaft II. Diferansiyel III. Aks',
+    'trafik',
+  );
+  assert.equal(hint.suggested, 'trafik');
+  assert.equal(hint.mismatchesProfile, false);
+  assert.equal(hint.confidence, 'high');
+  console.log('ok trafik profile + Q52 şaft → stay trafik (no Q# false alarm)');
+}
+
+{
+  const hint = detectExamHint(
+    '61. Yerleşim yerinde aksi işaret yoksa azami hız kaç km/s’tir?',
+    'trafik',
+  );
+  // Q61 alone must NOT force KPSS/YGS
+  assert.equal(hint.mismatchesProfile, false);
+  console.log('ok trafik profile + Q61 hız → no exam mismatch');
 }
 
 console.log('all examHint tests passed');

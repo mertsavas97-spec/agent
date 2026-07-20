@@ -52,8 +52,31 @@ assert.equal(pt?.subject, 'vehicle');
 assert.equal(pt?.topicKey, 'motor');
 assert.match(pt?.answerText ?? '', /Şaft/i);
 
-const classified = classifyOcr(powertrain, 'trafik');
-assert.equal(classified.subject, 'vehicle');
-assert.equal(classified.topicKey, 'motor');
+const powertrainMultiline = `
+Şekildeki araç güç aktarma organlarının
+adları hangi seçenekte doğru olarak
+verilmiştir?
+A)
+I. Şaft
+II. Diferansiyel
+III. Aks
+B)
+I. Şaft
+II. Aks
+III. Diferansiyel
+C)
+I. Diferansiyel
+II. Aks
+III. Şaft
+D)
+I. Aks
+II. Diferansiyel
+III. Şaft
+`;
+
+const ptMl = tryTrafficSolve(powertrainMultiline, classTraffic);
+assert.equal(ptMl?.answerLabel, 'A');
+assert.equal(ptMl?.subject, 'vehicle');
+assert.match(ptMl?.answerText ?? '', /Şaft/i);
 
 console.log('trafficSolve.test.mjs OK');

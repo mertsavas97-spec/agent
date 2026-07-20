@@ -80,6 +80,23 @@ describe('shouldConfirmSubject', () => {
       ),
     ).toBe(false);
   });
+
+  it('skips confirm for medium-confidence Ehliyet branşı', () => {
+    expect(
+      shouldConfirmSubject(
+        baseSolved({
+          subject: 'vehicle',
+          topicId: 'trafik-vehicle-motor',
+          classification: {
+            subject: 'vehicle',
+            confidence: 'medium',
+            needsConfirm: true,
+          },
+        }),
+        { examType: 'trafik' },
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('shouldConfirmExamMismatch', () => {
@@ -122,6 +139,21 @@ describe('shouldConfirmExamMismatch', () => {
           questionNumber: 42,
         },
         'kpss',
+      ),
+    ).toBe(false);
+  });
+
+  it('ignores stale Q#-only mismatch under Ehliyet profile', () => {
+    expect(
+      shouldConfirmExamMismatch(
+        {
+          suggested: 'kpss',
+          confidence: 'medium',
+          reason: 'question_number_vs_trafik',
+          questionNumber: 52,
+          mismatchesProfile: true,
+        },
+        'trafik',
       ),
     ).toBe(false);
   });
