@@ -7,7 +7,7 @@ describe('moodboard tokens', () => {
   });
 
   it('locks exam scope to LGS YGS KPSS', () => {
-    expect(brand.exams).toEqual(['lgs', 'ygs', 'kpss']);
+    expect(brand.exams).toEqual(['lgs', 'ygs', 'kpss', 'trafik']);
     expect(brand.name).toBe('ÇözBil');
   });
 });

@@ -5,6 +5,10 @@
 **/.env
 **/.env.*
 !.env.example
+**/.secrets/
+functions/.secrets/
+*.pem
+*-vertex.json
 
 # MCP configs often contain API keys — keep example only in git
 .cursor/mcp.json
@@ -32,6 +36,7 @@ __pycache__/
 *.pyc
 .expo/
 web-build/
+.tools/
 firebase-debug.log
 firebase-debug.*.log
 ui-debug.log

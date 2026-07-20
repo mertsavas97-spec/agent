@@ -1,20 +1,140 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, space } from '@/src/theme';
+import { colors, radii, space, typography } from '@/src/theme';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
-/** Moodboard loading state — robot mascot + analyzing copy. */
-export function AnalyzingView() {
+import {
+  ANALYZE_STEPS,
+  type AnalyzeStepId,
+  labelForStep,
+  progressForStep,
+} from './analyzeSteps';
+
+export type AnalyzingViewProps = {
+  step?: AnalyzeStepId;
+  /** Optional status under the tip — e.g. multi-batch "Soru 2/5 hazır" */
+  statusLine?: string | null;
+};
+
+const TIPS = [
+  'Birkaç saniye — öğretmen gibi adım adım hazırlıyorum.',
+  'Net fotoğraf = daha net çözüm. Soru ve şıklar tam görünsün.',
+  'Diyagramlı sorularda metin yetmezse dürüstçe söylerim.',
+  'Sonra “Anlamadım” dersen daha sade anlatırım.',
+];
+
+/**
+ * Moodboard loading: neşeli robot + monotonic progress (no bounce loop).
+ * Progress only moves forward — never drops from 96→88.
+ */
+export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProps) {
+  const baseTarget = progressForStep(step);
+  const anim = useRef(new Animated.Value(0.08)).current;
+  const tipOpacity = useRef(new Animated.Value(1)).current;
+  const [displayPct, setDisplayPct] = useState(8);
+  const [tipIndex, setTipIndex] = useState(0);
+  const peakRef = useRef(0.08);
+
+  useEffect(() => {
+    const id = anim.addListener(({ value }) => {
+      const next = Math.max(peakRef.current, value);
+      peakRef.current = next;
+      setDisplayPct(Math.min(99, Math.round(next * 100)));
+    });
+    return () => {
+      anim.removeListener(id);
+    };
+  }, [anim]);
+
+  useEffect(() => {
+    const target = Math.max(peakRef.current, baseTarget);
+    Animated.timing(anim, {
+      toValue: target,
+      duration: 480,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [anim, baseTarget]);
+
+  // On solve stage: crawl slowly toward 92% once — hold (no oscillation).
+  useEffect(() => {
+    if (step !== 'solve') return;
+    const crawl = Animated.timing(anim, {
+      toValue: 0.92,
+      duration: 14_000,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    });
+    crawl.start();
+    return () => crawl.stop();
+  }, [anim, step]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(tipOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(tipOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+      ]).start();
+      setTipIndex((i) => (i + 1) % TIPS.length);
+    }, 4200);
+    return () => clearInterval(id);
+  }, [tipOpacity]);
+
+  const widthInterp = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
     <View style={styles.container} testID="analyzing-view">
-      <View style={styles.robot} accessibilityLabel="ÇözBil robot">
-        <View style={styles.eyeRow}>
-          <View style={styles.eye} />
-          <View style={styles.eye} />
-        </View>
-        <View style={styles.mouth} />
+      <CozbilRobot size={112} />
+      <Text style={styles.title} testID="analyzing-title">
+        Sorun analiz ediliyor…
+      </Text>
+      <Text style={styles.wait} testID="analyzing-wait">
+        Lütfen birkaç saniye bekle — birlikte çözüyoruz.
+      </Text>
+      <Text style={styles.stepLabel} testID="analyzing-step-label">
+        {labelForStep(step)}
+      </Text>
+
+      <View style={styles.barTrack} testID="analyzing-progress-bar">
+        <Animated.View style={[styles.barFill, { width: widthInterp }]} />
       </View>
-      <Text style={styles.title}>Sorun analiz ediliyor...</Text>
-      <ActivityIndicator color={colors.orange} style={{ marginTop: space.md }} />
+      <Text style={styles.pct} testID="analyzing-progress-pct">
+        %{displayPct}
+      </Text>
+
+      <Animated.Text style={[styles.tip, { opacity: tipOpacity }]} testID="analyzing-tip">
+        {TIPS[tipIndex]}
+      </Animated.Text>
+
+      {statusLine ? (
+        <Text style={styles.statusLine} testID="analyzing-status-line">
+          {statusLine}
+        </Text>
+      ) : null}
+
+      <View style={styles.steps} testID="analyzing-steps">
+        {ANALYZE_STEPS.map((s) => {
+          const active = s.id === step;
+          const done = progressForStep(s.id) < baseTarget || s.id === step;
+          return (
+            <Text
+              key={s.id}
+              testID={`analyzing-step-${s.id}`}
+              style={[styles.stepItem, active && styles.stepActive, done && styles.stepDone]}>
+              {done && !active ? '✓ ' : active ? '● ' : '○ '}
+              {done && !active && s.id === 'upload'
+                ? 'Fotoğraf yüklendi'
+                : done && !active && s.id === 'moderate'
+                  ? 'Güvenlik tamam'
+                  : s.label}
+            </Text>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -27,31 +147,85 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: space.lg,
   },
-  robot: {
-    width: 96,
-    height: 96,
-    borderRadius: radii.lg,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.lg,
-  },
-  eyeRow: { flexDirection: 'row', gap: 16, marginBottom: 12 },
-  eye: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.navy,
-  },
-  mouth: {
-    width: 28,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.orange,
-  },
   title: {
     color: colors.white,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: typography.headingWeight,
+    textAlign: 'center',
+    marginTop: space.sm,
+  },
+  wait: {
+    marginTop: 8,
+    color: '#E2E8F0',
+    fontSize: 15,
+    fontFamily: typography.fontFamily,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: space.md,
+  },
+  stepLabel: {
+    marginTop: space.md,
+    color: colors.orange,
+    fontSize: 14,
+    fontFamily: typography.fontFamilyMedium,
+    fontWeight: typography.captionWeight,
+  },
+  barTrack: {
+    marginTop: space.lg,
+    width: '80%',
+    maxWidth: 280,
+    height: 10,
+    borderRadius: radii.pill,
+    backgroundColor: '#2A2660',
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    backgroundColor: colors.orange,
+    borderRadius: radii.pill,
+  },
+  pct: {
+    marginTop: space.sm,
+    color: colors.orange,
+    fontFamily: typography.fontFamilyMedium,
+    fontWeight: typography.captionWeight,
+    fontSize: 14,
+  },
+  tip: {
+    marginTop: space.lg,
+    color: '#CBD5E1',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingHorizontal: space.md,
+    fontFamily: typography.fontFamily,
+    minHeight: 44,
+  },
+  statusLine: {
+    marginTop: space.sm,
+    color: colors.orange,
+    fontSize: 14,
+    fontFamily: typography.fontFamilySemiBold,
+    textAlign: 'center',
+  },
+  steps: {
+    marginTop: space.xl,
+    alignSelf: 'stretch',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+  },
+  stepItem: {
+    color: '#64748B',
+    fontSize: 14,
+    fontFamily: typography.fontFamily,
+  },
+  stepActive: {
+    color: colors.white,
+    fontFamily: typography.fontFamilyMedium,
+    fontWeight: typography.captionWeight,
+  },
+  stepDone: {
+    color: '#94A3B8',
   },
 });

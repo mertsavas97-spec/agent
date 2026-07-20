@@ -1,4 +1,8 @@
-import { isGeometryUnsupported, parseModelSolution } from '../src/solve/parseSolution';
+import {
+  isGeometryUnsupported,
+  parseModelSolution,
+  repairJsonText,
+} from '../src/solve/parseSolution';
 
 describe('parseModelSolution', () => {
   it('parses JSON steps', () => {
@@ -12,6 +16,14 @@ describe('parseModelSolution', () => {
       }),
     );
     expect(parsed.steps).toHaveLength(1);
+  });
+
+  it('repairs fenced JSON with trailing comma', () => {
+    const raw = 'Here:\n```json\n{"isQuestion":true,"unsupported":false,"subject":"science","topicId":null,"steps":[{"body":"ok"}],}\n```\n';
+    const parsed = parseModelSolution(raw);
+    expect(parsed.subject).toBe('science');
+    expect(parsed.steps[0]?.body).toBe('ok');
+    expect(repairJsonText(raw)).toContain('"isQuestion"');
   });
 
   it('flags geometry unsupported', () => {

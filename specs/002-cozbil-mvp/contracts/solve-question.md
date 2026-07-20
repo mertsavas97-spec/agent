@@ -24,6 +24,7 @@
 ```json
 {
   "attemptId": "string",
+  "solutionId": "string",
   "status": "solved",
   "cached": false,
   "topicId": "math-kesirler",
