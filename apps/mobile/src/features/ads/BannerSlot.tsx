@@ -15,9 +15,14 @@ export function BannerSlot() {
   }
 
   return (
-    <View style={styles.wrap} testID="ads-banner-slot" accessibilityLabel="Reklam alanı">
-      <Text style={styles.label}>Reklam alanı</Text>
-      <Text style={styles.hint}>Ücretsiz planda görünür · Premium’da kapalı</Text>
+    <View
+      style={styles.wrap}
+      testID="ads-banner-slot"
+      accessibilityLabel="Reklam alanı yer tutucu">
+      <Text style={styles.label}>Reklam alanı · yakında</Text>
+      <Text style={styles.hint}>
+        Şu an yer tutucu · gerçek reklam SDK sonraki sürümde · Premium’da kapalı
+      </Text>
     </View>
   );
 }

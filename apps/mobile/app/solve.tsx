@@ -6,7 +6,9 @@ import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/fea
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 import {
-  activateLocalPremium,
+  purchasePremiumPlan,
+} from '@/src/features/paywall/billing';
+import {
   hydrateEntitlement,
 } from '@/src/features/paywall/entitlement';
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
@@ -136,7 +138,13 @@ export default function SolveFlowScreen() {
           // Always isolate against the *profile* exam until the user confirms a switch.
           // OCR examHint must never remount the result into another package's pipeline.
           const solved = enforceExamPipeline(
-            normalizeSolvedBranch(response, resolvedExam),
+            normalizeSolvedBranch(response, resolvedExam, {
+              sourceText:
+                'ocrPreview' in response &&
+                typeof (response as { ocrPreview?: string }).ocrPreview === 'string'
+                  ? (response as { ocrPreview: string }).ocrPreview
+                  : undefined,
+            }),
             resolvedExam,
           ) as SolvedWithClassification;
           const suggested =
@@ -226,6 +234,13 @@ export default function SolveFlowScreen() {
         return result.subject as Exclude<Subject, 'unknown'>;
       }
     }
+    const alt = result?.classification?.alternatives?.find((a) =>
+      subjectsForExam(examType).includes(a.subject as Exclude<Subject, 'unknown'>),
+    );
+    if (alt?.subject) {
+      return alt.subject as Exclude<Subject, 'unknown'>;
+    }
+    // Never pretend the first catalog subject (KPSS→Türkçe) is a real OCR guess
     return subjectsForExam(examType)[0];
   }, [result, examType]);
 
@@ -268,6 +283,7 @@ export default function SolveFlowScreen() {
           suggested={suggestedSubject}
           selected={selectedSubject}
           confidence={result.classification?.confidence}
+          hasGuess={result.subject !== 'unknown'}
           onSelect={setSelectedSubject}
           onDismiss={() => router.back()}
           onConfirm={() => {
@@ -285,7 +301,7 @@ export default function SolveFlowScreen() {
       <PaywallScreen
         variant="quota"
         onStart={(planId) => {
-          void activateLocalPremium(planId).then(async (outcome) => {
+          void purchasePremiumPlan(planId).then(async (outcome) => {
             await hydrateEntitlement();
             if (outcome.ok) {
               Alert.alert(
@@ -295,9 +311,10 @@ export default function SolveFlowScreen() {
               );
               return;
             }
+            if (outcome.reason === 'user_cancelled') return;
             Alert.alert(
-              'Satın alma hazır değil',
-              'Play Billing bağlanınca burada tamamlanır.',
+              'Satın alma tamamlanamadı',
+              'Play Billing doğrulaması veya geliştirici sandbox gerekir.',
             );
           });
         }}
@@ -386,6 +403,7 @@ export default function SolveFlowScreen() {
           topicId={result.topicId}
           topicName={topicName}
           topicLesson={topicLesson}
+          assisted={Boolean(result.assisted)}
           onExplainAgain={
             canExplain ? () => callExplainAgain(result.solutionId) : undefined
           }

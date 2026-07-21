@@ -83,4 +83,17 @@ assert.equal(ptMl?.answerLabel, 'A');
 assert.equal(ptMl?.subject, 'vehicle');
 assert.match(ptMl?.answerText ?? '', /Şaft/i);
 
+// Noisy Instagram-ish OCR: stem clear, choices messy — still lock vehicle + classic order
+const noisy = `
+EHLIYETIMI AL
+Sekildeki arac guc aktarma organlarinin adlari hangi secenekte dogru olarak verilmistir?
+A) I. Saft II. Diferansiyel III. Aks
+B) I. Saft II. Aks III. Diferansiyel
+ABONE OL
+`;
+const ptNoisy = tryTrafficSolve(noisy, { subject: 'traffic' });
+assert.equal(ptNoisy?.subject, 'vehicle');
+assert.equal(ptNoisy?.topicKey, 'motor');
+assert.ok(ptNoisy?.answerLabel === 'A' || /Saft|Şaft/i.test(ptNoisy?.answerText ?? ''));
+
 console.log('trafficSolve.test.mjs OK');

@@ -12,6 +12,12 @@ const TURKISH_STEM =
 
 const SCIENCE_STEM =
   /fotosentez|hücre|atom|molekül|kuvvet|ivme|enerji|asit|baz|element|dolaşım|solunum|bitki|canlı|basınç|elektrik/i;
+const PHYSICS_STEM =
+  /kuvvet|ivme|enerji|basınç|elektrik|hareket|newton|iş\b|güç\b|sürtünme|ivmelenme|hız\b/i;
+const CHEM_STEM =
+  /atom|molekül|asit|baz|element|periyodik|iyon|reaksiyon|çözelti|bileşik/i;
+const BIO_STEM =
+  /fotosentez|hücre|dolaşım|solunum|bitki|canlı|enzim|dna|organ|doku|mitokondri/i;
 
 const HISTORY_STEM =
   /osmanlı|cumhuriyet|inkılap|savaş|antlaşma|padişah|tbmm|kurtuluş|malazgirt|istanbul'?un fethi|milli mücadele/i;
@@ -112,6 +118,9 @@ export function classifyOcr(ocrText, examType = 'lgs') {
     turkish: 0,
     math: 0,
     science: 0,
+    physics: 0,
+    chemistry: 0,
+    biology: 0,
     history: 0,
     geography: 0,
     civics: 0,
@@ -124,7 +133,20 @@ export function classifyOcr(ocrText, examType = 'lgs') {
   if (TURKISH_STEM.test(t)) scores.turkish += 6;
   if (MATH_STEM.test(t)) scores.math += 5;
   if (MATH_OPS.test(t)) scores.math += 4;
-  if (SCIENCE_STEM.test(t)) scores.science += 5;
+  if (examType === 'lgs') {
+    if (SCIENCE_STEM.test(t)) scores.science += 5;
+  } else if (examType === 'ygs') {
+    if (PHYSICS_STEM.test(t)) scores.physics += 5;
+    if (CHEM_STEM.test(t)) scores.chemistry += 5;
+    if (BIO_STEM.test(t)) scores.biology += 5;
+    // Generic science stem with no specific fen branch → soft biology
+    if (
+      SCIENCE_STEM.test(t) &&
+      scores.physics + scores.chemistry + scores.biology === 0
+    ) {
+      scores.biology += 3;
+    }
+  }
   if (HISTORY_STEM.test(t)) scores.history += 5;
   if (GEO_STEM.test(t)) scores.geography += 4;
   if (CIVICS_STEM.test(t)) scores.civics += 4;
@@ -142,9 +164,8 @@ export function classifyOcr(ocrText, examType = 'lgs') {
   }
 
   const allowed = new Set(allowedSubjects(examType));
-  // Map science→biology-ish not in kpss: keep science only for lgs
   const ranked = Object.entries(scores)
-    .filter(([s]) => allowed.has(s) || (s === 'science' && examType === 'lgs'))
+    .filter(([s]) => allowed.has(s))
     .map(([subject, score]) => ({ subject, score }))
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score);
@@ -226,6 +247,23 @@ export function classifyOcr(ocrText, examType = 'lgs') {
     score,
     alternatives,
     needsConfirm,
+  };
+}
+
+/** Honor client subjectHint when it is allowed for the exam package. */
+export function applySubjectHint(classified, subjectHint, examType, ocrText) {
+  const allowed = new Set(allowedSubjects(examType));
+  const hint = typeof subjectHint === 'string' ? subjectHint : '';
+  if (!hint || hint === 'unknown' || !allowed.has(hint)) {
+    return classified;
+  }
+  return {
+    ...classified,
+    subject: hint,
+    topicKey: topicKeyFor(hint, String(ocrText || '')),
+    confidence: 'high',
+    needsConfirm: false,
+    score: Math.max(classified.score || 0, 8),
   };
 }
 

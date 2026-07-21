@@ -10,6 +10,8 @@ export type SubjectConfirmSheetProps = {
   suggested: Exclude<Subject, 'unknown'>;
   selected: Exclude<Subject, 'unknown'>;
   confidence?: 'high' | 'medium' | 'low';
+  /** False when subject collapsed to unknown — don't claim "Tahmin: Türkçe" */
+  hasGuess?: boolean;
   onSelect: (subject: Exclude<Subject, 'unknown'>) => void;
   onConfirm: () => void;
   onDismiss?: () => void;
@@ -21,12 +23,13 @@ export function SubjectConfirmSheet({
   suggested,
   selected,
   confidence,
+  hasGuess = true,
   onSelect,
   onConfirm,
   onDismiss,
 }: SubjectConfirmSheetProps) {
   const options = subjectsForExam(examType);
-  const unsure = confidence === 'medium' || confidence === 'low' || !confidence;
+  const unsure = !hasGuess || confidence === 'medium' || confidence === 'low' || !confidence;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onDismiss}>
@@ -34,9 +37,11 @@ export function SubjectConfirmSheet({
         <View style={styles.sheet} testID="subject-confirm-sheet">
           <Text style={styles.title}>Ders hangisi?</Text>
           <Text style={styles.body}>
-            {unsure
-              ? `Tahmin: ${subjectLabel(suggested)} — emin değilsek yanlış etiketi yapıştırmıyoruz. Doğru dersi seç.`
-              : `Bu soruyu ${subjectLabel(suggested)} olarak gördük. Değiştirmek istersen seç.`}
+            {!hasGuess
+              ? 'Dersi otomatik netleştiremedik — yanlış etiket yapıştırmıyoruz. Doğru dersi seç.'
+              : unsure
+                ? `Tahmin: ${subjectLabel(suggested)} — emin değilsek yanlış etiketi yapıştırmıyoruz. Doğru dersi seç.`
+                : `Bu soruyu ${subjectLabel(suggested)} olarak gördük. Değiştirmek istersen seç.`}
           </Text>
 
           <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
@@ -50,7 +55,7 @@ export function SubjectConfirmSheet({
                   style={[styles.option, active && styles.optionActive]}>
                   <Text style={[styles.optionText, active && styles.optionTextActive]}>
                     {subjectLabel(s)}
-                    {s === suggested ? ' · tahmin' : ''}
+                    {hasGuess && s === suggested ? ' · tahmin' : ''}
                   </Text>
                 </Pressable>
               );

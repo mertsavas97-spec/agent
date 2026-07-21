@@ -13,13 +13,15 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
  * (Konular = sınav sekmeli konu anlatımı + örnek soru)
  */
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  // Force light chrome until dark surfaces are fully wired (audit H06).
+  void useColorScheme();
+  const tabColors = Colors.light;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tabIconSelected,
-        tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
+        tabBarActiveTintColor: tabColors.tabIconSelected,
+        tabBarInactiveTintColor: tabColors.tabIconDefault,
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.border,

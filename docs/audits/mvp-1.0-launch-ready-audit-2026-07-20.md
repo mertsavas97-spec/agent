@@ -38,7 +38,7 @@
 3. EAS `owner` / `projectId` + production submit; `expo-dev-client` prod’dan çıkar  
 4. Store listing paketi (screenshots, feature graphic, TR metadata) — **app icon assets mevcut** (`apps/mobile/assets/images/*`)  
 5. Production solve path: org-policy callable veya güvenli trigger; **proxy auth’sız production edge olamaz**  
-6. Spec vs code: yıllık fiyat **349 vs 279**; Ehliyet scope kararı  
+6. ~~Spec vs code: yıllık fiyat **349 vs 279**; Ehliyet scope kararı~~ → **RESOLVED 2026-07-21** (Sprint 1): yıllık **279**; Ehliyet MVP’de  
 7. ~~Typecheck kırmızı~~ → **bu branch’te yeşile alındı** (`BootstrapGate`, `examModeGuard` test)
 
 ---
@@ -47,8 +47,8 @@
 
 | ID | Sev | Platform | Bulgu | Kanıt | Aksiyon |
 |----|-----|----------|-------|-------|---------|
-| PS-01 | P0 | Both | MVP scope: spec LGS/YGS/KPSS; app + Ehliyet | `specs/002`, `examTypes.ts`, onboarding copy | Scope kilitle veya spec güncelle |
-| PS-02 | P0 | Both | Yıllık fiyat 349 (spec) vs 279 (policy/code) | `spec.md`, `pricing-policy.md`, `pricing.ts` | Tek SSoT |
+| PS-01 | P0→done | Both | MVP scope: LGS/YGS/KPSS/Ehliyet | Sprint 1 SSoT 2026-07-21 | Spec + brief + store draft güncellendi |
+| PS-02 | P0→done | Both | Yıllık fiyat **279** | Sprint 1 SSoT 2026-07-21 | Spec/brief → policy/code hizalandı |
 | PS-03 | P1 | Both | Marka/domain/store adı TBD | brief | Availability + trademark |
 | PS-04 | P1 | Both | Rakip analizi yüzeysel | brief isimler | competitor-profiling ile store/web |
 | PS-05 | P2 | Both | Canonical marketing context yoktu | `.agents/product-marketing.md` **oluşturuldu** | Owner review |
@@ -329,9 +329,9 @@ Checklists: `docs/store/play-launch-checklist.md`, `docs/store/app-store-launch-
 ## Öncelikli 30 günlük remediation (teknik sıra, takvim değil)
 
 ### Wave A — Store blockers
-1. Scope + pricing SSoT  
-2. Play Billing + server entitlement; kill prod local premium  
-3. Privacy/KVKK URLs + guardian UX  
+1. ~~Scope + pricing SSoT~~ → **done 2026-07-21** (279 + Ehliyet in MVP)  
+2. ~~Play Billing + server entitlement; kill prod local premium~~ → **done 2026-07-21** (expo-iap + syncSubscription; Play Console credentials owner)  
+3. ~~Privacy/KVKK URLs + guardian UX~~ → **done 2026-07-21** (HTML artefact + age band UI; public URL host owner)  
 4. EAS prod config + AAB smoke  
 5. Listing visuals + ASO TR pack  
 6. Production solve without public proxy  

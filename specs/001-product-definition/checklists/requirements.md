@@ -33,5 +33,6 @@
 ## Notes
 
 - Validation iteration 3 (2026-07-18): Exam scope amended to **LGS + YGS + KPSS**
+- Validation iteration 4 (2026-07-21): Exam scope amended to **LGS + YGS + KPSS + Ehliyet**; yearly price SSoT **279 TL**
   (all active). Moodboard linked under `docs/design/moodboard/`.
 - Status: **Locked**.

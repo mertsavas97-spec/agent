@@ -102,7 +102,7 @@ describe('daily quota (US6)', () => {
         uid: 'u-premium',
         imagePath: 'users/u-premium/uploads/1.jpg',
         imageBuffer: Buffer.from('premium-ok'),
-        examType: 'ygs',
+        examType: 'lgs',
       },
       {
         vision: cleanVision,

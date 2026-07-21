@@ -1,6 +1,7 @@
 /**
  * Local Premium entitlement (MVP 1.0).
- * Play Billing doğrulaması gelene kadar AsyncStorage + sandbox.
+ * Production: Play Billing → syncSubscription callable.
+ * Local activate only in __DEV__ or EXPO_PUBLIC_PREMIUM_SANDBOX=1.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,7 +14,7 @@ export type EntitlementStatus = 'free' | 'active' | 'grace' | 'expired';
 
 export type EntitlementSnapshot = {
   status: EntitlementStatus;
-  source: 'stub' | 'sandbox' | 'local' | 'play';
+  source: 'stub' | 'sandbox' | 'local' | 'play' | 'server';
   productId: string | null;
   planId: PlanId | null;
 };
@@ -23,12 +24,23 @@ type Stored = {
   planId: PlanId;
   productId: string;
   activatedAt: string;
+  source?: EntitlementSnapshot['source'];
 };
 
 let memory: Stored | null = null;
 
+export function isPremiumSandboxEnv(): boolean {
+  return process.env.EXPO_PUBLIC_PREMIUM_SANDBOX === '1';
+}
+
+/** Local/dev bypass — never in production release builds. */
+export function canUseLocalPremium(): boolean {
+  if (isPremiumSandboxEnv()) return true;
+  return typeof __DEV__ !== 'undefined' && __DEV__ === true;
+}
+
 export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
-  if (process.env.EXPO_PUBLIC_PREMIUM_SANDBOX === '1') {
+  if (isPremiumSandboxEnv()) {
     return {
       status: 'active',
       source: 'sandbox',
@@ -45,7 +57,7 @@ export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
     memory = JSON.parse(raw) as Stored;
     return {
       status: memory.status,
-      source: 'local',
+      source: memory.source ?? 'local',
       productId: memory.productId,
       planId: memory.planId,
     };
@@ -55,7 +67,7 @@ export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
 }
 
 export function readLocalEntitlement(): EntitlementSnapshot {
-  if (process.env.EXPO_PUBLIC_PREMIUM_SANDBOX === '1') {
+  if (isPremiumSandboxEnv()) {
     return {
       status: 'active',
       source: 'sandbox',
@@ -66,7 +78,7 @@ export function readLocalEntitlement(): EntitlementSnapshot {
   if (memory?.status === 'active') {
     return {
       status: 'active',
-      source: 'local',
+      source: memory.source ?? 'local',
       productId: memory.productId,
       planId: memory.planId,
     };
@@ -79,23 +91,43 @@ export function isPremiumActive(snap?: EntitlementSnapshot): boolean {
   return s.status === 'active' || s.status === 'grace';
 }
 
+export async function writeEntitlementCache(input: {
+  planId: PlanId;
+  productId: string;
+  source: EntitlementSnapshot['source'];
+  status?: EntitlementStatus;
+}): Promise<EntitlementSnapshot> {
+  const stored: Stored = {
+    status: input.status ?? 'active',
+    planId: input.planId,
+    productId: input.productId,
+    activatedAt: new Date().toISOString(),
+    source: input.source,
+  };
+  memory = stored;
+  await AsyncStorage.setItem(KEY, JSON.stringify(stored));
+  return {
+    status: stored.status,
+    source: input.source,
+    productId: stored.productId,
+    planId: stored.planId,
+  };
+}
+
 export async function activateLocalPremium(planId: PlanId = 'yearly'): Promise<{
   ok: boolean;
   reason: 'local' | 'sandbox' | 'billing_not_configured';
   productId: string;
 }> {
   const productId = planById(planId).productId;
-  if (process.env.EXPO_PUBLIC_PREMIUM_SANDBOX === '1') {
+  if (isPremiumSandboxEnv()) {
+    await writeEntitlementCache({ planId, productId, source: 'sandbox' });
     return { ok: true, reason: 'sandbox', productId };
   }
-  const stored: Stored = {
-    status: 'active',
-    planId,
-    productId,
-    activatedAt: new Date().toISOString(),
-  };
-  memory = stored;
-  await AsyncStorage.setItem(KEY, JSON.stringify(stored));
+  if (!canUseLocalPremium()) {
+    return { ok: false, reason: 'billing_not_configured', productId };
+  }
+  await writeEntitlementCache({ planId, productId, source: 'local' });
   return { ok: true, reason: 'local', productId };
 }
 
@@ -104,7 +136,7 @@ export async function clearLocalPremium(): Promise<void> {
   await AsyncStorage.removeItem(KEY);
 }
 
-/** @deprecated prefer activateLocalPremium — kept for solve.tsx imports */
+/** @deprecated prefer purchasePremiumPlan — kept for solve.tsx imports */
 export async function startPremiumPurchase(planId: PlanId = 'yearly'): Promise<{
   ok: boolean;
   reason: 'sandbox' | 'local' | 'billing_not_configured';

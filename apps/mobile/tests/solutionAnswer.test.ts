@@ -75,4 +75,29 @@ describe('solutionAnswer', () => {
     expect(summary).toMatch(/^Cevap: öyküleme/);
     expect(summary).toMatch(/Zaman zinciri/);
   });
+
+  it('does not promote tip/fallback steps into DOĞRU CEVAP', () => {
+    expect(
+      extractAnswerFromSteps([
+        { title: '1. Soruyu oku', body: 'Verilenleri ayır.' },
+        {
+          title: '3. Kontrol et',
+          body: 'Sonucu yerine koyarak veya şıkları eleyerek doğrula.',
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      extractAnswerFromSteps([
+        {
+          title: '3. Güvenliği seç',
+          body: '“Önce güvenlik” ilkesine uymayan şıkkı eleyen seçeneği tercih et.',
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      resolveSolutionAnswer(undefined, [
+        { title: '3. Tekrar dene', body: 'Ders netleşince adımlar o derse göre düzenlenir.' },
+      ]),
+    ).toBeNull();
+  });
 });

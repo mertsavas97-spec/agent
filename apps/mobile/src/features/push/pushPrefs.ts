@@ -119,8 +119,8 @@ export const PUSH_COPY: Record<PushCategoryId, { title: string; body: string }[]
   ],
   premiumOffer: [
     {
-      title: 'Yıllıkta %40 indirim',
-      body: '279 TL / yıl — ayda ≈23 TL. Reklamsız, sınırsız çözüm.',
+      title: 'Yıllıkta %32 indirim',
+      body: '320 TL / yıl — ayda ≈27 TL. Reklamsız, sınırsız çözüm.',
     },
     {
       title: 'Odak bozulmasın',

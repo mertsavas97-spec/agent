@@ -3,7 +3,7 @@
  * subjects/topics, and vice versa.
  */
 import assert from 'node:assert/strict';
-import { classifyOcr, topicIdFor } from './classifyOcr.mjs';
+import { applySubjectHint, classifyOcr, topicIdFor } from './classifyOcr.mjs';
 import { detectExamHint } from './examHint.mjs';
 import {
   assertPipelineIsolation,
@@ -187,6 +187,27 @@ assert.equal(mayRunMathSolver('lgs'), true);
   const tid = topicIdFor('trafik', hit.subject, hit.topicKey);
   assert.equal(tid, 'trafik-vehicle-motor');
   console.log('ok shaft stays in ehliyet vehicle pipeline');
+}
+
+// --- YGS science stem maps to physics/chem/bio (not dead-zone drop) ---
+{
+  const bio = classifyOcr('Fotosentez hangi organelde gerçekleşir?\nA) Mitokondri\nB) Kloroplast', 'ygs');
+  assert.equal(bio.subject, 'biology');
+  const phys = classifyOcr('Kuvvet ve ivme ilişkisini açıklayan Newton yasası hangisidir?', 'ygs');
+  assert.equal(phys.subject, 'physics');
+  const chem = classifyOcr('Asit ve baz tepkimesinde hangi iyon oluşur?', 'ygs');
+  assert.equal(chem.subject, 'chemistry');
+  console.log('ok ygs fen branches classify');
+}
+
+// --- subjectHint honor via applySubjectHint ---
+{
+  const raw = classifyOcr(MATH_OCR, 'lgs');
+  const forced = applySubjectHint(raw, 'turkish', 'lgs', MATH_OCR);
+  assert.equal(forced.subject, 'turkish');
+  assert.equal(forced.confidence, 'high');
+  assert.equal(forced.needsConfirm, false);
+  console.log('ok subjectHint applied');
 }
 
 console.log('all examPipeline isolation tests passed');

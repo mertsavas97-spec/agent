@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { LEGAL_DOCS, type LegalDocId } from '@/src/features/legal/legalCopy';
-import { colors, space, typography } from '@/src/theme';
+import { privacyPolicyUrl, supportEmail } from '@/src/features/legal/legalUrls';
+import { colors, radii, space, typography } from '@/src/theme';
 
 function isLegalId(v: string): v is LegalDocId {
   return v === 'privacy' || v === 'terms' || v === 'kvkk';
@@ -12,6 +13,7 @@ export default function LegalDocScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = typeof params.id === 'string' && isLegalId(params.id) ? params.id : 'privacy';
   const doc = LEGAL_DOCS[id];
+  const publicUrl = id === 'privacy' || id === 'kvkk' ? privacyPolicyUrl() : null;
 
   return (
     <ScrollView
@@ -33,6 +35,20 @@ export default function LegalDocScreen() {
           <Text style={styles.body}>{s.body}</Text>
         </Text>
       ))}
+      <Text style={styles.support}>Destek: {supportEmail()}</Text>
+      {publicUrl ? (
+        <Pressable
+          testID="legal-open-public-url"
+          style={styles.linkBtn}
+          onPress={() => void Linking.openURL(publicUrl)}>
+          <Text style={styles.linkLabel}>Tam metni tarayıcıda aç</Text>
+        </Pressable>
+      ) : id === 'privacy' || id === 'kvkk' ? (
+        <Text style={styles.hint} testID="legal-url-missing-hint">
+          Genel HTTPS gizlilik URL’si henüz bağlanmadı. Hosting sonrası
+          EXPO_PUBLIC_PRIVACY_POLICY_URL ile yayınlanır (bkz. docs/legal/).
+        </Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -65,5 +81,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
     color: colors.textSecondary,
+  },
+  support: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textMuted,
+    marginBottom: space.md,
+  },
+  linkBtn: {
+    backgroundColor: colors.navy,
+    borderRadius: radii.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  linkLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.white,
+    fontWeight: '700',
+  },
+  hint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
   },
 });

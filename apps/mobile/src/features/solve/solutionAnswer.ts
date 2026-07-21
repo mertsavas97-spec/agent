@@ -24,8 +24,15 @@ export function resolveSolutionAnswer(
 export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | null {
   const answerStep = [...steps]
     .reverse()
-    .find((s) => /^(cevap|sonuç|doğru)/i.test((s.title ?? '').trim()));
-  const body = (answerStep?.body ?? steps[steps.length - 1]?.body ?? '').trim();
+    .find((s) => {
+      const t = (s.title ?? '').trim();
+      return (
+        /^(cevap|sonuç|doğru)/i.test(t) ||
+        /\b(cevap|sonuç)\b/i.test(t) ||
+        /^doğru\s+(şık|cevap|yaklaşım|sıra)/i.test(t)
+      );
+    });
+  const body = (answerStep?.body ?? '').trim();
   if (!body) return null;
 
   const choice = body.match(
@@ -43,6 +50,14 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
       label: choiceBare[1].toUpperCase(),
       text: (choiceBare[2] ?? choiceBare[1]).replace(/\.\s*$/, '').trim(),
     };
+  }
+
+  const dogruYaklasim = body.match(
+    /Doğru\s+(?:yaklaşım|sıra|cevap)\s*[:：]\s*(.+)$/im,
+  );
+  if (dogruYaklasim) {
+    const text = dogruYaklasim[1].replace(/\.\s*$/, '').trim();
+    if (text) return { text };
   }
 
   const cevapLetter = body.match(/Cevap\s+([A-E])\b/i);
@@ -69,12 +84,18 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
     return { text: sonuc[1] };
   }
 
-  // Last resort: short body without instructional tail
+  // Last resort: short body from an explicit Cevap/Sonuç step only (never tip cards)
   const cleaned = body
     .replace(/Şıklar kadrajda değilse[^.]*\./gi, '')
     .replace(/Sonucu şıklarla[^.]*\./gi, '')
     .trim();
-  if (cleaned.length > 0 && cleaned.length <= 48) {
+  if (
+    cleaned.length > 0 &&
+    cleaned.length <= 80 &&
+    !/yeniden dene|kadraj|hatırlat|onayla|ele\.|tercih et|düzenlenir|doğrula/i.test(
+      cleaned,
+    )
+  ) {
     return { text: cleaned };
   }
   return null;
@@ -82,7 +103,10 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
 
 /** Reasoning steps only — drop the final "Cevap" card (shown in hero). */
 export function reasoningSteps(steps: SolutionStep[]): SolutionStep[] {
-  const filtered = steps.filter((s) => !/^(cevap|sonuç)$/i.test((s.title ?? '').trim()));
+  const filtered = steps.filter((s) => {
+    const t = (s.title ?? '').trim();
+    return !/^(cevap|sonuç)$/i.test(t) && !/\bcevap\b/i.test(t);
+  });
   return filtered.length > 0 ? filtered : steps;
 }
 

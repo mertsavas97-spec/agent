@@ -147,7 +147,13 @@ export default function SolveBatchScreen() {
 
             if (response.status === 'solved') {
               const normalized = enforceExamPipeline(
-                normalizeSolvedBranch(response, resolvedExam),
+                normalizeSolvedBranch(response, resolvedExam, {
+                  sourceText:
+                    'ocrPreview' in response &&
+                    typeof (response as { ocrPreview?: string }).ocrPreview === 'string'
+                      ? (response as { ocrPreview: string }).ocrPreview
+                      : undefined,
+                }),
                 resolvedExam,
               );
               patchSlot(slot.id, {

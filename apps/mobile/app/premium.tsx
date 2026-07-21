@@ -1,11 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
+import { purchasePremiumPlan, restorePremiumPurchases } from '@/src/features/paywall/billing';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
-import {
-  activateLocalPremium,
-  hydrateEntitlement,
-} from '@/src/features/paywall/entitlement';
+import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
 import type { PlanId } from '@/src/features/paywall/pricing';
 import { colors } from '@/src/theme';
 
@@ -15,19 +13,28 @@ export default function PremiumRoute() {
   const variant = params.source === 'quota' ? 'quota' : 'browse';
 
   async function onStart(planId: PlanId) {
-    const res = await activateLocalPremium(planId);
+    const res = await purchasePremiumPlan(planId);
     await hydrateEntitlement();
     if (res.ok) {
+      const via =
+        res.reason === 'play'
+          ? 'Play Billing'
+          : res.reason === 'sandbox'
+            ? 'sandbox'
+            : 'geliştirici';
       Alert.alert(
         'Premium aktif',
-        'Planın kaydedildi. Reklamsız ve sınırsız çözüme geçtin.',
+        `Planın kaydedildi (${via}). Reklamsız ve sınırsız çözüme geçtin.`,
         [{ text: 'Tamam', onPress: () => router.back() }],
       );
       return;
     }
+    if (res.reason === 'user_cancelled') return;
     Alert.alert(
-      'Satın alma hazır değil',
-      'Play Billing bağlanınca burada tamamlanır. Şimdilik geliştirici sandbox kullan.',
+      'Satın alma tamamlanamadı',
+      res.reason === 'billing_not_configured' || res.reason === 'billing_unavailable'
+        ? 'Mağaza faturalaması bu derlemede yok. Prod’da Play ürünleri + syncSubscription gerekir; geliştirmede __DEV__ veya EXPO_PUBLIC_PREMIUM_SANDBOX=1 kullan.'
+        : 'Satın alma sunucuda doğrulanamadı. Play credential veya sandbox ayarını kontrol et.',
     );
   }
 
@@ -47,10 +54,11 @@ export default function PremiumRoute() {
         onDismiss={() => router.back()}
         onRestore={() => {
           void (async () => {
+            const restored = await restorePremiumPurchases();
             const snap = await hydrateEntitlement();
             Alert.alert(
-              snap.status === 'active' ? 'Premium bulundu' : 'Kayıt yok',
-              snap.status === 'active'
+              restored.ok || snap.status === 'active' ? 'Premium bulundu' : 'Kayıt yok',
+              restored.ok || snap.status === 'active'
                 ? 'Aktif aboneliğin bu cihazda görünüyor.'
                 : 'Geri yüklenecek satın alma bulunamadı.',
             );

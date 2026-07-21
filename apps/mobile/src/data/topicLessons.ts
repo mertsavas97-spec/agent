@@ -287,6 +287,16 @@ const CURATED_LESSONS: TopicLesson[] = [
     tip: '“Ne işe yarar?” sorusunu sor — şıklar netleşir.',
   },
   {
+    topicId: 'trafik-vehicle-motor',
+    headline: 'Motor ve güç aktarma',
+    bullets: [
+      'Güç yolu: motor → şanzıman → şaft → diferansiyel → aks → tekerlek.',
+      'Şaft / diferansiyel / aks = aktarma organı; yağ/debriyaj ile karıştırma.',
+      '“Hangisi güç aktarır?” sorusunda sırayı ve parçanın görevini eşle.',
+    ],
+    tip: 'Parça adı + sıradaki yer = doğru şık.',
+  },
+  {
     topicId: 'trafik-firstaid-temel',
     headline: 'Temel ilk yardım',
     bullets: [
@@ -407,7 +417,9 @@ function branchBullets(topic: Topic, brand: ExamBrand): string[] {
             ? 'Fren hidroliği / balata ve süspansiyon = güvenlik + yol teması.'
             : /elektrik/.test(slug)
               ? 'Akü, far, silecek — arıza belirtisi ↔ bileşen eşlemesi yap.'
-              : 'Motor yağı, debriyaj, hararet: belirtiyi parçaya bağla.',
+              : /motor|guc|sanziman|saft|diferansiyel|aks|aktarma/.test(slug)
+                ? 'Güç yolu: motor → şanzıman → şaft → diferansiyel → aks → tekerlek. Yağ/debriyaj ile karıştırma.'
+                : 'Motor yağı, debriyaj, hararet: belirtiyi parçaya bağla.',
         'Güvenlikle ilgili şıkları önceliklendir.',
       ];
     case 'firstaid':

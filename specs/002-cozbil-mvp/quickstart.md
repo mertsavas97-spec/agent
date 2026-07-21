@@ -19,35 +19,43 @@ Point mobile app at emulators via env (`EXPO_PUBLIC_USE_EMULATORS=1`).
 
 ## Dogfood path (maps to US1–US6)
 
-1. Fresh install → complete onboarding → select LGS (also smoke YGS and KPSS paths).
-1b. Home üstündeki LGS/YGS/KPSS seçici ile mod değiştir → yeni çözümlerin prompt/katalogu değişir (geçmiş silinmez). Bkz. `docs/architecture/exam-pipeline.md`.
+1. Fresh install → complete onboarding → select LGS (also smoke YGS, KPSS, and Ehliyet paths).
+1b. Home üstündeki LGS/YGS/KPSS/Ehliyet seçici ile mod değiştir → yeni çözümlerin prompt/katalogu değişir (geçmiş silinmez). Bkz. `docs/architecture/exam-pipeline.md`.
 2. Home → **Fotoğraf Çek** veya **Galeriden Seç** (aynı pipeline) → analyzing progress (yükleme / güvenlik / çözüm) → stepped solution + note.
 3. Tap “Anlamadım, tekrar açıkla” → second explanation.
 4. History filter by topic; Progress shows weakest topic + streak.
 5. Exhaust 5 free solves → paywall appears.
 6. Upload blurry / diagram / NSFW test image → neutral reject, quota unchanged.
 
-## Play Billing sandbox (US6 entitlement stub)
+## Play Billing (US6 entitlement)
 
-Play Billing is **not** fully wired in MVP code yet. The app shows the Premium
-paywall (haftalık 14,90 · aylık 39 · yıllık 349 TL / “Hemen Başla”) when
-`solveQuestion` returns `functions/resource-exhausted`. Canonical policy:
-`docs/product/pricing-policy.md`. Entitlement sync lives in
-`functions/src/subscription/syncSubscriptionStub.ts` and
-`apps/mobile/src/features/paywall/entitlement.ts`.
+**Sprint 2 (2026-07-21):** Client uses **expo-iap** (Expo Play Billing / StoreKit path) →
+callable `syncSubscription` → Google Play Developer API verify when credentials set.
 
-Dogfood options:
+Canonical policy: `docs/product/pricing-policy.md`.  
+SKU: `cozbil_premium_weekly_intro`, `cozbil_premium_monthly`, `cozbil_premium_yearly`.
 
+### Production path
+1. Create Play Console subscriptions matching SKUs; license testers.
+2. Set Functions secrets/env:
+   - `PLAY_PACKAGE_NAME=com.cozbil.app`
+   - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=<service-account-json>`
+3. Client `purchasePremiumPlan` → purchaseToken → `syncSubscription` →
+   `users/{uid}.subscriptionStatus=active`.
+4. **Local `activateLocalPremium` is blocked outside `__DEV__` / sandbox.**
+
+### Dogfood options
 1. **Server bypass** — set `users/{uid}.subscriptionStatus` to `active` in
-   Firestore Emulator / console; next solve skips the daily 5 limit.
-2. **Client sandbox flag** — `EXPO_PUBLIC_PREMIUM_SANDBOX=1` makes
-   `startPremiumPurchase(planId)` succeed locally (UI dogfood only; server remains
-   authoritative until real token verification ships).
-3. **Play license testers** (production path) — create
-   `cozbil_premium_weekly_intro`, `cozbil_premium_monthly`,
-   `cozbil_premium_yearly`; add license testers; verify purchase token via
-   Google Play Developer API inside a future `syncSubscription` callable,
-   then write `subscriptionStatus`.
+   Firestore console (quota authoritative).
+2. **Client + server sandbox** — `EXPO_PUBLIC_PREMIUM_SANDBOX=1` on app **and**
+   `COZBIL_BILLING_SANDBOX=1` on Functions for callable sandbox elevate;
+   client also mirrors local entitlement for UI.
+3. **Dev local** — `__DEV__` builds may activate local entitlement for UI dogfood
+   (does **not** change server quota until sync/Firestore).
+
+Code: `apps/mobile/src/features/paywall/{billing,entitlement,syncSubscriptionClient}.ts`,
+`functions/src/subscription/{syncSubscription,verifyPlayPurchase}.ts`.
+
 
 ## Ads stub (free tier)
 

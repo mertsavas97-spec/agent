@@ -47,6 +47,8 @@ describe('examPipelineIsolation', () => {
     expect(out.subject).not.toBe('traffic');
     expect(out.topicId?.startsWith('trafik-')).toBe(false);
     expect(out.topicId?.startsWith('kpss-')).toBe(true);
+    expect(out.answer).toBeUndefined();
+    expect(out.assisted).toBe(true);
   });
 
   it('remaps leaked Turkish topic out of Ehliyet result', () => {
@@ -60,6 +62,8 @@ describe('examPipelineIsolation', () => {
     );
     expect(['traffic', 'vehicle', 'firstaid']).toContain(out.subject);
     expect(out.topicId?.startsWith('trafik-')).toBe(true);
+    expect(out.answer).toBeUndefined();
+    expect(out.assisted).toBe(true);
   });
 
   it('keeps valid Ehliyet vehicle payload intact', () => {

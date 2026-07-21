@@ -97,6 +97,10 @@ export async function callSolveQuestion(
           .classification;
         const examHint =
           'examHint' in proxy && proxy.examHint ? proxy.examHint : undefined;
+        const ocrPreview =
+          'ocrPreview' in proxy && typeof (proxy as { ocrPreview?: string }).ocrPreview === 'string'
+            ? (proxy as { ocrPreview: string }).ocrPreview
+            : undefined;
         console.warn('solve proxy unsupported_type → local fallback', detected);
         const fallback = buildLocalSolveFallback({
           examType: request.examType,
@@ -104,6 +108,7 @@ export async function callSolveQuestion(
           topicId,
           requestId: request.requestId,
           reason: 'unsupported',
+          ocrText: ocrPreview,
         });
         if (fallback.status === 'solved') {
           const detectedSubject = detected ?? fallback.subject;
@@ -115,8 +120,9 @@ export async function callSolveQuestion(
           return {
             ...fallback,
             examHint,
+            ocrPreview,
             classification: {
-              subject: detectedSubject,
+              subject: detectedSubject === 'unknown' ? fallback.subject : detectedSubject,
               confidence,
               // High/medium Trafik branşı için gereksiz ders popup'ı açma
               needsConfirm:
@@ -125,7 +131,7 @@ export async function callSolveQuestion(
                   : confidence !== 'high',
               alternatives: classMeta?.alternatives,
             },
-          };
+          } as SolveQuestionResponse;
         }
         return examHint ? { ...fallback, examHint } : fallback;
       }

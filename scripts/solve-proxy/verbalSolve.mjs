@@ -9,10 +9,22 @@ import { tryTrafficSolve } from './trafficSolve.mjs';
 
 function parseChoices(ocrText) {
   const map = {};
-  const re = /([A-E])\)\s*([^\n]{1,80})/gi;
+  const text = String(ocrText || '');
+
+  // Multiline: A)\n... until next letter
+  const multi = /([A-E])[\)\.\:\-]\s*\n([\s\S]*?)(?=(?:^|\n)\s*[A-E][\)\.\:\-]|$)/gim;
   let m;
-  while ((m = re.exec(ocrText))) {
+  while ((m = multi.exec(text))) {
     const label = m[1].toUpperCase();
+    const body = m[2].replace(/\s+/g, ' ').trim();
+    if (body.length >= 2 && !/^cevab/i.test(body)) map[label] = body.slice(0, 120);
+  }
+
+  // Inline A) / A. / A-
+  const re = /([A-E])[\)\.\:\-]\s*([^\n]{1,100})/gi;
+  while ((m = re.exec(text))) {
+    const label = m[1].toUpperCase();
+    if (map[label]) continue;
     const body = m[2].replace(/\s+/g, ' ').trim();
     if (body && !/^cevab/i.test(body)) map[label] = body;
   }
@@ -21,21 +33,39 @@ function parseChoices(ocrText) {
 
 function extractPassageAndStem(ocrText) {
   const text = ocrText.replace(/\r/g, '\n');
-  const stemMatch = text.match(
-    /\n?\s*((?:Bu parçanın|Bu parçadaki|Bu parçaya|Bu metne|Bu cümledeki|Yukarıdaki|Aşağıdaki|Paragrafın|Metnin)[^\n?]+\?)/i,
+  // Allow OCR line-breaks inside the stem (join soft newlines before ?)
+  const flatStemSrc = text.replace(/([^\n.?])\n(?=[^\nA-E])/g, '$1 ');
+  const stemMatch = flatStemSrc.match(
+    /\n?\s*((?:Bu parçanın|Bu parçadaki|Bu parçaya|Bu metne|Bu cümledeki|Yukarıdaki|Aşağıdaki|Paragrafın|Metnin)[^?]{4,180}\?)/i,
   );
   let stem = stemMatch ? stemMatch[1].trim() : '';
+  if (!stem) {
+    const alt = flatStemSrc.match(
+      /\n?\s*((?:Bu parçanın|Bu parçadaki)[^?]{0,120}anlat[ıi]m\s*biçimi[^?]{0,40}\?)/i,
+    );
+    stem = alt ? alt[1].trim() : '';
+  }
   if (!stem) {
     const alt = text.match(/\n\s*([^?\n]{8,140}\?)\s*(?:\n|$)/);
     stem = alt ? alt[1].trim() : '';
   }
 
   let passage = text;
-  if (stemMatch) {
-    passage = text.slice(0, stemMatch.index).trim();
-  } else if (stem) {
-    const idx = text.indexOf(stem);
-    if (idx > 0) passage = text.slice(0, idx).trim();
+  if (stem) {
+    const compact = (s) => s.replace(/\s+/g, ' ').trim();
+    const stemCompact = compact(stem);
+    const textCompact = compact(text);
+    const idxCompact = textCompact.indexOf(stemCompact.slice(0, Math.min(40, stemCompact.length)));
+    if (idxCompact > 0) {
+      // Approximate: take original text before first stem opener word
+      const opener = (stem.match(/Bu parçanın|Bu parçadaki|Bu parçaya|Bu metne|Yukarıdaki|Aşağıdaki|Paragrafın|Metnin/i) || [
+        stem.slice(0, 12),
+      ])[0];
+      const rawIdx = text.search(new RegExp(opener.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+      if (rawIdx > 0) passage = text.slice(0, rawIdx).trim();
+    } else if (stemMatch?.index != null && stemMatch.index > 0) {
+      passage = flatStemSrc.slice(0, stemMatch.index).trim();
+    }
   }
   passage = passage
     .replace(/^Soru\s*\|?\s*Cevap\s*/i, '')
@@ -221,7 +251,11 @@ export function tryVerbalSolve(ocrText, classification, examType = 'lgs') {
   const stemL = (stem || ocrText).toLowerCase();
   const blob = ocrText.toLowerCase();
 
-  if (/anlatım biçimi|anlatim bicimi/.test(stemL) || /anlatım biçimi/.test(ocrText)) {
+  if (
+    /anlat[ıi]m\s*bi[çc]imi/.test(stemL) ||
+    /anlat[ıi]m\s*bi[çc]imi/.test(blob) ||
+    /anlatim\s*bicimi/.test(stemL)
+  ) {
     const { answer, scores } = scoreAnlatim(passage || ocrText);
     const choice = matchChoice(answer, choices);
     const why =
@@ -339,9 +373,7 @@ export function tryVerbalSolve(ocrText, classification, examType = 'lgs') {
     return { steps, answerLabel: choice, answerText: display };
   }
 
-  steps.push({
-    title: 'Cevap',
-    body: 'Şıklar kadrajda değilse genişletip yeniden dene — kök netleşince cevabı yazarız.',
-  });
-  return { steps };
+  // Tip-only guidance is NOT a solved answer — return null so proxy can try
+  // math or emit unsupported_type (honest) instead of fake "solved".
+  return null;
 }

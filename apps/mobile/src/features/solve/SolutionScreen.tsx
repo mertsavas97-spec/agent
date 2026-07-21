@@ -42,13 +42,15 @@ export type SolutionScreenProps = {
   topicId?: string | null;
   topicName?: string | null;
   topicLesson?: TopicLesson | null;
+  /** Tip-only assist — show honesty banner, no “çözüldü” implication */
+  assisted?: boolean;
   onExplainAgain?: () => Promise<string>;
   onDone?: () => void;
 };
 
 const EXAM_TITLE: Record<ExamType, string> = {
   lgs: 'LGS',
-  ygs: 'YGS (YKS)',
+  ygs: 'YGS',
   kpss: 'KPSS',
   trafik: 'Ehliyet',
 };
@@ -66,6 +68,7 @@ export function SolutionScreen({
   topicId,
   topicName,
   topicLesson,
+  assisted = false,
   onExplainAgain,
   onDone,
 }: SolutionScreenProps) {
@@ -120,6 +123,16 @@ export function SolutionScreen({
       contentContainerStyle={styles.content}
       testID="solution-screen">
       <Text style={styles.heading}>Çözüm</Text>
+
+      {assisted ? (
+        <View style={styles.assistedBanner} testID="assisted-banner">
+          <Text style={styles.assistedTitle}>Tam otomatik cevap yok</Text>
+          <Text style={styles.assistedBody}>
+            Branşa uygun hatırlatma gösteriyoruz. Net fotoğrafla tekrar dene veya
+            dersi onayla.
+          </Text>
+        </View>
+      ) : null}
 
       {(examType || subject || topicName) && (
         <View
@@ -344,6 +357,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.navy,
     marginBottom: space.sm,
+  },
+  assistedBanner: {
+    backgroundColor: colors.orangeSoft ?? colors.navySoft,
+    borderRadius: radii.md,
+    padding: space.md,
+    marginBottom: space.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.orange,
+  },
+  assistedTitle: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.navy,
+    marginBottom: 4,
+  },
+  assistedBody: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   metaBand: {
     backgroundColor: colors.navySoft,

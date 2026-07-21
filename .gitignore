@@ -1,49 +1,46 @@
-# Secrets & local env
-.env
-.env.*
+
 !.env.example
+# Dependencies / build (when product code arrives)
+# MCP configs often contain API keys — keep example only in git
+# OS / editor
+# Secrets & local env
+# Spec Kit / local runtime noise
+# Superpowers / plugin caches (installed per-machine)
 **/.env
 **/.env.*
-!.env.example
 **/.secrets/
-functions/.secrets/
-*.pem
 *-vertex.json
-
-# MCP configs often contain API keys — keep example only in git
-.cursor/mcp.json
-
-# OS / editor
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-.idea/
-.vscode/
 *.bak
-
-# Dependencies / build (when product code arrives)
-node_modules/
-dist/
-build/
-functions/lib/
-.next/
-.turbo/
-coverage/
 *.log
-.venv/
-__pycache__/
+*.pem
 *.pyc
-.expo/
-web-build/
-.tools/
-firebase-debug.log
-firebase-debug.*.log
-ui-debug.log
-apps/mobile/.expo/
-
-# Spec Kit / local runtime noise
-.specify/feature.json
-
-# Superpowers / plugin caches (installed per-machine)
+*.swo
+*.swp
+.DS_Store
+.cursor/mcp.json
 .cursor/superpowers-install/*.zip
+.env
+.env.*
+.expo/
+.idea/
+.next/
+.specify/feature.json
+.tools/
+.turbo/
+.venv/
+.vscode/
+Thumbs.db
+__pycache__/
+apps/mobile/.expo/
+build/
+coverage/
+dist/
+eng.traineddata
+firebase-debug.*.log
+firebase-debug.log
+functions/.secrets/
+functions/lib/
+node_modules/
+tur.traineddata
+ui-debug.log
+web-build/

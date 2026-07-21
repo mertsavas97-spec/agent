@@ -13,7 +13,7 @@
 - **LGS:** ~13–15 yaş; veli sıkça öder; kısa oturum, hızlı çözüm.
 - **YGS (owner etiketi; resmi aile YKS/TYT-AYT):** lise / üniversite adayı.
 - **KPSS:** yetişkin kamu personeli adayı.
-- **Ehliyet/Trafik:** kodda aktif; **spec MVP kilidi LGS/YGS/KPSS** — launch scope kararı açık (P0 ürün).
+- **Ehliyet/Trafik:** MVP 1.0 first-class (`examType=trafik`); store + onboarding dahil.
 
 ## 3. Problem & JTBD
 - Takıldığı soruda hızlı, güvenilir, **Türkçe adım adım** çözüm yok.
@@ -21,15 +21,15 @@
 - JTBD: “Bu soruyu şimdi çözüp nerede eksiğim olduğunu anlayayım.”
 
 ## 4. Positioning & Differentiation
-- **Positioning:** Türkiye’nin sınav odaklı AI çalışma arkadaşı — çözer, anlatır, eksiğini gösterir.
+- **Positioning:** Türkiye’nin sınav odaklı AI çalışma arkadaşı — LGS, YGS, KPSS, Ehliyet; çözer, anlatır, eksiğini gösterir.
 - **Differentiators (claimed):** exam-aware prompts/topics, şeffaflık notu, progress/weak topic, multi-exam tracks.
 - **Not:** genel ChatGPT wrapper; diyagram render / spaced repetition / veli raporu 1.1+.
 
-## 5. Offer & Pricing (single source of truth TBD)
-Canonical **policy + code** today:
+## 5. Offer & Pricing (single source of truth)
+Canonical **policy + code + spec** (Sprint 1 lock 2026-07-21):
 - Free: **5** solves/day + ads matrix
-- Premium: **14,90 TL / 7 gün**, **39 TL / ay**, **279 TL / yıl** (`docs/product/pricing-policy.md`, `pricing.ts`)
-- Spec/brief still say **349 TL / yıl** — **must reconcile before store** (P0).
+- Premium: **14,90 TL / 7 gün**, **39 TL / ay**, **320 TL / yıl** (`docs/product/pricing-policy.md`, `pricing.ts`)
+- Stale **349 TL / yıl** brief claims removed.
 
 ## 6. Proof Points (current honesty)
 - Dogfood / lab path works with solve-proxy + Firestore triggers.
@@ -47,4 +47,4 @@ Canonical **policy + code** today:
 ## 9. Channels (launch)
 - Owned: in-app, future email/support URL.
 - Rented: Google Play (primary), App Store (optional), Instagram/TikTok exam tips later.
-- ASO: TR keywords — soru çöz, LGS, YKS/TYT, KPSS, (Ehliyet if in scope).
+- ASO: TR keywords — soru çöz, LGS, YKS/TYT, KPSS, ehliyet, trafik.

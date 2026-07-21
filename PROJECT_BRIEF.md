@@ -2,14 +2,14 @@
 
 ## One-liner
 
-Türkiye’de **LGS, YGS ve KPSS** adaylarına fotoğrafla soru çözüp adım adım
+Türkiye’de **LGS, YGS, KPSS ve Ehliyet** adaylarına fotoğrafla soru çözüp adım adım
 Türkçe anlatan AI çalışma arkadaşı (Android-first).
 
 ## v1 scope IN
 
 - Fotoğrafla soru çözme + SafeSearch + adım adım çözüm
 - “Anlamadım, tekrar açıkla”
-- Onboarding: LGS / YGS / KPSS (üçü aktif)
+- Onboarding: LGS / YGS / KPSS / Ehliyet (dördü aktif)
 - Geçmiş, istatistik/zayıflık, streak
 - Freemium (5/gün) + paywall
 - Mini özgün soru–cevap–anlatım arşivi (telifsiz; büyütülebilir) — `docs/architecture/item-bank.md`
@@ -23,8 +23,8 @@ Türkçe anlatan AI çalışma arkadaşı (Android-first).
 
 ## Monetization
 
-Freemium → Premium (14,90 TL/7g · 39 TL/ay · 349 TL/yıl); günlük 5 ücretsiz soru.
-Detay: `docs/product/pricing-policy.md`.
+Freemium → Premium (14,90 TL/7g · 39 TL/ay · 320 TL/yıl); günlük 5 ücretsiz soru.
+Detay: `docs/product/pricing-policy.md` (SSoT).
 
 ## Design north star
 

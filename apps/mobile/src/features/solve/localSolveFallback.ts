@@ -1,5 +1,7 @@
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
+import { classifyTrafikBranchFromText } from './trafikBranchFromText';
+
 function defaultTopicId(examType: ExamType, subject: Subject): string | null {
   if (subject === 'unknown') return null;
   if (subject === 'turkish') {
@@ -19,18 +21,70 @@ function defaultTopicId(examType: ExamType, subject: Subject): string | null {
   if (subject === 'science') {
     return 'lgs-science-enerji';
   }
+  if (subject === 'physics') return 'ygs-physics-hareket';
+  if (subject === 'chemistry') return 'ygs-chemistry-atom';
+  if (subject === 'biology') return 'ygs-biology-hucre';
   if (subject === 'geography') {
     return examType === 'kpss' ? 'kpss-geography-turkiye' : 'ygs-geography-turkiye';
   }
   if (subject === 'geometry') return 'kpss-geometry-ucgen';
   if (subject === 'civics') return 'kpss-civics-anayasa';
   if (subject === 'traffic') return 'trafik-traffic-kurallar';
-  if (subject === 'vehicle') return 'trafik-vehicle-guvenlik';
-  if (subject === 'firstaid') return 'trafik-firstaid-temel';
+  if (subject === 'vehicle') return 'trafik-vehicle-motor';
+  if (subject === 'firstaid') return 'trafik-firstaid-abc';
   if (examType === 'trafik') return 'trafik-traffic-kurallar';
   if (examType === 'kpss') return 'kpss-math-temel-islemler';
   if (examType === 'ygs') return 'ygs-math-temel-kavramlar';
   return 'lgs-math-kesirler';
+}
+
+function trafikSteps(subject: Subject): { title: string; body: string }[] {
+  if (subject === 'vehicle') {
+    return [
+      {
+        title: '1. Sistemi tanı',
+        body: 'Motor, güç aktarma (şaft / diferansiyel / aks), fren, elektrik veya güvenlik sistemi mi soruluyor?',
+      },
+      {
+        title: '2. Parçaları sırayla düşün',
+        body: 'Güç yolu genelde motor → şanzıman → şaft → diferansiyel → aks → tekerlek şeklindedir.',
+      },
+      {
+        title: '3. Şıkları ele',
+        body: 'Yanlış sıralı veya yanlış adlı parçaları eleyen şıkkı seç. Net çözülemezse fotoğrafı daha keskin çek.',
+      },
+    ];
+  }
+  if (subject === 'firstaid') {
+    return [
+      {
+        title: '1. Öncelik',
+        body: 'Önce kendi ve olay yeri güvenliği, sonra kazazede.',
+      },
+      {
+        title: '2. ABC',
+        body: 'Hava yolu → solunum → dolaşım; bilinç kontrolü ses + hafif uyaran ile yapılır.',
+      },
+      {
+        title: '3. 112',
+        body: 'Gerekirse 112’ye konum ve durum bildir; gereksiz hareket ettirme.',
+      },
+    ];
+  }
+  return [
+    {
+      title: '1. Kuralı bul',
+      body: 'İşaret, şerit, hız, kavşak veya geçiş üstünlüğü mü isteniyor? Anahtar kelimeyi ayır.',
+    },
+    {
+      title: '2. Sahneyi kur',
+      body: 'Hız, kavşak veya levha durumunu zihninde canlandır; şıkları buna göre ele.',
+    },
+    {
+      title: '3. Güvenliği seç',
+      body: '“Önce güvenlik” ilkesine uymayan şıkkı eleyen seçeneği tercih et.',
+    },
+  ];
 }
 
 /**
@@ -45,11 +99,20 @@ export function buildLocalSolveFallback(input: {
   requestId: string;
   /** Why we fell back — tweaks user-facing transparency copy */
   reason?: 'unavailable' | 'unsupported';
+  /** OCR / stem snippet — locks Ehliyet branş correctly */
+  ocrText?: string | null;
 }): SolveQuestionResponse {
   const examType = input.examType ?? 'lgs';
   const hint = input.subjectHint && input.subjectHint !== 'unknown' ? input.subjectHint : null;
   const trafikSubjects = new Set<Subject>(['traffic', 'vehicle', 'firstaid']);
+
+  const fromOcr =
+    examType === 'trafik' && input.ocrText
+      ? classifyTrafikBranchFromText(input.ocrText)
+      : null;
+
   let subject: Subject =
+    fromOcr?.subject ??
     hint ??
     (examType === 'trafik'
       ? 'traffic'
@@ -59,15 +122,16 @@ export function buildLocalSolveFallback(input: {
 
   // Never cross packages in offline fallback
   if (examType === 'trafik' && !trafikSubjects.has(subject) && subject !== 'unknown') {
-    subject = 'traffic';
+    subject = fromOcr?.subject ?? 'traffic';
   } else if (examType !== 'trafik' && trafikSubjects.has(subject)) {
     subject = 'turkish';
   }
 
   let topicId =
-    input.topicId !== undefined && input.topicId !== null
+    fromOcr?.topicId ??
+    (input.topicId !== undefined && input.topicId !== null
       ? input.topicId
-      : defaultTopicId(examType, subject);
+      : defaultTopicId(examType, subject));
 
   if (examType === 'trafik') {
     if (!topicId || !topicId.startsWith('trafik-')) {
@@ -85,13 +149,17 @@ export function buildLocalSolveFallback(input: {
     input.reason === 'unsupported'
       ? isVerbal
         ? 'Bu sözel soru tam otomatik çözülemedi. Şıkları da net görünecek şekilde yeniden dene.'
-        : 'Bu fotoğraftaki soru otomatik çözülemedi. Dersini onayla; soru ve şıklar net olsun.'
-      : 'Şu an otomatik çözüme ulaşılamadı; genel hatırlatma gösteriyoruz. Biraz sonra tekrar dener misin?';
+        : isTrafik
+          ? 'Bu ehliyet sorusu tam otomatik çözülemedi. Konu branşı fotoğraftan kilitlendi; şıklar net görünsün diye yeniden dene.'
+          : 'Bu fotoğraftaki soru otomatik çözülemedi. Dersini onayla; soru ve şıklar net olsun.'
+      : 'Şu an otomatik çözüme ulaşılamadı; branşa uygun hatırlatma gösteriyoruz. Biraz sonra tekrar dener misin?';
 
   return {
     attemptId: `local-${input.requestId}`,
     solutionId: `local-sol-${input.requestId}`,
     status: 'solved',
+    /** Tip-only — never invent a final answer */
+    assisted: true,
     cached: false,
     topicId,
     subject,
@@ -111,20 +179,7 @@ export function buildLocalSolveFallback(input: {
           },
         ]
       : isTrafik
-        ? [
-            {
-              title: '1. Kökü ayır',
-              body: 'Kural, işaret, araç sistemi veya ilk yardım mı isteniyor? Anahtar kelimeyi bul.',
-            },
-            {
-              title: '2. Sahneyi kur',
-              body: 'Hız, kavşak, levha veya kazazede durumunu zihninde canlandır; şıkları buna göre ele.',
-            },
-            {
-              title: '3. Güvenliği seç',
-              body: 'Trafik ve ilk yardımda “önce güvenlik” ilkesine uymayan şıkkı eler.',
-            },
-          ]
+        ? trafikSteps(subject)
         : isVerbal
           ? [
               {

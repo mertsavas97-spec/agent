@@ -1,49 +1,58 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-
-import { colors } from '@/src/theme';
+import {
+  Animated,
+  Easing,
+  Image,
+  StyleSheet,
+  type ImageStyle,
+  type StyleProp,
+} from 'react-native';
 
 export type CozbilRobotTone = 'onDark' | 'onLight';
 
 export type CozbilRobotProps = {
-  /** Soft breathe + blink. Default true (Premium-style presence). */
+  /** Soft breathe. Default true. */
   animate?: boolean;
   size?: number;
   /**
-   * Only swaps fill colors for contrast — silhouette stays identical.
-   * onDark → white head (navy / Premium / loading)
-   * onLight → navy head (surface / Ana Sayfa)
+   * Kept for API compat. Brand mark is the official app icon (navy + white robot).
+   * onDark / onLight no longer recolor geometry — same asset everywhere.
    */
   tone?: CozbilRobotTone;
   /** @deprecated use `tone` */
   variant?: CozbilRobotTone;
   testID?: string;
+  style?: StyleProp<ImageStyle>;
 };
 
+/** Official ÇözBil app icon (robot mark) — 180px UI asset for instant decode. */
+export const BRAND_MARK = require('../../assets/brand/app-icon/iOS/icon_180x180.png');
+/** Full-res mark when a larger asset is needed (splash / marketing). */
+export const BRAND_MARK_FULL = require('../../assets/images/brand-mark.png');
+
+// Warm the image cache as soon as this module loads.
+void BRAND_MARK;
+
 /**
- * Tek tip ÇözBil maskot: yuvarlak kafa, turuncu anten, gülümseme.
- * Tasarım sabit; yalnızca tone ile renkler arka plana uyum sağlar.
+ * Brand mark from the official app icon pack.
+ * Replaces the previous vector robot so onboarding / home / paywall match the store icon.
  */
 export function CozbilRobot({
   animate = true,
   size = 104,
-  tone,
-  variant,
+  tone: _tone,
+  variant: _variant,
   testID = 'cozbil-robot',
+  style,
 }: CozbilRobotProps) {
-  const resolvedTone: CozbilRobotTone = tone ?? variant ?? 'onDark';
+  void _tone;
+  void _variant;
   const pulse = useRef(new Animated.Value(1)).current;
   const bounce = useRef(new Animated.Value(0)).current;
-  const blink = useRef(new Animated.Value(1)).current;
 
-  // Single palette swap — same geometry everywhere
-  const headBg = resolvedTone === 'onLight' ? colors.navy : colors.white;
-  const eyeBg = resolvedTone === 'onLight' ? colors.white : colors.navy;
-  const accent = colors.orange;
-
-  // Motion intensity scales with size so home (40) stays subtle
-  const bouncePx = Math.max(2, Math.round(size * 0.055));
-  const pulseTo = size < 56 ? 1.03 : 1.05;
+  const bouncePx = Math.max(2, Math.round(size * 0.04));
+  const pulseTo = size < 56 ? 1.02 : 1.04;
+  const radius = Math.round(size * 0.22);
 
   useEffect(() => {
     if (!animate) return;
@@ -79,155 +88,44 @@ export function CozbilRobot({
         }),
       ]),
     );
-    const wink = Animated.loop(
-      Animated.sequence([
-        Animated.delay(2600),
-        Animated.timing(blink, { toValue: 0.12, duration: 90, useNativeDriver: true }),
-        Animated.timing(blink, { toValue: 1, duration: 130, useNativeDriver: true }),
-        Animated.delay(2000),
-      ]),
-    );
     breathe.start();
     hop.start();
-    wink.start();
     return () => {
       breathe.stop();
       hop.stop();
-      wink.stop();
     };
-  }, [animate, blink, bounce, bouncePx, pulse, pulseTo]);
-
-  // All facial metrics proportional to size (one silhouette)
-  const antennaH = Math.round(size * 0.18);
-  const antennaBall = Math.max(6, Math.round(size * 0.1));
-  const antennaStemW = Math.max(2, Math.round(size * 0.03));
-  const eye = Math.max(6, Math.round(size * 0.13));
-  const eyeGap = Math.round(size * 0.17);
-  const smileW = size * 0.34;
-  const smileH = size * 0.2;
-  const smileBorder = Math.max(2, size * 0.034);
-  const cheekW = Math.max(5, Math.round(size * 0.1));
-  const cheekH = Math.max(3, Math.round(size * 0.06));
-  const cheekInset = Math.round(size * 0.14);
-  const cheekTop = size * 0.52;
-  const radius = size * 0.28;
+  }, [animate, bounce, bouncePx, pulse, pulseTo]);
 
   return (
     <Animated.View
       testID={testID}
-      accessibilityLabel="ÇözBil robot arkadaşın"
+      accessibilityLabel="ÇözBil"
+      accessibilityRole="image"
       style={[
         styles.wrap,
         {
           width: size,
-          height: size + antennaH,
+          height: size,
           transform: animate
             ? [{ scale: pulse }, { translateY: bounce }]
             : undefined,
         },
       ]}>
-      <View
+      <Image
+        source={BRAND_MARK}
         style={[
-          styles.antennaStem,
-          {
-            height: antennaH - antennaBall / 2,
-            width: antennaStemW,
-            top: Math.round(size * 0.1),
-            backgroundColor: accent,
-          },
-        ]}
-      />
-      <View
-        style={[
-          styles.antennaBall,
-          {
-            width: antennaBall,
-            height: antennaBall,
-            borderRadius: antennaBall / 2,
-            top: 0,
-            backgroundColor: accent,
-          },
-        ]}
-      />
-      <View
-        style={[
-          styles.head,
           {
             width: size,
             height: size,
             borderRadius: radius,
-            marginTop: antennaH - 4,
-            backgroundColor: headBg,
           },
-        ]}>
-        <View style={[styles.eyeRow, { gap: eyeGap, marginBottom: size * 0.1 }]}>
-          <Animated.View
-            style={[
-              styles.eye,
-              {
-                width: eye,
-                height: eye,
-                borderRadius: eye / 2,
-                backgroundColor: eyeBg,
-                transform: [{ scaleY: blink }],
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.eye,
-              {
-                width: eye,
-                height: eye,
-                borderRadius: eye / 2,
-                backgroundColor: eyeBg,
-                transform: [{ scaleY: blink }],
-              },
-            ]}
-          />
-        </View>
-        <View style={[styles.smileWrap, { height: smileH }]}>
-          <View
-            style={[
-              styles.smile,
-              {
-                width: smileW,
-                height: smileH,
-                borderBottomLeftRadius: smileH,
-                borderBottomRightRadius: smileH,
-                borderWidth: smileBorder,
-                borderColor: accent,
-              },
-            ]}
-          />
-        </View>
-        <View
-          style={[
-            styles.cheek,
-            {
-              width: cheekW,
-              height: cheekH,
-              borderRadius: cheekH / 2,
-              top: cheekTop,
-              left: cheekInset,
-              backgroundColor: 'rgba(245, 158, 11, 0.35)',
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.cheek,
-            {
-              width: cheekW,
-              height: cheekH,
-              borderRadius: cheekH / 2,
-              top: cheekTop,
-              right: cheekInset,
-              backgroundColor: 'rgba(245, 158, 11, 0.35)',
-            },
-          ]}
-        />
-      </View>
+          style,
+        ]}
+        resizeMode="cover"
+        // Android defaults to a ~300ms fade-in — feels like the icon "arrives late"
+        fadeDuration={0}
+        accessibilityIgnoresInvertColors
+      />
     </Animated.View>
   );
 }
@@ -235,34 +133,7 @@ export function CozbilRobot({
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-  },
-  antennaStem: {
-    position: 'absolute',
-    zIndex: 1,
-  },
-  antennaBall: {
-    position: 'absolute',
-    zIndex: 2,
-  },
-  head: {
-    alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  eyeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  eye: {},
-  smileWrap: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  smile: {
-    borderTopWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  cheek: {
-    position: 'absolute',
   },
 });

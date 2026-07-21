@@ -28,10 +28,34 @@ export const EXAM_OPTIONS: { id: ExamType; label: string; hint: string }[] = [
   { id: 'trafik', label: 'Ehliyet', hint: 'Ehliyet / MTS' },
 ];
 
-/** Taslak KVKK metinleri — mağaza öncesi hukuki onay TODO(legal). */
+/** Onboarding consent — age band seçimine göre (sınav türünden bağımsız). */
 export const LEGAL_COPY = {
+  under13:
+    '13 yaş altı için veli onayı zorunludur. Devam ederek velinin bu kullanımı bilmesine ve kişisel verilerin sınav çözüm hizmeti için işlenmesine onay vermiş olursun. Tam metin: Ayarlar → Gizlilik / KVKK.',
+  minor13to17:
+    '13–17 yaş için veli bilgilendirmesi gerekir. Devam ederek velinin bu kullanımı bilmesine ve kişisel verilerin sınav çözüm hizmeti için işlenmesine onay vermiş olursun. Tam metin: Ayarlar → Gizlilik / KVKK.',
+  /** @deprecated prefer under13 / minor13to17 */
   minorParental:
-    '13–17 yaş için veli bilgilendirmesi gerekir. Devam ederek kişisel verilerin sınav çözüm hizmeti için işlenmesine ve velinin bu kullanımı bilmesine onay vermiş olursun. Detaylı aydınlatma metni yakında.',
+    '13 yaş altı veya 13–17 için veli bilgilendirmesi gerekir. Devam ederek kişisel verilerin sınav çözüm hizmeti için işlenmesine ve velinin bu kullanımı bilmesine onay vermiş olursun. Tam metin: Ayarlar → Gizlilik / KVKK veya yayınlanan gizlilik URL’si.',
   adultStandard:
-    'Devam ederek ad, sınav tercihi ve soru görsellerinin çözüm üretmek için işlenmesine onay verirsin. Veriler hesabına bağlı saklanır; dilediğinde silme talebi oluşturabilirsin.',
+    'Devam ederek sınav tercihi, yaş bandı ve soru görsellerinin çözüm üretmek için işlenmesine onay verirsin. Veriler hesabına bağlı saklanır; dilediğinde silme talebi oluşturabilirsin. Tam metin: Ayarlar → Gizlilik / KVKK.',
 } as const;
+
+export const AGE_BAND_OPTIONS = [
+  {
+    id: '18plus' as const,
+    label: '18 yaş ve üzeri',
+    hint: 'Standart KVKK onayı',
+  },
+  {
+    id: '13to17' as const,
+    label: '13–17 yaş',
+    hint: 'Veli bilgilendirmesi gerekir',
+  },
+  {
+    id: 'under13' as const,
+    label: '13 yaş altı',
+    hint: 'Veli onayı zorunlu',
+  },
+];
+

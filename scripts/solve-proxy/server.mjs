@@ -7,7 +7,7 @@
  */
 import http from 'node:http';
 import { evaluateExpression, buildStepsFromEval } from './arithSolve.mjs';
-import { classifyOcr, topicIdFor } from './classifyOcr.mjs';
+import { classifyOcr, topicIdFor, applySubjectHint } from './classifyOcr.mjs';
 import { detectExamHint } from './examHint.mjs';
 import {
   assertPipelineIsolation,
@@ -55,7 +55,7 @@ function solvedPayload({
       note ||
       'Görselden okuyup adım adım çözüldü. Sonucu kontrol etmeni öneririz.',
     quota: { remainingToday: 5, unlimited: false },
-    debugOcrPreview: ocrText.slice(0, 240),
+    debugOcrPreview: ocrText.slice(0, 2048),
     classification: {
       subject: classification.subject,
       topicKey: classification.topicKey,
@@ -111,6 +111,10 @@ const server = http.createServer(async (req, res) => {
       ? input.examType
       : 'lgs';
     const requestId = typeof input.requestId === 'string' ? input.requestId : `${Date.now()}`;
+    const ocrTextOverride =
+      typeof input.ocrText === 'string' && input.ocrText.trim().length >= 12
+        ? input.ocrText.trim()
+        : '';
 
     if ((!imageBase64 || imageBase64.length < 80) && imageUrl) {
       try {
@@ -141,26 +145,35 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    if (!imageBase64 || imageBase64.length < 80) {
+    if (!ocrTextOverride && (!imageBase64 || imageBase64.length < 80)) {
       send(res, 400, { error: 'image_required' });
       return;
     }
 
-    const ocrText = await ocrImageBase64(imageBase64, mimeType);
+    const ocrText = ocrTextOverride || (await ocrImageBase64(imageBase64, mimeType));
+    if (ocrTextOverride) {
+      console.info('ocr: client-override');
+    }
     const profileExam = normalizeExamType(examType);
     // Hint is for the client mismatch sheet only — never switches the solve pipeline.
     const examHint = detectExamHint(ocrText, profileExam);
     const solveExam = resolveSolveExam(profileExam);
     const hintForClient = examHint;
 
-    let classified = classifyOcr(ocrText, solveExam);
+    let classified = applySubjectHint(
+      classifyOcr(ocrText, solveExam),
+      input.subjectHint,
+      solveExam,
+      ocrText,
+    );
 
     const topicId = topicIdFor(solveExam, classified.subject, classified.topicKey);
 
     // Non-math first when classification is verbal — avoid false arith matches
     if (classified.subject !== 'math') {
       const verbal = tryVerbalSolve(ocrText, classified, solveExam);
-      if (verbal?.steps?.length) {
+      // Require a real answer — tip-only guidance must not ship as solved
+      if (verbal?.steps?.length && (verbal.answerText || verbal.answerLabel)) {
         // Solver may override branş (e.g. şaft → vehicle) within the SAME exam package
         const subject = verbal.subject || classified.subject;
         const topicKey = verbal.topicKey || classified.topicKey;
@@ -260,7 +273,7 @@ const server = http.createServer(async (req, res) => {
           ? 'Bu Türkçe sorusu okundu ama otomatik cevap üretilemedi. Şıkları da net görünecek şekilde yeniden dene.'
           : 'Bu görseldeki soru şu an otomatik çözülemedi. Soruyu ve şıkları daha net görünecek şekilde yeniden dene.',
       quota: { remainingToday: 5, unlimited: false },
-      debugOcrPreview: ocrText.slice(0, 240),
+      debugOcrPreview: ocrText.slice(0, 2048),
       detectedSubject: classified.subject,
       topicId,
       examHint: hintForClient,

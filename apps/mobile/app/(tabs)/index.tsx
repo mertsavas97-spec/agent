@@ -56,6 +56,7 @@ export default function HomeScreen() {
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [streakCount, setStreakCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,6 +76,10 @@ export default function HomeScreen() {
           if (!alive) return;
           setIsPremium(isPremiumActive(entitlement ?? undefined));
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
+          const streakRaw = userSnap.data()?.streakCount;
+          setStreakCount(
+            typeof streakRaw === 'number' && streakRaw > 0 ? Math.floor(streakRaw) : 0,
+          );
           const preferred = await readExamPreference();
           const et = userSnap.data()?.examType;
           // Preference (set at onboarding) wins; else Firestore examType.
@@ -209,6 +214,11 @@ export default function HomeScreen() {
               testID="home-brand-robot"
             />
             <Text style={styles.brand}>{brand.name}</Text>
+            {streakCount >= 1 ? (
+              <View style={styles.streakChip} testID="home-streak">
+                <Text style={styles.streakChipText}>{streakCount} gün</Text>
+              </View>
+            ) : null}
           </View>
           <Pressable
             testID="home-premium-cta"
@@ -257,7 +267,14 @@ export default function HomeScreen() {
             accessibilityLabel="Soru fotoğrafı çek"
             testID="capture-cta"
             onPress={() => void openPicker('camera')}>
-            <Text style={styles.primaryBtnLabel}>Soru fotoğrafı çek</Text>
+            <View style={styles.primaryBtnInner}>
+              <SymbolView
+                name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
+                tintColor={colors.navy}
+                size={22}
+              />
+              <Text style={styles.primaryBtnLabel}>Soru fotoğrafı çek</Text>
+            </View>
           </Pressable>
 
           <Pressable
@@ -370,6 +387,20 @@ const styles = StyleSheet.create({
     color: colors.navy,
     letterSpacing: -0.3,
   },
+  streakChip: {
+    backgroundColor: colors.orangeSoft,
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.orange,
+  },
+  streakChipText: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.orange,
+  },
   premiumPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -423,6 +454,11 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     alignItems: 'center',
     ...shadows.cta,
+  },
+  primaryBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   primaryBtnLabel: {
     fontFamily: typography.fontFamilySemiBold,

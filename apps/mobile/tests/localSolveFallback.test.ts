@@ -12,6 +12,8 @@ describe('localSolveFallback', () => {
     });
     expect(res.status).toBe('solved');
     if (res.status !== 'solved') throw new Error('expected solved');
+    expect(res.assisted).toBe(true);
+    expect(res.answer).toBeUndefined();
     expect(res.steps.length).toBeGreaterThanOrEqual(3);
     expect(res.transparencyNote).not.toMatch(/deploy-firestore|bash/i);
     expect(res.topicId).toBe('lgs-math-kesirler');
@@ -66,7 +68,22 @@ describe('localSolveFallback', () => {
     if (res.status !== 'solved') throw new Error('expected solved');
     expect(res.subject).toBe('traffic');
     expect(res.topicId).toBe('trafik-traffic-kurallar');
-    expect(res.steps[0]?.body).toMatch(/kural|işaret|ilk yardım/i);
+    expect(res.steps[0]?.body).toMatch(/işaret|şerit|hız|kavşak/i);
+  });
+
+  it('locks vehicle branş from OCR on Ehliyet fallback', () => {
+    const res = buildLocalSolveFallback({
+      examType: 'trafik',
+      requestId: 'eh2',
+      reason: 'unsupported',
+      ocrText:
+        'Şekildeki araç güç aktarma organlarının adları hangi seçenekte doğru olarak verilmiştir?',
+    });
+    expect(res.status).toBe('solved');
+    if (res.status !== 'solved') throw new Error('expected solved');
+    expect(res.subject).toBe('vehicle');
+    expect(res.topicId).toBe('trafik-vehicle-motor');
+    expect(res.steps[0]?.body).toMatch(/güç aktarma|şaft|motor/i);
   });
 
   it('never keeps Ehliyet branş/topic under LGS/YGS/KPSS', () => {

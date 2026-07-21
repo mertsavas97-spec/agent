@@ -126,19 +126,12 @@ export function applySubjectOverride(
 
   if (remapped.status !== 'solved') return { ...result, subject };
 
+  // Math↔geometry may share arithmetic steps. Ehliyet branşları (traffic/vehicle/firstaid)
+  // MUST NOT share — cross-branch keepSteps was keeping foreign “İlk Yardım” answers on motor stems.
   const sameFamily =
     (result.subject === 'math' || result.subject === 'geometry') &&
     (subject === 'math' || subject === 'geometry');
-  const keepSteps =
-    sameFamily ||
-    result.subject === subject ||
-    // Keep verbal solver steps when user confirms the predicted subject family
-    (result.subject === 'turkish' && subject === 'turkish') ||
-    ((result.subject === 'traffic' ||
-      result.subject === 'vehicle' ||
-      result.subject === 'firstaid') &&
-      (subject === 'traffic' || subject === 'vehicle' || subject === 'firstaid') &&
-      Boolean(result.answer?.text));
+  const keepSteps = sameFamily || result.subject === subject;
 
   return {
     ...result,
@@ -146,6 +139,7 @@ export function applySubjectOverride(
     topicId: remapped.topicId,
     steps: keepSteps ? result.steps : remapped.steps,
     answer: keepSteps ? result.answer : undefined,
+    assisted: keepSteps ? result.assisted : true,
     transparencyNote: keepSteps
       ? result.transparencyNote
       : `Ders güncellendi. Adımlar ${subject} için yeniden düzenlendi.`,

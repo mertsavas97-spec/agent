@@ -4,11 +4,11 @@
 
 **Created**: 2026-07-16
 
-**Updated**: 2026-07-18
+**Updated**: 2026-07-21 (Ehliyet + pricing SSoT amendment)
 
 **Status**: Locked
 
-**Input**: Owner MVP brief + moodboard; multi-exam amendment (LGS + YGS + KPSS).
+**Input**: Owner MVP brief + moodboard; multi-exam amendment (LGS + YGS + KPSS + Ehliyet).
 
 ## Locked Decisions
 
@@ -17,11 +17,12 @@
 | Product type | **App** (education / AI study companion) |
 | Working name | **ÇözBil** (final brand TBD) |
 | Primary job | Fotoğraflanan sınav sorusunu adım adım Türkçe açıklar; konu eksiğini kullanıcıya gösterir |
-| Exam scope (MVP) | **LGS, YGS, KPSS** — üçü de seçilebilir (hiçbiri “yakında” değil) |
-| Primary persona | Sınava hazırlanan öğrenci/aday (LGS ~13–15; YGS lise/üniversite öncesi; KPSS yetişkin) |
+| Exam scope (MVP) | **LGS, YGS, KPSS, Ehliyet** — dördü de seçilebilir (hiçbiri “yakında” değil); runtime `trafik` |
+| Primary persona | Sınava hazırlanan öğrenci/aday (LGS ~13–15; YGS lise/üniversite öncesi; KPSS yetişkin; Ehliyet sürücü adayı) |
 | Secondary (non-MVP) | Veli hesabı/rapor — 1.1 (özellikle LGS’de ödeyen veli) |
 | Delivery surface | **Mobile**, Android-first |
-| Positioning | “Türkiye’nin sınav odaklı AI çalışma arkadaşı — LGS, YGS, KPSS; çözer, anlatır, eksiğini gösterir.” |
+| Positioning | “Türkiye’nin sınav odaklı AI çalışma arkadaşı — LGS, YGS, KPSS, Ehliyet; çözer, anlatır, eksiğini gösterir.” |
+| Premium yearly (TRY) | **320 TL / yıl** (SSoT: `docs/product/pricing-policy.md`) |
 | Design reference | `docs/design/moodboard/` |
 
 ## User Scenarios & Testing *(mandatory)*
@@ -44,7 +45,7 @@ answer “app or game?”, “what is the product name?”, “which exams?”, 
 
 1. **Given** no product identity is locked, **When** the owner completes
    the identity decision, **Then** the definition records product type
-   `app`, working name `ÇözBil`, exam scope LGS+YGS+KPSS, and the
+   `app`, working name `ÇözBil`, exam scope LGS+YGS+KPSS+Ehliyet, and the
    primary job statement above.
 2. **Given** a locked identity exists, **When** an agent starts a new
    task, **Then** it treats that identity as authoritative and does not
@@ -118,7 +119,7 @@ but is refused for v1.
 - **FR-002**: Definition MUST include working product name **ÇözBil** and
   a one-sentence primary job statement.
 - **FR-003**: Definition MUST describe the primary persona as exam
-  candidates in Türkiye across **LGS, YGS, KPSS**.
+  candidates in Türkiye across **LGS, YGS, KPSS, Ehliyet**.
 - **FR-004**: Definition MUST list MVP user outcomes that are
   independently demonstrable without naming implementation technology
   (see `specs/002-cozbil-mvp/spec.md`).
@@ -129,14 +130,14 @@ but is refused for v1.
   mobile, Android-first.
 - **FR-007**: Until FR-001–FR-006 are satisfied, agents MUST NOT start
   product implementation tasks.
-- **FR-008**: Definition MUST record exam scope as LGS + YGS + KPSS all
-  active in MVP onboarding selection.
+- **FR-008**: Definition MUST record exam scope as LGS + YGS + KPSS +
+  Ehliyet all active in MVP onboarding selection.
 
 ### Key Entities
 
 - **Product Identity**: Type (app), working name (ÇözBil), primary job,
   exam scope.
-- **Primary Persona**: Exam candidate by track (LGS / YGS / KPSS).
+- **Primary Persona**: Exam candidate by track (LGS / YGS / KPSS / Ehliyet).
 - **MVP Outcome**: A user-visible result that proves the product works.
 - **Non-Goal**: Explicitly deferred capability for later specs.
 

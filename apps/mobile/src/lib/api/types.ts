@@ -83,6 +83,11 @@ export type SolveQuestionSuccess = {
   quota: QuotaInfo;
   /** Preferred display answer — result screen hero */
   answer?: SolutionAnswer;
+  /**
+   * Tip-only / offline assist — not a verified final answer.
+   * UI must show honesty banner; do not imply “çözüldü”.
+   */
+  assisted?: boolean;
   /** Dogfood / proxy: when needsConfirm, UI asks user before showing result */
   classification?: SubjectClassificationMeta;
   /** Profile exam vs OCR booklet mismatch */

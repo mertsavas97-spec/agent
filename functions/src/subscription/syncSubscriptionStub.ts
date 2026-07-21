@@ -1,12 +1,6 @@
 /**
- * Play Billing entitlement sync stub (US6 / T051).
- *
- * Real integration (documented in specs/002-cozbil-mvp/quickstart.md):
- * - Verify purchase token with Google Play Developer API
- * - Upsert users/{uid}.subscriptionStatus + subscriptionExpiresAt
- * - Return entitlement snapshot for the client
- *
- * This stub accepts a sandbox flag for emulator dogfood only.
+ * Play Billing entitlement sync stub (US6 / T051) — pure decision helper.
+ * Production path: `syncSubscription.ts` + `verifyPlayPurchase.ts`.
  */
 
 import type { QuotaState } from '../quota/dailyQuota';

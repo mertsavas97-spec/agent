@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, space, typography } from '@/src/theme';
+import { hapticSelection } from '@/src/ui/haptics';
 
 export type SegmentedTabCaptionTone = 'ready' | 'empty' | 'default';
 
@@ -80,7 +81,10 @@ export function SegmentedTabs<T extends string>({
                   backgroundColor: `${accentColor}22`,
                 },
               ]}
-              onPress={() => onChange(item.id)}>
+              onPress={() => {
+                void hapticSelection();
+                onChange(item.id);
+              }}>
               <Text
                 style={[
                   styles.chipLabel,
@@ -122,7 +126,10 @@ export function SegmentedTabs<T extends string>({
                 borderColor: activeColor,
               },
             ]}
-            onPress={() => onChange(item.id)}>
+            onPress={() => {
+              void hapticSelection();
+              onChange(item.id);
+            }}>
             <Text
               style={[
                 styles.segmentLabel,

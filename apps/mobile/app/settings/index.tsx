@@ -40,6 +40,8 @@ import { getFirebase } from '@/src/lib/firebase';
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, space, typography } from '@/src/theme';
 import { Eyebrow } from '@/src/ui/Eyebrow';
+import { hapticLight, hapticSelection } from '@/src/ui/haptics';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -70,6 +72,7 @@ export default function SettingsScreen() {
   }, []);
 
   async function toggle(id: keyof PushPrefs, value: boolean) {
+    void hapticLight();
     if (id === 'master') {
       setPrefs(await setPushCategory('master', value));
       return;
@@ -83,13 +86,14 @@ export default function SettingsScreen() {
     const label = EXAM_LABEL[next];
 
     if (premium) {
+      void hapticSelection();
       void applyExam(next);
       return;
     }
 
     Alert.alert(
       'Mod değiştir',
-      `${label} paketine geçmek için bir reklam izlemen gerekir.`,
+      `${label} paketine geçmek için bir reklam izlemen gerekir.\n\nNot: Reklam SDK henüz bağlı değil; bu sürümde stub/demo akışı çalışır.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -107,6 +111,7 @@ export default function SettingsScreen() {
                   return;
                 }
                 await callUpdateExamType(next);
+                void hapticSelection();
                 setExamType(next);
               } catch {
                 Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
@@ -175,8 +180,13 @@ export default function SettingsScreen() {
         }}
       />
 
-      <Eyebrow>{TR_EYEBROW.settings}</Eyebrow>
-      <Text style={styles.title}>Ayarlar</Text>
+      <View style={styles.brandRow} testID="settings-brand">
+        <CozbilRobot size={36} animate={false} tone="onLight" testID="settings-brand-icon" />
+        <View style={{ flex: 1 }}>
+          <Eyebrow>{TR_EYEBROW.settings}</Eyebrow>
+          <Text style={styles.title}>Ayarlar</Text>
+        </View>
+      </View>
       <Text style={styles.sub}>
         Sınav paketi, bildirimler, Premium ve hukuki metinler.
       </Text>
@@ -187,7 +197,7 @@ export default function SettingsScreen() {
         <Text style={styles.cardBody}>
           {premium
             ? 'Premium: paketi reklamsız değiştirebilirsin.'
-            : 'Her paket değişiminde bir reklam izlemen gerekir.'}
+            : 'Her paket değişiminde reklam gerekir (şu an stub — gerçek AdMob yakında).'}
         </Text>
         <ExamModeSwitcher
           value={examType}
@@ -217,7 +227,8 @@ export default function SettingsScreen() {
         <Eyebrow tone="navy">{TR_EYEBROW.push}</Eyebrow>
         <Text style={styles.cardTitle}>Bildirimler</Text>
         <Text style={styles.cardBody}>
-          Tercihler cihazda saklanır. Sistem izni istendiğinde OS ayarları da gerekir.
+          Tercihler cihazda saklanır. Push gönderimi henüz bağlı değil — bildirim
+          gelmez; tercihler saklanır.
         </Text>
         {prefs ? (
           <>
@@ -266,24 +277,26 @@ export default function SettingsScreen() {
         ))}
       </View>
 
-      <View style={styles.card} testID="settings-demo">
-        <Text style={styles.demoKicker}>DEMO · KİŞİSEL CİHAZ</Text>
-        <Text style={styles.cardTitle}>Onboarding</Text>
-        <Text style={styles.cardBody}>
-          Şimdilik yalnızca demo için. Onboarding akışını baştan gösterir.
-        </Text>
-        <Pressable
-          testID="settings-replay-onboarding"
-          style={[styles.demoBtn, replaying && styles.demoBtnDisabled]}
-          disabled={replaying}
-          onPress={onReplayOnboarding}>
-          {replaying ? (
-            <ActivityIndicator color={colors.navy} />
-          ) : (
-            <Text style={styles.demoBtnLabel}>Onboarding’i yeniden yükle</Text>
-          )}
-        </Pressable>
-      </View>
+      {__DEV__ ? (
+        <View style={styles.card} testID="settings-demo">
+          <Text style={styles.demoKicker}>DEMO · KİŞİSEL CİHAZ</Text>
+          <Text style={styles.cardTitle}>Onboarding</Text>
+          <Text style={styles.cardBody}>
+            Yalnızca geliştirme derlemesinde. Onboarding akışını baştan gösterir.
+          </Text>
+          <Pressable
+            testID="settings-replay-onboarding"
+            style={[styles.demoBtn, replaying && styles.demoBtnDisabled]}
+            disabled={replaying}
+            onPress={onReplayOnboarding}>
+            {replaying ? (
+              <ActivityIndicator color={colors.navy} />
+            ) : (
+              <Text style={styles.demoBtnLabel}>Onboarding’i yeniden yükle</Text>
+            )}
+          </Pressable>
+        </View>
+      ) : null}
 
       <Text style={styles.version} testID="settings-version">
         ÇözBil · sürüm 1.0.0 (MVP)
@@ -295,12 +308,18 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   content: { padding: space.lg, paddingBottom: space.xl * 2 },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginBottom: 6,
+  },
   title: {
     fontFamily: typography.fontFamilyBold,
     fontSize: 28,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: 6,
+    marginBottom: 0,
   },
   sub: {
     fontFamily: typography.fontFamily,

@@ -26,11 +26,11 @@
 
 ### D3 — Vision solve: Gemini Vision + sınav + ders-özel sistem prompt
 
-- **Decision**: Prompt matrisı `examType × subject` (LGS/YGS/KPSS ×
-  matematik/Türkçe…). Matematik (P1) ve Türkçe (P2) önce. Çıktı
-  yapılandırılmış adımlar. Varsayılan: tek çağrıda çözüm + `topicId`
-  (sınav katalogundan).
-- **Rationale**: Owner amendment — üç sınav da MVP’de aktif; moodboard
+- **Decision**: Prompt matrisı `examType × subject` (LGS/YGS/KPSS/Ehliyet ×
+  matematik/Türkçe/trafik…). Matematik (P1) ve Türkçe (P2) önce; Ehliyet
+  trafik/araç/ilk yardım. Çıktı yapılandırılmış adımlar. Varsayılan: tek
+  çağrıda çözüm + `topicId` (sınav katalogundan).
+- **Rationale**: Owner amendment — dört sınav da MVP’de aktif; moodboard
   onboarding ile uyumlu.
 - **Alternatives**: Tek genel prompt — müfredat uyumu zayıf.
 - **Verify**: Context7 / Google AI Gemini multimodal docs; SafeSearch
@@ -55,12 +55,12 @@
 ### D6 — Kota ve abonelik
 
 - **Decision**: Ücretsiz 5 soru/gün (UTC+3 gün sınırı); Premium paketler
-  haftalık giriş 14,90 TL / aylık 39 TL / yıllık 349 TL (kurucu kilidi +
-  council); Play Billing paywall story’sinde. Detay:
+  haftalık giriş 14,90 TL / aylık 39 TL / yıllık **320 TL** (SSoT 2026-07-21;
+  önceki 349 brief stale). Play Billing paywall story’sinde. Detay:
   `docs/product/pricing-policy.md`. Follow-up “anlamadım” ücretsiz
   hakkından düşmez; abuse için follow-up ayrı rate limit.
-- **Rationale**: Brief bandı 3–5 ve 39–59; aylık 39 tabanda; yıllık ~%26
-  indirim; 1 haftalık paid intro düşük biletli kanca.
+- **Rationale**: Brief bandı 3–5 ve 39–59; aylık 39 tabanda; yıllık **%32**
+  indirim (12×39=468 → 320); 1 haftalık paid intro düşük biletli kanca.
 
 ### D7 — UI yönü (designer + ui-ux-pro-max + moodboard)
 

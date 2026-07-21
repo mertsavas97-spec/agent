@@ -1,11 +1,12 @@
 import { SymbolView } from 'expo-symbols';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,8 +15,9 @@ import type { ExamType } from '@/src/lib/api/types';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
 import { Eyebrow } from '@/src/ui/Eyebrow';
+import { hapticLight, hapticSelection, hapticSuccess } from '@/src/ui/haptics';
 
-import { EXAM_OPTIONS, LEGAL_COPY, ONBOARDING_STEPS } from './copy';
+import { EXAM_OPTIONS, LEGAL_COPY, ONBOARDING_STEPS, AGE_BAND_OPTIONS } from './copy';
 
 export type OnboardingResult = {
   examType: ExamType;
@@ -60,28 +62,59 @@ function StepProgress({ step, accent }: { step: number; accent: string }) {
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState(0);
   const [examType, setExamType] = useState<ExamType | null>(null);
+  const [ageBand, setAgeBand] = useState<OnboardingResult['ageBand'] | null>(null);
   const [consented, setConsented] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const ageY = useRef(0);
+  const consentY = useRef(0);
 
   const isExamStep = step === 2;
   const theme = examThemeFor(examType);
+  const isMinorPath = ageBand === 'under13' || ageBand === '13to17';
   const legal = useMemo(() => {
-    if (examType === 'lgs') return LEGAL_COPY.minorParental;
+    if (ageBand === 'under13') return LEGAL_COPY.under13;
+    if (ageBand === '13to17') return LEGAL_COPY.minor13to17;
     return LEGAL_COPY.adultStandard;
-  }, [examType]);
+  }, [ageBand]);
 
   const accent = isExamStep && theme ? theme.accent : colors.orange;
   const solid = isExamStep && theme ? theme.solid : colors.navy;
   const soft = isExamStep && theme ? theme.soft : colors.surface;
   const stepMeta = ONBOARDING_STEPS[step];
+  const canFinish = Boolean(examType && ageBand && consented);
+
+  useEffect(() => {
+    if (!isExamStep || !examType) return;
+    const t = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, ageY.current - 12), animated: true });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [examType, isExamStep]);
+
+  useEffect(() => {
+    if (!isExamStep || !ageBand) return;
+    const t = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, consentY.current - 12), animated: true });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [ageBand, isExamStep]);
 
   function finish() {
-    if (!examType || !consented) return;
-    const isMinorPath = examType === 'lgs';
+    if (!examType || !ageBand || !consented) return;
+    void hapticSuccess();
     onComplete({
       examType,
-      ageBand: isMinorPath ? '13to17' : '18plus',
+      ageBand,
       parentalConsent: isMinorPath,
     });
+  }
+
+  function onAgeLayout(e: LayoutChangeEvent) {
+    ageY.current = e.nativeEvent.layout.y;
+  }
+
+  function onConsentLayout(e: LayoutChangeEvent) {
+    consentY.current = e.nativeEvent.layout.y;
   }
 
   return (
@@ -102,13 +135,18 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         <StepProgress step={step} accent={accent} />
 
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isExamStep ? styles.scrollContentExam : null,
+          ]}
+          showsVerticalScrollIndicator
           keyboardShouldPersistTaps="handled">
           <View
             style={[
               styles.heroCard,
+              isExamStep && styles.heroCardCompact,
               {
                 borderColor: isExamStep && theme ? theme.accent : colors.border,
                 backgroundColor: colors.white,
@@ -118,20 +156,30 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <View
               style={[
                 styles.heroIconWrap,
+                isExamStep && styles.heroIconHidden,
                 { backgroundColor: isExamStep && theme ? theme.soft : colors.navySoft },
               ]}>
-              <SymbolView
-                name={stepMeta.icon}
-                size={28}
-                tintColor={solid}
-                type="hierarchical"
-              />
+              {!isExamStep ? (
+                <SymbolView
+                  name={stepMeta.icon}
+                  size={28}
+                  tintColor={solid}
+                  type="hierarchical"
+                />
+              ) : null}
             </View>
             <Eyebrow color={accent} style={styles.heroEyebrow}>
               {stepMeta.eyebrow}
             </Eyebrow>
-            <Text style={[styles.title, { color: solid }]}>{stepMeta.title}</Text>
-            <Text style={styles.body}>{stepMeta.body}</Text>
+            <Text
+              style={[
+                styles.title,
+                isExamStep && styles.titleCompact,
+                { color: solid },
+              ]}>
+              {stepMeta.title}
+            </Text>
+            {!isExamStep ? <Text style={styles.body}>{stepMeta.body}</Text> : null}
           </View>
 
           {isExamStep ? (
@@ -158,8 +206,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                       selected ? shadows.soft : null,
                     ]}
                     onPress={() => {
+                      void hapticSelection();
                       setExamType(opt.id);
-                      setConsented(false);
                     }}>
                     <View
                       style={[
@@ -198,13 +246,68 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               })}
 
               {examType && theme ? (
+                <View
+                  style={styles.ageBlock}
+                  testID="age-band-section"
+                  onLayout={onAgeLayout}>
+                  <Text style={[styles.examListTitle, { color: solid }]}>
+                    Yaş bandın
+                  </Text>
+                  {AGE_BAND_OPTIONS.map((opt) => {
+                    const selected = ageBand === opt.id;
+                    return (
+                      <Pressable
+                        key={opt.id}
+                        testID={`age-${opt.id}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        style={[
+                          styles.ageBtn,
+                          {
+                            borderColor: selected ? theme.accent : colors.border,
+                            backgroundColor: selected ? theme.soft : colors.white,
+                          },
+                        ]}
+                        onPress={() => {
+                          void hapticSelection();
+                          setAgeBand(opt.id);
+                          setConsented(false);
+                        }}>
+                        <Text
+                          style={[
+                            styles.ageLabel,
+                            selected ? { color: theme.solid } : null,
+                          ]}>
+                          {opt.label}
+                        </Text>
+                        <Text style={styles.ageHint}>{opt.hint}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
+
+              {examType && ageBand && theme ? (
                 <Pressable
                   testID="consent-toggle"
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: consented }}
+                  accessibilityLabel={
+                    ageBand === 'under13'
+                      ? 'Veli onayı'
+                      : ageBand === '13to17'
+                        ? 'Veli bilgilendirmesi onayı'
+                        : 'KVKK onayı'
+                  }
                   style={[
                     styles.consentCard,
                     { borderColor: theme.accent, backgroundColor: colors.white },
                   ]}
-                  onPress={() => setConsented((v) => !v)}>
+                  onLayout={onConsentLayout}
+                  onPress={() => {
+                    void hapticLight();
+                    setConsented((v) => !v);
+                  }}>
                   <View
                     style={[
                       styles.checkbox,
@@ -241,24 +344,40 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <Pressable
               testID="onboarding-next"
               style={[styles.cta, { backgroundColor: accent }]}
-              onPress={() => setStep((s) => Math.min(2, s + 1))}>
-              <Text style={[styles.ctaLabel, { color: colors.navy }]}>Devam</Text>
+              onPress={() => {
+                void hapticLight();
+                setStep((s) => Math.min(2, s + 1));
+              }}>
+              <Text style={styles.ctaLabelReady}>Devam</Text>
             </Pressable>
           ) : (
             <Pressable
               testID="onboarding-finish"
+              accessibilityState={{ disabled: !canFinish }}
               style={[
                 styles.cta,
-                theme ? { backgroundColor: accent } : styles.ctaDisabledBg,
-                (!examType || !consented) && styles.ctaDisabled,
+                canFinish
+                  ? { backgroundColor: accent, opacity: 1 }
+                  : styles.ctaIdle,
               ]}
-              disabled={!examType || !consented}
+              disabled={!canFinish}
               onPress={finish}>
-              <Text style={[styles.ctaLabel, theme ? { color: solid } : null]}>
+              <Text
+                style={canFinish ? styles.ctaLabelReady : styles.ctaLabelIdle}
+                testID="onboarding-finish-label">
                 Ana sayfaya git
               </Text>
             </Pressable>
           )}
+          {isExamStep && !canFinish ? (
+            <Text style={styles.ctaHint} testID="onboarding-finish-hint">
+              {!examType
+                ? 'Önce sınav modunu seç'
+                : !ageBand
+                  ? 'Yaş bandını seç, sonra onayı işaretle'
+                  : 'Devam için onay kutusunu işaretle'}
+            </Text>
+          ) : null}
         </SafeAreaView>
       </View>
     </SafeAreaView>
@@ -321,6 +440,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingBottom: space.md,
   },
+  scrollContentExam: {
+    paddingBottom: space.xl * 2,
+  },
   heroCard: {
     borderRadius: radii.xl,
     borderWidth: 1.5,
@@ -328,13 +450,23 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
     ...shadows.soft,
   },
+  heroCardCompact: {
+    padding: space.md,
+    marginBottom: space.sm,
+  },
   heroIconWrap: {
-    width: 52,
-    height: 52,
+    width: 44,
+    height: 44,
     borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: space.md,
+    marginBottom: space.sm,
+  },
+  heroIconHidden: {
+    width: 0,
+    height: 0,
+    marginBottom: 0,
+    overflow: 'hidden',
   },
   heroEyebrow: { marginBottom: 6 },
   title: {
@@ -344,6 +476,10 @@ const styles = StyleSheet.create({
     color: colors.navy,
     letterSpacing: -0.4,
     marginBottom: space.sm,
+  },
+  titleCompact: {
+    fontSize: 20,
+    marginBottom: 0,
   },
   body: {
     fontFamily: typography.fontFamily,
@@ -390,11 +526,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     borderRadius: radii.lg,
-    padding: space.md,
+    paddingVertical: 12,
+    paddingHorizontal: space.md,
   },
   examSwatch: {
     width: 12,
-    height: 48,
+    height: 40,
     borderRadius: 6,
   },
   examTextCol: { flex: 1 },
@@ -406,7 +543,7 @@ const styles = StyleSheet.create({
   },
   examLabel: {
     fontFamily: typography.fontFamilySemiBold,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.navy,
   },
@@ -425,17 +562,37 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily,
     color: colors.textSecondary,
     marginTop: 2,
-    fontSize: 13,
+    fontSize: 12,
   },
   examSelectedMark: {
     fontFamily: typography.fontFamilyBold,
     fontSize: 20,
     fontWeight: '700',
   },
+  ageBlock: { gap: space.sm, marginTop: space.md },
+  ageBtn: {
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    paddingVertical: 12,
+    paddingHorizontal: space.md,
+  },
+  ageLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  ageHint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
   consentCard: {
     flexDirection: 'row',
     gap: space.sm,
     marginTop: space.md,
+    marginBottom: space.lg,
     padding: space.md,
     borderRadius: radii.lg,
     borderWidth: 1.5,
@@ -469,7 +626,7 @@ const styles = StyleSheet.create({
     paddingBottom: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.white,
   },
   cta: {
     backgroundColor: colors.orange,
@@ -478,12 +635,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.cta,
   },
-  ctaDisabledBg: { backgroundColor: colors.border },
-  ctaDisabled: { opacity: 0.45 },
-  ctaLabel: {
+  ctaIdle: {
+    backgroundColor: colors.border,
+    opacity: 1,
+  },
+  ctaLabelReady: {
     fontFamily: typography.fontFamilySemiBold,
     color: colors.navy,
     fontWeight: '700',
     fontSize: 16,
+    opacity: 1,
+  },
+  ctaLabelIdle: {
+    fontFamily: typography.fontFamilySemiBold,
+    color: colors.textMuted,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  ctaHint: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textSecondary,
   },
 });

@@ -97,4 +97,18 @@ describe('SolutionScreen', () => {
     expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Öyküleme/);
     expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/İpucu|İPUCU/i);
   });
+
+  it('shows assisted honesty banner when assisted', () => {
+    render(
+      <SolutionScreen
+        steps={[{ title: '1', body: 'Sistemi tanı' }]}
+        assisted
+        examType="trafik"
+        subject="vehicle"
+      />,
+    );
+    expect(screen.getByTestId('assisted-banner')).toHaveTextContent(
+      /Tam otomatik cevap yok/,
+    );
+  });
 });

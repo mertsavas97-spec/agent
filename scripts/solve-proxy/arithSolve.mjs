@@ -248,8 +248,14 @@ function atomToExpr(atom) {
   return null;
 }
 
+function stripQuestionNumbers(text) {
+  return String(text || '')
+    .replace(/(?:^|\n)\s*\d{1,3}[.)]\s+/g, '\n')
+    .replace(/^\s*\d{1,3}[.)]\s+/, '');
+}
+
 function extractCandidateExprs(ocrText) {
-  const text = ocrText.replace(/\r/g, '\n');
+  const text = stripQuestionNumbers(ocrText).replace(/\r/g, '\n');
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
   const joined = lines.join(' ');
   const candidates = new Set();
@@ -258,8 +264,9 @@ function extractCandidateExprs(ocrText) {
   if (vertical) candidates.add(vertical);
 
   for (const line of lines) {
-    if (/[0-9]/.test(line) && /[+\-−*/·×÷()/]/.test(line) && !/^[A-E]\)/i.test(line)) {
-      candidates.add(line);
+    const clean = stripQuestionNumbers(line).trim();
+    if (/[0-9]/.test(clean) && /[+\-−*/·×÷()/]/.test(clean) && !/^[A-E]\)/i.test(clean)) {
+      candidates.add(clean);
     }
   }
 
@@ -284,8 +291,6 @@ function extractCandidateExprs(ocrText) {
 
   const stripped = spaced.replace(/[^0-9().+\-−*/·×÷\s]/g, ' ');
   if (/[0-9]/.test(stripped) && /[+\-−*/·×÷/]/.test(stripped)) {
-    // Preserve fraction slashes: turn "1 3 ÷ 1 7" via vertical already;
-    // for "1 / 3 ÷ 1 / 7" keep slashes when normalizing later
     candidates.add(stripped);
   }
 
@@ -293,14 +298,19 @@ function extractCandidateExprs(ocrText) {
 }
 
 function normalizeExpr(raw) {
-  let s = String(raw)
+  let s = stripQuestionNumbers(String(raw))
     .replace(/[·•∙]/g, '*')
     .replace(/[×xX]/g, '*')
     .replace(/[÷:]/g, '/')
     .replace(/−/g, '-');
   // Keep intentional spaces around / only long enough to detect a/b — then strip
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1/$2');
+  // Kill glued "3.2+2*3" from "3. 2 + 2 × 3" if strip missed: leading N.digit → digit when N is small Q#
+  s = s.replace(/^([1-9]\d?)\.([1-9]\d?[+\-*/(])/g, '$2');
+  s = s.replace(/^([1-9]\d?)\.(\d[+\-*/])/g, '$2');
   s = s.replace(/\s+/g, '');
+  // KPSS textbooks often nest [outer] around (inner) — treat [] as ()
+  s = s.replace(/\[/g, '(').replace(/\]/g, ')');
   s = s.replace(/(\d|\))\(/g, '$1*(');
   s = s.replace(/\)(\d)/g, ')*$1');
   s = s.replace(/[^0-9+\-*/().]/g, '');

@@ -123,6 +123,7 @@ export function MultiSolutionScreen({
                   }
                 : undefined,
             )}
+            assisted={Boolean(active.result.assisted)}
             onExplainAgain={
               onExplainAgain &&
               active.result.status === 'solved' &&

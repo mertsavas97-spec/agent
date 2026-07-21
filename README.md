@@ -1,6 +1,6 @@
 # ÇözBil — Agent Kit + Spec Harness
 
-Android-first AI sınav çalışma arkadaşı (**LGS · YGS · KPSS**).  
+Android-first AI sınav çalışma arkadaşı (**LGS · YGS · KPSS · Ehliyet**).  
 Bu repo: Spec Kit ürün kilidi + **cursor-agent-kit** koordinatör/skill paketi.
 
 ## iOS Cursor / Cloud Agent (devam)

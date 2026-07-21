@@ -1,13 +1,13 @@
-/** Legal / KVKK copy for MVP 1.0 — product counsel drafts; replace with counsel-approved PDFs later. */
+/** Legal / KVKK copy for MVP 1.0 — product draft; replace with counsel-approved text when ready. */
 
 export const LEGAL_DOCS = {
   privacy: {
     title: 'Gizlilik politikası',
-    updated: '2026-07-20',
+    updated: '2026-07-21',
     sections: [
       {
         heading: 'Topladığımız veriler',
-        body: 'Hesap kimliği (anonim Firebase), seçtiğin sınav, soru görselleri, çözüm adımları, kullanım istatistikleri ve cihaz bildirim tercihi.',
+        body: 'Hesap kimliği (anonim Firebase UID), seçtiğin sınav, yaş bandı / veli bilgilendirme onayı (gerektiğinde), soru görselleri, çözüm adımları, kullanım istatistikleri ve bildirim tercihi.',
       },
       {
         heading: 'Amaç',
@@ -19,17 +19,17 @@ export const LEGAL_DOCS = {
       },
       {
         heading: 'Üçüncü taraflar',
-        body: 'Firebase (kimlik, depolama), OCR/çözüm altyapısı ve (ileride) Play Billing. Reklam SDK’ları ücretsiz planda gösterilebilir.',
+        body: 'Firebase (kimlik, depolama), OCR/çözüm altyapısı ve Google Play Billing. Ücretsiz planda reklam SDK’ları politikaya uygun şekilde kullanılabilir.',
       },
       {
         heading: 'Hakların',
-        body: 'KVKK kapsamında erişim, düzeltme, silme ve itiraz hakların vardır. Taleplerini profil → veri silme veya destek kanalından iletebilirsin.',
+        body: 'KVKK kapsamında erişim, düzeltme, silme ve itiraz hakların vardır. Taleplerini profil → veri silme veya destek e-postasından iletebilirsin.',
       },
     ],
   },
   terms: {
     title: 'Kullanım koşulları',
-    updated: '2026-07-20',
+    updated: '2026-07-21',
     sections: [
       {
         heading: 'Hizmet',
@@ -37,7 +37,7 @@ export const LEGAL_DOCS = {
       },
       {
         heading: 'Hesap ve kota',
-        body: 'Ücretsiz planda günlük çözüm hakkı sınırlıdır (İstanbul günü). Premium abonelik sınırsız çözüm ve reklamsız deneyim sağlar.',
+        body: 'Ücretsiz planda günlük çözüm hakkı sınırlıdır (İstanbul günü). Premium abonelik sınırsız çözüm ve reklamsız deneyim sağlar (adil kullanım).',
       },
       {
         heading: 'Abonelik',
@@ -55,11 +55,11 @@ export const LEGAL_DOCS = {
   },
   kvkk: {
     title: 'Aydınlatma metni (KVKK)',
-    updated: '2026-07-20',
+    updated: '2026-07-21',
     sections: [
       {
         heading: 'Veri sorumlusu',
-        body: 'ÇözBil uygulaması kapsamında kişisel verilerin işlenme amacı sınav hazırlık hizmetinin sunulmasıdır. Detaylı iletişim bilgisi yayın sürümünde güncellenir.',
+        body: 'ÇözBil uygulaması kapsamında kişisel verilerin işlenme amacı sınav hazırlık hizmetinin sunulmasıdır. Destek iletişimi uygulama ayarlarında ve gizlilik sayfasında yer alır.',
       },
       {
         heading: 'İşlenen veriler',
@@ -67,11 +67,11 @@ export const LEGAL_DOCS = {
       },
       {
         heading: 'Hukuki sebep',
-        body: 'Sözleşmenin ifası, meşru menfaat ve açık rıza (bildirimler, pazarlama iletileri).',
+        body: 'Sözleşmenin ifası, meşru menfaat ve açık rıza (bildirimler).',
       },
       {
-        heading: '13–17 yaş',
-        body: 'Bu yaş bandında veli bilgilendirmesi ve onay kaydı aranır. Onay onboarding sırasında alınır.',
+        heading: '13 yaş altı ve 13–17',
+        body: 'Bu yaş bantlarında veli bilgilendirmesi ve onay kaydı onboarding sırasında alınır. Yaş bandı sınav türünden bağımsız seçilir.',
       },
       {
         heading: 'Haklar ve silme',

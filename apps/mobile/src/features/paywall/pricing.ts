@@ -1,6 +1,6 @@
 /**
  * Canonical Premium pricing — docs/product/pricing-policy.md
- * Aylık kilit: 39 TL. Yıllıkta güçlü indirim (%40).
+ * Aylık kilit: 39 TL. Yıllıkta güçlü indirim.
  */
 
 export type PlanId = 'week' | 'monthly' | 'yearly';
@@ -18,7 +18,7 @@ export type PricingPlan = {
   compareAtLabel?: string;
 };
 
-/** 12 × 39 = 468 → yıllık 279 = %40 indirim (ayda ≈23,25 TL) */
+/** 12 × 39 = 468 → yıllık 320 ≈ %32 indirim (ayda ≈26,7 TL) */
 export const PRICING = {
   currency: 'TRY',
   freeDailySolves: 5,
@@ -42,13 +42,13 @@ export const PRICING = {
   yearly: {
     id: 'yearly' as const,
     productId: 'cozbil_premium_yearly',
-    priceTry: 279,
+    priceTry: 320,
     periodLabel: 'yıl',
     title: 'Yıllık',
-    priceLabel: '279 TL / yıl',
+    priceLabel: '320 TL / yıl',
     badge: 'En avantajlı',
-    effectiveMonthlyLabel: 'Ayda yalnızca ≈23 TL',
-    saveLabel: '%40 indirim',
+    effectiveMonthlyLabel: 'Ayda yalnızca ≈27 TL',
+    saveLabel: '%32 indirim',
     compareAtLabel: '468 TL yerine',
   },
 } as const;
@@ -63,4 +63,10 @@ export function planById(id: PlanId): PricingPlan {
 
 export function yearlySavingsTry(): number {
   return Math.round(PRICING.monthly.priceTry * 12 - PRICING.yearly.priceTry);
+}
+
+/** Display % off vs 12× monthly (rounded). */
+export function yearlyDiscountPercent(): number {
+  const full = PRICING.monthly.priceTry * 12;
+  return Math.round(((full - PRICING.yearly.priceTry) / full) * 100);
 }

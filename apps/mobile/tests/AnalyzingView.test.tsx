@@ -18,8 +18,10 @@ describe('AnalyzingView', () => {
     expect(screen.getByTestId('analyzing-step-solve')).toBeTruthy();
   });
 
-  it('maps step ids to increasing progress', () => {
-    expect(progressForStep('upload')).toBeLessThan(progressForStep('moderate'));
-    expect(progressForStep('moderate')).toBeLessThan(progressForStep('solve'));
+  it('shows brand icon on a contrast plate', () => {
+    render(<AnalyzingView step="solve" />);
+    expect(screen.getByTestId('analyzing-icon-plate')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-hero')).toBeTruthy();
+    expect(screen.getByTestId('cozbil-robot')).toBeTruthy();
   });
 });

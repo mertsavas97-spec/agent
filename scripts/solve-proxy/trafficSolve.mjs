@@ -19,8 +19,8 @@ function parseChoices(ocrText) {
     if (body.length >= 3 && !/^cevab/i.test(body)) map[label] = body.slice(0, 160);
   }
 
-  // Inline A) text on same line
-  const re = /([A-E])\)\s*([^\n]{1,120})/gi;
+  // Inline A) / A. text
+  const re = /([A-E])[\)\.\:\-]\s*([^\n]{1,120})/gi;
   while ((m = re.exec(text))) {
     const label = m[1].toUpperCase();
     if (map[label]) continue;
@@ -188,23 +188,28 @@ export function tryTrafficSolve(ocrText, classification) {
   }
 
   // --- Güç aktarma: şaft / diferansiyel / aks → Araç Tekniği ---
-  if (/şaft|saft|diferansiyel|güç aktarma|aktarma organ/i.test(blob)) {
+  if (
+    /şaft|saft|diferansiyel|güç aktarma|aktarma organ/i.test(blob) ||
+    (/organlar/i.test(blob) && /şekildeki araç/i.test(blob))
+  ) {
     const hit = pickChoice(choices, [
       /şaft.*diferansiyel.*aks|saft.*diferansiyel.*aks|i\.\s*şaft.*ii\.\s*diferansiyel.*iii\.\s*aks/i,
     ]);
     let bestLabel = hit?.label;
     let bestText = hit?.text;
     if (!bestLabel) {
-      // Prefer the classic order even when OCR wraps lines
+      // Prefer the classic order even when OCR wraps lines / drops dots
       for (const [label, text] of Object.entries(choices)) {
         const n = text.toLocaleLowerCase('tr-TR');
         const hasShaft = /şaft|saft/.test(n);
-        const hasDiff = /diferansiyel/.test(n);
+        const hasDiff = /diferansiyel|diferansivel/.test(n);
         const hasAks = /\baks\b/.test(n);
-        const order =
-          n.search(/şaft|saft/) < n.search(/diferansiyel/) &&
-          n.search(/diferansiyel/) < n.search(/\baks\b/);
-        if (hasShaft && hasDiff && hasAks && order) {
+        const iShaft = n.search(/şaft|saft/);
+        const iDiff = n.search(/diferansiyel|diferansivel/);
+        const iAks = n.search(/\baks\b/);
+        const order3 =
+          iShaft >= 0 && iDiff >= 0 && iAks >= 0 && iShaft < iDiff && iDiff < iAks;
+        if (hasShaft && hasDiff && hasAks && order3) {
           bestLabel = label;
           bestText = text;
           break;
@@ -212,14 +217,41 @@ export function tryTrafficSolve(ocrText, classification) {
       }
     }
     if (!bestLabel) {
+      // Prefer şaft→diferansiyel over şaft→aks when both 2-part options exist
+      let shaftDiff = null;
+      let shaftAks = null;
+      for (const [label, text] of Object.entries(choices)) {
+        const n = text.toLocaleLowerCase('tr-TR');
+        const hasShaft = /şaft|saft/.test(n);
+        const hasDiff = /diferansiyel|diferansivel/.test(n);
+        const hasAks = /\baks\b/.test(n);
+        const iShaft = n.search(/şaft|saft/);
+        const iDiff = n.search(/diferansiyel|diferansivel/);
+        const iAks = n.search(/\baks\b/);
+        if (hasShaft && hasDiff && !hasAks && iShaft >= 0 && iDiff > iShaft) {
+          shaftDiff = { label, text };
+        } else if (hasShaft && hasAks && !hasDiff && iShaft >= 0 && iAks > iShaft) {
+          shaftAks = { label, text };
+        }
+      }
+      if (shaftDiff) {
+        bestLabel = shaftDiff.label;
+        bestText = shaftDiff.text;
+      } else if (shaftAks) {
+        bestLabel = shaftAks.label;
+        bestText = shaftAks.text;
+      }
+    }
+    if (!bestLabel) {
       const block = text.match(
-        /([A-E])\)\s*I\.\s*Şaft\s*II\.\s*Diferansiyel\s*III\.\s*Aks/i,
+        /([A-E])\)\s*I[\.\)]\s*Şaft[\s\S]{0,40}II[\.\)]\s*Diferansiyel(?:[\s\S]{0,40}III[\.\)]\s*Aks)?/i,
       );
       if (block) {
         bestLabel = block[1].toUpperCase();
-        bestText = 'I. Şaft · II. Diferansiyel · III. Aks';
+        bestText = block[0].replace(/^[A-E]\)\s*/i, '').replace(/\s+/g, ' ').trim();
       }
     }
+    // Stem lock: even if şık OCR failed, branş + doğru sıra net
     const answerText = bestText ?? 'I. Şaft, II. Diferansiyel, III. Aks';
     return tag(
       {
@@ -230,7 +262,7 @@ export function tryTrafficSolve(ocrText, classification) {
           },
           {
             title: '2. Sıra',
-            body: 'Doğru adlar: I. Şaft, II. Diferansiyel, III. Aks.',
+            body: 'Doğru adlar: I. Şaft, II. Diferansiyel (, III. Aks).',
           },
           {
             title: 'Cevap',
@@ -315,44 +347,73 @@ export function tryTrafficSolve(ocrText, classification) {
     );
   }
 
-  // --- Generic trafik (son çare) — ışıklı hazırlık sorularını çalma ---
-  if (
-    Object.keys(choices).length >= 2 &&
-    /sürücü|yapmalıdır|hangisi/i.test(blob) &&
-    !prepHit
-  ) {
-    const safety = pickChoice(choices, [
-      /durmalı|yavaşlamalı|öncelik vermeli|emniyet|kemer/i,
+  // --- Emniyet kemeri ---
+  if (/emniyet kemeri|kemer tak/i.test(blob)) {
+    const hit = pickChoice(choices, [
+      /takıl|takmak|zorunlu|hayat kurtar|yaralanma.*azalt/i,
     ]);
-    if (safety && /trafik|ışık|işaret|kavşak|şerit|hız/i.test(blob)) {
+    return tag(
+      {
+        steps: [
+          {
+            title: '1. Kural',
+            body: 'Emniyet kemeri takmak zorunludur; çarpışmada yaralanmayı azaltır.',
+          },
+          {
+            title: 'Cevap',
+            body: hit
+              ? `Doğru şık: ${hit.label}) ${hit.text}`
+              : 'Emniyet kemeri takılmalıdır / zorunludur.',
+          },
+        ],
+        answerLabel: hit?.label,
+        answerText: hit?.text ?? 'Emniyet kemeri takılmalıdır',
+      },
+      'vehicle',
+      'guvenlik',
+    );
+  }
+
+  // --- Kavşak / geçiş üstünlüğü (görevli / işaret yoksa) ---
+  if (/kavşak|geçiş üstün/i.test(blob) && /sağdan|sağından|soldan|görevli|işaret/i.test(blob)) {
+    const hit = pickChoice(choices, [
+      /sağdan gelen|sağındaki araç|sağa yol ver/i,
+      /görevli|trafik polisi/i,
+      /işaret|levha|ışık/i,
+    ]);
+    if (hit || /sağdan/i.test(blob)) {
+      const answerText =
+        hit?.text ??
+        'Kontrolsüz kavşakta sağdan gelene yol verilir (aksi işaret/görevli yoksa).';
       return tag(
         {
           steps: [
             {
-              title: '1. Kökü ayır',
-              body: 'Kural / işaret / şerit / hız — sorunun anahtarını bul.',
+              title: '1. Kavşak tipi',
+              body: 'Işık / görevli / levha yoksa genel geçiş üstünlüğü kuralları geçerlidir.',
             },
             {
-              title: '2. Güvenlik',
-              body: 'Trafikte “önce güvenlik” ilkesine uymayan şıkları ele.',
-            },
-            {
-              title: '3. Seçim',
-              body: `En güvenli / kurala uygun şık: ${safety.label}) ${safety.text}`,
+              title: '2. Kural',
+              body: 'Kontrolsüz kavşakta sağdan gelen aracın geçiş üstünlüğü vardır.',
             },
             {
               title: 'Cevap',
-              body: `Doğru şık: ${safety.label}) ${safety.text}`,
+              body: hit
+                ? `Doğru şık: ${hit.label}) ${hit.text}`
+                : answerText,
             },
           ],
-          answerLabel: safety.label,
-          answerText: safety.text,
+          answerLabel: hit?.label,
+          answerText,
         },
         'traffic',
-        'kurallar',
+        'kavsak',
       );
     }
   }
+
+  // Generic “pick any safety-sounding choice” invent path removed (audit H03).
+  // Prefer null → unsupported_type over inventing a şık from keyword heuristics.
 
   return null;
 }

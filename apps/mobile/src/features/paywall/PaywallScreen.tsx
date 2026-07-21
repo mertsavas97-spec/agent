@@ -12,11 +12,14 @@ import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
 import { Eyebrow } from '@/src/ui/Eyebrow';
+import { hapticLight, hapticMedium, hapticSelection } from '@/src/ui/haptics';
 
 import { PAYWALL_COPY } from './copy';
 import {
   DEFAULT_PLAN_ID,
   PLANS,
+  PRICING,
+  yearlyDiscountPercent,
   yearlySavingsTry,
   type PlanId,
   planById,
@@ -47,6 +50,7 @@ export function PaywallScreen({
     variant === 'browse' ? PAYWALL_COPY.headlineBrowse : PAYWALL_COPY.headlineQuota;
   const support =
     variant === 'browse' ? PAYWALL_COPY.supportBrowse : PAYWALL_COPY.supportQuota;
+  const discountPct = yearlyDiscountPercent();
 
   return (
     <ScrollView
@@ -57,7 +61,7 @@ export function PaywallScreen({
       <View style={styles.hero}>
         <View style={styles.heroGlow} />
         <View style={styles.heroTop}>
-          <CozbilRobot size={56} animate tone="onDark" testID="paywall-robot" />
+          <CozbilRobot size={48} animate tone="onDark" testID="paywall-robot" />
           <View style={styles.heroTitles}>
             <Eyebrow tone="orange">{TR_EYEBROW.premium}</Eyebrow>
             <Text style={styles.brand} testID="paywall-brand">
@@ -67,42 +71,26 @@ export function PaywallScreen({
           <SymbolView
             name={{ ios: 'crown.fill', android: 'workspace_premium', web: 'workspace_premium' }}
             tintColor={colors.orange}
-            size={28}
+            size={26}
           />
         </View>
         <Text style={styles.headline} testID="paywall-headline">
           {headline}
         </Text>
         <Text style={styles.support}>{support}</Text>
-        <View style={styles.proofRow}>
-          <SymbolView
-            name={{ ios: 'person.3.fill', android: 'groups', web: 'groups' }}
-            tintColor={colors.orange}
-            size={16}
-          />
-          <Text style={styles.proof}>{PAYWALL_COPY.socialProof}</Text>
-        </View>
-      </View>
 
-      <View style={styles.benefitsPanel}>
-        <Text style={styles.benefitsHeading}>Premium’da neler var?</Text>
-        {PAYWALL_COPY.benefits.map((b, index) => (
-          <View
-            key={b.id}
-            style={[
-              styles.benefitRow,
-              index < PAYWALL_COPY.benefits.length - 1 && styles.benefitRowBorder,
-            ]}
-            testID={`paywall-benefit-${b.id}`}>
-            <View style={styles.benefitIconWrap}>
-              <SymbolView name={b.icon} tintColor={colors.orange} size={20} />
-            </View>
-            <View style={styles.benefitCopy}>
-              <Text style={styles.benefitTitle}>{b.title}</Text>
-              <Text style={styles.benefitBody}>{b.body}</Text>
+        <View style={styles.offerCard} testID="paywall-offer">
+          <Text style={styles.offerKicker}>Yıllık · en avantajlı</Text>
+          <View style={styles.offerPriceRow}>
+            <Text style={styles.offerPrice}>{PRICING.yearly.priceLabel}</Text>
+            <View style={styles.offerBadge}>
+              <Text style={styles.offerBadgeText}>%{discountPct} indirim</Text>
             </View>
           </View>
-        ))}
+          <Text style={styles.offerMeta}>
+            {PRICING.yearly.compareAtLabel} · {PRICING.yearly.effectiveMonthlyLabel}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.plansSection}>
@@ -122,7 +110,10 @@ export function PaywallScreen({
                   featured && styles.planRowFeatured,
                   isOn && styles.planRowOn,
                 ]}
-                onPress={() => setSelected(plan.id)}>
+                onPress={() => {
+                  void hapticSelection();
+                  setSelected(plan.id);
+                }}>
                 <View style={[styles.radio, isOn && styles.radioOn]}>
                   {isOn ? <View style={styles.radioDot} /> : null}
                 </View>
@@ -161,14 +152,17 @@ export function PaywallScreen({
           {selectedPlan.priceLabel}
         </Text>
         <Text style={styles.savingsHint} testID="paywall-yearly-savings">
-          Yıllıkta {yearlySavingsTry()} TL tasarruf
+          Yıllıkta {yearlySavingsTry()} TL tasarruf · %{discountPct} indirim
         </Text>
 
         <Pressable
           testID="paywall-cta"
           accessibilityRole="button"
           style={styles.cta}
-          onPress={() => onStart(selected)}>
+          onPress={() => {
+            void hapticMedium();
+            onStart(selected);
+          }}>
           <SymbolView
             name={{ ios: 'crown.fill', android: 'workspace_premium', web: 'workspace_premium' }}
             tintColor={colors.navy}
@@ -180,18 +174,48 @@ export function PaywallScreen({
         </Pressable>
       </View>
 
+      <View style={styles.benefitsPanel}>
+        <Text style={styles.benefitsHeading}>Premium’da neler var?</Text>
+        {PAYWALL_COPY.benefits.map((b, index) => (
+          <View
+            key={b.id}
+            style={[
+              styles.benefitRow,
+              index < PAYWALL_COPY.benefits.length - 1 && styles.benefitRowBorder,
+            ]}
+            testID={`paywall-benefit-${b.id}`}>
+            <View style={styles.benefitIconWrap}>
+              <SymbolView name={b.icon} tintColor={colors.orange} size={18} />
+            </View>
+            <View style={styles.benefitCopy}>
+              <Text style={styles.benefitTitle}>{b.title}</Text>
+              <Text style={styles.benefitBody}>{b.body}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
       {onWatchRewarded ? (
         <Pressable
           testID="paywall-rewarded"
           accessibilityRole="button"
           style={styles.rewarded}
-          onPress={onWatchRewarded}>
+          onPress={() => {
+            void hapticLight();
+            onWatchRewarded();
+          }}>
           <Text style={styles.rewardedText}>{PAYWALL_COPY.rewardedCta}</Text>
         </Pressable>
       ) : null}
 
       {onRestore ? (
-        <Pressable testID="paywall-restore" onPress={onRestore} style={styles.linkBtn}>
+        <Pressable
+          testID="paywall-restore"
+          onPress={() => {
+            void hapticLight();
+            onRestore();
+          }}
+          style={styles.linkBtn}>
           <Text style={styles.linkText}>{PAYWALL_COPY.restore}</Text>
         </Pressable>
       ) : null}
@@ -215,7 +239,10 @@ export function PaywallScreen({
         testID="paywall-dismiss"
         accessibilityRole="button"
         style={styles.dismiss}
-        onPress={onDismiss}>
+        onPress={() => {
+          void hapticLight();
+          onDismiss();
+        }}>
         <Text style={styles.dismissText}>{PAYWALL_COPY.dismiss}</Text>
       </Pressable>
     </ScrollView>
@@ -226,14 +253,14 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.surface },
   root: {
     paddingHorizontal: space.lg,
-    paddingTop: space.md,
+    paddingTop: space.sm,
     paddingBottom: space.xl * 2,
   },
   hero: {
     backgroundColor: colors.navy,
     borderRadius: radii.xl,
-    padding: space.lg,
-    marginBottom: space.lg,
+    padding: space.md,
+    marginBottom: space.md,
     overflow: 'hidden',
     ...shadows.soft,
   },
@@ -251,7 +278,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   heroTitles: { flex: 1 },
   brand: {
@@ -263,31 +290,64 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontFamily: typography.fontFamilySemiBold,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.white,
-    marginBottom: space.sm,
-    lineHeight: 28,
+    marginBottom: 6,
+    lineHeight: 24,
   },
   support: {
     fontFamily: typography.fontFamily,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 18,
     color: '#CBD5E1',
-    marginBottom: space.sm,
+    marginBottom: 6,
   },
-  proofRow: {
+  offerCard: {
+    marginTop: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.16)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.orange,
+    padding: space.md,
+  },
+  offerKicker: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.orange,
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  offerPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    gap: 10,
+    flexWrap: 'wrap',
   },
-  proof: {
-    flex: 1,
-    fontFamily: typography.fontFamilyMedium,
+  offerPrice: {
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  offerBadge: {
+    backgroundColor: colors.orange,
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  offerBadgeText: {
+    fontFamily: typography.fontFamilySemiBold,
     fontSize: 12,
-    color: colors.orange,
-    lineHeight: 17,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  offerMeta: {
+    marginTop: 6,
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: '#CBD5E1',
   },
   benefitsPanel: {
     backgroundColor: colors.white,

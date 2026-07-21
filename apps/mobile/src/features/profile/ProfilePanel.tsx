@@ -5,6 +5,7 @@ import type { ExamType } from '@/src/lib/api/types';
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { Eyebrow } from '@/src/ui/Eyebrow';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
 export type ProfilePanelProps = {
   examType: ExamType | null;
@@ -40,9 +41,12 @@ export function ProfilePanel({
       testID="profile-screen"
       showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Eyebrow>{TR_EYEBROW.profile}</Eyebrow>
-          <Text style={styles.title}>Profil</Text>
+        <View style={styles.brandBlock}>
+          <CozbilRobot size={40} animate={false} tone="onLight" testID="profile-brand-icon" />
+          <View style={{ flex: 1 }}>
+            <Eyebrow>{TR_EYEBROW.profile}</Eyebrow>
+            <Text style={styles.title}>Profil</Text>
+          </View>
         </View>
         <Pressable
           testID="profile-settings-btn"
@@ -67,7 +71,7 @@ export function ProfilePanel({
         <Text style={styles.premiumBody}>
           {isPremium
             ? 'Planını yönet veya yıllık indirimi incele.'
-            : 'Yıllıkta %40 indirim · ayda ≈23 TL. Hak bitmesin.'}
+            : 'Yıllıkta %32 indirim · ayda ≈27 TL. Hak bitmesin.'}
         </Text>
         <Text style={styles.premiumCta}>
           {isPremium ? 'Planı gör →' : 'Premium’a geç →'}
@@ -157,7 +161,15 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: space.md,
+    gap: space.sm,
+  },
+  brandBlock: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
   },
   title: {
     fontFamily: typography.fontFamilyBold,

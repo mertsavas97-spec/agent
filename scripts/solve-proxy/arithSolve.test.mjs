@@ -62,4 +62,16 @@ E) 7`;
 assert.ok(recoverParenDiffStack(liveOcr).length >= 1, 'recover live OCR');
 check('live phone OCR mangled stack', liveOcr, { approx: 7, choice: 'E' });
 
+check(
+  'bracket outer grouping → 7',
+  `[5*(2-3/5)]/[2*(3-5/2)]
+işleminin sonucu kaçtır?
+A) 5/2
+B) 7/2
+C) 3
+D) 5
+E) 7`,
+  { approx: 7, choice: 'E' },
+);
+
 console.log('all arithSolve tests passed');

@@ -88,7 +88,7 @@ export function createGeminiSolver(apiKey = process.env.GEMINI_API_KEY): VisionS
   };
 }
 
-/** Deterministic stub for tests / offline dogfood. */
+/** Deterministic stub for tests / offline dogfood — exam-aware (never LGS math under Ehliyet). */
 export function createStubSolver(
   fixture: ParsedModelSolution = {
     isQuestion: true,
@@ -114,7 +114,54 @@ export function createStubSolver(
 ): VisionSolver {
   return {
     source: 'stub',
-    async solve() {
+    async solve({ examType, subjectHint }) {
+      if (examType === 'trafik') {
+        const branch =
+          subjectHint === 'vehicle' || subjectHint === 'firstaid' || subjectHint === 'traffic'
+            ? subjectHint
+            : 'traffic';
+        const topicId =
+          branch === 'vehicle'
+            ? 'trafik-vehicle-motor'
+            : branch === 'firstaid'
+              ? 'trafik-firstaid-temel'
+              : 'trafik-traffic-kurallar';
+        return {
+          isQuestion: true,
+          unsupported: true,
+          unsupportedReason: 'Demo stub — Ehliyet için canlı AI / Vision proxy gerekir',
+          subject: branch,
+          topicId,
+          steps: [],
+        };
+      }
+      if (examType === 'ygs' || examType === 'kpss') {
+        // Do not ship LGS math steps under other packages
+        return {
+          isQuestion: true,
+          unsupported: true,
+          unsupportedReason: 'Demo stub — bu sınav paketi için canlı AI gerekir',
+          subject: subjectHint && subjectHint !== 'unknown' ? subjectHint : 'turkish',
+          topicId: null,
+          steps: [],
+        };
+      }
+      // LGS: honor subjectHint when non-math
+      if (
+        subjectHint &&
+        subjectHint !== 'unknown' &&
+        subjectHint !== 'math' &&
+        subjectHint !== 'geometry'
+      ) {
+        return {
+          isQuestion: true,
+          unsupported: true,
+          unsupportedReason: 'Demo stub — bu ders için canlı AI gerekir',
+          subject: subjectHint,
+          topicId: null,
+          steps: [],
+        };
+      }
       return fixture;
     },
   };

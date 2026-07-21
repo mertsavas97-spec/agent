@@ -5,9 +5,9 @@ export const PAYWALL_COPY = {
   headlineQuota: 'Günlük ücretsiz hakkın bitti',
   headlineBrowse: 'Sınavsız tempo, reklamsız odak',
   supportQuota:
-    'Az önce çözüme dokundun. Haftalık girişle dene veya yıllıkta %40 indirimle sınırsız Premium’a geç.',
+    'Az önce çözüme dokundun. Haftalık girişle dene veya yıllıkta %32 indirimle sınırsız Premium’a geç.',
   supportBrowse:
-    'Sınırsız çözüm, reklamsız alan ve kişisel AI özeti — dershane temposunu cebine al.',
+    'Sınırsız çözüm, reklamsız alan ve kişisel AI özeti — yıllıkta %32 indirim.',
   cta: 'Hemen Başla',
   ctaYearly: 'Yıllıkla Başla · en avantajlı',
   rewardedCta: 'Reklam izle · +1 soru',
@@ -40,6 +40,6 @@ export const PAYWALL_COPY = {
       icon: { ios: 'square.stack.3d.up.fill', android: 'layers', web: 'layers' },
     },
   ] as const,
-  socialProof: 'Binlerce LGS · YGS · KPSS · Ehliyet adayı fotoğrafla çözüyor.',
+  socialProof: 'LGS · YGS · KPSS · Ehliyet — fotoğraftan adım adım çözüm.',
   guarantee: 'Beğenmezsen iptal et — Play aboneliğinden yönetilir.',
 } as const;

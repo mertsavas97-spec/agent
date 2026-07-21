@@ -194,4 +194,22 @@ describe('applySubjectOverride', () => {
     const out = applySubjectOverride(baseSolved(), 'kpss', 'turkish');
     expect(out.steps[0]?.body).toMatch(/öyküleme/);
   });
+
+  it('does NOT keep Ehliyet answer when remapping firstaid → vehicle', () => {
+    const out = applySubjectOverride(
+      baseSolved({
+        subject: 'firstaid',
+        topicId: 'trafik-firstaid-abc',
+        answer: { label: 'A', text: 'ABC' },
+        steps: [{ title: 'Cevap', body: 'Doğru şık: A) ABC' }],
+      }),
+      'trafik',
+      'vehicle',
+    );
+    expect(out.subject).toBe('vehicle');
+    expect(out.answer).toBeUndefined();
+    expect(out.assisted).toBe(true);
+    expect(out.topicId).toBe('trafik-vehicle-motor');
+    expect(out.steps[0]?.body).not.toMatch(/ABC/);
+  });
 });

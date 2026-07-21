@@ -60,6 +60,7 @@ export async function callSolveQuestionViaProxy(input: {
       error?: string;
       message?: string;
       debugOcrPreview?: string;
+      ocrPreview?: string;
       detectedSubject?: string;
       topicId?: string | null;
     };
@@ -83,10 +84,19 @@ export async function callSolveQuestionViaProxy(input: {
       data.status === 'unsupported_type' ||
       (typeof data.status === 'string' && data.status.startsWith('rejected'))
     ) {
-      const { debugOcrPreview: _d, error: _e, message: _m, ...rest } = data;
-      return rest as SolveQuestionResponse;
-    }
-    throw Object.assign(new Error('proxy_invalid_response'), { code: 'functions/internal' });
+      const { error: _e, message: _m, debugOcrPreview, ...rest } = data;
+      // Keep a short OCR snippet for client branş lock / local fallback
+      const ocrPreview =
+        typeof debugOcrPreview === 'string'
+          ? debugOcrPreview
+          : typeof data.ocrPreview === 'string'
+            ? data.ocrPreview
+            : undefined;
+      return {
+        ...rest,
+        ...(ocrPreview ? { ocrPreview } : {}),
+      } as SolveQuestionResponse & { ocrPreview?: string };
+    }    throw Object.assign(new Error('proxy_invalid_response'), { code: 'functions/internal' });
   } finally {
     clearTimeout(timer);
   }

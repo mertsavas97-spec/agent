@@ -24,6 +24,7 @@ import { ensureUserDocument } from './users/bootstrapUser';
 import { completeOnboardingDocument } from './users/completeOnboarding';
 import { requestAccountDeletionDocument } from './users/requestAccountDeletion';
 import { updateExamTypeDocument } from './users/updateExamType';
+import { syncSubscriptionForUser } from './subscription/syncSubscription';
 import { isExamType } from './theme/examTypes';
 import type { Subject } from './types/contracts';
 
@@ -236,6 +237,45 @@ export const getProgressSummary = regional.https.onCall(async (_data, context) =
     throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
   }
   return getProgressSummaryForUser(context.auth.uid);
+});
+
+/** US6: Play Billing entitlement sync (verify token → users.subscriptionStatus) */
+export const syncSubscription = regional.https.onCall(async (data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  const productId = typeof data?.productId === 'string' ? data.productId : undefined;
+  const purchaseToken =
+    typeof data?.purchaseToken === 'string' ? data.purchaseToken : undefined;
+  const sandboxActive = Boolean(data?.sandboxActive);
+
+  const result = await syncSubscriptionForUser({
+    uid: context.auth.uid,
+    productId,
+    purchaseToken,
+    sandboxActive,
+  });
+
+  if (!result.synced) {
+    if (result.reason === 'credentials_missing') {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Play doğrulama kimlik bilgileri yapılandırılmamış',
+      );
+    }
+    if (result.reason === 'sandbox_disabled') {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Billing sandbox kapalı',
+      );
+    }
+    if (result.reason === 'missing_token' || result.reason === 'invalid_product') {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz satın alma');
+    }
+    throw new functions.https.HttpsError('permission-denied', 'Satın alma doğrulanamadı');
+  }
+
+  return result;
 });
 
 /** US2: simpler re-explanation — does not burn daily solve quota */
