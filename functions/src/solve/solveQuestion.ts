@@ -89,6 +89,7 @@ export async function runSolveQuestion(
       topicId: cached.topicId,
       subject: cached.subject,
       steps: cached.steps,
+      answer: cached.answer,
       transparencyNote: SAFETY_MESSAGES.transparency,
       quota: {
         remainingToday: Math.max(0, remainingQuota(quotaState, today) - 1),
@@ -164,6 +165,7 @@ export async function runSolveQuestion(
     topicId,
     subject,
     steps: parsed.steps,
+    answer: parsed.answer,
     transparencyNote: SAFETY_MESSAGES.transparency,
     quota: {
       remainingToday: Math.max(0, remainingQuota(quotaState, today) - 1),
@@ -178,6 +180,7 @@ export async function runSolveQuestion(
       topicId,
       steps: parsed.steps,
       subject,
+      answer: parsed.answer,
     });
   }
 

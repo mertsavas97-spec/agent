@@ -7,7 +7,7 @@ export type SolutionAnswer = {
   text: string;
 };
 
-/** Pull a display answer from API field or the trailing "Cevap" step. */
+/** Pull a display answer from API field or trailing Cevap / last-step bodies. */
 export function resolveSolutionAnswer(
   answer: SolutionAnswer | null | undefined,
   steps: SolutionStep[],
@@ -21,28 +21,21 @@ export function resolveSolutionAnswer(
   return extractAnswerFromSteps(steps);
 }
 
-export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | null {
-  const answerStep = [...steps]
-    .reverse()
-    .find((s) => {
-      const t = (s.title ?? '').trim();
-      return (
-        /^(cevap|sonuç|doğru)/i.test(t) ||
-        /\b(cevap|sonuç)\b/i.test(t) ||
-        /^doğru\s+(şık|cevap|yaklaşım|sıra)/i.test(t)
-      );
-    });
-  const body = (answerStep?.body ?? '').trim();
-  if (!body) return null;
+function extractFromBody(
+  body: string,
+  opts: { allowShortFallback: boolean },
+): SolutionAnswer | null {
+  const trimmed = body.trim();
+  if (!trimmed) return null;
 
-  const choice = body.match(
+  const choice = trimmed.match(
     /Doğru şık\s*[:：]\s*([A-E])\)\s*(.+)$/im,
   );
   if (choice) {
     return { label: choice[1].toUpperCase(), text: choice[2].replace(/\.\s*$/, '').trim() };
   }
 
-  const choiceBare = body.match(
+  const choiceBare = trimmed.match(
     /Doğru şık\s*[:：]?\s*([A-E])\b(?:\s*[)．.]?\s*(.+))?$/im,
   );
   if (choiceBare) {
@@ -52,7 +45,7 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
     };
   }
 
-  const dogruYaklasim = body.match(
+  const dogruYaklasim = trimmed.match(
     /Doğru\s+(?:yaklaşım|sıra|cevap)\s*[:：]\s*(.+)$/im,
   );
   if (dogruYaklasim) {
@@ -60,43 +53,74 @@ export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | 
     if (text) return { text };
   }
 
-  const cevapLetter = body.match(/Cevap\s+([A-E])\b/i);
+  const cevapLetter = trimmed.match(/Cevap\s*[:：]?\s*([A-E])\b/i);
   if (cevapLetter) {
     return { label: cevapLetter[1].toUpperCase(), text: cevapLetter[1].toUpperCase() };
   }
 
-  const anlatim = body.match(
+  const anlatim = trimmed.match(
     /(?:En uygun anlatım biçimi|anlatım biçimi)\s*[:：]?\s*([a-zA-ZçğıöşüÇĞİÖŞÜ]+)/i,
   );
   if (anlatim) {
     return { text: anlatim[1].trim() };
   }
 
-  const anlamIlgisi = body.match(
+  const anlamIlgisi = trimmed.match(
     /Anlam ilgisi\s*[:：]\s*([a-zA-ZçğıöşüÇĞİÖŞÜ0-9\-]+)/i,
   );
   if (anlamIlgisi) {
     return { text: anlamIlgisi[1].trim() };
   }
 
-  const sonuc = body.match(/Sonuç\s*[:：]?\s*([0-9]+(?:\/[0-9]+)?)/i);
+  // Explicit "Sonuç:" with numeric/short value — not "Sonucu yerine koy…"
+  const sonuc = trimmed.match(/Sonuç\s*[:：]\s*([0-9]+(?:\/[0-9]+)?|[^\n.]{1,40})\s*$/im);
   if (sonuc) {
-    return { text: sonuc[1] };
+    return { text: sonuc[1].replace(/\.\s*$/, '').trim() };
   }
 
-  // Last resort: short body from an explicit Cevap/Sonuç step only (never tip cards)
-  const cleaned = body
+  const bareEnd = trimmed.match(/(?:→|->|=)\s*([A-E])\s*$/i);
+  if (bareEnd) {
+    return { label: bareEnd[1].toUpperCase(), text: bareEnd[1].toUpperCase() };
+  }
+
+  if (!opts.allowShortFallback) return null;
+
+  const cleaned = trimmed
     .replace(/Şıklar kadrajda değilse[^.]*\./gi, '')
     .replace(/Sonucu şıklarla[^.]*\./gi, '')
     .trim();
   if (
     cleaned.length > 0 &&
     cleaned.length <= 80 &&
-    !/yeniden dene|kadraj|hatırlat|onayla|ele\.|tercih et|düzenlenir|doğrula/i.test(
+    !/yeniden dene|kadraj|hatırlat|onayla|ele\.|tercih et|düzenlenir|doğrula|ayır|eşitle/i.test(
       cleaned,
     )
   ) {
     return { text: cleaned };
+  }
+  return null;
+}
+
+export function extractAnswerFromSteps(steps: SolutionStep[]): SolutionAnswer | null {
+  const titled = [...steps]
+    .reverse()
+    .find((s) => {
+      const t = (s.title ?? '').trim();
+      return (
+        /^(cevap|sonuç|doğru)/i.test(t) ||
+        /\b(cevap|sonuç)\b/i.test(t) ||
+        /^doğru\s+(şık|cevap|yaklaşım|sıra)/i.test(t)
+      );
+    });
+  if (titled?.body) {
+    const fromTitle = extractFromBody(titled.body, { allowShortFallback: true });
+    if (fromTitle) return fromTitle;
+  }
+
+  // Untitled steps: only strong patterns (Doğru şık / Cevap A / Sonuç: n) — never tip prose
+  for (const step of [...steps].reverse().slice(0, 2)) {
+    const fromBody = extractFromBody(step.body ?? '', { allowShortFallback: false });
+    if (fromBody) return fromBody;
   }
   return null;
 }

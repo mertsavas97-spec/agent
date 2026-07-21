@@ -106,10 +106,11 @@ export function createStubSolver(
         body: 'Toplama-çıkarmada paydaları eşitle; çarpma-bölmede kuralları uygula.',
       },
       {
-        title: '3. Kontrol',
-        body: 'Sonucu sadeleştir ve yerine koyarak doğrula. (Demo stub — canlı AI bağlanınca görsele göre üretilir.)',
+        title: 'Cevap',
+        body: 'Sonuç: örnek demo (canlı AI bağlanınca görsele göre üretilir).',
       },
     ],
+    answer: { text: 'örnek demo' },
   },
 ): VisionSolver {
   return {

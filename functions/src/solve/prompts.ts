@@ -42,8 +42,13 @@ function jsonSchemaBlock(): string {
     '  "unsupportedReason": string | null,',
     `  "subject": ${SUBJECT_ENUM},`,
     '  "topicId": string | null,',
-    '  "steps": [ { "title": string, "body": string } ]',
+    '  "steps": [ { "title": string, "body": string } ],',
+    '  "answer": { "label": "A"|"B"|"C"|"D"|"E"|null, "text": string }',
     '}',
+    'ZORUNLU: Çözülebilen sorularda "answer" doldur.',
+    '- Çoktan seçmeliyse label = şık harfi (A–E), text = şık metni veya sayısal sonuç.',
+    '- Şıksız / açık uçluysa label = null, text = net sonuç (sayı, kısa ifade).',
+    '- Son adımın title alanı "Cevap" olsun; body içinde de Doğru şık / Sonuç yaz.',
   ].join('\n');
 }
 

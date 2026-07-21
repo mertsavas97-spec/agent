@@ -37,6 +37,12 @@ export type SolutionStep = {
   body: string;
 };
 
+/** Highlighted final answer for result UI (choice letter optional). */
+export type SolutionAnswer = {
+  label?: string;
+  text: string;
+};
+
 export type QuotaInfo = {
   remainingToday: number;
   unlimited: boolean;
@@ -56,6 +62,8 @@ export type SolveQuestionSuccess = {
   topicId: string | null;
   subject: Subject;
   steps: SolutionStep[];
+  /** Final answer / choice — required for mobile DOĞRU CEVAP hero */
+  answer?: SolutionAnswer;
   transparencyNote: string;
   quota: QuotaInfo;
 };
