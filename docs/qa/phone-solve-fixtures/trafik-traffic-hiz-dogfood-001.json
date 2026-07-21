@@ -1,0 +1,43 @@
+{
+  "id": "qa-trafik-traffic-hiz-dogfood-001",
+  "examType": "trafik",
+  "subject": "traffic",
+  "topicId": "trafik-traffic-kurallar",
+  "difficulty": "easy",
+  "format": "multiple_choice",
+  "stem": "Yerleşim yeri içinde, aksini belirten bir trafik işareti yoksa, otomobiller için azami hız sınırı saatte kaç kilometredir?",
+  "choices": {
+    "A": "30",
+    "B": "50",
+    "C": "70",
+    "D": "90",
+    "E": "120"
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. Kural",
+      "body": "Yerleşim yeri içi genel hız sınırı (aksi işaret yoksa) 50 km/s’tir."
+    },
+    {
+      "title": "2. Eleme",
+      "body": "30 çok düşük genel sınır; 70+ yerleşim dışı / yol tipine göre değişir."
+    },
+    {
+      "title": "Cevap",
+      "body": "Doğru şık: B) 50"
+    }
+  ],
+  "answer": { "label": "B", "text": "50" },
+  "transparencyNote": "Özgün dogfood maddesi — Ehliyet/MTS tarzı kural; telifli sınav metni değildir.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "Ehliyet trafik bilgisi ölçeği; özgün kural sorusu",
+  "image": "images/trafik-traffic-hiz-dogfood-001.png",
+  "review": {
+    "author": "qa-fixtures",
+    "reviewedAt": "2026-07-21",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}
