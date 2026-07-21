@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,12 +18,15 @@ import {
   isPremiumAudience,
   runRewardedMultiBatchUnlock,
 } from '@/src/features/ads';
-import { ActiveExamBadge } from '@/src/features/exam/ActiveExamBadge';
+import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
-import { readExamPreference } from '@/src/features/exam/examPreference';
+import { loadExamPreferenceCached } from '@/src/features/exam/examPreferenceCache';
 import { examThemeFor } from '@/src/features/exam/examTheme';
 import { isExamType } from '@/src/features/exam/examTypes';
-import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
+import {
+  loadEntitlementSnapshot,
+  useExamModeChange,
+} from '@/src/features/exam/useExamModeChange';
 import {
   pickFromCamera,
   pickFromLibrary,
@@ -57,50 +60,61 @@ export default function HomeScreen() {
   const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [streakCount, setStreakCount] = useState(0);
+  const [ent, setEnt] = useState<Awaited<ReturnType<typeof loadEntitlementSnapshot>>>(null);
+  const bootedRef = useRef(false);
+  const { switching: switchingExam, requestExamChange } = useExamModeChange({
+    ent,
+    onOptimistic: (next) => setExamType(next),
+  });
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       const pending = peekPendingSubjectHint();
       setSubjectHintBanner(pending ? subjectLabel(pending) : null);
+
       void (async () => {
-        setLoading(true);
+        const cachedExam = await loadExamPreferenceCached();
+        if (alive && cachedExam) {
+          setExamType(cachedExam);
+        }
+
+        const showRecentSpinner = !bootedRef.current;
+        if (showRecentSpinner) setLoading(true);
+
         try {
           const user = await ensureSignedIn();
           const { db } = getFirebase();
           const [attempts, userSnap, entitlement] = await Promise.all([
             fetchAttempts({ limit: 5 }).catch(() => ({ items: [] as AttemptListItem[] })),
             getDoc(doc(db, 'users', user.uid)),
-            hydrateEntitlement().catch(() => null),
+            loadEntitlementSnapshot(),
           ]);
           if (!alive) return;
+          setEnt(entitlement);
           setIsPremium(isPremiumActive(entitlement ?? undefined));
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
           const streakRaw = userSnap.data()?.streakCount;
           setStreakCount(
             typeof streakRaw === 'number' && streakRaw > 0 ? Math.floor(streakRaw) : 0,
           );
-          const preferred = await readExamPreference();
           const et = userSnap.data()?.examType;
-          // Preference (set at onboarding) wins; else Firestore examType.
-          if (preferred) {
-            setExamType(preferred);
-            if (et !== preferred) {
-              void callUpdateExamType(preferred).catch(() => undefined);
+          if (!cachedExam) {
+            if (isExamType(et)) {
+              setExamType(et);
+            } else if (!examType) {
+              setExamType('lgs');
             }
-          } else if (isExamType(et)) {
-            setExamType(et);
-            void callUpdateExamType(et).catch(() => undefined);
-          } else {
-            setExamType('lgs');
-            void callUpdateExamType('lgs').catch(() => undefined);
           }
         } catch {
           if (!alive) return;
           setRecent([]);
           setExamType((prev) => prev ?? 'lgs');
         } finally {
-          if (alive) setLoading(false);
+          if (alive) {
+            setLoading(false);
+            bootedRef.current = true;
+          }
         }
       })();
       return () => {
@@ -246,9 +260,10 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <ActiveExamBadge
-          examType={examType}
-          onPressChange={() => router.push('/settings')}
+        <ExamModeSwitcher
+          value={examType}
+          disabled={switchingExam}
+          onChange={(next) => requestExamChange(examType, next)}
         />
 
         {subjectHintBanner ? (

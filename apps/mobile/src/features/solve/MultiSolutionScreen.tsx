@@ -8,6 +8,7 @@ import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space, typography } from '@/src/theme';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
+import { ExamModeBlockScreen } from './ExamModeBlockScreen';
 import { SolutionScreen } from './SolutionScreen';
 import { isOfflineSolutionId } from './localSolveFallback';
 
@@ -23,6 +24,7 @@ export type MultiSolveSlot = {
   errorMessage?: string;
   /** When set, slot failed because photo belongs to another exam package. */
   errorKind?: 'exam_mismatch' | 'generic';
+  detectedExam?: ExamType;
 };
 
 export type MultiSolutionScreenProps = {
@@ -30,6 +32,8 @@ export type MultiSolutionScreenProps = {
   activeId: string;
   onChangeActive: (id: string) => void;
   examType: ExamType;
+  switchingExam?: boolean;
+  onSwitchExamMode?: (detected: ExamType) => void;
   onExplainAgain?: (solutionId: string) => Promise<string>;
   onDone?: () => void;
 };
@@ -56,6 +60,8 @@ export function MultiSolutionScreen({
   activeId,
   onChangeActive,
   examType,
+  switchingExam,
+  onSwitchExamMode,
   onExplainAgain,
   onDone,
 }: MultiSolutionScreenProps) {
@@ -142,16 +148,25 @@ export function MultiSolutionScreen({
           />
         </View>
       ) : active.status === 'error' ? (
-        <View style={styles.center} testID="multi-slot-error" key={active.id}>
-          <Text style={styles.errorTitle}>
-            {active.errorKind === 'exam_mismatch'
-              ? 'Seçili moda uymuyor'
-              : 'Bu soru çözülemedi'}
-          </Text>
-          <Text style={styles.errorBody}>
-            {active.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
-          </Text>
-        </View>
+        active.errorKind === 'exam_mismatch' && active.detectedExam ? (
+          <View style={styles.blockPane} testID="multi-slot-exam-block" key={active.id}>
+            <ExamModeBlockScreen
+              activeExam={examType}
+              detectedExam={active.detectedExam}
+              message={active.errorMessage}
+              switching={switchingExam}
+              onSwitchMode={() => onSwitchExamMode?.(active.detectedExam!)}
+              onGoBack={onDone ?? (() => undefined)}
+            />
+          </View>
+        ) : (
+          <View style={styles.center} testID="multi-slot-error" key={active.id}>
+            <Text style={styles.errorTitle}>Bu soru çözülemedi</Text>
+            <Text style={styles.errorBody}>
+              {active.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
+            </Text>
+          </View>
+        )
       ) : (
         <View style={styles.center} testID="multi-slot-loading" key={active.id}>
           <ActivityIndicator color={colors.orange} size="large" />
@@ -182,6 +197,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   solutionPane: { flex: 1 },
+  blockPane: { flex: 1 },
   center: {
     flex: 1,
     alignItems: 'center',

@@ -4,7 +4,7 @@ import type { ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
-import { readExamPreference } from './examPreference';
+import { loadExamPreferenceCached } from './examPreferenceCache';
 import { isExamType } from './examTypes';
 
 /**
@@ -20,7 +20,7 @@ export async function resolveActiveExamType(
     return { examType: explicit, source: 'param' };
   }
 
-  const preferred = await readExamPreference();
+  const preferred = await loadExamPreferenceCached();
   if (preferred) {
     return { examType: preferred, source: 'preference' };
   }

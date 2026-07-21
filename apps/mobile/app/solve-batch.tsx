@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ADS_LIMITS, runInterstitialIfNeeded } from '@/src/features/ads';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
+import { useExamModeChange } from '@/src/features/exam/useExamModeChange';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import {
@@ -47,6 +48,7 @@ export default function SolveBatchScreen() {
   const openedRef = useRef(false);
   const cancelledRef = useRef(false);
   const runIdRef = useRef(0);
+  const { switching: switchingExam, applyExam } = useExamModeChange();
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -134,7 +136,7 @@ export default function SolveBatchScreen() {
                 status: 'error',
                 errorKind: 'exam_mismatch',
                 errorMessage: modeCheck.message,
-                result: response,
+                detectedExam: modeCheck.detected,
                 examType: resolvedExam,
               });
               if (!openedRef.current) {
@@ -265,6 +267,13 @@ export default function SolveBatchScreen() {
         activeId={activeId}
         onChangeActive={setActiveId}
         examType={examType}
+        switchingExam={switchingExam}
+        onSwitchExamMode={(detected) => {
+          void (async () => {
+            await applyExam(detected);
+            setExamType(detected);
+          })();
+        }}
         onExplainAgain={(solutionId) => callExplainAgain(solutionId)}
         onDone={() => {
           void (async () => {

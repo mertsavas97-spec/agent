@@ -7,22 +7,28 @@ import type {
 
 import { shouldConfirmExamMismatch } from './subjectClassification';
 
-export type BatchExamReject = {
-  reject: true;
-  detected: ExamType;
+export type ExamModeBlock = {
+  blocked: true;
+  activeExam: ExamType;
+  detectedExam: ExamType;
   message: string;
+  headline: string;
 };
 
-export type BatchExamOk = { reject: false };
+export type ExamModeBlockResult = ExamModeBlock | { blocked: false };
 
 /**
- * User-facing warning when a multi-batch photo belongs to another exam package.
+ * User-facing warning when a photo belongs to another exam package.
  */
 export function examModeMismatchMessage(
   activeExam: ExamType,
   detectedExam: ExamType,
 ): string {
-  return `Bu soru ${EXAM_LABEL[activeExam]}’ye ait değil; ${EXAM_LABEL[detectedExam]} sorusu gibi görünüyor. Ayarlar’dan modu değiştir veya bu fotoğrafı çıkar.`;
+  return `Bu soru ${EXAM_LABEL[detectedExam]} sınavına ait görünüyor. Şu an ${EXAM_LABEL[activeExam]} modundasın — doğru çözüm için modu değiştir.`;
+}
+
+export function examModeBlockHeadline(detectedExam: ExamType): string {
+  return `Bu soru ${EXAM_LABEL[detectedExam]} sınavına ait`;
 }
 
 function examFromTopicPrefix(topicId: string | null | undefined): ExamType | null {
@@ -73,20 +79,49 @@ export function inferForeignExamFromResponse(
 }
 
 /**
+ * Hard block — never show solution steps when packages disagree.
+ */
+export function resolveExamModeBlock(
+  activeExam: ExamType,
+  response: SolveQuestionResponse,
+): ExamModeBlockResult {
+  const detected = inferForeignExamFromResponse(response, activeExam);
+  if (!detected || detected === activeExam) {
+    return { blocked: false };
+  }
+  return {
+    blocked: true,
+    activeExam,
+    detectedExam: detected,
+    message: examModeMismatchMessage(activeExam, detected),
+    headline: examModeBlockHeadline(detected),
+  };
+}
+
+export type BatchExamReject = {
+  reject: true;
+  detected: ExamType;
+  message: string;
+  headline: string;
+};
+
+export type BatchExamOk = { reject: false };
+
+/**
  * Multi-batch must stay on the selected mode. Reject slots that clearly belong elsewhere.
  */
 export function shouldRejectBatchSlotForExamMode(
   activeExam: ExamType,
   response: SolveQuestionResponse,
 ): BatchExamReject | BatchExamOk {
-  const hint = 'examHint' in response ? response.examHint : undefined;
-  const detected = inferForeignExamFromResponse(response, activeExam, hint);
-  if (!detected || detected === activeExam) {
+  const block = resolveExamModeBlock(activeExam, response);
+  if (!block.blocked) {
     return { reject: false };
   }
   return {
     reject: true,
-    detected,
-    message: examModeMismatchMessage(activeExam, detected),
+    detected: block.detectedExam,
+    message: block.message,
+    headline: block.headline,
   };
 }
