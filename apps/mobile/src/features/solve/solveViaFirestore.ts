@@ -11,10 +11,13 @@ import type { SolveQuestionRequest, SolveQuestionResponse } from '@/src/lib/api/
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
-/** Hard stop — if trigger never writes, fail fast to local fallback. */
-const SOLVE_TIMEOUT_MS = 28_000;
-/** If still `pending` (trigger never claimed), bail sooner. */
-const PENDING_STUCK_MS = 5_000;
+/**
+ * Live Vertex + Gen2 cold start often exceeds 30s (Vision + Gemini + retry).
+ * Keep under Functions timeout (120s); surface error before silent hang.
+ */
+export const SOLVE_TIMEOUT_MS = 75_000;
+/** Grace for Eventarc/Storage lag before declaring trigger missing. */
+export const PENDING_STUCK_MS = 25_000;
 
 type SolveRequestDoc = {
   status: 'pending' | 'running' | 'done' | 'error';
@@ -50,6 +53,7 @@ export async function callSolveQuestionViaFirestore(
     if (data.status === 'error') {
       throw mapSolveDocError(data);
     }
+    // running / pending → listen below (do not overwrite — rules forbid update)
   } else {
     const payload: Record<string, unknown> = {
       imagePath: request.imagePath,
@@ -61,6 +65,7 @@ export async function callSolveQuestionViaFirestore(
     if (request.examType) payload.examType = request.examType;
     if (request.subjectHint) payload.subjectHint = request.subjectHint;
     try {
+      // Create-only; if Storage trigger already wrote the doc, update is denied.
       await setDoc(ref, payload);
     } catch (createErr) {
       const again = await getDoc(ref);

@@ -144,6 +144,12 @@ export async function callSolveQuestion(
   try {
     return await callSolveQuestionViaFirestore(request);
   } catch (firestoreErr) {
+    // Org policy blocks public callable invoker — skip after trigger timeout.
+    if (isServerSolveUnavailable(firestoreErr)) {
+      console.warn('solveViaFirestore unavailable → local fallback (skip callable)', firestoreErr);
+      return localFallback(request, proxyUnsupported);
+    }
+
     console.warn('solveViaFirestore failed, trying callable', firestoreErr);
 
     try {
@@ -162,33 +168,39 @@ export async function callSolveQuestion(
 
       if (
         isInvokerBlocked(callableErr) ||
-        isServerSolveUnavailable(firestoreErr) ||
         isServerSolveUnavailable(callableErr)
       ) {
-        const fallback = buildLocalSolveFallback({
-          examType: request.examType,
-          subjectHint: request.subjectHint,
-          requestId: request.requestId,
-          reason: proxyUnsupported ? 'unsupported' : 'unavailable',
-        });
-        if (fallback.status === 'solved' && !request.subjectHint) {
-          const isTrafik =
-            request.examType === 'trafik' ||
-            fallback.subject === 'traffic' ||
-            fallback.subject === 'vehicle' ||
-            fallback.subject === 'firstaid';
-          return {
-            ...fallback,
-            classification: {
-              subject: fallback.subject,
-              confidence: isTrafik ? 'medium' : 'low',
-              needsConfirm: !isTrafik,
-            },
-          };
-        }
-        return fallback;
+        return localFallback(request, proxyUnsupported);
       }
       throw callableErr;
     }
   }
+}
+
+function localFallback(
+  request: SolveClientRequest,
+  proxyUnsupported: boolean,
+): SolveQuestionResponse {
+  const fallback = buildLocalSolveFallback({
+    examType: request.examType,
+    subjectHint: request.subjectHint,
+    requestId: request.requestId,
+    reason: proxyUnsupported ? 'unsupported' : 'unavailable',
+  });
+  if (fallback.status === 'solved' && !request.subjectHint) {
+    const isTrafik =
+      request.examType === 'trafik' ||
+      fallback.subject === 'traffic' ||
+      fallback.subject === 'vehicle' ||
+      fallback.subject === 'firstaid';
+    return {
+      ...fallback,
+      classification: {
+        subject: fallback.subject,
+        confidence: isTrafik ? 'medium' : 'low',
+        needsConfirm: !isTrafik,
+      },
+    };
+  }
+  return fallback;
 }

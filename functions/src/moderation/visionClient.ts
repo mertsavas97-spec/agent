@@ -42,11 +42,24 @@ async function annotateSafeSearch(
   if (auth.type === 'adc') {
     headers.Authorization = `Bearer ${await gcpAccessToken()}`;
   }
-  const res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12_000);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Vision timeout (12s)');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
     throw new Error(`Vision API ${res.status}`);
   }

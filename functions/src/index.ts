@@ -15,6 +15,7 @@ import {
 } from './solve/explainAgain';
 import { executeSolvePipeline, SolvePipelineError } from './solve/executeSolve';
 import { parseSolveUploadPath } from './solve/parseUploadPath';
+import { isSolveTaggedUpload, metaValue } from './solve/solveUploadMeta';
 import {
   processSolveRequest,
   storageObjectExists,
@@ -175,7 +176,12 @@ export const onSolveRequestCreatedV2 = onDocumentCreated(
     if (!imagePath) return;
 
     // Upload may still be in flight if client creates the doc first.
-    if (!(await storageObjectExists(imagePath))) {
+    let ready = await storageObjectExists(imagePath);
+    if (!ready) {
+      await new Promise((r) => setTimeout(r, 2500));
+      ready = await storageObjectExists(imagePath);
+    }
+    if (!ready) {
       console.info('onSolveRequestCreatedV2: image not ready yet', { uid, imagePath });
       return;
     }
@@ -209,10 +215,14 @@ export const onSolveUploadFinalized = onObjectFinalized(
     if (!parsed) return;
 
     const meta = event.data.metadata ?? {};
-    // Only process uploads tagged by the mobile solve flow (ignore stray files).
-    if (meta.cozbilSolve !== '1' && meta.cozbilSolve !== 'true') {
-      console.info('onSolveUploadFinalized: skip untagged object', { objectName });
-      return;
+    // Path users/{uid}/uploads/{id}.jpg is the primary gate. Tag is optional
+    // (GCS often lowercases keys — isSolveTaggedUpload is case-insensitive).
+    // Untagged path matches still process so org-policy dogfood cannot stick.
+    if (!isSolveTaggedUpload(meta)) {
+      console.info('onSolveUploadFinalized: path match without tag — processing', {
+        objectName,
+        metaKeys: Object.keys(meta),
+      });
     }
 
     const ref = getFirestore()
@@ -221,18 +231,19 @@ export const onSolveUploadFinalized = onObjectFinalized(
       .collection('solveRequests')
       .doc(parsed.localId);
 
+    const mimeFromMeta = metaValue(meta, 'mimeType');
     const mimeType =
-      typeof meta.mimeType === 'string' && meta.mimeType
-        ? meta.mimeType
+      mimeFromMeta && mimeFromMeta.length > 0
+        ? mimeFromMeta
         : event.data.contentType || 'image/jpeg';
 
     await processSolveRequest({
       ref,
       uid: parsed.uid,
       imagePath: parsed.imagePath,
-      examType: typeof meta.examType === 'string' ? meta.examType : undefined,
+      examType: metaValue(meta, 'examType'),
       mimeType,
-      subjectHint: typeof meta.subjectHint === 'string' ? meta.subjectHint : undefined,
+      subjectHint: metaValue(meta, 'subjectHint'),
       source: 'storage',
     });
   },

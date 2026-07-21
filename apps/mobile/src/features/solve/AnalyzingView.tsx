@@ -61,12 +61,12 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     }).start();
   }, [anim, baseTarget]);
 
-  // On solve stage: crawl slowly toward 92% once — hold (no oscillation).
+  // On solve stage: crawl slowly toward 92% (live Vertex can take ~60s).
   useEffect(() => {
     if (step !== 'solve') return;
     const crawl = Animated.timing(anim, {
       toValue: 0.92,
-      duration: 14_000,
+      duration: 55_000,
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     });
