@@ -19,12 +19,13 @@ import { ExamMismatchSheet } from '@/src/features/solve/ExamMismatchSheet';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
-import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
-import { uriToBase64 } from '@/src/features/solve/imageBase64';
-import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
 import { enforceExamPipeline } from '@/src/features/solve/examPipelineIsolation';
+import { uriToBase64 } from '@/src/features/solve/imageBase64';
+import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
+import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
+import { isSolveProxyConfigured } from '@/src/features/solve/solveViaProxy';
 import {
   applyExamOverride,
   applySubjectOverride,
@@ -111,15 +112,18 @@ export default function SolveFlowScreen() {
         });
         if (cancelled) return;
 
-        const imageBase64 = await uriToBase64(params.uri);
+        // Proxy-only: base64 is expensive — skip when proxy unset (Storage trigger path).
+        const imageBase64 = isSolveProxyConfigured()
+          ? await uriToBase64(params.uri)
+          : undefined;
         if (cancelled) return;
 
         setAnalyzeStep('moderate');
-        await new Promise((r) => setTimeout(r, 280));
-        if (cancelled) return;
+        // UI beat only — do not delay the Firestore/Storage wait behind this.
+        const moderateBeat = new Promise((r) => setTimeout(r, 280));
         setAnalyzeStep('solve');
 
-        let response = await callSolveQuestion({
+        const solvePromise = callSolveQuestion({
           imagePath,
           mimeType: params.mimeType,
           examType: resolvedExam,
@@ -128,6 +132,8 @@ export default function SolveFlowScreen() {
           imageUrl: downloadUrl,
           imageBase64: imageBase64 ?? undefined,
         });
+        await moderateBeat;
+        let response = await solvePromise;
         if (cancelled) return;
 
         if (response.status === 'solved' && subjectHint) {

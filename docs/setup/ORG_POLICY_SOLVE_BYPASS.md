@@ -57,6 +57,9 @@ Firebase Console → Functions → `onSolveUploadFinalized` **Active**.
 Telefon: fotoğraf çek → bir kaç saniyede stub çözüm (Vertex kapalıysa).  
 Hâlâ `SOLVE_TIMEOUT` → Functions log: Eventarc / Storage trigger.
 
+> GCS metadata anahtarları lowercase gelebilir (`cozbilsolve`). Trigger path
+> `users/{uid}/uploads/*.jpg` eşleşince tag olmasa da işler; tag case-insensitive.
+
 ## Not
 
 History / explainAgain hâlâ callable ise 403 olabilir; ana solve B ile çalışır.  
