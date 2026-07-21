@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
+import { useExamModeChange } from '@/src/features/exam/useExamModeChange';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 import {
   purchasePremiumPlan,
@@ -15,7 +16,8 @@ import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
-import { ExamMismatchSheet } from '@/src/features/solve/ExamMismatchSheet';
+import { ExamModeBlockScreen } from '@/src/features/solve/ExamModeBlockScreen';
+import { resolveExamModeBlock } from '@/src/features/solve/examModeGuard';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
@@ -27,9 +29,7 @@ import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { isSolveProxyConfigured } from '@/src/features/solve/solveViaProxy';
 import {
-  applyExamOverride,
   applySubjectOverride,
-  shouldConfirmExamMismatch,
   shouldConfirmSubject,
   type SolvedWithClassification,
 } from '@/src/features/solve/subjectClassification';
@@ -49,7 +49,7 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
 
 type Phase =
   | 'analyzing'
-  | 'confirmExam'
+  | 'examBlocked'
   | 'confirmSubject'
   | 'result'
   | 'error'
@@ -69,7 +69,15 @@ export default function SolveFlowScreen() {
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [examType, setExamType] = useState<ExamType>('lgs');
-  const [profileExam, setProfileExam] = useState<ExamType>('lgs');
+  const [examBlock, setExamBlock] = useState<{
+    active: ExamType;
+    detected: ExamType;
+    message: string;
+    headline: string;
+  } | null>(null);
+  const { switching: switchingExam, applyExam } = useExamModeChange({
+    onOptimistic: (next) => setExamType(next),
+  });
   const [selectedSubject, setSelectedSubject] =
     useState<Exclude<Subject, 'unknown'>>('turkish');
   const [pendingSubjectHint, setPendingSubjectHint] = useState<
@@ -93,7 +101,6 @@ export default function SolveFlowScreen() {
         );
         const resolvedExam = resolved.examType;
         setExamType(resolvedExam);
-        setProfileExam(resolvedExam);
         const localId = `${Date.now()}`;
         const hintRaw = typeof params.subjectHint === 'string' ? params.subjectHint : '';
         const subjectHint: Exclude<Subject, 'unknown'> | undefined =
@@ -161,12 +168,20 @@ export default function SolveFlowScreen() {
               ? (solved.subject as Exclude<Subject, 'unknown'>)
               : subjectsForExam(resolvedExam)[0];
           setSelectedSubject(suggested);
-          setResult(solved);
-
-          if (shouldConfirmExamMismatch(solved.examHint, resolvedExam)) {
-            setPhase('confirmExam');
+          const modeBlock = resolveExamModeBlock(resolvedExam, solved);
+          if (modeBlock.blocked) {
+            setExamBlock({
+              active: modeBlock.activeExam,
+              detected: modeBlock.detectedExam,
+              message: modeBlock.message,
+              headline: modeBlock.headline,
+            });
+            setPhase('examBlocked');
             return;
           }
+
+          setResult(solved);
+
           if (shouldConfirmSubject(solved, { subjectHint, examType: resolvedExam })) {
             setPhase('confirmSubject');
             return;
@@ -210,28 +225,14 @@ export default function SolveFlowScreen() {
     }).catch((err) => console.warn('local history save failed', err));
   }, [phase, result, examType, params.uri]);
 
-  function continueAfterExam(nextExam: ExamType) {
-    if (!result || result.status !== 'solved') return;
-    let next = enforceExamPipeline(
-      applyExamOverride(result, profileExam, nextExam),
-      nextExam,
+  async function switchToDetectedExam() {
+    if (!examBlock) return;
+    await applyExam(examBlock.detected);
+    Alert.alert(
+      'Mod güncellendi',
+      `${examBlock.headline}. Aynı fotoğrafı tekrar çekerek çözüm alabilirsin.`,
+      [{ text: 'Tamam', onPress: () => router.replace('/(tabs)') }],
     );
-    setExamType(nextExam);
-    if (pendingSubjectHint && subjectsForExam(nextExam).includes(pendingSubjectHint)) {
-      next = applySubjectOverride(next, nextExam, pendingSubjectHint);
-    }
-    const suggested =
-      next.subject !== 'unknown' &&
-      subjectsForExam(nextExam).includes(next.subject as Exclude<Subject, 'unknown'>)
-        ? (next.subject as Exclude<Subject, 'unknown'>)
-        : subjectsForExam(nextExam)[0];
-    setSelectedSubject(suggested);
-    setResult(next);
-    if (shouldConfirmSubject(next, { subjectHint: pendingSubjectHint, examType: nextExam })) {
-      setPhase('confirmSubject');
-      return;
-    }
-    setPhase('result');
   }
 
   const suggestedSubject = useMemo(() => {
@@ -259,20 +260,18 @@ export default function SolveFlowScreen() {
     );
   }
 
-  if (phase === 'confirmExam' && result && result.status === 'solved' && result.examHint) {
+  if (phase === 'examBlocked' && examBlock) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
-        <AnalyzingView step="solve" />
-        <ExamMismatchSheet
-          visible
-          profileExam={profileExam}
-          hint={result.examHint}
-          onKeepProfile={() => continueAfterExam(profileExam)}
-          onSwitchSuggested={() => {
-            const suggested = result.examHint?.suggested;
-            if (suggested) continueAfterExam(suggested);
-          }}
+        <Stack.Screen options={{ title: 'Sınav modu', headerBackTitle: 'Geri' }} />
+        <ExamModeBlockScreen
+          activeExam={examBlock.active}
+          detectedExam={examBlock.detected}
+          headline={examBlock.headline}
+          message={examBlock.message}
+          switching={switchingExam}
+          onSwitchMode={() => void switchToDetectedExam()}
+          onGoBack={() => router.replace('/(tabs)')}
         />
       </>
     );

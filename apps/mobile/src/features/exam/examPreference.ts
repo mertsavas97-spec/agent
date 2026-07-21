@@ -20,6 +20,8 @@ export async function writeExamPreference(examType: ExamType): Promise<void> {
   if (!isExamType(examType)) return;
   try {
     await AsyncStorage.setItem(KEY, examType);
+    const { setExamPreferenceCache } = await import('./examPreferenceCache');
+    setExamPreferenceCache(examType);
   } catch {
     // non-fatal
   }

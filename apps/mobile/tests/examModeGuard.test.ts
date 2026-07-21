@@ -1,6 +1,7 @@
 import {
   examModeMismatchMessage,
   inferForeignExamFromResponse,
+  resolveExamModeBlock,
   shouldRejectBatchSlotForExamMode,
 } from '@/src/features/solve/examModeGuard';
 import type { SolveQuestionResponse, SolveQuestionSuccess } from '@/src/lib/api/types';
@@ -24,7 +25,7 @@ describe('examModeMismatchMessage', () => {
   it('names active vs detected packages in Turkish', () => {
     expect(examModeMismatchMessage('ygs', 'trafik')).toMatch(/YGS/i);
     expect(examModeMismatchMessage('ygs', 'trafik')).toMatch(/Ehliyet/i);
-    expect(examModeMismatchMessage('ygs', 'trafik')).toMatch(/ait değil/i);
+    expect(examModeMismatchMessage('kpss', 'trafik')).toMatch(/modu değiştir/i);
   });
 });
 
@@ -37,6 +38,18 @@ describe('inferForeignExamFromResponse', () => {
           topicId: 'trafik-traffic-kurallar',
         }),
         'ygs',
+      ),
+    ).toBe('trafik');
+  });
+
+  it('detects Ehliyet when KPSS is active', () => {
+    expect(
+      inferForeignExamFromResponse(
+        solved({
+          subject: 'vehicle',
+          topicId: 'trafik-vehicle-motor',
+        }),
+        'kpss',
       ),
     ).toBe('trafik');
   });
@@ -76,6 +89,20 @@ describe('inferForeignExamFromResponse', () => {
   });
 });
 
+describe('resolveExamModeBlock', () => {
+  it('blocks cross-exam without exposing solution', () => {
+    const block = resolveExamModeBlock(
+      'kpss',
+      solved({ subject: 'traffic', topicId: 'trafik-traffic-kurallar' }),
+    );
+    expect(block.blocked).toBe(true);
+    if (block.blocked) {
+      expect(block.detectedExam).toBe('trafik');
+      expect(block.headline).toMatch(/Ehliyet/i);
+    }
+  });
+});
+
 describe('shouldRejectBatchSlotForExamMode', () => {
   it('rejects YGS batch slot that looks like Ehliyet', () => {
     const out = shouldRejectBatchSlotForExamMode(
@@ -95,6 +122,7 @@ describe('shouldRejectBatchSlotForExamMode', () => {
       expect(out.detected).toBe('trafik');
       expect(out.message).toMatch(/YGS/i);
       expect(out.message).toMatch(/Ehliyet/i);
+      expect(out.headline).toMatch(/Ehliyet/i);
     }
   });
 

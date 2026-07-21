@@ -2,6 +2,10 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import { examThemeFor, type ExamTheme } from '@/src/features/exam/examTheme';
+import {
+  loadExamPreferenceCached,
+  peekExamPreferenceCache,
+} from '@/src/features/exam/examPreferenceCache';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import type { ExamType } from '@/src/lib/api/types';
 
@@ -14,7 +18,9 @@ export function useActiveExam(fallback: ExamType = 'lgs'): {
   theme: ExamTheme;
   ready: boolean;
 } {
-  const [examType, setExamType] = useState<ExamType>(fallback);
+  const [examType, setExamType] = useState<ExamType>(() => {
+    return peekExamPreferenceCache() ?? fallback;
+  });
   const [ready, setReady] = useState(false);
 
   useFocusEffect(
@@ -22,9 +28,14 @@ export function useActiveExam(fallback: ExamType = 'lgs'): {
       let alive = true;
       void (async () => {
         try {
-          const resolved = await resolveActiveExamType();
-          if (!alive) return;
-          setExamType(resolved.examType);
+          const cached = await loadExamPreferenceCached();
+          if (cached && alive) {
+            setExamType(cached);
+          } else {
+            const resolved = await resolveActiveExamType();
+            if (!alive) return;
+            setExamType(resolved.examType);
+          }
         } catch {
           if (!alive) return;
           setExamType(fallback);

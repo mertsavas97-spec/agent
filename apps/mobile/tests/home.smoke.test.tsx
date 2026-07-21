@@ -48,6 +48,20 @@ jest.mock('firebase/firestore', () => ({
   }),
 }));
 
+jest.mock('@/src/features/exam/examPreferenceCache', () => ({
+  loadExamPreferenceCached: jest.fn().mockResolvedValue('ygs'),
+  peekExamPreferenceCache: jest.fn().mockReturnValue('ygs'),
+}));
+
+jest.mock('@/src/features/exam/useExamModeChange', () => ({
+  useExamModeChange: () => ({
+    switching: false,
+    requestExamChange: jest.fn(),
+    applyExam: jest.fn(),
+  }),
+  loadEntitlementSnapshot: jest.fn().mockResolvedValue(null),
+}));
+
 jest.mock('@/src/features/exam/updateExamClient', () => ({
   callUpdateExamType: jest.fn().mockResolvedValue('ygs'),
 }));
@@ -59,18 +73,16 @@ jest.mock('@/src/features/exam/examPreference', () => ({
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('shows active exam from onboarding preference — no mode switcher on home', async () => {
+  it('shows inline exam switcher on home', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByTestId('home-brand-robot')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.queryByTestId('exam-mode-switcher')).toBeNull();
     expect(screen.getByTestId('home-premium-cta')).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toHaveTextContent('Soru fotoğrafı çek');
     await waitFor(() => {
-      expect(screen.getByTestId('home-active-exam')).toBeTruthy();
-      expect(screen.getByTestId('home-active-exam-label')).toHaveTextContent(/YGS|MOD/);
-      expect(screen.getByTestId('home-change-exam')).toBeTruthy();
+      expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
+      expect(screen.getByTestId('exam-mode-title')).toHaveTextContent(/Sınav paketini seç/i);
     });
   });
 });
