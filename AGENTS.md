@@ -13,7 +13,7 @@
 
 ## Ürün kilidi
 
-**ÇözBil** — eğitim uygulaması (oyun değil). Sınavlar: **LGS + YGS + KPSS**.
+**ÇözBil** — eğitim uygulaması (oyun değil). Sınavlar: **LGS + YGS + KPSS + Ehliyet**.
 Android-first. Moodboard: `docs/design/moodboard/`.  
 Spec: `specs/001-product-definition/` (Locked) + `specs/002-cozbil-mvp/`.
 
@@ -56,12 +56,20 @@ Spec: `specs/001-product-definition/` (Locked) + `specs/002-cozbil-mvp/`.
 | `docs/sprint-reports/` | Tarih damgalı hafıza |
 | `.cursor-agent-kit.json` | Kit bootstrap marker |
 
+## iOS / Cloud devam
+
+Sohbet taşınmaz. Repo + `docs/agent/IOS_CONTINUE.md` kullan.
+Aktif hedef: `SPRINT_STATE.md`.
+
+### Cursor Mobile / Cloud Agents
+
+- Repo: `mertsavas97-spec/agent` (GitHub App bağlı olmalı)
+- Ortam: `.cursor/environment.json` → `apps/mobile` + `functions` + `solve-proxy` install
+- Cloud VM’de **Metro / fiziksel cihaz yok** — dogfood için Desktop veya Remote Control
+- Secrets: Cursor Cloud dashboard (chat’e key yapıştırma)
+- AI: Functions’ta `COZBIL_USE_VERTEX=1` (Startup/Cloud Billing); AI Studio prepaid kullanma
+
 ## Kit kaynağı
 
 https://github.com/mertsavas97-spec/cursor-agent-kit.git  
 Sync: `scripts/sync-cursor-agent-kit.sh`
-
-## iOS / Cloud devam
-
-Sohbet taşınmaz. Repo + `main` + `docs/agent/IOS_CONTINUE.md` kullan.
-Aktif hedef: `SPRINT_STATE.md` (Phase 1 scaffold).

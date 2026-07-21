@@ -1,0 +1,41 @@
+{
+  "id": "ygs-math-denklemler-001",
+  "examType": "ygs",
+  "subject": "math",
+  "topicId": "ygs-math-denklemler",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "2(x - 3) + 5 = 3x - 1 denklemini sağlayan x değeri kaçtır?",
+  "choices": {
+    "A": "0",
+    "B": "2",
+    "C": "4",
+    "D": "6",
+    "E": "8"
+  },
+  "answerKey": "A",
+  "explanationSteps": [
+    {
+      "title": "1. Adım",
+      "body": "Sol tarafı aç: 2x - 6 + 5 = 2x - 1."
+    },
+    {
+      "title": "2. Adım",
+      "body": "Denklem: 2x - 1 = 3x - 1. Her iki tarafa +1 ekle: 2x = 3x."
+    },
+    {
+      "title": "3. Adım",
+      "body": "2x - 3x = 0 → -x = 0 → x = 0. Kontrol: sol 2(0-3)+5 = -1, sağ -1. Cevap A."
+    }
+  ],
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "YGS/LYS hattı doğrusal denklem; özgün kök",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-18",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

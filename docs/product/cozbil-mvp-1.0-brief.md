@@ -10,7 +10,7 @@
 
 Türkiye'deki sınav adaylarına yönelik, fotoğrafla soru çözüp adım adım Türkçe açıklama sunan AI destekli eğitim uygulaması.
 
-**Sınav kapsamı (MVP):** **LGS · YGS · KPSS** (üçü de aktif seçilebilir).  
+**Sınav kapsamı (MVP):** **LGS · YGS · KPSS · Ehliyet** (dördü de aktif seçilebilir).  
 **Platform:** Android öncelikli (React Native / Expo).  
 **Kaynak:** Google Startup Kredisi (AI dahil).  
 **Çalışma adı:** ÇözBil (final mağaza/alan adı TBD).
@@ -28,7 +28,7 @@ Türkiye'deki sınav adaylarına yönelik, fotoğrafla soru çözüp adım adım
 ## 3. Rakip Analizi
 
 Önceki brief ile aynı tablo (Kunduz, Shifu, Taktik, Koç’a Sor, DigiKamp, vb.).  
-Konum “yalnız genel soru çözücü” değil; **LGS + YGS + KPSS** track’leri ve öğrenci ilerleme verisi.
+Konum “yalnız genel soru çözücü” değil; **LGS + YGS + KPSS + Ehliyet** track’leri ve öğrenci ilerleme verisi.
 
 ---
 
@@ -37,7 +37,8 @@ Konum “yalnız genel soru çözücü” değil; **LGS + YGS + KPSS** track’l
 - **LGS:** ~13–15 yaş (veli sıkça öder)
 - **YGS:** lise / üniversite öncesi aday (owner etiketi; YKS ailesi)
 - **KPSS:** yetişkin kamu personeli adayı
-- **Konumlandırma:** “Türkiye’nin sınav odaklı AI çalışma arkadaşı — LGS, YGS, KPSS; çözer, anlatır, eksiğini gösterir.”
+- **Ehliyet:** sürücü adayı (MTS / trafik kuralları, işaretler, araç, ilk yardım)
+- **Konumlandırma:** “Türkiye’nin sınav odaklı AI çalışma arkadaşı — LGS, YGS, KPSS, Ehliyet; çözer, anlatır, eksiğini gösterir.”
 
 ---
 
@@ -53,7 +54,7 @@ Prompt ve konu kataloğu **examType**’a göre seçilir.
 ### Dahil
 
 - Fotoğrafla soru çözme (matematik öncelik; Türkçe ikinci)
-- LGS / YGS / KPSS onboarding seçimi (hepsi aktif)
+- LGS / YGS / KPSS / Ehliyet onboarding seçimi (hepsi aktif)
 - Adım adım çözüm + “anlamadım”
 - Geçmiş, istatistik/zayıflık, streak
 - Paywall, moderasyon, rate limit
@@ -67,8 +68,9 @@ Prompt ve konu kataloğu **examType**’a göre seçilir.
 
 ## 9–16. Yol haritası, güvenlik, monetizasyon, riskler
 
-Önceki brief ile uyumlu. Freemium varsayılan: **5**/gün, **49 TL**/ay.  
-KVKK: yaş bandına göre (LGS minor vs yetişkin KPSS/YGS).
+Önceki brief ile uyumlu. Freemium varsayılan: **5**/gün; Premium:
+**14,90 TL**/7 gün, **39 TL**/ay, **320 TL**/yıl (`docs/product/pricing-policy.md` — SSoT).  
+KVKK: yaş bandına göre (LGS minor vs yetişkin KPSS/YGS/Ehliyet).
 
 ---
 

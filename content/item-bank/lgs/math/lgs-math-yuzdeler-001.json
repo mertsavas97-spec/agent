@@ -1,0 +1,37 @@
+{
+  "id": "lgs-math-yuzdeler-001",
+  "examType": "lgs",
+  "subject": "math",
+  "topicId": "lgs-math-yuzdeler",
+  "difficulty": "easy",
+  "format": "multiple_choice",
+  "stem": "Bir kitabın fiyatı 80 TL iken %25 indirim yapılıyor. İndirimli fiyat kaç TL’dir?",
+  "choices": {
+    "A": "20",
+    "B": "40",
+    "C": "60",
+    "D": "65",
+    "E": "70"
+  },
+  "answerKey": "C",
+  "explanationSteps": [
+    {
+      "title": "1. İndirim tutarı",
+      "body": "%25 = 25/100. İndirim: 80 × 0,25 = 20 TL."
+    },
+    {
+      "title": "2. Ödenecek",
+      "body": "80 − 20 = 60 TL. (veya 80 × 0,75 = 60). Cevap C."
+    }
+  ],
+  "styleRefNote": "LGS tarzı yüzde; özgün senaryo",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

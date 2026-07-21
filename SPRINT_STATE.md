@@ -1,23 +1,22 @@
 # Sprint State
 
-**Aktif sprint:** US1 — fotoğrafla soru çöz — COMPLETE  
-**Hedef:** T014–T024 ✅  
-**Branch:** `cursor/cozbil-us1-solve-9131` → `main`  
-**Sonraki:** US2 — Anlamadım, tekrar açıkla (T025+)  
-**AI kredileri:** ertelendi → demo AI (`docs/setup/OWNER_LATER.md`)
+**Aktif çalışma yeri:** Mac masaüstü  
+**Branch:** `cursor/mvp-10-launch-audit-9131`  
+**Sprint:** 3 residual kapanıyor → **Sprint 4’e GEÇİLMEDİ** (owner isteği)  
+**Şimdi:** Metro (dev-client) telefon dogfood
 
-## Backlog
+## Sprint 3 residual
 
-1. ~~Phase 1–2~~
-2. ~~US1 solve pipeline~~
-3. **NEXT:** US2 explainAgain (kredi gerekmez)
-4. US3 onboarding · US4–6 UI
-5. *(Sonra)* Gemini + Vision + Firebase prod keys
+- [x] `.env` Desktop/cozbil’den kopyalandı + privacy/support env
+- [x] Firebase Hosting klasörü (`hosting/public/privacy`)
+- [x] Data Safety draft: `docs/store/play-data-safety-draft.md`
+- [ ] Hosting deploy — **firebase login --reauth** gerekir (credential expired)
+- [ ] Counsel imzası — insan/avukat (agent yapamaz)
 
-## Son QA Gate
+## Beklenen privacy URL (deploy sonrası)
 
-- typecheck: PASS
-- lint: N/A
-- smoke: PASS
-- guardian: PASS
-- demo AI: varsayılan (key yok)
+`https://cozbil-dev-f9583.web.app/privacy`
+
+## Sonraki (sen söyleyince)
+
+Sprint 4 — EAS + listing/ASO

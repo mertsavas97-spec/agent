@@ -1,24 +1,37 @@
+import { hasVisionKey, isDemoAiMode } from '../config/runtime';
+
 import type { SafeSearchLabels } from './safeSearch';
 
 export type VisionClient = {
   safeSearch(imageBuffer: Buffer): Promise<SafeSearchLabels>;
 };
 
-/** Real Cloud Vision SafeSearch when API key present. */
+function allowAllClient(): VisionClient {
+  return {
+    async safeSearch() {
+      return {
+        adult: 'VERY_UNLIKELY',
+        violence: 'VERY_UNLIKELY',
+        racy: 'VERY_UNLIKELY',
+      };
+    },
+  };
+}
+
+/**
+ * Real Cloud Vision SafeSearch when API key present.
+ * Live mode without key → fail-closed (VisionConfigError) unless demo / open override.
+ */
 export function createVisionClient(
   apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY,
 ): VisionClient {
-  if (!apiKey) {
-    return {
-      async safeSearch() {
-        // Dev/test default: allow (no key). Production must set key.
-        return {
-          adult: 'VERY_UNLIKELY',
-          violence: 'VERY_UNLIKELY',
-          racy: 'VERY_UNLIKELY',
-        };
-      },
-    };
+  if (!apiKey?.trim()) {
+    const allowOpen =
+      isDemoAiMode() || process.env.COZBIL_ALLOW_OPEN_VISION === '1';
+    if (allowOpen) return allowAllClient();
+    const err = new Error('GOOGLE_CLOUD_VISION_API_KEY gerekli (live SafeSearch)');
+    err.name = 'VisionConfigError';
+    throw err;
   }
 
   return {
@@ -49,3 +62,5 @@ export function createVisionClient(
     },
   };
 }
+
+export { hasVisionKey };

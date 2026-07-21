@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import {
   connectAuthEmulator,
   getAuth,
+  initializeAuth,
   type Auth,
 } from 'firebase/auth';
 import {
@@ -19,6 +20,8 @@ import {
   getFunctions,
   type Functions,
 } from 'firebase/functions';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 export type FirebaseClients = {
   app: FirebaseApp;
@@ -44,6 +47,25 @@ export function isFirebaseConfigured(): boolean {
   return Boolean(key && key.length > 0 && key !== 'demo');
 }
 
+function createAuth(app: FirebaseApp): Auth {
+  if (Platform.OS === 'web') {
+    return getAuth(app);
+  }
+  try {
+    // RN bundle resolves firebase/auth → RN entry that exports this.
+    // Web TypeScript typings omit it — cast via any.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getReactNativePersistence } = require('firebase/auth') as {
+      getReactNativePersistence: (storage: typeof ReactNativeAsyncStorage) => unknown;
+    };
+    return initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage) as never,
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+
 let clients: FirebaseClients | null = null;
 let emulatorsConnected = false;
 
@@ -51,7 +73,7 @@ export function getFirebase(): FirebaseClients {
   if (clients) return clients;
 
   const app = getApps().length ? getApp() : initializeApp(readConfig());
-  const auth = getAuth(app);
+  const auth = createAuth(app);
   const db = getFirestore(app);
   const storage = getStorage(app);
   const functions = getFunctions(app, 'europe-west1');

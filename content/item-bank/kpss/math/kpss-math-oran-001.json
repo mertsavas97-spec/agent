@@ -1,0 +1,37 @@
+{
+  "id": "kpss-math-oran-001",
+  "examType": "kpss",
+  "subject": "math",
+  "topicId": "kpss-math-oran-oranti",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "a/b = 2/5 ve a + b = 28 ise a kaçtır?",
+  "choices": {
+    "A": "4",
+    "B": "8",
+    "C": "10",
+    "D": "14",
+    "E": "20"
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. Oran parçaları",
+      "body": "a : b = 2 : 5 → 7 parça = 28 → 1 parça = 4."
+    },
+    {
+      "title": "2. a",
+      "body": "a = 2 × 4 = 8. Cevap B."
+    }
+  ],
+  "styleRefNote": "KPSS oran; özgün",
+  "transparencyNote": "AI tarafından üretilmiştir, kontrol etmeni öneririz.",
+  "source": "original",
+  "license": "owned",
+  "review": {
+    "author": "seed-editor",
+    "reviewedAt": "2026-07-19",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

@@ -6,8 +6,8 @@ describe('moodboard tokens', () => {
     expect(colors.orange).toBe('#F59E0B');
   });
 
-  it('locks exam scope to LGS YGS KPSS', () => {
-    expect(brand.exams).toEqual(['lgs', 'ygs', 'kpss']);
+  it('locks exam scope to LGS YGS KPSS Ehliyet', () => {
+    expect(brand.exams).toEqual(['lgs', 'ygs', 'kpss', 'trafik']);
     expect(brand.name).toBe('ÇözBil');
   });
 });

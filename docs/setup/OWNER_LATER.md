@@ -1,17 +1,16 @@
 # Owner — sonraya bırakılan kurulumlar
 
-Ürün ve uygulama iskeleti **API kredisi olmadan** ilerleyebilir.
-Aşağıdakiler canlı AI / production için; şu an zorunlu değil.
+Ürün US5’e kadar **API kredisi olmadan** ilerledi.
+**Şimdi durak:** canlı AI için Google Cloud — adım adım rehber:
 
-## Şimdi gerekmez (demo AI)
+→ **[`GOOGLE_CLOUD_SETUP.md`](./GOOGLE_CLOUD_SETUP.md)**
+
+## Kurulum zamanlaması
 
 | İş | Ne zaman |
 |----|----------|
-| Google Startup / Gemini kredisi | Canlı çözüm kalitesi istenince |
-| `GEMINI_API_KEY` | Live AI mode |
-| `GOOGLE_CLOUD_VISION_API_KEY` | Gerçek SafeSearch |
-| Firebase / GCP proje bağlama | Emulator dışı dogfood / store |
-| Play Billing / abonelik hesabı | Paywall canlı test |
+| Google Cloud + Gemini + Vision + Firebase | **US5 sonrası (şimdi)** |
+| Play Billing / abonelik hesabı | US6 paywall |
 | KVKK hukuki metin danışmanı | Store öncesi |
 | Final marka / domain | Lansman |
 

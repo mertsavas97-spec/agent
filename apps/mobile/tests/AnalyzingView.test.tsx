@@ -2,11 +2,26 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
+import { progressForStep } from '@/src/features/solve/analyzeSteps';
 
 describe('AnalyzingView', () => {
-  it('shows analyzing copy', () => {
-    render(<AnalyzingView />);
+  it('shows analyzing copy, progress bar, and pipeline steps', () => {
+    render(<AnalyzingView step="moderate" />);
     expect(screen.getByTestId('analyzing-view')).toBeTruthy();
     expect(screen.getByText(/Sorun analiz ediliyor/)).toBeTruthy();
+    expect(screen.getByTestId('analyzing-wait')).toHaveTextContent(/birkaç saniye/);
+    expect(screen.getByTestId('analyzing-progress-bar')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-step-label')).toHaveTextContent(/Güvenli/);
+    expect(screen.getByTestId('cozbil-robot')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-step-upload')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-step-moderate')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-step-solve')).toBeTruthy();
+  });
+
+  it('shows brand icon on a contrast plate', () => {
+    render(<AnalyzingView step="solve" />);
+    expect(screen.getByTestId('analyzing-icon-plate')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-hero')).toBeTruthy();
+    expect(screen.getByTestId('cozbil-robot')).toBeTruthy();
   });
 });
