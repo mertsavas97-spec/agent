@@ -4,12 +4,14 @@ import { runSolveQuestion } from '../src/solve/solveQuestion';
 import type { VisionClient } from '../src/moderation/visionClient';
 
 const cleanVision: VisionClient = {
+  source: 'stub',
   async safeSearch() {
     return { adult: 'VERY_UNLIKELY', violence: 'VERY_UNLIKELY', racy: 'VERY_UNLIKELY' };
   },
 };
 
 const dirtyVision: VisionClient = {
+  source: 'stub',
   async safeSearch() {
     return { adult: 'VERY_LIKELY', violence: 'UNLIKELY', racy: 'POSSIBLE' };
   },

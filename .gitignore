@@ -8,6 +8,7 @@
 # Superpowers / plugin caches (installed per-machine)
 **/.env
 **/.env.*
+!**/.env.*.example
 **/.secrets/
 *-vertex.json
 *.bak

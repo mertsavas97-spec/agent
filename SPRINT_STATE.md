@@ -3,7 +3,7 @@
 **Aktif çalışma yeri:** Cloud agent (Cursor Mobile)  
 **Branch:** `cursor/guncel-native-terminal-6767` (base: mvp-10-launch-audit)  
 **Sprint:** 3 residual kapanıyor → **Sprint 4’e GEÇİLMEDİ** (owner isteği)  
-**Şimdi:** Metro + localhost.run tunnel HAZIR — telefonda native build bağlan
+**Şimdi:** GCP Startup live — Vertex AI + deploy (owner login bekliyor)
 
 ## Sprint 3 residual
 
