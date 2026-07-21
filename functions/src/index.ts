@@ -4,7 +4,8 @@ import * as functions from 'firebase-functions/v1';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
-import { liveBackendLabel, runtimeModeLabel } from './config/runtime';
+import { hasVisionKey, liveBackendLabel, runtimeModeLabel } from './config/runtime';
+import { useVertexAi } from './ai/vertexClient';
 import {
   assertExplainRateLimit,
   createExplainGenerator,
@@ -35,13 +36,31 @@ const regional = functions.region('europe-west1');
 
 /** Health check — Phase 1 scaffold. */
 export const ping = regional.https.onRequest((_req, res) => {
+  const visionBackend = hasVisionKey()
+    ? 'api_key'
+    : useVertexAi()
+      ? 'adc'
+      : runtimeModeLabel() === 'demo'
+        ? 'stub'
+        : 'missing';
   res.status(200).json({
     ok: true,
     app: 'cozbil',
     exams: ['lgs', 'ygs', 'kpss', 'trafik'],
     aiMode: runtimeModeLabel(),
     aiBackend: liveBackendLabel(),
-    projectId: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT_ID || null,
+    visionBackend,
+    vertex: useVertexAi(),
+    vertexLocation: process.env.VERTEX_LOCATION || 'us-central1',
+    vertexModel: process.env.VERTEX_MODEL || 'gemini-2.5-flash',
+    projectId:
+      process.env.GCLOUD_PROJECT ||
+      process.env.GCP_PROJECT_ID ||
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      null,
+    billingNote: useVertexAi()
+      ? 'Gemini+Vision → linked GCP billing (Startup credits)'
+      : null,
   });
 });
 

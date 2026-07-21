@@ -43,12 +43,20 @@ export function assertDemoAiAllowedInRuntime(): void {
   throw err;
 }
 
+/** Vision via API key or Vertex ADC (same GCP billing / Startup). */
+export function hasVisionAdcPath(): boolean {
+  return useVertexAi();
+}
+
 /** Live solve requires Vision SafeSearch unless demo/open override. */
 export function assertVisionConfiguredForLive(): void {
   if (hasVisionKey()) return;
+  if (hasVisionAdcPath()) return;
   if (isDemoAiMode()) return;
   if (process.env.COZBIL_ALLOW_OPEN_VISION === '1') return;
-  const err = new Error('GOOGLE_CLOUD_VISION_API_KEY gerekli (live SafeSearch)');
+  const err = new Error(
+    'GOOGLE_CLOUD_VISION_API_KEY veya COZBIL_USE_VERTEX=1 (ADC Vision) gerekli',
+  );
   err.name = 'VisionConfigError';
   throw err;
 }

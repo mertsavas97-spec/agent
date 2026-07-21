@@ -1,6 +1,6 @@
-import { GoogleAuth } from 'google-auth-library';
-
 import type { ExamType } from '../types/contracts';
+
+import { gcpAccessToken } from './gcpAuth';
 
 const DEFAULT_PROJECT = 'cozbil-dev-f9583';
 const DEFAULT_LOCATION = 'us-central1';
@@ -28,16 +28,6 @@ export function useVertexAi(): boolean {
   return process.env.COZBIL_USE_VERTEX === '1';
 }
 
-async function accessToken(): Promise<string> {
-  const auth = new GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-  });
-  const client = await auth.getClient();
-  const token = await client.getAccessToken();
-  if (!token.token) throw new Error('Vertex ADC: no access token');
-  return token.token;
-}
-
 type Part =
   | { text: string }
   | { inlineData: { mimeType: string; data: string } };
@@ -53,7 +43,7 @@ export async function vertexGenerateContent(parts: Part[]): Promise<string> {
     `https://${location}-aiplatform.googleapis.com/v1/projects/${project}` +
     `/locations/${location}/publishers/google/models/${model}:generateContent`;
 
-  const token = await accessToken();
+  const token = await gcpAccessToken();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   let res: Response;

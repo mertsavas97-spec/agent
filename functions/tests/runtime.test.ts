@@ -61,7 +61,7 @@ describe('runtime demo mode', () => {
     expect(() => assertDemoAiAllowedInRuntime()).toThrow(/COZBIL_DEMO_AI/);
   });
 
-  it('requires Vision key in live mode', () => {
+  it('requires Vision key in live AI Studio mode', () => {
     process.env.COZBIL_DEMO_AI = '0';
     process.env.GEMINI_API_KEY = 'k';
     delete process.env.GOOGLE_CLOUD_VISION_API_KEY;
@@ -70,5 +70,15 @@ describe('runtime demo mode', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { assertVisionConfiguredForLive } = require('../src/config/runtime');
     expect(() => assertVisionConfiguredForLive()).toThrow(/VISION/);
+  });
+
+  it('allows live Vision via Vertex ADC without API key', () => {
+    process.env.COZBIL_DEMO_AI = '0';
+    process.env.COZBIL_USE_VERTEX = '1';
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_CLOUD_VISION_API_KEY;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { assertVisionConfiguredForLive } = require('../src/config/runtime');
+    expect(() => assertVisionConfiguredForLive()).not.toThrow();
   });
 });
