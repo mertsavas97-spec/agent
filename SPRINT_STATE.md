@@ -1,9 +1,9 @@
 # Sprint State
 
-**Aktif çalışma yeri:** Mac masaüstü  
-**Branch:** `cursor/mvp-10-launch-audit-9131`  
+**Aktif çalışma yeri:** Cloud agent (Cursor Mobile)  
+**Branch:** `cursor/guncel-native-terminal-6767` (base: mvp-10-launch-audit)  
 **Sprint:** 3 residual kapanıyor → **Sprint 4’e GEÇİLMEDİ** (owner isteği)  
-**Şimdi:** Metro (dev-client) telefon dogfood
+**Şimdi:** Metro + localhost.run tunnel HAZIR — telefonda native build bağlan
 
 ## Sprint 3 residual
 

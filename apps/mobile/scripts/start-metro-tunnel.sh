@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Metro + localhost.run SSH tunnel (cloud → phone).
-# localtunnel drops; cloudflared quick tunnels often NXDOMAIN/502 here.
+# Deep link points at the public URL; Metro stays on :8081 (no restart —
+# restarting Expo mid-tunnel often drops localhost.run with HTTP 503).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PORT="${METRO_PORT:-8081}"
@@ -19,14 +20,14 @@ pkill -f "cloudflared tunnel --url http://127.0.0.1:${PORT}" 2>/dev/null || true
 tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
 sleep 1
 
-# Metro (any host first)
+# Metro once (keep alive for the whole session)
 if ! curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1; then
   tmux kill-session -t cozbil-metro 2>/dev/null || true
   pkill -f "expo start --dev-client --port ${PORT}" 2>/dev/null || true
   sleep 1
   tmux new-session -d -s cozbil-metro -c "$ROOT" -- bash -lc \
     "npx expo start --dev-client --port ${PORT}"
-  for i in $(seq 1 50); do
+  for i in $(seq 1 60); do
     curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1 && break
     sleep 1
   done
@@ -61,7 +62,7 @@ HOST="${TUNNEL_URL#https://}"
 echo "Tunnel: $TUNNEL_URL"
 
 ok=0
-for i in $(seq 1 20); do
+for i in $(seq 1 30); do
   code=$(curl -sS -m 10 -o /tmp/lhr-status.body -w "%{http_code}" "${TUNNEL_URL}/status" 2>/dev/null || echo 000)
   body=$(cat /tmp/lhr-status.body 2>/dev/null || true)
   echo "  verify $i -> HTTP $code ($body)"
@@ -74,26 +75,6 @@ done
 
 if [[ "$ok" != "1" ]]; then
   echo "Tunnel Metro'ya ulaşamıyor."
-  exit 1
-fi
-
-# Restart Metro so deep link / QR use public host
-tmux kill-session -t cozbil-metro 2>/dev/null || true
-pkill -f "expo start --dev-client --port ${PORT}" 2>/dev/null || true
-sleep 2
-tmux new-session -d -s cozbil-metro -c "$ROOT" -- bash -lc \
-  "export REACT_NATIVE_PACKAGER_HOSTNAME='${HOST}' EXPO_PACKAGER_PROXY_URL='${TUNNEL_URL}'; npx expo start --dev-client --port ${PORT}"
-
-for i in $(seq 1 50); do
-  curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1 && break
-  sleep 1
-done
-
-# Confirm tunnel still works after Metro restart
-sleep 2
-code=$(curl -sS -m 10 -o /tmp/lhr-status.body -w "%{http_code}" "${TUNNEL_URL}/status" 2>/dev/null || echo 000)
-if [[ "$code" != "200" ]]; then
-  echo "Metro restart sonrası tunnel doğrulaması başarısız (HTTP $code)."
   exit 1
 fi
 
@@ -126,4 +107,6 @@ echo "Android HTTPS sorununda:"
 echo "  exp+cozbil://expo-development-client/?url=${ENC_HTTP}"
 echo ""
 echo "ÖNEMLİ: 172.30.x / localhost / eski loca.lt URL'leri ÇALIŞMAZ."
+echo "tmux Metro:  tmux attach -t cozbil-metro"
+echo "tmux tunnel: tmux attach -t cozbil-metro-tunnel"
 echo "=============================================="
