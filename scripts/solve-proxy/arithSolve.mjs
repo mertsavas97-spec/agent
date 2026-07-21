@@ -378,10 +378,165 @@ export function recoverParenDiffStack(ocrText) {
 }
 
 /**
- * @returns {{ expr: string, value: number, choice?: string, ocr: string, num?: number, den?: number } | null}
+ * LGS-style fraction-of chain: whole × a/b × c/d (e.g. 24 × 3/8 × 1/3 = 3).
+ * Requires narrative cues so pure arithmetic lines are not stolen.
+ */
+export function tryFractionOfChain(ocrText, choices = parseChoices(ocrText)) {
+  const head = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '');
+  // Require Turkish "…'si / …'i" possessive after the fraction (word problem cue).
+  const ofFracMarks = (
+    head.match(/\d+\s*\/\s*\d+\s*['''´`][iıüeüa]/gi) || []
+  ).length;
+  const narrative =
+    /(öğrenci|kız|erkek|kulüp|spor)/i.test(head) || ofFracMarks >= 1;
+  // Pure "işleminin sonucu" stacks must not be treated as word problems.
+  if (!narrative || /işleminin sonucu/i.test(head)) return null;
+
+  const fracMatches = [...head.matchAll(/(\d+)\s*\/\s*(\d+)/g)];
+  if (fracMatches.length < 1) return null;
+
+  const firstFracAt = head.search(/\d+\s*\/\s*\d+/);
+  const before = firstFracAt >= 0 ? head.slice(0, firstFracAt) : head;
+  const wholes = [...before.matchAll(/\b(\d{1,4})\b/g)].map((m) => Number(m[1]));
+  const whole = [...wholes].reverse().find((n) => n >= 2);
+  if (whole == null) return null;
+
+  let value = whole;
+  let expr = String(whole);
+  for (const m of fracMatches) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (!b) return null;
+    value = (value * a) / b;
+    expr += `*(${a}/${b})`;
+  }
+  if (!Number.isFinite(value)) return null;
+  const choice = matchChoice(value, choices);
+  if (Object.keys(choices).length > 0 && !choice) return null;
+  return { expr, value, choice, kind: 'fraction_of' };
+}
+
+/**
+ * Plug MCQ choices into a linear equation (ax+b = cx+d). Handles 3(x-2)+4 = 2x+7.
+ */
+export function tryLinearEquation(ocrText, choices = parseChoices(ocrText)) {
+  const headRaw = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '')
+    .replace(/denklemini sağlayan.*$/i, '')
+    .replace(/aşağıdakilerden.*$/i, '')
+    .replace(/−/g, '-')
+    .replace(/–/g, '-');
+  if (!/[xX]/.test(headRaw) || !/=/.test(headRaw)) return null;
+
+  const eqIdx = headRaw.search(/=/);
+  if (eqIdx < 0) return null;
+  let L = eqIdx - 1;
+  while (L >= 0 && /[0-9xX()+\-*/.\s]/.test(headRaw[L])) L -= 1;
+  let R = eqIdx + 1;
+  while (R < headRaw.length && /[0-9xX()+\-*/.\s]/.test(headRaw[R])) R += 1;
+  // Drop leading "1." question labels / OCR junk glued into the math span
+  let left = headRaw
+    .slice(L + 1, eqIdx)
+    .replace(/^[^0-9(xX]+/, '')
+    .replace(/^\d{1,3}\.\s+/, '')
+    .trim();
+  let right = headRaw.slice(eqIdx + 1, R).trim();
+  if (!left || !right) return null;
+
+  const leftN = normalizeEqSide(left);
+  const rightN = normalizeEqSide(right);
+  if (!leftN || !rightN) return null;
+
+  const entries = Object.entries(choices);
+  if (entries.length === 0) return null;
+
+  for (const [label, raw] of entries) {
+    const x = choiceValue(raw);
+    if (!Number.isFinite(x)) continue;
+    try {
+      const lv = evalArith(leftN.replace(/x/gi, `(${x})`));
+      const rv = evalArith(rightN.replace(/x/gi, `(${x})`));
+      if (Math.abs(lv - rv) < 1e-6) {
+        return {
+          expr: `${leftN}=${rightN}`,
+          value: x,
+          choice: label,
+          kind: 'linear_eq',
+        };
+      }
+    } catch {
+      /* try next choice */
+    }
+  }
+  return null;
+}
+
+/** Normalize one side of an equation for evalArith (keep x, expand n(…). */
+function normalizeEqSide(raw) {
+  let s = String(raw)
+    .replace(/[·•∙]/g, '*')
+    .replace(/[×]/g, '*')
+    .replace(/[÷:]/g, '/')
+    .replace(/−|–/g, '-')
+    .replace(/\s+/g, '');
+  // 3(x-2) → 3*(x-2); )( → )*(
+  s = s.replace(/(\d)\(/g, '$1*(');
+  s = s.replace(/\)(\d)/g, ')*$1');
+  s = s.replace(/\)\(/g, ')*(');
+  s = s.replace(/(\d)x/gi, '$1*x');
+  s = s.replace(/[^0-9xX+\-*/().]/g, '');
+  if (!s || !/[xX]/.test(s)) return null;
+  return s.replace(/X/g, 'x');
+}
+
+/**
+ * Sequential percent up/down: 100 × (1±p/100) × … → final index (e.g. 90).
+ */
+export function tryPercentChain(ocrText, choices = parseChoices(ocrText)) {
+  const head = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '');
+  if (!/%\s*\d+/.test(head)) return null;
+  if (!/(artır|arttir|azalt|indir|yüzde\s*kaç)/i.test(head)) return null;
+
+  const events = [];
+  const re = /%\s*(\d+)/g;
+  let m;
+  while ((m = re.exec(head))) {
+    const pct = Number(m[1]);
+    const window = head.slice(m.index, m.index + 48).toLocaleLowerCase('tr-TR');
+    let sign = 0;
+    if (/artır|arttir|yükselt/.test(window)) sign = 1;
+    else if (/azalt|indir|düşür|eksilt/.test(window)) sign = -1;
+    if (sign !== 0) events.push({ pct, sign });
+  }
+  if (events.length < 1) return null;
+
+  let value = 100;
+  let expr = '100';
+  for (const e of events) {
+    const factor = 1 + (e.sign * e.pct) / 100;
+    value *= factor;
+    expr += `*${factor}`;
+  }
+  if (!Number.isFinite(value)) return null;
+  const choice = matchChoice(value, choices);
+  if (Object.keys(choices).length > 0 && !choice) return null;
+  return { expr, value, choice, kind: 'percent_chain', events };
+}
+
+/**
+ * @returns {{ expr: string, value: number, choice?: string, ocr: string, num?: number, den?: number, kind?: string } | null}
  */
 export function evaluateExpression(ocrText) {
   const choices = parseChoices(ocrText);
+
+  // Exam-style structured solvers first (before brittle digit-gluing extractors).
+  const fractionOf = tryFractionOfChain(ocrText, choices);
+  if (fractionOf) return { ...fractionOf, ocr: ocrText };
+
+  const linearEq = tryLinearEquation(ocrText, choices);
+  if (linearEq) return { ...linearEq, ocr: ocrText };
+
+  const percentChain = tryPercentChain(ocrText, choices);
+  if (percentChain) return { ...percentChain, ocr: ocrText };
 
   const parenStack = pickBestVariant(
     recoverParenDiffStack(ocrText).flatMap((e) => exprVariants(e)),
@@ -452,7 +607,10 @@ export function evaluateExpression(ocrText) {
     choices,
     (expr) => ({ value: evalArith(expr) }),
   );
-  if (scored) return { ...scored, ocr: ocrText };
+  // When şıklar exist, never ship a glued false positive (e.g. 24.3/8.1/3 → 1).
+  if (scored && (!Object.keys(choices).length || scored.choice)) {
+    return { ...scored, ocr: ocrText };
+  }
 
   return null;
 }
@@ -529,10 +687,42 @@ function matchChoice(value, choices) {
 }
 
 export function buildStepsFromEval(evaluated) {
-  const { expr, value, choice, num, den } = evaluated;
+  const { expr, value, choice, num, den, kind, events } = evaluated;
   const steps = [];
 
-  if (typeof num === 'number' && typeof den === 'number') {
+  if (kind === 'fraction_of') {
+    steps.push({
+      title: '1. Kesirleri sırayla uygula',
+      body: `Başlangıç ve paylar: ${prettyExpr(expr)}.`,
+    });
+    steps.push({
+      title: '2. Çarp',
+      body: `Her kesiri bir öncekinin üzerine uygula → ${formatNum(value)}.`,
+    });
+  } else if (kind === 'linear_eq') {
+    steps.push({
+      title: '1. Denklemi yaz',
+      body: `Denklem: ${prettyExpr(expr)}.`,
+    });
+    steps.push({
+      title: '2. Şıkları dene',
+      body: `x = ${formatNum(value)} her iki tarafı eşitliyor.`,
+    });
+  } else if (kind === 'percent_chain') {
+    const detail = Array.isArray(events)
+      ? events
+          .map((e) => `%${e.pct} ${e.sign > 0 ? 'artış' : 'azalış'}`)
+          .join(', sonra ')
+      : prettyExpr(expr);
+    steps.push({
+      title: '1. 100 birim varsay',
+      body: `Başlangıç = 100. Zincir: ${detail}.`,
+    });
+    steps.push({
+      title: '2. Çarpanları uygula',
+      body: `${prettyExpr(expr)} = ${formatNum(value)}.`,
+    });
+  } else if (typeof num === 'number' && typeof den === 'number') {
     steps.push({
       title: '1. Paydaki işlem',
       body: `Üstteki ifadeyi hesapla → ${formatNum(num)}.`,

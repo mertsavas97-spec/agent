@@ -96,4 +96,17 @@ assert.equal(ptNoisy?.subject, 'vehicle');
 assert.equal(ptNoisy?.topicKey, 'motor');
 assert.ok(ptNoisy?.answerLabel === 'A' || /Saft|Şaft/i.test(ptNoisy?.answerText ?? ''));
 
+// Dogfood fixture: "kilometre" (not "km") must still resolve to 50
+const speedKmWord = `
+Yerleşim yeri içinde, aksini belirten bir trafik işareti yoksa, otomobiller için azami hız sınırı saatte kaç kilometredir?
+A) 30
+B) 50
+C) 70
+D) 90
+E) 120
+`;
+const sp = tryTrafficSolve(speedKmWord, classTraffic);
+assert.equal(sp?.answerLabel, 'B');
+assert.match(sp?.answerText ?? '', /50/);
+
 console.log('trafficSolve.test.mjs OK');

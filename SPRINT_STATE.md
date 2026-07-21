@@ -1,9 +1,9 @@
 # Sprint State
 
 **Aktif çalışma yeri:** Cloud agent (Cursor Mobile)  
-**Branch:** `cursor/guncel-native-terminal-6767` (base: mvp-10-launch-audit)  
+**Branch:** `cursor/solve-word-eq-proxy-6767`  
 **Sprint:** 3 residual kapanıyor → **Sprint 4’e GEÇİLMEDİ** (owner isteği)  
-**Şimdi:** Solve pipeline stuck~90% fix — `cursor/solve-pipeline-stuck-6767` (Functions redeploy Mac’te)
+**Şimdi:** Assisted fallback kök nedeni — proxy URL + word/eq/percent solver; dogfood smoke B/E/A/B
 
 ## Sprint 3 residual
 

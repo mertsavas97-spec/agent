@@ -74,4 +74,32 @@ E) 7`,
   { approx: 7, choice: 'E' },
 );
 
+check(
+  'LGS fraction-of word problem → 3',
+  `1. Bir sınıfta 24 öğrenci vardır. Öğrencilerin 3/8'i kızdır. Kız öğrencilerin 1/3'ü spor kulübüne gidiyorsa, spor kulübüne giden kız öğrenci sayısı kaçtır?
+A) 2 B) 3 C) 4 D) 6 E) 8`,
+  { approx: 3, choice: 'B' },
+);
+
+check(
+  'YGS linear equation → 9',
+  `YGS - Matematik. 1. 3(x-2) + 4 = 2x + 7 denklemini sağlayan x değeri aşağıdakilerden hangisidir?
+A) 1 B) 3 C) 5 D) 7 E) 9`,
+  { approx: 9, choice: 'E' },
+);
+
+check(
+  'KPSS percent chain → 90',
+  `Bir ürünün fiyatı önce %20 artırılıp sonra %25 azaltılıyor. İşlemler sonunda ürünün fiyatı, başlangıçtaki fiyatının yüzde kaçıdır?
+A) 90 B) 95 C) 100 D) 105 E) 110`,
+  { approx: 90, choice: 'A' },
+);
+
+// Must NOT invent answer 1 from glued 24.3/8.1/3 when şıklar exist
+assert.equal(
+  evaluateExpression(`24.3/8.1/3\nA) 2\nB) 3\nC) 4`),
+  null,
+  'reject glued false positive without matching choice',
+);
+
 console.log('all arithSolve tests passed');

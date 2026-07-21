@@ -159,7 +159,10 @@ export function tryTrafficSolve(ocrText, classification) {
   }
 
   // --- Yerleşim yeri hız ---
-  if (/yerleşim yeri|azami hız|hız sınırı/i.test(blob) && /km/i.test(blob)) {
+  if (
+    /yerleşim yeri|azami hız|hız sınırı/i.test(blob) &&
+    /km\b|km\/s|kilometre/i.test(blob)
+  ) {
     const hit = pickChoice(choices, [/\b50\b/, /elli/]);
     return tag(
       {

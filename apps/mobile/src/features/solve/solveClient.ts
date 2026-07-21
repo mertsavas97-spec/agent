@@ -66,7 +66,7 @@ export type SolveClientRequest = SolveQuestionRequest & {
 /**
  * Dogfood order when proxy is configured (org-policy blocks Functions):
  * 1) OCR proxy (real steps)
- * 2) Firestore/Storage trigger
+ * 2) Firestore/Storage trigger (Vertex) — also after proxy unsupported_type
  * 3) Callable
  * 4) Local generic fallback
  */
@@ -74,6 +74,13 @@ export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
   let proxyUnsupported = false;
+  let proxyUnsupportedMeta: {
+    detected?: Subject;
+    topicId?: string | null;
+    classMeta?: SubjectClassificationMeta;
+    examHint?: SolveQuestionResponse['examHint'];
+    ocrPreview?: string;
+  } | null = null;
 
   if (isSolveProxyConfigured() && (request.imageUrl || request.imageBase64)) {
     try {
@@ -87,55 +94,39 @@ export async function callSolveQuestion(
         requestId: request.requestId,
       });
       if (proxy.status === 'unsupported_type') {
+        // Do not soft-fail here — Vertex/Firestore may still solve word problems.
         proxyUnsupported = true;
-        const detected = asSubject(
-          (proxy as { detectedSubject?: string }).detectedSubject,
-        );
+        const proxyExtra = proxy as SolveQuestionResponse & {
+          detectedSubject?: string;
+          topicId?: string | null;
+          ocrPreview?: string;
+          debugOcrPreview?: string;
+        };
+        const detected = asSubject(proxyExtra.detectedSubject);
         const topicId =
-          'topicId' in proxy && typeof proxy.topicId === 'string' ? proxy.topicId : null;
-        const classMeta = (proxy as { classification?: SubjectClassificationMeta })
-          .classification;
-        const examHint =
-          'examHint' in proxy && proxy.examHint ? proxy.examHint : undefined;
+          typeof proxyExtra.topicId === 'string' ? proxyExtra.topicId : null;
+        const classMeta = proxyExtra.classification;
+        const examHint = proxyExtra.examHint;
         const ocrPreview =
-          'ocrPreview' in proxy && typeof (proxy as { ocrPreview?: string }).ocrPreview === 'string'
-            ? (proxy as { ocrPreview: string }).ocrPreview
-            : undefined;
-        console.warn('solve proxy unsupported_type → local fallback', detected);
-        const fallback = buildLocalSolveFallback({
-          examType: request.examType,
-          subjectHint: detected && detected !== 'unknown' ? detected : request.subjectHint,
+          typeof proxyExtra.ocrPreview === 'string'
+            ? proxyExtra.ocrPreview
+            : typeof proxyExtra.debugOcrPreview === 'string'
+              ? proxyExtra.debugOcrPreview
+              : undefined;
+        proxyUnsupportedMeta = {
+          detected,
           topicId,
-          requestId: request.requestId,
-          reason: 'unsupported',
-          ocrText: ocrPreview,
-        });
-        if (fallback.status === 'solved') {
-          const detectedSubject = detected ?? fallback.subject;
-          const isTrafikBranch =
-            detectedSubject === 'traffic' ||
-            detectedSubject === 'vehicle' ||
-            detectedSubject === 'firstaid';
-          const confidence = classMeta?.confidence ?? (isTrafikBranch ? 'medium' : 'low');
-          return {
-            ...fallback,
-            examHint,
-            ocrPreview,
-            classification: {
-              subject: detectedSubject === 'unknown' ? fallback.subject : detectedSubject,
-              confidence,
-              // High/medium Trafik branşı için gereksiz ders popup'ı açma
-              needsConfirm:
-                request.examType === 'trafik' && isTrafikBranch
-                  ? false
-                  : confidence !== 'high',
-              alternatives: classMeta?.alternatives,
-            },
-          } as SolveQuestionResponse;
-        }
-        return examHint ? { ...fallback, examHint } : fallback;
+          classMeta,
+          examHint,
+          ocrPreview,
+        };
+        console.warn(
+          'solve proxy unsupported_type → try Firestore/Vertex before local tips',
+          detected,
+        );
+      } else {
+        return proxy;
       }
-      return proxy;
     } catch (proxyErr) {
       console.warn('solve proxy failed, trying Firebase paths', proxyErr);
     }
@@ -147,7 +138,7 @@ export async function callSolveQuestion(
     // Org policy blocks public callable invoker — skip after trigger timeout.
     if (isServerSolveUnavailable(firestoreErr)) {
       console.warn('solveViaFirestore unavailable → local fallback (skip callable)', firestoreErr);
-      return localFallback(request, proxyUnsupported);
+      return localFallbackFromProxyMeta(request, proxyUnsupported, proxyUnsupportedMeta);
     }
 
     console.warn('solveViaFirestore failed, trying callable', firestoreErr);
@@ -170,11 +161,61 @@ export async function callSolveQuestion(
         isInvokerBlocked(callableErr) ||
         isServerSolveUnavailable(callableErr)
       ) {
-        return localFallback(request, proxyUnsupported);
+        return localFallbackFromProxyMeta(request, proxyUnsupported, proxyUnsupportedMeta);
       }
       throw callableErr;
     }
   }
+}
+
+function localFallbackFromProxyMeta(
+  request: SolveClientRequest,
+  proxyUnsupported: boolean,
+  meta: {
+    detected?: Subject;
+    topicId?: string | null;
+    classMeta?: SubjectClassificationMeta;
+    examHint?: SolveQuestionResponse['examHint'];
+    ocrPreview?: string;
+  } | null,
+): SolveQuestionResponse {
+  if (proxyUnsupported && meta) {
+    const fallback = buildLocalSolveFallback({
+      examType: request.examType,
+      subjectHint:
+        meta.detected && meta.detected !== 'unknown'
+          ? meta.detected
+          : request.subjectHint,
+      topicId: meta.topicId,
+      requestId: request.requestId,
+      reason: 'unsupported',
+      ocrText: meta.ocrPreview,
+    });
+    if (fallback.status === 'solved') {
+      const detectedSubject = meta.detected ?? fallback.subject;
+      const isTrafikBranch =
+        detectedSubject === 'traffic' ||
+        detectedSubject === 'vehicle' ||
+        detectedSubject === 'firstaid';
+      const confidence = meta.classMeta?.confidence ?? (isTrafikBranch ? 'medium' : 'low');
+      return {
+        ...fallback,
+        ...(meta.examHint ? { examHint: meta.examHint } : {}),
+        ...(meta.ocrPreview ? { ocrPreview: meta.ocrPreview } : {}),
+        classification: {
+          subject: detectedSubject === 'unknown' ? fallback.subject : detectedSubject,
+          confidence,
+          needsConfirm:
+            request.examType === 'trafik' && isTrafikBranch
+              ? false
+              : confidence !== 'high',
+          alternatives: meta.classMeta?.alternatives,
+        },
+      } as SolveQuestionResponse;
+    }
+    return meta.examHint ? { ...fallback, examHint: meta.examHint } : fallback;
+  }
+  return localFallback(request, proxyUnsupported);
 }
 
 function localFallback(
