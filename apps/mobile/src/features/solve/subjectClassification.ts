@@ -6,8 +6,6 @@ import type {
 } from '@/src/lib/api/types';
 import { subjectsForExam } from '@/src/data';
 
-import { buildLocalSolveFallback } from './localSolveFallback';
-
 export function shouldConfirmExamMismatch(
   hint: ExamHintMeta | undefined,
   profileExam: ExamType,
@@ -68,36 +66,6 @@ export type SolvedWithClassification = SolveQuestionSuccess & {
   classification?: SubjectClassification;
 };
 
-/** Show confirm sheet unless user already pinned a hint or model is high-confidence. */
-export function shouldConfirmSubject(
-  result: SolvedWithClassification,
-  opts: { subjectHint?: Subject; examType: ExamType },
-): boolean {
-  if (opts.subjectHint && opts.subjectHint !== 'unknown') {
-    return false;
-  }
-  if (result.subject === 'unknown') return true;
-
-  const conf = result.classification?.confidence;
-  // Ehliyet: traffic / vehicle / firstaid branşı geldiyse ders popup'ı atla
-  // (medium güven de yeterli — diğer sınavlar gibi net aksın)
-  if (
-    opts.examType === 'trafik' &&
-    (conf === 'high' || conf === 'medium' || !conf) &&
-    (result.subject === 'traffic' ||
-      result.subject === 'vehicle' ||
-      result.subject === 'firstaid')
-  ) {
-    return false;
-  }
-
-  if (result.classification?.needsConfirm) return true;
-  if (conf && conf !== 'high') {
-    return true;
-  }
-  return false;
-}
-
 /** Apply user-confirmed (or pre-selected hint) subject onto a solved payload. */
 export function applySubjectOverride(
   result: SolveQuestionSuccess,
@@ -117,36 +85,19 @@ export function applySubjectOverride(
     };
   }
 
-  const remapped = buildLocalSolveFallback({
-    examType,
-    subjectHint: subject,
-    requestId: result.solutionId.replace(/^(proxy-sol-|local-sol-)/, '') || 'override',
-    reason: 'unsupported',
-  });
-
-  if (remapped.status !== 'solved') return { ...result, subject };
-
-  // Math↔geometry may share arithmetic steps. Ehliyet branşları (traffic/vehicle/firstaid)
-  // MUST NOT share — cross-branch keepSteps was keeping foreign “İlk Yardım” answers on motor stems.
   const sameFamily =
     (result.subject === 'math' || result.subject === 'geometry') &&
     (subject === 'math' || subject === 'geometry');
-  const keepSteps = sameFamily || result.subject === subject;
-
+  if (!sameFamily) {
+    // Never fabricate a solved payload for a different guessed subject. The
+    // caller must re-run the image with an explicit hint instead.
+    return result;
+  }
   return {
     ...result,
     subject,
-    topicId: remapped.topicId,
-    steps: keepSteps ? result.steps : remapped.steps,
-    answer: keepSteps ? result.answer : undefined,
-    assisted: keepSteps ? result.assisted : true,
-    transparencyNote: keepSteps
-      ? result.transparencyNote
-      : `Ders güncellendi. Adımlar ${subject} için yeniden düzenlendi.`,
-    classification: {
-      subject,
-      confidence: 'high',
-      needsConfirm: false,
-    },
+    classification: result.classification
+      ? { ...result.classification, subject, confidence: 'high', needsConfirm: false }
+      : undefined,
   };
 }

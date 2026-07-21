@@ -15,6 +15,7 @@ function solved(over: Partial<SolveQuestionSuccess> = {}): SolveQuestionSuccess 
     topicId: 'ygs-math-temel',
     subject: 'math',
     steps: [{ title: '1', body: 'ok' }],
+    answer: { text: 'ok' },
     transparencyNote: 'ok',
     quota: { remainingToday: 5, unlimited: false },
     ...over,

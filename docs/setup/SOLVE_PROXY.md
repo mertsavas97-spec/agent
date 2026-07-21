@@ -15,7 +15,8 @@ If OCR/parse fails, soft-fallback keeps detected subject when known; otherwise `
 
 ```bash
 export GOOGLE_CLOUD_VISION_API_KEY=...
-node scripts/solve-proxy/server.mjs
+export COZBIL_PROXY_TOKEN="$(openssl rand -hex 24)"
+COZBIL_PROXY_DOGFOOD=1 node scripts/solve-proxy/server.mjs
 # expose (prefer cloudflared — localtunnel interstitial breaks JSON):
 cloudflared tunnel --url http://127.0.0.1:8787
 ```
@@ -24,8 +25,14 @@ Then in `apps/mobile/.env` (gitignored):
 
 ```
 EXPO_PUBLIC_SOLVE_PROXY_URL=https://your-tunnel.trycloudflare.com
+EXPO_PUBLIC_SOLVE_PROXY_TOKEN=<COZBIL_PROXY_TOKEN ile aynı değer>
 ```
 
 Restart Metro so the env is picked up.
+
+> Güvenlik sınırı: proxy yalnız development/dogfood içindir ve
+> `COZBIL_PROXY_DOGFOOD=1` olmadan `/solve` açılmaz. Production build
+> `EXPO_PUBLIC_SOLVE_PROXY_URL` tanımlı olsa bile proxy'yi kullanmaz; SafeSearch,
+> auth ve kota korumalı Storage/Firestore Functions yolu zorunludur.
 
 Unit check: `node scripts/solve-proxy/arithSolve.test.mjs`

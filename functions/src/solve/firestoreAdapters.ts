@@ -4,7 +4,7 @@ import { getStorage } from 'firebase-admin/storage';
 import type { CacheStore, CachedSolution } from '../cache/solutionCache';
 import { cacheKeyFromPhash } from '../cache/phash';
 import { nextStreakCount } from '../progress/streak';
-import type { QuotaState } from '../quota/dailyQuota';
+import { assertHasQuota, type QuotaState } from '../quota/dailyQuota';
 import type { ExamType, SolveQuestionSuccess } from '../types/contracts';
 
 export function createFirestoreCache(): CacheStore {
@@ -63,6 +63,20 @@ export async function persistSolved(input: {
     const userSnap = await tx.get(userRef);
     const user = userSnap.data() ?? {};
     const sameDay = user.dailySolveDate === today;
+    if (input.billed) {
+      // The initial check happens before OCR/AI work. Re-check inside the same
+      // transaction that increments usage so concurrent solves cannot both
+      // consume the final free slot.
+      assertHasQuota(
+        {
+          dailySolveCount: Number(user.dailySolveCount ?? 0),
+          dailySolveDate: (user.dailySolveDate as string | null) ?? null,
+          subscriptionStatus:
+            (user.subscriptionStatus as QuotaState['subscriptionStatus']) ?? 'free',
+        },
+        today,
+      );
+    }
     const nextCount = input.billed
       ? (sameDay ? Number(user.dailySolveCount ?? 0) + 1 : 1)
       : Number(user.dailySolveCount ?? 0);

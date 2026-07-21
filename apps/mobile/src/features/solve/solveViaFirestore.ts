@@ -11,13 +11,14 @@ import type { SolveQuestionRequest, SolveQuestionResponse } from '@/src/lib/api/
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
+import { PENDING_STUCK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
+
 /**
  * Live Vertex + Gen2 cold start often exceeds 30s (Vision + Gemini + retry).
  * Keep under Functions timeout (120s); surface error before silent hang.
  */
-export const SOLVE_TIMEOUT_MS = 75_000;
+export { PENDING_STUCK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
 /** Grace for Eventarc/Storage lag before declaring trigger missing. */
-export const PENDING_STUCK_MS = 25_000;
 
 type SolveRequestDoc = {
   status: 'pending' | 'running' | 'done' | 'error';

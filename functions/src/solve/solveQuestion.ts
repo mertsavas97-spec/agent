@@ -80,7 +80,9 @@ export async function runSolveQuestion(
   }
 
   const cached = await lookupCache(deps.cache, phash, input.examType);
-  if (cached) {
+  // Old cache rows may predate the structured-answer contract. Do not bill or
+  // return them as solved; regenerate through the model instead.
+  if (cached?.answer?.text?.trim()) {
     const success: SolveQuestionSuccess = {
       attemptId: 'pending',
       solutionId: 'pending',
@@ -139,7 +141,11 @@ export async function runSolveQuestion(
     };
   }
 
-  if (isGeometryUnsupported(parsed) || parsed.steps.length === 0) {
+  if (
+    isGeometryUnsupported(parsed) ||
+    parsed.steps.length === 0 ||
+    !parsed.answer?.text?.trim()
+  ) {
     const { attemptId } = await deps.persistRejected({
       uid: input.uid,
       imagePath: input.imagePath,

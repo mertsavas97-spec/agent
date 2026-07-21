@@ -14,6 +14,7 @@ function solved(over: Partial<SolveQuestionSuccess> = {}): SolveQuestionSuccess 
     topicId: 'lgs-math-kesirler',
     subject: 'math',
     steps: [{ title: '1', body: 'ok' }],
+    answer: { text: 'ok' },
     transparencyNote: 'n',
     quota: { remainingToday: 5, unlimited: false },
     ...over,
@@ -35,35 +36,30 @@ describe('examPipelineIsolation', () => {
     expect(topicBelongsToExam('trafik-vehicle-motor', 'trafik')).toBe(true);
   });
 
-  it('remaps leaked Ehliyet topic out of KPSS result', () => {
-    const out = enforceExamPipeline(
-      solved({
-        subject: 'traffic',
-        topicId: 'trafik-traffic-kurallar',
-        answer: { label: 'A', text: 'hazırlanmalı' },
-      }),
-      'kpss',
-    );
-    expect(out.subject).not.toBe('traffic');
-    expect(out.topicId?.startsWith('trafik-')).toBe(false);
-    expect(out.topicId?.startsWith('kpss-')).toBe(true);
-    expect(out.answer).toBeUndefined();
-    expect(out.assisted).toBe(true);
+  it('throws on leaked Ehliyet topic under KPSS', () => {
+    expect(() =>
+      enforceExamPipeline(
+        solved({
+          subject: 'traffic',
+          topicId: 'trafik-traffic-kurallar',
+          answer: { label: 'A', text: 'hazırlanmalı' },
+        }),
+        'kpss',
+      ),
+    ).toThrow(/EXAM_PIPELINE_MISMATCH/);
   });
 
-  it('remaps leaked Turkish topic out of Ehliyet result', () => {
-    const out = enforceExamPipeline(
-      solved({
-        subject: 'turkish',
-        topicId: 'kpss-turkish-paragraf',
-        answer: { text: 'öyküleme' },
-      }),
-      'trafik',
-    );
-    expect(['traffic', 'vehicle', 'firstaid']).toContain(out.subject);
-    expect(out.topicId?.startsWith('trafik-')).toBe(true);
-    expect(out.answer).toBeUndefined();
-    expect(out.assisted).toBe(true);
+  it('throws on leaked Turkish topic under Ehliyet', () => {
+    expect(() =>
+      enforceExamPipeline(
+        solved({
+          subject: 'turkish',
+          topicId: 'kpss-turkish-paragraf',
+          answer: { text: 'öyküleme' },
+        }),
+        'trafik',
+      ),
+    ).toThrow(/EXAM_PIPELINE_MISMATCH/);
   });
 
   it('keeps valid Ehliyet vehicle payload intact', () => {

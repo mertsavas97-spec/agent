@@ -95,6 +95,42 @@ A) 90 B) 95 C) 100 D) 105 E) 110`,
   { approx: 90, choice: 'A' },
 );
 
+check(
+  'LGS OCR recovered stacked fractions → 3',
+  `Bir sınıfta 24 öğrenci vardır. Öğrencilerin — 'i kızdır.
+Kız öğrencilerin —'ü spor kulübüne gidiyorsa sayı kaçtır?
+OCR_KESIRLER: 3/8 1/3
+A) 2
+B) 3
+C) 4
+D) 6
+E) 8`,
+  { approx: 3, choice: 'B' },
+);
+
+check(
+  'YGS OCR plus sign read as duplicated four → 9',
+  `3(X—2)4 4 = 2x + 7 denklemini sağlayan x değeri hangisidir?
+A) 1
+B) 3
+C) 5
+D) 7
+E) 9`,
+  { approx: 9, choice: 'E' },
+);
+
+check(
+  'KPSS OCR percent sign read as 94 → 90',
+  `Bir ürünün fiyatı önce %20 artırılıp sonra
+9425 azaltılıyor. Son fiyat başlangıcın yüzde kaçıdır?
+A) 90
+B) 95
+C) 100
+D) 105
+E) 110`,
+  { approx: 90, choice: 'A' },
+);
+
 // Must NOT invent answer 1 from glued 24.3/8.1/3 when şıklar exist
 assert.equal(
   evaluateExpression(`24.3/8.1/3\nA) 2\nB) 3\nC) 4`),

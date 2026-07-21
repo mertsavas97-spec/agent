@@ -10,6 +10,9 @@ import {
   labelForStep,
   progressForStep,
 } from './analyzeSteps';
+import { SOLVE_PROGRESS_CRAWL_MS } from './solveTiming';
+
+export { SOLVE_PROGRESS_CRAWL_MS } from './solveTiming';
 
 export type AnalyzingViewProps = {
   step?: AnalyzeStepId;
@@ -61,12 +64,13 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     }).start();
   }, [anim, baseTarget]);
 
-  // On solve stage: crawl slowly toward 92% (live Vertex can take ~60s).
+  // Healthy proxy/Vertex solves target ~15–20s. Backend failures have explicit
+  // timeouts and must not be disguised by a minute-long progress crawl.
   useEffect(() => {
     if (step !== 'solve') return;
     const crawl = Animated.timing(anim, {
       toValue: 0.92,
-      duration: 55_000,
+      duration: SOLVE_PROGRESS_CRAWL_MS,
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     });

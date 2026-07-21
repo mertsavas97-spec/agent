@@ -3,15 +3,10 @@ import { httpsCallable } from 'firebase/functions';
 import type {
   SolveQuestionRequest,
   SolveQuestionResponse,
-  Subject,
-  SubjectClassificationMeta,
 } from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 
-import {
-  buildLocalSolveFallback,
-  isServerSolveUnavailable,
-} from './localSolveFallback';
+import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
 
@@ -28,64 +23,38 @@ function isInvokerBlocked(err: unknown): boolean {
   );
 }
 
-function asSubject(value: unknown): Subject | undefined {
-  if (typeof value !== 'string') return undefined;
-  const allowed: Subject[] = [
-    'math',
-    'turkish',
-    'science',
-    'physics',
-    'chemistry',
-    'biology',
-    'history',
-    'geography',
-    'philosophy',
-    'literature',
-    'religion',
-    'english',
-    'geometry',
-    'civics',
-    'current',
-    'traffic',
-    'vehicle',
-    'firstaid',
-    'unknown',
-  ];
-  return allowed.includes(value as Subject) ? (value as Subject) : undefined;
-}
-
-export type SolveClientRequest = SolveQuestionRequest & {
+type PreparedFirestoreRequest = SolveQuestionRequest & {
   mimeType?: string;
   requestId: string;
-  /** Public download URL for dogfood OCR proxy */
   imageUrl?: string;
-  /** Local image bytes — preferred by proxy (avoids Storage fetch flakiness) */
-  imageBase64?: string;
 };
 
-/**
- * Dogfood order when proxy is configured (org-policy blocks Functions):
- * 1) OCR proxy (real steps)
- * 2) Firestore/Storage trigger (Vertex) — also after proxy unsupported_type
- * 3) Callable
- * 4) Local generic fallback
- */
+export type SolveClientRequest = Omit<SolveQuestionRequest, 'imagePath'> & {
+  imagePath?: string;
+  mimeType?: string;
+  requestId: string;
+  /** Bounded local bytes for the development-only OCR proxy. */
+  imageBase64?: string;
+  /** Local camera/gallery URI sent as raw binary to avoid base64 expansion. */
+  imageUri?: string;
+  imageUrl?: string;
+  /** Lazily upload only if proxy is disabled/unsupported/unavailable. */
+  prepareFirestore?: () => Promise<PreparedFirestoreRequest>;
+};
+
+/** Proxy is a bounded dogfood path; Firestore remains the authoritative fallback. */
 export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
-  let proxyUnsupported = false;
-  let proxyUnsupportedMeta: {
-    detected?: Subject;
-    topicId?: string | null;
-    classMeta?: SubjectClassificationMeta;
-    examHint?: SolveQuestionResponse['examHint'];
-    ocrPreview?: string;
-  } | null = null;
-
-  if (isSolveProxyConfigured() && (request.imageUrl || request.imageBase64)) {
+  let proxyUnsupported: SolveQuestionResponse | null = null;
+  if (
+    isSolveProxyConfigured() &&
+    (request.imageUri || request.imageUrl || request.imageBase64)
+  ) {
     try {
-      console.info('solve: OCR proxy');
-      const proxy = await callSolveQuestionViaProxy({
+      console.info('solve: bounded OCR proxy');
+      const response = await callSolveQuestionViaProxy({
+        imageUri: request.imageUri,
         imageUrl: request.imageUrl,
         imageBase64: request.imageBase64,
         mimeType: request.mimeType,
@@ -93,155 +62,111 @@ export async function callSolveQuestion(
         subjectHint: request.subjectHint,
         requestId: request.requestId,
       });
-      if (proxy.status === 'unsupported_type') {
-        // Do not soft-fail here — Vertex/Firestore may still solve word problems.
-        proxyUnsupported = true;
-        const proxyExtra = proxy as SolveQuestionResponse & {
-          detectedSubject?: string;
-          topicId?: string | null;
-          ocrPreview?: string;
-          debugOcrPreview?: string;
-        };
-        const detected = asSubject(proxyExtra.detectedSubject);
-        const topicId =
-          typeof proxyExtra.topicId === 'string' ? proxyExtra.topicId : null;
-        const classMeta = proxyExtra.classification;
-        const examHint = proxyExtra.examHint;
-        const ocrPreview =
-          typeof proxyExtra.ocrPreview === 'string'
-            ? proxyExtra.ocrPreview
-            : typeof proxyExtra.debugOcrPreview === 'string'
-              ? proxyExtra.debugOcrPreview
-              : undefined;
-        proxyUnsupportedMeta = {
-          detected,
-          topicId,
-          classMeta,
-          examHint,
-          ocrPreview,
-        };
-        console.warn(
-          'solve proxy unsupported_type → try Firestore/Vertex before local tips',
-          detected,
-        );
-      } else {
-        return proxy;
+      if (response.status === 'unsupported_type') {
+        proxyUnsupported = response;
+      } else if (isUsableResponse(response)) {
+        return response;
       }
-    } catch (proxyErr) {
-      console.warn('solve proxy failed, trying Firebase paths', proxyErr);
+    } catch (proxyError) {
+      console.warn('solve proxy failed, trying Firestore', proxyError);
     }
   }
 
+  let firestoreRequest: PreparedFirestoreRequest | undefined;
   try {
-    return await callSolveQuestionViaFirestore(request);
-  } catch (firestoreErr) {
-    // Org policy blocks public callable invoker — skip after trigger timeout.
-    if (isServerSolveUnavailable(firestoreErr)) {
-      console.warn('solveViaFirestore unavailable → local fallback (skip callable)', firestoreErr);
-      return localFallbackFromProxyMeta(request, proxyUnsupported, proxyUnsupportedMeta);
+    firestoreRequest = await resolveFirestoreRequest(request);
+    const firestore = await callSolveQuestionViaFirestore(firestoreRequest);
+    if (isUsableResponse(firestore)) return firestore;
+    throw Object.assign(
+      new Error('Çözüm üretildi ancak doğrulanabilir bir nihai cevap gelmedi.'),
+      { code: 'functions/internal' },
+    );
+  } catch (firestoreError) {
+    if (!firestoreRequest) throw firestoreError;
+    // Preserve an honest OCR "unsupported" response instead of manufacturing
+    // generic solved steps when the authoritative backend is unavailable.
+    if (proxyUnsupported && isServerSolveUnavailable(firestoreError)) {
+      return proxyUnsupported;
     }
-
-    console.warn('solveViaFirestore failed, trying callable', firestoreErr);
-
-    try {
-      const { functions } = getFirebase();
-      const callable = httpsCallable(functions, 'solveQuestion');
-      const {
-        requestId: _requestId,
-        imageUrl: _imageUrl,
-        imageBase64: _imageBase64,
-        ...callablePayload
-      } = request;
-      const result = await callable(callablePayload);
-      return result.data as SolveQuestionResponse;
-    } catch (callableErr) {
-      console.warn('callable solve failed', callableErr);
-
-      if (
-        isInvokerBlocked(callableErr) ||
-        isServerSolveUnavailable(callableErr)
-      ) {
-        return localFallbackFromProxyMeta(request, proxyUnsupported, proxyUnsupportedMeta);
-      }
-      throw callableErr;
-    }
+    return callableOrThrow(request, firestoreError, firestoreRequest);
   }
 }
 
-function localFallbackFromProxyMeta(
+async function resolveFirestoreRequest(
   request: SolveClientRequest,
-  proxyUnsupported: boolean,
-  meta: {
-    detected?: Subject;
-    topicId?: string | null;
-    classMeta?: SubjectClassificationMeta;
-    examHint?: SolveQuestionResponse['examHint'];
-    ocrPreview?: string;
-  } | null,
-): SolveQuestionResponse {
-  if (proxyUnsupported && meta) {
-    const fallback = buildLocalSolveFallback({
-      examType: request.examType,
-      subjectHint:
-        meta.detected && meta.detected !== 'unknown'
-          ? meta.detected
-          : request.subjectHint,
-      topicId: meta.topicId,
-      requestId: request.requestId,
-      reason: 'unsupported',
-      ocrText: meta.ocrPreview,
-    });
-    if (fallback.status === 'solved') {
-      const detectedSubject = meta.detected ?? fallback.subject;
-      const isTrafikBranch =
-        detectedSubject === 'traffic' ||
-        detectedSubject === 'vehicle' ||
-        detectedSubject === 'firstaid';
-      const confidence = meta.classMeta?.confidence ?? (isTrafikBranch ? 'medium' : 'low');
-      return {
-        ...fallback,
-        ...(meta.examHint ? { examHint: meta.examHint } : {}),
-        ...(meta.ocrPreview ? { ocrPreview: meta.ocrPreview } : {}),
-        classification: {
-          subject: detectedSubject === 'unknown' ? fallback.subject : detectedSubject,
-          confidence,
-          needsConfirm:
-            request.examType === 'trafik' && isTrafikBranch
-              ? false
-              : confidence !== 'high',
-          alternatives: meta.classMeta?.alternatives,
-        },
-      } as SolveQuestionResponse;
-    }
-    return meta.examHint ? { ...fallback, examHint: meta.examHint } : fallback;
-  }
-  return localFallback(request, proxyUnsupported);
-}
-
-function localFallback(
-  request: SolveClientRequest,
-  proxyUnsupported: boolean,
-): SolveQuestionResponse {
-  const fallback = buildLocalSolveFallback({
-    examType: request.examType,
-    subjectHint: request.subjectHint,
-    requestId: request.requestId,
-    reason: proxyUnsupported ? 'unsupported' : 'unavailable',
-  });
-  if (fallback.status === 'solved' && !request.subjectHint) {
-    const isTrafik =
-      request.examType === 'trafik' ||
-      fallback.subject === 'traffic' ||
-      fallback.subject === 'vehicle' ||
-      fallback.subject === 'firstaid';
+): Promise<PreparedFirestoreRequest> {
+  if (request.imagePath) {
     return {
-      ...fallback,
-      classification: {
-        subject: fallback.subject,
-        confidence: isTrafik ? 'medium' : 'low',
-        needsConfirm: !isTrafik,
-      },
+      imagePath: request.imagePath,
+      mimeType: request.mimeType,
+      requestId: request.requestId,
+      examType: request.examType,
+      subjectHint: request.subjectHint,
+      imageUrl: request.imageUrl,
     };
   }
-  return fallback;
+  if (request.prepareFirestore) {
+    return request.prepareFirestore();
+  }
+  throw Object.assign(new Error('FIRESTORE_IMAGE_NOT_PREPARED'), {
+    code: 'functions/invalid-argument',
+  });
+}
+
+function isUsableResponse(response: SolveQuestionResponse): boolean {
+  if (response.status !== 'solved') return true;
+  if (response.assisted) return false;
+  return Boolean(response.answer?.text?.trim());
+}
+
+async function callableOrThrow(
+  request: SolveClientRequest,
+  firestoreError: unknown,
+  prepared?: PreparedFirestoreRequest,
+): Promise<SolveQuestionResponse> {
+  if (isServerSolveUnavailable(firestoreError)) {
+    throw unavailableError(firestoreError);
+  }
+
+  console.warn('solveViaFirestore failed, trying callable', firestoreError);
+  try {
+    const { functions } = getFirebase();
+    const callable = httpsCallable(functions, 'solveQuestion');
+    const callablePayload = {
+      imagePath: prepared?.imagePath ?? request.imagePath,
+      mimeType: prepared?.mimeType ?? request.mimeType,
+      examType: prepared?.examType ?? request.examType,
+      subjectHint: prepared?.subjectHint ?? request.subjectHint,
+    };
+    const result = await callable(callablePayload);
+    const response = result.data as SolveQuestionResponse;
+    if (!isUsableResponse(response)) {
+      throw Object.assign(
+        new Error('Callable çözümünde doğrulanabilir nihai cevap yok.'),
+        { code: 'functions/internal' },
+      );
+    }
+    return response;
+  } catch (callableError) {
+    console.warn('callable solve failed', callableError);
+    if (
+      isInvokerBlocked(callableError) ||
+      isServerSolveUnavailable(callableError)
+    ) {
+      throw unavailableError(callableError);
+    }
+    throw callableError;
+  }
+}
+
+function unavailableError(cause?: unknown): Error {
+  return Object.assign(
+    new Error(
+      'Çözüm servisine şu an ulaşılamadı. Fotoğrafın yüklendi; lütfen biraz sonra tekrar dene.',
+    ),
+    {
+      code: 'functions/unavailable',
+      cause,
+    },
+  );
 }

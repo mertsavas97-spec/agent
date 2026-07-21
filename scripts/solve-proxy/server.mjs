@@ -6,6 +6,7 @@
  * Needs: GOOGLE_CLOUD_VISION_API_KEY
  */
 import http from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 import { evaluateExpression, buildStepsFromEval } from './arithSolve.mjs';
 import { classifyOcr, topicIdFor, applySubjectHint } from './classifyOcr.mjs';
 import { detectExamHint } from './examHint.mjs';
@@ -17,9 +18,30 @@ import {
 } from './examPipeline.mjs';
 import { ocrImageBase64 } from './visionOcr.mjs';
 import { tryVerbalSolve } from './verbalSolve.mjs';
+import {
+  allowedImageUrl,
+  allowedRedirectUrl,
+  MAX_REMOTE_IMAGE_BYTES,
+  readBodyLimited,
+  REMOTE_IMAGE_TIMEOUT_MS,
+} from './remoteImagePolicy.mjs';
 
 const PORT = Number(process.env.SOLVE_PROXY_PORT || 8787);
 const MAX_BYTES = 6 * 1024 * 1024;
+const DOGFOOD_ENABLED = process.env.COZBIL_PROXY_DOGFOOD === '1';
+const DOGFOOD_TOKEN = process.env.COZBIL_PROXY_TOKEN || '';
+const ALLOW_LOOPBACK_IMAGES =
+  process.env.COZBIL_PROXY_ALLOW_LOOPBACK_IMAGES === '1';
+const MAX_CONCURRENT_SOLVES = 3;
+const MAX_SOLVES_PER_MINUTE = 30;
+let activeSolves = 0;
+let recentSolveStarts = [];
+
+function validProxyToken(req) {
+  const provided = String(req.headers['x-cozbil-proxy-token'] || '');
+  if (!DOGFOOD_TOKEN || provided.length !== DOGFOOD_TOKEN.length) return false;
+  return timingSafeEqual(Buffer.from(provided), Buffer.from(DOGFOOD_TOKEN));
+}
 
 function send(res, status, body) {
   const json = JSON.stringify(body);
@@ -30,6 +52,39 @@ function send(res, status, body) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   });
   res.end(json);
+}
+
+async function readIncomingLimited(req, maxBytes) {
+  const declared = Number(req.headers['content-length'] || 0);
+  if (declared > maxBytes) throw new Error('payload_too_large');
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > maxBytes) throw new Error('payload_too_large');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, size);
+}
+
+async function fetchAllowedRemoteImage(rawUrl, signal) {
+  let current = allowedImageUrl(rawUrl, {
+    allowLoopback: ALLOW_LOOPBACK_IMAGES,
+  });
+  for (let redirectCount = 0; redirectCount <= 3; redirectCount += 1) {
+    const response = await fetch(current, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'cozbil-solve-proxy/1' },
+      signal,
+    });
+    if (response.status < 300 || response.status >= 400) return response;
+    const location = response.headers.get('location');
+    if (!location) throw new Error('image_redirect_missing');
+    current = allowedRedirectUrl(current, location, {
+      allowLoopback: ALLOW_LOOPBACK_IMAGES,
+    });
+  }
+  throw new Error('image_redirect_limit');
 }
 
 function solvedPayload({
@@ -86,27 +141,74 @@ const server = http.createServer(async (req, res) => {
     send(res, 200, { ok: true, service: 'cozbil-solve-proxy' });
     return;
   }
-  if (req.method !== 'POST' || req.url !== '/solve') {
+  const isJsonSolve = req.method === 'POST' && req.url === '/solve';
+  const isBinarySolve = req.method === 'POST' && req.url === '/solve-image';
+  if (!isJsonSolve && !isBinarySolve) {
     send(res, 404, { error: 'not_found' });
     return;
   }
+  if (!DOGFOOD_ENABLED) {
+    send(res, 503, {
+      error: 'dogfood_proxy_disabled',
+      message:
+        'Bu proxy yalnız geliştirme dogfood içindir. Canlı çözüm SafeSearch/kota korumalı Functions yolunu kullanır.',
+    });
+    return;
+  }
+  if (!DOGFOOD_TOKEN) {
+    send(res, 503, { error: 'dogfood_proxy_token_missing' });
+    return;
+  }
+  if (!validProxyToken(req)) {
+    send(res, 401, { error: 'dogfood_proxy_unauthorized' });
+    return;
+  }
+  const now = Date.now();
+  recentSolveStarts = recentSolveStarts.filter((at) => now - at < 60_000);
+  if (
+    activeSolves >= MAX_CONCURRENT_SOLVES ||
+    recentSolveStarts.length >= MAX_SOLVES_PER_MINUTE
+  ) {
+    send(res, 429, {
+      error: 'proxy_busy',
+      message: 'Dogfood çözüm servisi meşgul; biraz sonra tekrar dene.',
+    });
+    return;
+  }
+  activeSolves += 1;
+  recentSolveStarts.push(now);
 
   try {
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of req) {
-      size += chunk.length;
-      if (size > MAX_BYTES) {
-        send(res, 413, { error: 'payload_too_large' });
+    let input;
+    let imageBase64 = '';
+    let imageUrl = '';
+    let mimeType = 'image/jpeg';
+    if (isBinarySolve) {
+      const contentType = String(req.headers['content-type'] || '').toLowerCase();
+      if (!contentType.startsWith('image/')) {
+        send(res, 400, { error: 'image_content_type' });
         return;
       }
-      chunks.push(chunk);
+      const bytes = await readIncomingLimited(req, MAX_REMOTE_IMAGE_BYTES);
+      if (bytes.length < 80) {
+        send(res, 400, { error: 'image_empty' });
+        return;
+      }
+      imageBase64 = bytes.toString('base64');
+      mimeType = contentType.split(';')[0] || 'image/jpeg';
+      input = {
+        examType: req.headers['x-cozbil-exam-type'],
+        subjectHint: req.headers['x-cozbil-subject-hint'],
+        requestId: req.headers['x-cozbil-request-id'],
+      };
+    } else {
+      const bytes = await readIncomingLimited(req, MAX_BYTES);
+      const raw = bytes.toString('utf8');
+      input = JSON.parse(raw);
+      imageBase64 = typeof input.imageBase64 === 'string' ? input.imageBase64 : '';
+      imageUrl = typeof input.imageUrl === 'string' ? input.imageUrl : '';
+      mimeType = typeof input.mimeType === 'string' ? input.mimeType : 'image/jpeg';
     }
-    const raw = Buffer.concat(chunks).toString('utf8');
-    const input = JSON.parse(raw);
-    let imageBase64 = typeof input.imageBase64 === 'string' ? input.imageBase64 : '';
-    const imageUrl = typeof input.imageUrl === 'string' ? input.imageUrl : '';
-    const mimeType = typeof input.mimeType === 'string' ? input.mimeType : 'image/jpeg';
     const examType = ['lgs', 'ygs', 'kpss', 'trafik'].includes(input.examType)
       ? input.examType
       : 'lgs';
@@ -117,11 +219,13 @@ const server = http.createServer(async (req, res) => {
         : '';
 
     if ((!imageBase64 || imageBase64.length < 80) && imageUrl) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REMOTE_IMAGE_TIMEOUT_MS);
       try {
-        const imgRes = await fetch(imageUrl, {
-          redirect: 'follow',
-          headers: { 'User-Agent': 'cozbil-solve-proxy/1' },
-        });
+        const imgRes = await fetchAllowedRemoteImage(
+          imageUrl,
+          controller.signal,
+        );
         if (!imgRes.ok) {
           send(res, 400, {
             error: 'image_fetch_failed',
@@ -130,7 +234,12 @@ const server = http.createServer(async (req, res) => {
           });
           return;
         }
-        const buf = Buffer.from(await imgRes.arrayBuffer());
+        const contentType = imgRes.headers.get('content-type') || '';
+        if (!contentType.toLowerCase().startsWith('image/')) {
+          send(res, 400, { error: 'image_content_type' });
+          return;
+        }
+        const buf = await readBodyLimited(imgRes, MAX_REMOTE_IMAGE_BYTES);
         if (buf.length < 80) {
           send(res, 400, { error: 'image_empty' });
           return;
@@ -142,6 +251,8 @@ const server = http.createServer(async (req, res) => {
           message: fetchErr instanceof Error ? fetchErr.message : 'fetch_error',
         });
         return;
+      } finally {
+        clearTimeout(timer);
       }
     }
 
@@ -289,10 +400,16 @@ const server = http.createServer(async (req, res) => {
     });
   } catch (err) {
     console.error('solve-proxy error', err instanceof Error ? err.message : err);
+    if (err instanceof Error && err.message === 'payload_too_large') {
+      send(res, 413, { error: 'payload_too_large' });
+      return;
+    }
     send(res, 500, {
       error: 'internal',
       message: err instanceof Error ? err.message : 'unknown',
     });
+  } finally {
+    activeSolves -= 1;
   }
 });
 

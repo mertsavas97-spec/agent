@@ -3,7 +3,8 @@
 **Aktif çalışma yeri:** Cloud agent (Cursor Mobile)  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
 **Sprint:** 3 residual kapanıyor → **Sprint 4’e GEÇİLMEDİ** (owner isteği)  
-**Şimdi:** Assisted fallback kök nedeni — proxy URL + word/eq/percent solver; dogfood smoke B/E/A/B
+**Şimdi:** Gerçek iPhone fotoğraf pipeline onarıldı — token-auth binary proxy,
+lazy Storage fallback, strict answer, raw exam guard; public E2E B/E/A/B PASS
 
 ## Sprint 3 residual
 

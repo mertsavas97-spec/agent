@@ -1,4 +1,5 @@
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
+import { invalidateExamPreferenceCache } from '@/src/features/exam/examPreferenceCache';
 
 const mockReadExamPreference = jest.fn();
 jest.mock('@/src/features/exam/examPreference', () => ({
@@ -22,6 +23,7 @@ jest.mock('@/src/lib/firebase', () => ({
 describe('resolveActiveExamType', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    invalidateExamPreferenceCache();
   });
 
   it('prefers explicit param', async () => {

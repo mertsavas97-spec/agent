@@ -398,7 +398,10 @@ export function tryFractionOfChain(ocrText, choices = parseChoices(ocrText)) {
   const firstFracAt = head.search(/\d+\s*\/\s*\d+/);
   const before = firstFracAt >= 0 ? head.slice(0, firstFracAt) : head;
   const wholes = [...before.matchAll(/\b(\d{1,4})\b/g)].map((m) => Number(m[1]));
-  const whole = [...wholes].reverse().find((n) => n >= 2);
+  // OCR may leave a detached numerator immediately before injected fraction
+  // tokens. The meaningful class/product total is normally the largest whole
+  // in the stem (e.g. 24), not that detached "3".
+  const whole = wholes.filter((n) => n >= 2).sort((a, b) => b - a)[0];
   if (whole == null) return null;
 
   let value = whole;
@@ -423,8 +426,7 @@ export function tryLinearEquation(ocrText, choices = parseChoices(ocrText)) {
   const headRaw = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '')
     .replace(/denklemini sağlayan.*$/i, '')
     .replace(/aşağıdakilerden.*$/i, '')
-    .replace(/−/g, '-')
-    .replace(/–/g, '-');
+    .replace(/[−–—]/g, '-');
   if (!/[xX]/.test(headRaw) || !/=/.test(headRaw)) return null;
 
   const eqIdx = headRaw.search(/=/);
@@ -438,6 +440,9 @@ export function tryLinearEquation(ocrText, choices = parseChoices(ocrText)) {
     .slice(L + 1, eqIdx)
     .replace(/^[^0-9(xX]+/, '')
     .replace(/^\d{1,3}\.\s+/, '')
+    // Tesseract frequently reads "+ 4" as "4 4" after a closing parenthesis.
+    .replace(/\)\s*4\s+(\d)/g, ')+$1')
+    .replace(/\)44(?=\s*$)/g, ')+4')
     .trim();
   let right = headRaw.slice(eqIdx + 1, R).trim();
   if (!left || !right) return null;
@@ -492,7 +497,10 @@ function normalizeEqSide(raw) {
  * Sequential percent up/down: 100 × (1±p/100) × … → final index (e.g. 90).
  */
 export function tryPercentChain(ocrText, choices = parseChoices(ocrText)) {
-  const head = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '');
+  const head = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '')
+    // Tesseract commonly reads the percent sign as 9 / 94: "%25" → "925"/"9425".
+    // Only recover this shape directly before increase/decrease verbs.
+    .replace(/\b9\d?(\d{2})\s+(?=(?:azalt|artır|arttir|indir))/gi, '%$1 ');
   if (!/%\s*\d+/.test(head)) return null;
   if (!/(artır|arttir|azalt|indir|yüzde\s*kaç)/i.test(head)) return null;
 

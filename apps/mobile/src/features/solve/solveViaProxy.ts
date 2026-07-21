@@ -4,17 +4,31 @@
  */
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
+import { PROXY_TIMEOUT_MS } from './solveTiming';
+
+/** Keep JSON safely below the proxy's 6 MiB body limit. Base64 expands bytes by ~33%. */
+export const MAX_INLINE_IMAGE_BASE64_CHARS = 3_500_000;
+export const MAX_BINARY_IMAGE_BYTES = 10 * 1024 * 1024;
+export { PROXY_TIMEOUT_MS } from './solveTiming';
+
 function proxyBaseUrl(): string | null {
   const raw = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.trim();
   if (!raw) return null;
   return raw.replace(/\/$/, '');
 }
 
+function proxyToken(): string | null {
+  return process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN?.trim() || null;
+}
+
 export function isSolveProxyConfigured(): boolean {
-  return Boolean(proxyBaseUrl());
+  // The proxy is an explicitly unmoderated dogfood aid. Production must use
+  // Storage/Firestore Functions where SafeSearch, quota and auth are enforced.
+  return __DEV__ && Boolean(proxyBaseUrl()) && Boolean(proxyToken());
 }
 
 export async function callSolveQuestionViaProxy(input: {
+  imageUri?: string;
   imageUrl?: string;
   imageBase64?: string;
   mimeType?: string;
@@ -23,38 +37,80 @@ export async function callSolveQuestionViaProxy(input: {
   requestId: string;
 }): Promise<SolveQuestionResponse> {
   const base = proxyBaseUrl();
-  if (!base) {
+  const token = proxyToken();
+  if (!base || !token) {
     throw Object.assign(new Error('SOLVE_PROXY_UNCONFIGURED'), {
       code: 'functions/unavailable',
     });
   }
-  if (!input.imageUrl && !input.imageBase64) {
+  if (!input.imageUri && !input.imageUrl && !input.imageBase64) {
     throw Object.assign(new Error('imageUrl veya imageBase64 gerekli'), {
       code: 'functions/invalid-argument',
     });
   }
+  if (
+    !input.imageUrl &&
+    input.imageBase64 &&
+    input.imageBase64.length > MAX_INLINE_IMAGE_BASE64_CHARS
+  ) {
+    throw Object.assign(
+      new Error('INLINE_IMAGE_TOO_LARGE — Storage URL gerekli'),
+      { code: 'functions/invalid-argument' },
+    );
+  }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45_000);
+  const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+  const inlineImage =
+    input.imageBase64 &&
+    input.imageBase64.length <= MAX_INLINE_IMAGE_BASE64_CHARS
+      ? input.imageBase64
+      : undefined;
   try {
-    const res = await fetch(`${base}/solve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        // localtunnel interstitial bypass (harmless on cloudflare)
-        'Bypass-Tunnel-Reminder': '1',
-      },
-      body: JSON.stringify({
-        imageUrl: input.imageUrl,
-        imageBase64: input.imageBase64,
-        mimeType: input.mimeType ?? 'image/jpeg',
-        examType: input.examType,
-        subjectHint: input.subjectHint,
-        requestId: input.requestId,
-      }),
-      signal: controller.signal,
-    });
+    let res: Response;
+    if (input.imageUri) {
+      const local = await fetch(input.imageUri, { signal: controller.signal });
+      const blob = await local.blob();
+      if (blob.size > MAX_BINARY_IMAGE_BYTES) {
+        throw Object.assign(new Error('BINARY_IMAGE_TOO_LARGE'), {
+          code: 'functions/invalid-argument',
+        });
+      }
+      res = await fetch(`${base}/solve-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': input.mimeType ?? blob.type ?? 'image/jpeg',
+          Accept: 'application/json',
+          'Bypass-Tunnel-Reminder': '1',
+          'X-Cozbil-Proxy-Token': token,
+          'X-Cozbil-Exam-Type': input.examType ?? 'lgs',
+          'X-Cozbil-Subject-Hint': input.subjectHint ?? '',
+          'X-Cozbil-Request-Id': input.requestId,
+        },
+        body: blob,
+        signal: controller.signal,
+      });
+    } else {
+      res = await fetch(`${base}/solve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          // localtunnel interstitial bypass (harmless on cloudflare)
+          'Bypass-Tunnel-Reminder': '1',
+          'X-Cozbil-Proxy-Token': token,
+        },
+        body: JSON.stringify({
+          imageUrl: input.imageUrl,
+          imageBase64: inlineImage,
+          mimeType: input.mimeType ?? 'image/jpeg',
+          examType: input.examType,
+          subjectHint: input.subjectHint,
+          requestId: input.requestId,
+        }),
+        signal: controller.signal,
+      });
+    }
     const text = await res.text();
     let data: SolveQuestionResponse & {
       error?: string;

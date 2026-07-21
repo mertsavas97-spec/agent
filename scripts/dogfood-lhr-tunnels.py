@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import secrets
 import subprocess
 import time
 import urllib.request
@@ -13,6 +14,7 @@ TMUX = "tmux -f /exec-daemon/tmux.portal.conf"
 ENV_PATH = Path("/workspace/apps/mobile/.env")
 CONNECT = Path("/tmp/cozbil-metro-connect.txt")
 LOG = Path("/tmp/lhr-proxy.log")
+PROXY_TOKEN = secrets.token_urlsafe(24)
 
 
 def sh(cmd: str, timeout: int = 60) -> subprocess.CompletedProcess[str]:
@@ -34,6 +36,13 @@ def upsert_proxy(url: str) -> None:
         text = re.sub(r"^EXPO_PUBLIC_SOLVE_PROXY_URL=.*$", line, text, flags=re.M)
     else:
         text = text.rstrip() + "\n\n" + line + "\n"
+    token_line = f"EXPO_PUBLIC_SOLVE_PROXY_TOKEN={PROXY_TOKEN}"
+    if re.search(r"^EXPO_PUBLIC_SOLVE_PROXY_TOKEN=", text, re.M):
+        text = re.sub(
+            r"^EXPO_PUBLIC_SOLVE_PROXY_TOKEN=.*$", token_line, text, flags=re.M
+        )
+    else:
+        text = text.rstrip() + "\n" + token_line + "\n"
     ENV_PATH.write_text(text)
 
 
@@ -55,7 +64,8 @@ def main() -> int:
         time.sleep(1)
         sh(
             f"{TMUX} new-session -d -s cozbil-solve-proxy -c /workspace/scripts/solve-proxy -- "
-            "bash -lc 'node server.mjs > /tmp/cozbil-solve-proxy.log 2>&1'"
+            f"bash -lc 'COZBIL_PROXY_DOGFOOD=1 COZBIL_PROXY_TOKEN={PROXY_TOKEN} "
+            "node server.mjs > /tmp/cozbil-solve-proxy.log 2>&1'"
         )
         for i in range(40):
             if local_ok(8787, "/health", "cozbil-solve-proxy"):
@@ -110,6 +120,7 @@ def main() -> int:
             "Content-Type": "application/json",
             "Bypass-Tunnel-Reminder": "1",
             "User-Agent": "cozbil-dogfood/1",
+            "X-Cozbil-Proxy-Token": PROXY_TOKEN,
         },
         method="POST",
     )

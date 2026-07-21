@@ -161,7 +161,11 @@ export function MultiSolutionScreen({
           </View>
         ) : (
           <View style={styles.center} testID="multi-slot-error" key={active.id}>
-            <Text style={styles.errorTitle}>Bu soru çözülemedi</Text>
+            <Text style={styles.errorTitle}>
+              {active.errorKind === 'exam_mismatch'
+                ? 'Seçili moda uymuyor'
+                : 'Bu soru çözülemedi'}
+            </Text>
             <Text style={styles.errorBody}>
               {active.errorMessage ?? 'Tekrar dene veya tekli çekim kullan.'}
             </Text>

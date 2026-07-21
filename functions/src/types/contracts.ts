@@ -63,7 +63,7 @@ export type SolveQuestionSuccess = {
   subject: Subject;
   steps: SolutionStep[];
   /** Final answer / choice — required for mobile DOĞRU CEVAP hero */
-  answer?: SolutionAnswer;
+  answer: SolutionAnswer;
   transparencyNote: string;
   quota: QuotaInfo;
 };

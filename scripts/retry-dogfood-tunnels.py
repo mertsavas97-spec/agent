@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import secrets
 import subprocess
 import time
 from pathlib import Path
@@ -13,6 +14,7 @@ CF = "/workspace/.tools/bin/cloudflared"
 LOG = Path("/tmp/retry-tunnels.log")
 ENV_PATH = Path("/workspace/apps/mobile/.env")
 CONNECT = Path("/tmp/cozbil-metro-connect.txt")
+PROXY_TOKEN = secrets.token_urlsafe(24)
 
 
 def log(msg: str) -> None:
@@ -65,6 +67,13 @@ def upsert_proxy(url: str) -> None:
         text = re.sub(r"^EXPO_PUBLIC_SOLVE_PROXY_URL=.*$", line, text, flags=re.M)
     else:
         text = text.rstrip() + "\n\n" + line + "\n"
+    token_line = f"EXPO_PUBLIC_SOLVE_PROXY_TOKEN={PROXY_TOKEN}"
+    if re.search(r"^EXPO_PUBLIC_SOLVE_PROXY_TOKEN=", text, re.M):
+        text = re.sub(
+            r"^EXPO_PUBLIC_SOLVE_PROXY_TOKEN=.*$", token_line, text, flags=re.M
+        )
+    else:
+        text = text.rstrip() + "\n" + token_line + "\n"
     ENV_PATH.write_text(text)
 
 
@@ -115,7 +124,8 @@ def main() -> int:
         time.sleep(1)
         sh(
             f"{TMUX} new-session -d -s cozbil-solve-proxy -c /workspace/scripts/solve-proxy -- "
-            "bash -lc 'node server.mjs > /tmp/cozbil-solve-proxy.log 2>&1'"
+            f"bash -lc 'COZBIL_PROXY_DOGFOOD=1 COZBIL_PROXY_TOKEN={PROXY_TOKEN} "
+            "node server.mjs > /tmp/cozbil-solve-proxy.log 2>&1'"
         )
         for i in range(40):
             if ensure_local(8787, "/health", "cozbil-solve-proxy"):

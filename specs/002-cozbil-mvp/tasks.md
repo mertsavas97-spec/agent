@@ -214,6 +214,11 @@
 - [x] T075 [P] İstatistik: local progress merge + streak hero, haftalık bar, ders karışımı, konu bar’ları, odak kartı
 - [x] T076 [P] İstatistik: sınav sekmeleri ana sayfadan bağımsız; boş sekme wording + veri olan sekmeye atla
 - [x] T077 [P] Konular: exam theme renkleri + Konular/Örnek panelleri; her topic’te lesson + ≥1 sample (coverage seed)
+- [x] T078 [US1] iPhone gerçek fotoğraf E2E: ham binary proxy body güvenli; `payload_too_large` regresyon testi
+- [x] T079 [US1] Çözüm orkestrasyonu: proxy önce, Storage/Firestore lazy fallback; backend yoksa jenerik adımları `solved` diye gösterme
+- [x] T080 [US1] Sınav uyuşmazlığı: raw response üzerinde hard-block; ders tahmin sheet'ini çözüm akışından kaldır
+- [x] T081 [US1] Loading latency: 15–20 sn progress davranışı + bounded network waits; timer regression testleri
+- [x] T082 [US1] QA: dört özgün fixture görselini gerçek OCR/binary proxy yolundan geçir; cevap B/E/A/B + typecheck/lint/guardian
 
 ### Mini item bank (MVP 1.0 — telifsiz)
 

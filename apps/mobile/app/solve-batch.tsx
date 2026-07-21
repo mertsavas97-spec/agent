@@ -13,7 +13,6 @@ import {
   type MultiSolveSlot,
 } from '@/src/features/solve/MultiSolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
-import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import {
   releaseClaimedMultiBatch,
   takePendingMultiBatch,
@@ -96,23 +95,28 @@ export default function SolveBatchScreen() {
           examForSolve: ExamType,
           requestId: string,
         ) => {
-          const { imagePath, downloadUrl } = await uploadQuestionImage({
-            uid: user.uid,
-            localId: requestId,
-            uri: img.uri,
-            mimeType: img.mimeType,
-            examType: examForSolve,
-          });
-          if (cancelledRef.current || runId !== runIdRef.current) return null;
-          const imageBase64 = await uriToBase64(img.uri);
           if (cancelledRef.current || runId !== runIdRef.current) return null;
           return callSolveQuestion({
-            imagePath,
             mimeType: img.mimeType,
             examType: examForSolve,
             requestId,
-            imageUrl: downloadUrl,
-            imageBase64: imageBase64 ?? undefined,
+            imageUri: img.uri,
+            prepareFirestore: async () => {
+              const { imagePath, downloadUrl } = await uploadQuestionImage({
+                uid: user.uid,
+                localId: requestId,
+                uri: img.uri,
+                mimeType: img.mimeType,
+                examType: examForSolve,
+              });
+              return {
+                imagePath,
+                imageUrl: downloadUrl,
+                mimeType: img.mimeType,
+                examType: examForSolve,
+                requestId,
+              };
+            },
           });
         };
 

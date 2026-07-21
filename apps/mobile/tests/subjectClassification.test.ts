@@ -3,7 +3,6 @@ import {
   applySubjectOverride,
   remapTopicIdForExam,
   shouldConfirmExamMismatch,
-  shouldConfirmSubject,
 } from '@/src/features/solve/subjectClassification';
 import type { SolveQuestionSuccess } from '@/src/lib/api/types';
 
@@ -16,88 +15,12 @@ function baseSolved(over: Partial<SolveQuestionSuccess> = {}): SolveQuestionSucc
     topicId: 'kpss-turkish-paragraf',
     subject: 'turkish',
     steps: [{ title: '1', body: 'öyküleme' }],
+    answer: { text: 'öyküleme' },
     transparencyNote: 'ok',
     quota: { remainingToday: 5, unlimited: false },
     ...over,
   };
 }
-
-describe('shouldConfirmSubject', () => {
-  it('skips confirm when user provided subjectHint', () => {
-    expect(
-      shouldConfirmSubject(
-        baseSolved({
-          classification: { subject: 'turkish', confidence: 'low', needsConfirm: true },
-        }),
-        { subjectHint: 'turkish', examType: 'kpss' },
-      ),
-    ).toBe(false);
-  });
-
-  it('requires confirm on needsConfirm / low confidence', () => {
-    expect(
-      shouldConfirmSubject(
-        baseSolved({
-          classification: { subject: 'math', confidence: 'medium', needsConfirm: true },
-        }),
-        { examType: 'kpss' },
-      ),
-    ).toBe(true);
-  });
-
-  it('skips confirm on high confidence', () => {
-    expect(
-      shouldConfirmSubject(
-        baseSolved({
-          classification: { subject: 'turkish', confidence: 'high', needsConfirm: false },
-        }),
-        { examType: 'kpss' },
-      ),
-    ).toBe(false);
-  });
-
-  it('requires confirm when subject unknown', () => {
-    expect(
-      shouldConfirmSubject(baseSolved({ subject: 'unknown', topicId: null }), {
-        examType: 'lgs',
-      }),
-    ).toBe(true);
-  });
-
-  it('skips confirm for high-confidence Trafik branşı', () => {
-    expect(
-      shouldConfirmSubject(
-        baseSolved({
-          subject: 'traffic',
-          topicId: 'trafik-traffic-kurallar',
-          classification: {
-            subject: 'traffic',
-            confidence: 'high',
-            needsConfirm: true,
-          },
-        }),
-        { examType: 'trafik' },
-      ),
-    ).toBe(false);
-  });
-
-  it('skips confirm for medium-confidence Ehliyet branşı', () => {
-    expect(
-      shouldConfirmSubject(
-        baseSolved({
-          subject: 'vehicle',
-          topicId: 'trafik-vehicle-motor',
-          classification: {
-            subject: 'vehicle',
-            confidence: 'medium',
-            needsConfirm: true,
-          },
-        }),
-        { examType: 'trafik' },
-      ),
-    ).toBe(false);
-  });
-});
 
 describe('shouldConfirmExamMismatch', () => {
   it('prompts when KPSS profile gets a high-Q YGS-like booklet hint', () => {
@@ -175,7 +98,7 @@ describe('applyExamOverride', () => {
 });
 
 describe('applySubjectOverride', () => {
-  it('remaps math → turkish metadata and steps', () => {
+  it('does not fabricate a solved result for a different guessed subject', () => {
     const out = applySubjectOverride(
       baseSolved({
         subject: 'math',
@@ -185,9 +108,9 @@ describe('applySubjectOverride', () => {
       'kpss',
       'turkish',
     );
-    expect(out.subject).toBe('turkish');
-    expect(out.topicId).toBe('kpss-turkish-paragraf');
-    expect(out.steps[0]?.body).toMatch(/kök|metne|anlatım/i);
+    expect(out.subject).toBe('math');
+    expect(out.topicId).toBe('kpss-math-temel-islemler');
+    expect(out.steps[0]?.body).toMatch(/Parantez/i);
   });
 
   it('keeps steps when confirming same turkish subject', () => {
@@ -195,7 +118,7 @@ describe('applySubjectOverride', () => {
     expect(out.steps[0]?.body).toMatch(/öyküleme/);
   });
 
-  it('does NOT keep Ehliyet answer when remapping firstaid → vehicle', () => {
+  it('keeps the original verified result instead of remapping firstaid → vehicle', () => {
     const out = applySubjectOverride(
       baseSolved({
         subject: 'firstaid',
@@ -206,10 +129,10 @@ describe('applySubjectOverride', () => {
       'trafik',
       'vehicle',
     );
-    expect(out.subject).toBe('vehicle');
-    expect(out.answer).toBeUndefined();
-    expect(out.assisted).toBe(true);
-    expect(out.topicId).toBe('trafik-vehicle-motor');
-    expect(out.steps[0]?.body).not.toMatch(/ABC/);
+    expect(out.subject).toBe('firstaid');
+    expect(out.answer).toEqual({ label: 'A', text: 'ABC' });
+    expect(out.assisted).toBeUndefined();
+    expect(out.topicId).toBe('trafik-firstaid-abc');
+    expect(out.steps[0]?.body).toMatch(/ABC/);
   });
 });

@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
@@ -17,22 +17,12 @@ import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { ExamModeBlockScreen } from '@/src/features/solve/ExamModeBlockScreen';
-import { resolveExamModeBlock } from '@/src/features/solve/examModeGuard';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
-import { SubjectConfirmSheet } from '@/src/features/solve/SubjectConfirmSheet';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
-import { enforceExamPipeline } from '@/src/features/solve/examPipelineIsolation';
-import { uriToBase64 } from '@/src/features/solve/imageBase64';
 import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
-import { normalizeSolvedBranch } from '@/src/features/solve/normalizeSolvedBranch';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
-import { isSolveProxyConfigured } from '@/src/features/solve/solveViaProxy';
-import {
-  applySubjectOverride,
-  shouldConfirmSubject,
-  type SolvedWithClassification,
-} from '@/src/features/solve/subjectClassification';
+import { routeSolveResponse } from '@/src/features/solve/solveResultRouting';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { findTopic, isKnownSubject, subjectsForExam } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
@@ -50,7 +40,6 @@ function billedSolvesFromQuota(result: SolveQuestionResponse): number {
 type Phase =
   | 'analyzing'
   | 'examBlocked'
-  | 'confirmSubject'
   | 'result'
   | 'error'
   | 'paywall';
@@ -78,11 +67,6 @@ export default function SolveFlowScreen() {
   const { switching: switchingExam, applyExam } = useExamModeChange({
     onOptimistic: (next) => setExamType(next),
   });
-  const [selectedSubject, setSelectedSubject] =
-    useState<Exclude<Subject, 'unknown'>>('turkish');
-  const [pendingSubjectHint, setPendingSubjectHint] = useState<
-    Exclude<Subject, 'unknown'> | undefined
-  >();
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +77,7 @@ export default function SolveFlowScreen() {
         setPhase('error');
         return;
       }
+      const imageUri = params.uri;
       try {
         setAnalyzeStep('upload');
         const user = await ensureSignedIn();
@@ -107,23 +92,6 @@ export default function SolveFlowScreen() {
           isKnownSubject(hintRaw) && subjectsForExam(resolvedExam).includes(hintRaw)
             ? hintRaw
             : undefined;
-        setPendingSubjectHint(subjectHint);
-
-        const { imagePath, downloadUrl } = await uploadQuestionImage({
-          uid: user.uid,
-          localId,
-          uri: params.uri,
-          mimeType: params.mimeType,
-          examType: resolvedExam,
-          subjectHint,
-        });
-        if (cancelled) return;
-
-        // Proxy-only: base64 is expensive — skip when proxy unset (Storage trigger path).
-        const imageBase64 = isSolveProxyConfigured()
-          ? await uriToBase64(params.uri)
-          : undefined;
-        if (cancelled) return;
 
         setAnalyzeStep('moderate');
         // UI beat only — do not delay the Firestore/Storage wait behind this.
@@ -131,66 +99,61 @@ export default function SolveFlowScreen() {
         setAnalyzeStep('solve');
 
         const solvePromise = callSolveQuestion({
-          imagePath,
           mimeType: params.mimeType,
           examType: resolvedExam,
           subjectHint,
           requestId: localId,
-          imageUrl: downloadUrl,
-          imageBase64: imageBase64 ?? undefined,
+          imageUri,
+          prepareFirestore: async () => {
+            const { imagePath, downloadUrl } = await uploadQuestionImage({
+              uid: user.uid,
+              localId,
+              uri: imageUri,
+              mimeType: params.mimeType,
+              examType: resolvedExam,
+              subjectHint,
+            });
+            return {
+              imagePath,
+              imageUrl: downloadUrl,
+              mimeType: params.mimeType,
+              examType: resolvedExam,
+              subjectHint,
+              requestId: localId,
+            };
+          },
         });
         await moderateBeat;
         let response = await solvePromise;
         if (cancelled) return;
 
-        if (response.status === 'solved' && subjectHint) {
-          response = applySubjectOverride(response, resolvedExam, subjectHint);
+        const routed = routeSolveResponse(response, resolvedExam, {
+          sourceText:
+            'ocrPreview' in response &&
+            typeof (response as { ocrPreview?: string }).ocrPreview === 'string'
+              ? (response as { ocrPreview: string }).ocrPreview
+              : undefined,
+        });
+
+        if (routed.kind === 'examBlocked') {
+          const modeBlock = routed.block;
+          setExamBlock({
+            active: modeBlock.activeExam,
+            detected: modeBlock.detectedExam,
+            message: modeBlock.message,
+            headline: modeBlock.headline,
+          });
+          setPhase('examBlocked');
+          return;
         }
 
-        if (response.status === 'solved') {
-          // Always isolate against the *profile* exam until the user confirms a switch.
-          // OCR examHint must never remount the result into another package's pipeline.
-          const solved = enforceExamPipeline(
-            normalizeSolvedBranch(response, resolvedExam, {
-              sourceText:
-                'ocrPreview' in response &&
-                typeof (response as { ocrPreview?: string }).ocrPreview === 'string'
-                  ? (response as { ocrPreview: string }).ocrPreview
-                  : undefined,
-            }),
-            resolvedExam,
-          ) as SolvedWithClassification;
-          const suggested =
-            solved.subject !== 'unknown' &&
-            subjectsForExam(resolvedExam).includes(
-              solved.subject as Exclude<Subject, 'unknown'>,
-            )
-              ? (solved.subject as Exclude<Subject, 'unknown'>)
-              : subjectsForExam(resolvedExam)[0];
-          setSelectedSubject(suggested);
-          const modeBlock = resolveExamModeBlock(resolvedExam, solved);
-          if (modeBlock.blocked) {
-            setExamBlock({
-              active: modeBlock.activeExam,
-              detected: modeBlock.detectedExam,
-              message: modeBlock.message,
-              headline: modeBlock.headline,
-            });
-            setPhase('examBlocked');
-            return;
-          }
-
-          setResult(solved);
-
-          if (shouldConfirmSubject(solved, { subjectHint, examType: resolvedExam })) {
-            setPhase('confirmSubject');
-            return;
-          }
+        if (routed.kind === 'rejected') {
+          setResult(routed.response);
           setPhase('result');
           return;
         }
 
-        setResult(response);
+        setResult(routed.result);
         setPhase('result');
       } catch (err) {
         if (cancelled) return;
@@ -235,22 +198,6 @@ export default function SolveFlowScreen() {
     );
   }
 
-  const suggestedSubject = useMemo(() => {
-    if (result && result.status === 'solved' && result.subject !== 'unknown') {
-      if (subjectsForExam(examType).includes(result.subject as Exclude<Subject, 'unknown'>)) {
-        return result.subject as Exclude<Subject, 'unknown'>;
-      }
-    }
-    const alt = result?.classification?.alternatives?.find((a) =>
-      subjectsForExam(examType).includes(a.subject as Exclude<Subject, 'unknown'>),
-    );
-    if (alt?.subject) {
-      return alt.subject as Exclude<Subject, 'unknown'>;
-    }
-    // Never pretend the first catalog subject (KPSS→Türkçe) is a real OCR guess
-    return subjectsForExam(examType)[0];
-  }, [result, examType]);
-
   if (phase === 'analyzing') {
     return (
       <>
@@ -272,30 +219,6 @@ export default function SolveFlowScreen() {
           switching={switchingExam}
           onSwitchMode={() => void switchToDetectedExam()}
           onGoBack={() => router.replace('/(tabs)')}
-        />
-      </>
-    );
-  }
-
-  if (phase === 'confirmSubject' && result && result.status === 'solved') {
-    return (
-      <>
-        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
-        <AnalyzingView step="solve" />
-        <SubjectConfirmSheet
-          visible
-          examType={examType}
-          suggested={suggestedSubject}
-          selected={selectedSubject}
-          confidence={result.classification?.confidence}
-          hasGuess={result.subject !== 'unknown'}
-          onSelect={setSelectedSubject}
-          onDismiss={() => router.back()}
-          onConfirm={() => {
-            const next = applySubjectOverride(result, examType, selectedSubject);
-            setResult(next);
-            setPhase('result');
-          }}
         />
       </>
     );
