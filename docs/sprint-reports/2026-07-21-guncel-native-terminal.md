@@ -10,21 +10,23 @@
 
 **Çalıştırılan lane'ler:**
 - Branch: `cursor/guncel-native-terminal-6767` ← `mvp-10-launch-audit`
-- `npm install` + `npm run start:tunnel` (localhost.run)
-- Tunnel script: Metro restart kaldırıldı (503 fix)
+- `npm install` + Metro + tunnel
+- localhost.run telefonda `No tunnel here` verdi → **cloudflared**’e geçildi
+- Tunnel script: cloudflared primary, lhr fallback; pkill self-kill düzeltmesi
 
 **Skill bypass:** hayır
 
 **QA Gate:**
 - typecheck: PASS (`apps/mobile`)
 - lint: N/A (eslint henüz yok)
-- smoke: PASS — `https://96cd02faff6c25.lhr.life/status` → `packager-status:running`
+- smoke: PASS — trycloudflare `/status` → `packager-status:running` (okhttp UA ×5)
 - errors: temiz
 - guardian: PASS (exam scope değişmedi; copy yok)
 
-**Bağlantı (bu oturum):**
-- Tunnel: `https://96cd02faff6c25.lhr.life`
-- Deep link: `exp+cozbil://expo-development-client/?url=https%3A%2F%2F96cd02faff6c25.lhr.life`
+**Bağlantı (bu oturum — güncel):**
+- Tunnel: `https://prefers-published-satisfactory-technician.trycloudflare.com`
+- Deep link: `exp+cozbil://expo-development-client/?url=https%3A%2F%2Fprefers-published-satisfactory-technician.trycloudflare.com`
 - tmux: `cozbil-metro`, `cozbil-metro-tunnel`
+- Eski `*.lhr.life` URL’leri geçersiz
 
-**Sonraki önerilen adım:** Telefonda ÇözBil dev client → Enter URL → tunnel host; dogfood smoke.
+**Sonraki önerilen adım:** Telefonda yeni deep link / Enter URL; dogfood smoke.
