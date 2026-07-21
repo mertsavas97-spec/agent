@@ -10,7 +10,8 @@ const LGS_KESIRLER = [
   "Soru: Bir pastanın 3/8'i yeniyor. Kalan pastanın 1/2'si de yenilirse başlangıçta ne kadarı kalır?",
   '1. Adım: İlk yenenden sonra kalan 1 - 3/8 = 5/8.',
   '2. Adım: Kalanın yarısı yenir: (5/8)×(1/2)=5/16.',
-  '3. Adım: Kalan: 5/8 - 5/16 = 5/16. Cevap 5/16 (şık B).',
+  '3. Adım: Kalan: 5/8 - 5/16 = 5/16.',
+  'Cevap adımı: title="Cevap", body="Doğru şık: B) 5/16", answer={"label":"B","text":"5/16"}.',
   'topicId: lgs-math-kesirler',
 ].join('\n');
 
@@ -19,7 +20,8 @@ const YGS_DENKLEM = [
   'Soru: 2(x - 3) + 5 = 3x - 1 denklemini sağlayan x?',
   '1. Adım: Sol: 2x - 6 + 5 = 2x - 1.',
   '2. Adım: 2x - 1 = 3x - 1 → +1: 2x = 3x.',
-  '3. Adım: -x = 0 → x = 0. Cevap A.',
+  '3. Adım: -x = 0 → x = 0.',
+  'Cevap adımı: title="Cevap", body="Doğru şık: A) 0", answer={"label":"A","text":"0"}.',
   'topicId: ygs-math-denklemler',
 ].join('\n');
 
@@ -28,7 +30,8 @@ const KPSS_YUZDE = [
   'Soru: Fiyat önce %20 artıp sonra %20 azalırsa son fiyat ilk fiyatın yüzde kaçı?',
   '1. Adım: 100 → %20 artış = 120.',
   '2. Adım: 120 × 0,80 = 96.',
-  '3. Adım: Son = %96. Cevap A.',
+  '3. Adım: Son = %96.',
+  'Cevap adımı: title="Cevap", body="Doğru şık: A) 96", answer={"label":"A","text":"96"}.',
   'topicId: kpss-math-yuzde',
 ].join('\n');
 

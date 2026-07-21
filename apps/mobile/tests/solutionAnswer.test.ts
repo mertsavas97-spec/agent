@@ -76,6 +76,15 @@ describe('solutionAnswer', () => {
     expect(summary).toMatch(/Zaman zinciri/);
   });
 
+  it('extracts choice from untitled last step body', () => {
+    expect(
+      extractAnswerFromSteps([
+        { title: '1. İşlem', body: 'Paydaları eşitle.' },
+        { title: '2. Sonuç', body: 'Doğru şık: B) 3/4' },
+      ]),
+    ).toEqual({ label: 'B', text: '3/4' });
+  });
+
   it('does not promote tip/fallback steps into DOĞRU CEVAP', () => {
     expect(
       extractAnswerFromSteps([

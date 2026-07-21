@@ -81,6 +81,7 @@ export async function persistSolved(input: {
     tx.set(solutionRef, {
       attemptId: attemptRef.id,
       steps: input.result.steps,
+      answer: input.result.answer ?? null,
       transparencyNoteShown: true,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -125,6 +126,7 @@ export async function persistSolved(input: {
         topicId: input.result.topicId,
         steps: input.result.steps,
         subject: input.result.subject,
+        answer: input.result.answer ?? null,
         hitCount: FieldValue.increment(1),
         updatedAt: FieldValue.serverTimestamp(),
       },
