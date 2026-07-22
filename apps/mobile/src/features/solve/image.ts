@@ -44,7 +44,8 @@ export async function pickFromCamera(): Promise<PickedImage | null> {
 
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
-    quality: 0.85,
+    // Smaller JPEGs upload through dogfood tunnels before the proxy OCR budget.
+    quality: 0.55,
     // Full frame as-is — no forced crop UI
     allowsEditing: false,
     // iOS HEIC → JPEG so dogfood OCR (sharp/tesseract) can decode the bytes.
@@ -61,7 +62,7 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    quality: 0.85,
+    quality: 0.55,
     // Full photo as-is — no forced crop UI
     allowsEditing: false,
     preferredAssetRepresentationMode:
@@ -84,7 +85,7 @@ export async function pickMultipleFromLibrary(
   const limit = Math.max(1, Math.min(selectionLimit, 10));
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    quality: 0.85,
+    quality: 0.55,
     allowsEditing: false,
     allowsMultipleSelection: true,
     selectionLimit: limit,

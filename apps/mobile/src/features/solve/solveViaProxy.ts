@@ -46,6 +46,136 @@ export function resolveImageContentType(
   return 'image/jpeg';
 }
 
+function isAbortOrCancel(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  const name = err instanceof Error ? err.name : '';
+  return (
+    name === 'AbortError' ||
+    /FetchRequestCanceled|aborted|AbortError|The operation was aborted|network request failed/i.test(
+      message,
+    )
+  );
+}
+
+function timeoutError(): Error {
+  return Object.assign(new Error('SOLVE_TIMEOUT — proxy OCR süresi doldu'), {
+    code: 'functions/deadline-exceeded',
+  });
+}
+
+async function postSolveOnce(input: {
+  base: string;
+  token: string;
+  imageUri?: string;
+  imageUrl?: string;
+  imageBase64?: string;
+  mimeType?: string;
+  examType?: ExamType;
+  subjectHint?: Subject;
+  requestId: string;
+  signal: AbortSignal;
+}): Promise<SolveQuestionResponse> {
+  const inlineImage =
+    input.imageBase64 &&
+    input.imageBase64.length <= MAX_INLINE_IMAGE_BASE64_CHARS
+      ? input.imageBase64
+      : undefined;
+
+  let res: Response;
+  if (input.imageUri) {
+    const local = await fetch(input.imageUri, { signal: input.signal });
+    // Prefer ArrayBuffer — RN Blob round-trip is slow and often cancels mid-upload.
+    const bytes = await local.arrayBuffer();
+    if (bytes.byteLength > MAX_BINARY_IMAGE_BYTES) {
+      throw Object.assign(new Error('BINARY_IMAGE_TOO_LARGE'), {
+        code: 'functions/invalid-argument',
+      });
+    }
+    const contentType = resolveImageContentType(input.mimeType, null);
+    res = await fetch(`${input.base}/solve-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType,
+        Accept: 'application/json',
+        'Bypass-Tunnel-Reminder': '1',
+        'X-Cozbil-Proxy-Token': input.token,
+        'X-Cozbil-Exam-Type': input.examType ?? 'lgs',
+        'X-Cozbil-Subject-Hint': input.subjectHint ?? '',
+        'X-Cozbil-Request-Id': input.requestId,
+      },
+      body: bytes,
+      signal: input.signal,
+    });
+  } else {
+    res = await fetch(`${input.base}/solve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        // localtunnel interstitial bypass (harmless on cloudflare)
+        'Bypass-Tunnel-Reminder': '1',
+        'X-Cozbil-Proxy-Token': input.token,
+      },
+      body: JSON.stringify({
+        imageUrl: input.imageUrl,
+        imageBase64: inlineImage,
+        mimeType: input.mimeType ?? 'image/jpeg',
+        examType: input.examType,
+        subjectHint: input.subjectHint,
+        requestId: input.requestId,
+      }),
+      signal: input.signal,
+    });
+  }
+
+  const text = await res.text();
+  let data: SolveQuestionResponse & {
+    error?: string;
+    message?: string;
+    debugOcrPreview?: string;
+    ocrPreview?: string;
+    detectedSubject?: string;
+    topicId?: string | null;
+  };
+  try {
+    data = JSON.parse(text) as typeof data;
+  } catch {
+    const snippet = text.slice(0, 120).replace(/\s+/g, ' ');
+    if (/no tunnel here|tunnel.*not found|502 Bad Gateway|503 Service/i.test(snippet)) {
+      throw Object.assign(new Error('SOLVE_PROXY_TUNNEL_DOWN'), {
+        code: 'functions/unavailable',
+      });
+    }
+    throw Object.assign(
+      new Error(`proxy_non_json (${res.status}): ${snippet}`),
+      { code: 'functions/unavailable' },
+    );
+  }
+  if (!res.ok) {
+    throw Object.assign(new Error(data.message || data.error || 'proxy_error'), {
+      code: 'functions/internal',
+    });
+  }
+  if (
+    data.status === 'solved' ||
+    data.status === 'unsupported_type' ||
+    (typeof data.status === 'string' && data.status.startsWith('rejected'))
+  ) {
+    const { error: _e, message: _m, debugOcrPreview, ...rest } = data;
+    const ocrPreview =
+      typeof debugOcrPreview === 'string'
+        ? debugOcrPreview
+        : typeof data.ocrPreview === 'string'
+          ? data.ocrPreview
+          : undefined;
+    return {
+      ...rest,
+      ...(ocrPreview ? { ocrPreview } : {}),
+    } as SolveQuestionResponse & { ocrPreview?: string };
+  }
+  throw Object.assign(new Error('proxy_invalid_response'), { code: 'functions/internal' });
+}
+
 export async function callSolveQuestionViaProxy(input: {
   imageUri?: string;
   imageUrl?: string;
@@ -78,106 +208,37 @@ export async function callSolveQuestionViaProxy(input: {
     );
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
-  const inlineImage =
-    input.imageBase64 &&
-    input.imageBase64.length <= MAX_INLINE_IMAGE_BASE64_CHARS
-      ? input.imageBase64
-      : undefined;
-  try {
-    let res: Response;
-    if (input.imageUri) {
-      const local = await fetch(input.imageUri, { signal: controller.signal });
-      const blob = await local.blob();
-      if (blob.size > MAX_BINARY_IMAGE_BYTES) {
-        throw Object.assign(new Error('BINARY_IMAGE_TOO_LARGE'), {
-          code: 'functions/invalid-argument',
-        });
-      }
-      const contentType = resolveImageContentType(input.mimeType, blob.type);
-      res = await fetch(`${base}/solve-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': contentType,
-          Accept: 'application/json',
-          'Bypass-Tunnel-Reminder': '1',
-          'X-Cozbil-Proxy-Token': token,
-          'X-Cozbil-Exam-Type': input.examType ?? 'lgs',
-          'X-Cozbil-Subject-Hint': input.subjectHint ?? '',
-          'X-Cozbil-Request-Id': input.requestId,
-        },
-        body: blob,
-        signal: controller.signal,
-      });
-    } else {
-      res = await fetch(`${base}/solve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          // localtunnel interstitial bypass (harmless on cloudflare)
-          'Bypass-Tunnel-Reminder': '1',
-          'X-Cozbil-Proxy-Token': token,
-        },
-        body: JSON.stringify({
-          imageUrl: input.imageUrl,
-          imageBase64: inlineImage,
-          mimeType: input.mimeType ?? 'image/jpeg',
-          examType: input.examType,
-          subjectHint: input.subjectHint,
-          requestId: input.requestId,
-        }),
-        signal: controller.signal,
-      });
-    }
-    const text = await res.text();
-    let data: SolveQuestionResponse & {
-      error?: string;
-      message?: string;
-      debugOcrPreview?: string;
-      ocrPreview?: string;
-      detectedSubject?: string;
-      topicId?: string | null;
-    };
+  const maxAttempts = input.imageUri ? 2 : 1;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
     try {
-      data = JSON.parse(text) as typeof data;
-    } catch {
-      const snippet = text.slice(0, 120).replace(/\s+/g, ' ');
-      if (/no tunnel here|tunnel.*not found|502 Bad Gateway|503 Service/i.test(snippet)) {
-        throw Object.assign(new Error('SOLVE_PROXY_TUNNEL_DOWN'), {
-          code: 'functions/unavailable',
-        });
-      }
-      throw Object.assign(
-        new Error(`proxy_non_json (${res.status}): ${snippet}`),
-        { code: 'functions/unavailable' },
-      );
-    }
-    if (!res.ok) {
-      throw Object.assign(new Error(data.message || data.error || 'proxy_error'), {
-        code: 'functions/internal',
+      return await postSolveOnce({
+        base,
+        token,
+        imageUri: input.imageUri,
+        imageUrl: input.imageUrl,
+        imageBase64: input.imageBase64,
+        mimeType: input.mimeType,
+        examType: input.examType,
+        subjectHint: input.subjectHint,
+        requestId: attempt === 1 ? input.requestId : `${input.requestId}-r${attempt}`,
+        signal: controller.signal,
       });
+    } catch (err) {
+      lastError = err;
+      if (controller.signal.aborted || isAbortOrCancel(err)) {
+        if (attempt < maxAttempts) {
+          console.warn('solve proxy attempt canceled, retrying once', err);
+          continue;
+        }
+        throw timeoutError();
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
     }
-    if (
-      data.status === 'solved' ||
-      data.status === 'unsupported_type' ||
-      (typeof data.status === 'string' && data.status.startsWith('rejected'))
-    ) {
-      const { error: _e, message: _m, debugOcrPreview, ...rest } = data;
-      // Keep a short OCR snippet for client branş lock / local fallback
-      const ocrPreview =
-        typeof debugOcrPreview === 'string'
-          ? debugOcrPreview
-          : typeof data.ocrPreview === 'string'
-            ? data.ocrPreview
-            : undefined;
-      return {
-        ...rest,
-        ...(ocrPreview ? { ocrPreview } : {}),
-      } as SolveQuestionResponse & { ocrPreview?: string };
-    }    throw Object.assign(new Error('proxy_invalid_response'), { code: 'functions/internal' });
-  } finally {
-    clearTimeout(timer);
   }
+  throw lastError instanceof Error ? lastError : timeoutError();
 }

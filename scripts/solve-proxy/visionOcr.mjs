@@ -145,9 +145,11 @@ async function ocrViaGemini(cleaned, mimeType) {
 
 async function decodeImageBuffer(input) {
   // Always re-encode so HEIC / progressive JPEG / RN odd blobs become PNG.
+  // Cap width for dogfood latency — phone JPEGs were blowing the 15–20s budget.
   try {
     return await sharp(input, SHARP_INPUT_OPTIONS)
       .rotate()
+      .resize({ width: 1600, withoutEnlargement: true })
       .png()
       .toBuffer();
   } catch (err) {
@@ -157,21 +159,20 @@ async function decodeImageBuffer(input) {
   }
 }
 
-async function buildOcrVariants(input) {
+async function buildOcrVariant(input, { threshold } = {}) {
   const meta = await sharp(input, SHARP_INPUT_OPTIONS).metadata();
   const sourceWidth = meta.width || 1200;
-  const targetWidth = Math.min(2200, Math.max(1400, sourceWidth * 2));
-  const base = sharp(input, SHARP_INPUT_OPTIONS)
+  const targetWidth = Math.min(1800, Math.max(1200, sourceWidth));
+  let pipeline = sharp(input, SHARP_INPUT_OPTIONS)
     .rotate()
     .grayscale()
     .normalize()
-    .resize({ width: targetWidth, kernel: 'lanczos3', withoutEnlargement: false });
-
-  // Soft (phone photos) + two thresholds (clean scans / % signs).
-  const soft = await base.clone().sharpen({ sigma: 1 }).png().toBuffer();
-  const hard160 = await base.clone().sharpen({ sigma: 1 }).threshold(160).png().toBuffer();
-  const hard180 = await base.clone().sharpen({ sigma: 1 }).threshold(180).png().toBuffer();
-  return [soft, hard160, hard180];
+    .resize({ width: targetWidth, kernel: 'lanczos3', withoutEnlargement: false })
+    .sharpen({ sigma: 1 });
+  if (typeof threshold === 'number') {
+    pipeline = pipeline.threshold(threshold);
+  }
+  return pipeline.png().toBuffer();
 }
 
 async function recognizeBuffer(worker, preprocessed, psm) {
@@ -199,6 +200,22 @@ function scoreOcrCandidate(text) {
   return score;
 }
 
+function looksLikeBrokenEquation(text) {
+  if (!/denklem|sağlayan|x\s*değeri|hangisidir/i.test(text)) return false;
+  // Usable linear forms usually keep an explicit "+" near x or "=".
+  return !/\+\s*\d|\d\s*\+|=\s*\d*[xX]|[xX]\s*\+/.test(text);
+}
+
+function isGoodEnoughOcr(text, score) {
+  if (score < 400) return false;
+  if (looksLikeBrokenEquation(text)) return false;
+  const hasChoices = /A\s*\)\s*\S+/i.test(text) && /B\s*\)\s*\S+/i.test(text);
+  const pctCount = (text.match(/%\s*\d{1,3}/g) || []).length;
+  if (hasChoices && (pctCount >= 1 || text.length >= 80)) return true;
+  if (hasChoices && score >= 900) return true;
+  return false;
+}
+
 /** Common phone/Tesseract mangling of %20 / %25 in yüzde questions. */
 export function repairPercentOcr(text) {
   let t = String(text || '');
@@ -213,9 +230,49 @@ export function repairPercentOcr(text) {
   return t;
 }
 
+/** Phone OCR often drops "+" in linear equations (3(x-2)+4=2x+7). */
+export function repairEquationOcr(text) {
+  let t = String(text || '');
+  t = t.replace(/[—–−]/g, '-');
+  // C) misread as 0)
+  t = t.replace(/(^|\n)\s*0\)\s*/g, '$1C) ');
+  // 3(x-2)4 4 = → 3(x-2)+4=
+  t = t.replace(/\)(\d)\s+(\d)\s*=/g, ')+$2=');
+  t = t.replace(/\)(\d)=/g, ')+$1=');
+  // 2x4 7 → 2x+7
+  t = t.replace(/([0-9])([xX])(\d)\s+(\d)\b/g, '$1$2+$4');
+  t = t.replace(/([xX])(\d)\s+(\d)\b/g, '$1+$3');
+  return t;
+}
+
+function repairOcrText(text) {
+  return repairEquationOcr(repairPercentOcr(text));
+}
+
 function extractChoicesBlock(text) {
   const match = String(text || '').match(/\n\s*A\s*\)[\s\S]*$/i);
   return match ? match[0] : '';
+}
+
+function mergeBestCandidate(candidates) {
+  let best = '';
+  let bestScore = -1;
+  for (const text of candidates) {
+    const score = scoreOcrCandidate(text);
+    if (score > bestScore) {
+      best = text;
+      bestScore = score;
+    }
+  }
+  if (best && !/A\s*\)\s*\S+/i.test(best)) {
+    const donor = candidates.find((t) => /A\s*\)\s*\S+/i.test(t));
+    const block = extractChoicesBlock(donor || '');
+    if (block) {
+      best = `${best.trim()}${block}`;
+      bestScore = scoreOcrCandidate(best);
+    }
+  }
+  return { best, bestScore };
 }
 
 async function ocrViaTesseract(cleaned, mimeType) {
@@ -227,32 +284,34 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const worker = await getTesseractWorker();
     const raw = Buffer.from(cleaned, 'base64');
     const input = await decodeImageBuffer(raw);
-    const variants = await buildOcrVariants(input);
-    const modes = [PSM.AUTO, PSM.SPARSE_TEXT];
+
+    // Fast ordered passes — early-exit when choices + stem look usable.
+    // Full 3×2 grid was blowing the client abort budget on phone photos.
+    const passPlan = [
+      { threshold: 180, psm: PSM.AUTO },
+      { threshold: undefined, psm: PSM.AUTO },
+      { threshold: 180, psm: PSM.SPARSE_TEXT },
+      { threshold: 160, psm: PSM.SPARSE_TEXT },
+    ];
 
     const candidates = [];
-    for (const variant of variants) {
-      for (const mode of modes) {
-        const text = await recognizeBuffer(worker, variant, mode);
-        if (text) candidates.push(repairPercentOcr(text));
-      }
-    }
-
     let best = '';
     let bestScore = -1;
-    for (const text of candidates) {
-      const score = scoreOcrCandidate(text);
-      if (score > bestScore) {
-        best = text;
-        bestScore = score;
-      }
-    }
+    const variantCache = new Map();
 
-    // Stem pass may keep % signs but drop A)–E); graft choices from another pass.
-    if (best && !/A\s*\)\s*\S+/i.test(best)) {
-      const donor = candidates.find((t) => /A\s*\)\s*\S+/i.test(t));
-      const block = extractChoicesBlock(donor || '');
-      if (block) best = `${best.trim()}${block}`;
+    for (const pass of passPlan) {
+      const cacheKey = String(pass.threshold ?? 'soft');
+      if (!variantCache.has(cacheKey)) {
+        variantCache.set(
+          cacheKey,
+          await buildOcrVariant(input, { threshold: pass.threshold }),
+        );
+      }
+      const variant = variantCache.get(cacheKey);
+      const text = repairOcrText(await recognizeBuffer(worker, variant, pass.psm));
+      if (text) candidates.push(text);
+      ({ best, bestScore } = mergeBestCandidate(candidates));
+      if (isGoodEnoughOcr(best, bestScore)) break;
     }
 
     let result = bestScore >= 0 ? best : '';
@@ -434,6 +493,8 @@ export async function ocrImageBase64(imageBase64, mimeType = 'image/jpeg') {
     if (viaTess) {
       errors.push('tesseract: garbage_ocr');
       console.warn('tesseract OCR garbage', viaTess.slice(0, 120).replace(/\s+/g, ' '));
+    } else {
+      errors.push('tesseract: empty');
     }
   } catch (err) {
     errors.push(`tesseract: ${err instanceof Error ? err.message : err}`);

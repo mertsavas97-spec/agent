@@ -85,10 +85,10 @@ describe('callSolveQuestionViaProxy', () => {
   });
 
   it('sends a local phone image as binary without base64 expansion', async () => {
-    const blob = { size: 1_000_000, type: 'image/jpeg' } as Blob;
+    const bytes = new ArrayBuffer(1_000_000);
     const fetchMock = jest
       .spyOn(global, 'fetch')
-      .mockResolvedValueOnce({ blob: async () => blob } as Response)
+      .mockResolvedValueOnce({ arrayBuffer: async () => bytes } as Response)
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -115,7 +115,7 @@ describe('callSolveQuestionViaProxy', () => {
     });
 
     expect(fetchMock.mock.calls[1]?.[0]).toBe('https://solve.example/solve-image');
-    expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(blob);
+    expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(bytes);
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({
       'Content-Type': 'image/jpeg',
       'X-Cozbil-Exam-Type': 'lgs',
@@ -123,11 +123,11 @@ describe('callSolveQuestionViaProxy', () => {
     });
   });
 
-  it('forces image/jpeg when RN blob.type is empty', async () => {
-    const blob = { size: 1200, type: '' };
+  it('forces image/jpeg when mimeType is omitted', async () => {
+    const bytes = new ArrayBuffer(1200);
     const fetchMock = jest
       .spyOn(global, 'fetch')
-      .mockResolvedValueOnce({ blob: async () => blob } as Response)
+      .mockResolvedValueOnce({ arrayBuffer: async () => bytes } as Response)
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -150,7 +150,7 @@ describe('callSolveQuestionViaProxy', () => {
       requestId: 'empty-type',
       examType: 'ygs',
       imageUri: 'file://phone-photo.jpg',
-      // mimeType omitted — reproduces iOS empty blob.type path
+      // mimeType omitted — reproduces iOS empty type path
     });
 
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({

@@ -32,3 +32,8 @@
 - Telefonda yeni Metro deep link ile tekrar dogfood
 - İsteğe bağlı: `GOOGLE_CLOUD_VISION_API_KEY` / `GEMINI_API_KEY` ile OCR kalitesini production seviyesine çek
 - `scripts/dogfood-sync-proxy-url.sh` tünel yenilendiğinde çalıştır + Metro restart
+
+
+## Follow-up — 97% hang / Çözüm alınamadı
+- Root: client `PROXY_TIMEOUT_MS=15s` aborted while multi-pass OCR still running (`FetchRequestCanceledException`) → Firestore fallback fail.
+- Fix: timeout 55s, progress crawl 50s→99%, faster early-exit OCR (~1.5s/fixture), ArrayBuffer upload + 1 retry, equation/percent OCR repairs, camera quality 0.55.

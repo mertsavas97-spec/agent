@@ -12,13 +12,15 @@ describe('solve latency budgets', () => {
   });
 
   it('bounds proxy and total server waits', () => {
-    expect(PROXY_TIMEOUT_MS).toBeLessThanOrEqual(25_000);
-    expect(SOLVE_TIMEOUT_MS).toBeLessThanOrEqual(60_000);
+    // Proxy must outlive multi-pass phone OCR + tunnel upload.
+    expect(PROXY_TIMEOUT_MS).toBeGreaterThanOrEqual(45_000);
+    expect(PROXY_TIMEOUT_MS).toBeLessThanOrEqual(SOLVE_TIMEOUT_MS);
+    expect(SOLVE_TIMEOUT_MS).toBeLessThanOrEqual(90_000);
   });
 
-  it('keeps the progress crawl snappy without a long freeze near the end', () => {
-    expect(SOLVE_PROGRESS_CRAWL_MS).toBeGreaterThanOrEqual(10_000);
-    expect(SOLVE_PROGRESS_CRAWL_MS).toBeLessThanOrEqual(15_000);
+  it('keeps the progress crawl aligned with the proxy wait', () => {
+    expect(SOLVE_PROGRESS_CRAWL_MS).toBeGreaterThanOrEqual(40_000);
+    expect(SOLVE_PROGRESS_CRAWL_MS).toBeLessThanOrEqual(PROXY_TIMEOUT_MS);
     expect(SOLVE_PROGRESS_CRAWL_TARGET).toBeGreaterThan(0.92);
     expect(SOLVE_PROGRESS_CRAWL_TARGET).toBeLessThanOrEqual(0.99);
   });

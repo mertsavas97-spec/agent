@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { isGarbageOcrText, repairPercentOcr } from './visionOcr.mjs';
+import {
+  isGarbageOcrText,
+  repairEquationOcr,
+  repairPercentOcr,
+} from './visionOcr.mjs';
 
 assert.equal(isGarbageOcrText(''), true);
 assert.equal(isGarbageOcrText('||||||||||'), true);
@@ -37,6 +41,11 @@ assert.match(
 assert.match(
   repairPercentOcr('önce 620 artırılıp sonra %25 azaltılıyor'),
   /%20[\s\S]*%25/,
+);
+
+assert.match(
+  repairEquationOcr('3(X—2)4 4 = 2x4 7 denklemini sağlayan\n0) 5\nE) 9'),
+  /3\(X-2\)\+4=\s*2x\+7[\s\S]*C\) 5/,
 );
 
 console.log('ocrQuality.test.mjs OK');

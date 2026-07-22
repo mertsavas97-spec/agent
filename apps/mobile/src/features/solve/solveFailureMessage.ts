@@ -10,6 +10,13 @@ export function solveFailureMessage(err: unknown): string {
     return 'Geliştirme çözüm tüneli kapalı. Metro bağlantısını yenileyip tekrar dene.';
   }
   if (
+    /FetchRequestCanceled|aborted|AbortError|The operation was aborted/i.test(
+      message,
+    )
+  ) {
+    return 'Çözüm isteği zaman aşımına uğradı. Daha net ve yakın bir fotoğrafla tekrar dene.';
+  }
+  if (
     code === 'functions/not-found' ||
     code === 'functions/unavailable' ||
     code.includes('not-found')
