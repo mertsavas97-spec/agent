@@ -20,4 +20,5 @@ lazy Storage fallback, strict answer, raw exam guard; public E2E B/E/A/B PASS
 
 ## Sonraki (sen söyleyince)
 
-Sprint 4 — EAS + listing/ASO
+1. FAZ 1 UI/UX audit tamam — `docs/audit/uiux-audit-2026-07-22.md` (owner P0 onayı → FAZ 2)
+2. Sprint 4 — EAS + listing/ASO
