@@ -23,9 +23,11 @@ export function normalizeImageBase64(raw: string): string {
   return raw.replace(/^data:[^;]+;base64,/i, '').replace(/\s/g, '');
 }
 
+const B64 =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
 /**
- * Decode picker `base64` into bytes for `/solve-image` uploads.
- * Prefer this over `fetch(content://…)` — camera URIs often fail on Android.
+ * Pure base64 → bytes (no Node `buffer` package — Metro RN cannot resolve it).
  */
 export function decodeBase64ToBytes(base64: string): Uint8Array {
   const clean = normalizeImageBase64(base64);
@@ -35,6 +37,7 @@ export function decodeBase64ToBytes(base64: string): Uint8Array {
     });
   }
 
+  // Prefer runtime atob when present (Hermes / modern Jest).
   if (typeof atob === 'function') {
     const binary = atob(clean);
     const bytes = new Uint8Array(binary.length);
@@ -44,8 +47,18 @@ export function decodeBase64ToBytes(base64: string): Uint8Array {
     return bytes;
   }
 
-  // Jest / Node without atob
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Buffer } = require('buffer') as typeof import('buffer');
-  return Uint8Array.from(Buffer.from(clean, 'base64'));
+  // Fallback decoder for environments without atob.
+  const padded = clean + '==='.slice((clean.length + 3) % 4);
+  const out: number[] = [];
+  for (let i = 0; i < padded.length; i += 4) {
+    const a = B64.indexOf(padded[i]!);
+    const b = B64.indexOf(padded[i + 1]!);
+    const c = B64.indexOf(padded[i + 2]!);
+    const d = B64.indexOf(padded[i + 3]!);
+    if (a < 0 || b < 0) break;
+    out.push((a << 2) | (b >> 4));
+    if (padded[i + 2] !== '=' && c >= 0) out.push(((b & 15) << 4) | (c >> 2));
+    if (padded[i + 3] !== '=' && d >= 0) out.push(((c & 3) << 6) | d);
+  }
+  return Uint8Array.from(out);
 }
