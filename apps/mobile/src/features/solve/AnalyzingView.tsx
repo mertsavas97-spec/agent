@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { colors, motion, radii, space, typography } from '@/src/theme';
-import { CozbilRobotInstant } from '@/src/ui/CozbilRobotInstant';
+import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
 import {
   ANALYZE_STEPS,
@@ -28,9 +28,12 @@ export type AnalyzingViewProps = {
   statusLine?: string | null;
 };
 
+const ICON_SIZE = 72;
+const ICON_RADIUS = Math.round(ICON_SIZE * 0.22);
+
 /**
- * Moodboard loading: solid navy, drifting brand light, bright robot plate.
- * No decorative generic shapes — atmosphere is animated light washes only.
+ * Moodboard loading: solid navy, official app icon, quiet premium frame.
+ * Progress bar is the only motion — no background washes or robot pulse.
  */
 export function AnalyzingView({
   step = 'upload',
@@ -48,11 +51,6 @@ export function AnalyzingView({
 
   const anim = useRef(new Animated.Value(0.08)).current;
   const tipOpacity = useRef(new Animated.Value(1)).current;
-  const breathe = useRef(new Animated.Value(0)).current;
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const washA = useRef(new Animated.Value(0)).current;
-  const washB = useRef(new Animated.Value(0)).current;
-  const enter = useRef(new Animated.Value(1)).current;
   const [displayPct, setDisplayPct] = useState(8);
   const peakRef = useRef(0.08);
   const prevTip = useRef(copy.tip);
@@ -93,81 +91,6 @@ export function AnalyzingView({
   }, [anim, effectiveStep, copy.phase]);
 
   useEffect(() => {
-    enter.setValue(0.96);
-    Animated.spring(enter, {
-      toValue: 1,
-      friction: 8,
-      tension: 100,
-      useNativeDriver: true,
-    }).start();
-
-    const breatheLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(breathe, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(breathe, {
-          toValue: 0,
-          duration: 1400,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    const shimmerLoop = Animated.loop(
-      Animated.timing(shimmer, {
-        toValue: 1,
-        duration: 1600,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    const washLoop = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(washA, {
-            toValue: 1,
-            duration: 3200,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(washA, {
-            toValue: 0,
-            duration: 3200,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(washB, {
-            toValue: 1,
-            duration: 4200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(washB, {
-            toValue: 0,
-            duration: 4200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-    breatheLoop.start();
-    shimmerLoop.start();
-    washLoop.start();
-    return () => {
-      breatheLoop.stop();
-      shimmerLoop.stop();
-      washLoop.stop();
-    };
-  }, [enter, breathe, shimmer, washA, washB]);
-
-  useEffect(() => {
     if (copy.tip === prevTip.current) return;
     prevTip.current = copy.tip;
     tipOpacity.setValue(0);
@@ -182,71 +105,23 @@ export function AnalyzingView({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
-  const robotScale = breathe.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.06],
-  });
-  const plateGlow = breathe.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.55, 1],
-  });
-  const shimmerX = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-80, 220],
-  });
-  const washAOpacity = washA.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.08, 0.22],
-  });
-  const washBOpacity = washB.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.05, 0.16],
-  });
-  const washAShift = washA.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-24, 28],
-  });
-  const washBShift = washB.interpolate({
-    inputRange: [0, 1],
-    outputRange: [18, -30],
-  });
 
   return (
     <View style={styles.container} testID="analyzing-view">
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.washOrange,
-          {
-            opacity: washAOpacity,
-            transform: [{ translateY: washAShift }],
-          },
-        ]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.washLight,
-          {
-            opacity: washBOpacity,
-            transform: [{ translateY: washBShift }],
-          },
-        ]}
-      />
-
-      <Animated.View
-        style={[
-          styles.hero,
-          {
-            transform: [{ scale: enter }, { scale: robotScale }],
-          },
-        ]}
-        testID="analyzing-hero">
-        <Animated.View style={[styles.plateGlow, { opacity: plateGlow }]} />
-        <View style={styles.iconPlate} testID="analyzing-icon-plate">
-          <CozbilRobotInstant size={76} tone="bright" testID="cozbil-robot" />
+      <View style={styles.hero} testID="analyzing-hero">
+        <View style={styles.ringOuter} testID="analyzing-icon-plate">
+          <View style={styles.ringGap}>
+            <View style={styles.ringAccent}>
+              <CozbilRobot
+                animate={false}
+                size={ICON_SIZE}
+                testID="cozbil-robot"
+                style={styles.icon}
+              />
+            </View>
+          </View>
         </View>
-      </Animated.View>
+      </View>
 
       <Text style={styles.title} testID="analyzing-title">
         {copy.headline}
@@ -259,14 +134,7 @@ export function AnalyzingView({
       </Text>
 
       <View style={styles.barTrack} testID="analyzing-progress-bar">
-        <Animated.View style={[styles.barFill, { width: widthInterp }]}>
-          <Animated.View
-            style={[
-              styles.barShimmer,
-              { transform: [{ translateX: shimmerX }, { skewX: '-18deg' }] },
-            ]}
-          />
-        </Animated.View>
+        <Animated.View style={[styles.barFill, { width: widthInterp }]} />
       </View>
       <Text style={styles.pct} testID="analyzing-progress-pct">
         %{displayPct}
@@ -338,48 +206,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: space.lg,
-    overflow: 'hidden',
-  },
-  washOrange: {
-    position: 'absolute',
-    left: -40,
-    right: -40,
-    top: '8%',
-    height: '42%',
-    backgroundColor: 'rgba(245, 158, 11, 0.28)',
-  },
-  washLight: {
-    position: 'absolute',
-    left: -20,
-    right: -20,
-    bottom: '6%',
-    height: '38%',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   hero: {
-    width: 120,
-    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.sm,
   },
-  plateGlow: {
-    position: 'absolute',
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    backgroundColor: 'rgba(245, 158, 11, 0.35)',
+  /** Outer hairline — soft white for depth on navy */
+  ringOuter: {
+    padding: 1.5,
+    borderRadius: ICON_RADIUS + 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
-  iconPlate: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.orange,
-    overflow: 'hidden',
+  /** Quiet gap between hairline and accent */
+  ringGap: {
+    padding: 3,
+    borderRadius: ICON_RADIUS + 8,
+    backgroundColor: colors.navy,
+  },
+  /** Brand accent stroke */
+  ringAccent: {
+    padding: 2,
+    borderRadius: ICON_RADIUS + 4,
+    backgroundColor: colors.orange,
+  },
+  icon: {
+    borderRadius: ICON_RADIUS,
   },
   title: {
     color: colors.white,
@@ -421,14 +273,6 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.orange,
     borderRadius: radii.pill,
-    overflow: 'hidden',
-  },
-  barShimmer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 48,
-    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   pct: {
     marginTop: space.sm,

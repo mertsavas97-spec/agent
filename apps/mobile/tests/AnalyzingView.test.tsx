@@ -18,8 +18,11 @@ describe('AnalyzingView', () => {
     expect(screen.getByTestId('analyzing-step-solve')).toBeTruthy();
   });
 
-  it('shows brand icon on a contrast plate', () => {
+  it('shows official app icon in a premium ring on solid navy', () => {
     render(<AnalyzingView step="solve" />);
+    expect(screen.getByTestId('analyzing-view')).toHaveStyle({
+      backgroundColor: '#1E1B4B',
+    });
     expect(screen.getByTestId('analyzing-icon-plate')).toBeTruthy();
     expect(screen.getByTestId('analyzing-hero')).toBeTruthy();
     expect(screen.getByTestId('cozbil-robot')).toBeTruthy();
