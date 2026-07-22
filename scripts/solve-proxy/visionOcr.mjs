@@ -149,8 +149,8 @@ async function decodeImageBuffer(input) {
   try {
     return await sharp(input, SHARP_INPUT_OPTIONS)
       .rotate()
-      .resize({ width: 1600, withoutEnlargement: true })
-      .png()
+      .resize({ width: 1400, withoutEnlargement: true })
+      .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
   } catch (err) {
     throw new Error(
@@ -162,7 +162,7 @@ async function decodeImageBuffer(input) {
 async function buildOcrVariant(input, { threshold, boost } = {}) {
   const meta = await sharp(input, SHARP_INPUT_OPTIONS).metadata();
   const sourceWidth = meta.width || 1200;
-  const targetWidth = Math.min(1800, Math.max(1200, sourceWidth));
+  const targetWidth = Math.min(1400, Math.max(1000, sourceWidth));
   let pipeline = sharp(input, SHARP_INPUT_OPTIONS)
     .rotate()
     .grayscale()
@@ -291,11 +291,11 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const input = await decodeImageBuffer(raw);
 
     // Soft / boosted first — hard threshold blanks many phone-camera worksheets.
+    // Keep a hard AUTO pass for % signs (KPSS yüzde).
     const passPlan = [
       { threshold: undefined, boost: false, psm: PSM.AUTO },
       { threshold: undefined, boost: true, psm: PSM.AUTO },
       { threshold: 180, boost: false, psm: PSM.AUTO },
-      { threshold: 160, boost: true, psm: PSM.SPARSE_TEXT },
       { threshold: 180, boost: false, psm: PSM.SPARSE_TEXT },
     ];
 

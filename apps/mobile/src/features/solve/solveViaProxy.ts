@@ -51,7 +51,7 @@ function isAbortOrCancel(err: unknown): boolean {
   const name = err instanceof Error ? err.name : '';
   return (
     name === 'AbortError' ||
-    /FetchRequestCanceled|aborted|AbortError|The operation was aborted|network request failed/i.test(
+    /FetchRequestCanceled|aborted|AbortError|The operation was aborted|network request failed|SOLVE_PROXY_TIMEOUT_408/i.test(
       message,
     )
   );
@@ -141,9 +141,15 @@ async function postSolveOnce(input: {
     data = JSON.parse(text) as typeof data;
   } catch {
     const snippet = text.slice(0, 120).replace(/\s+/g, ' ');
-    if (/no tunnel here|tunnel.*not found|502 Bad Gateway|503 Service/i.test(snippet)) {
+    if (/no tunnel here|tunnel.*not found|502 Bad Gateway|503 Service|Tunnel Unavailable/i.test(snippet)) {
       throw Object.assign(new Error('SOLVE_PROXY_TUNNEL_DOWN'), {
         code: 'functions/unavailable',
+      });
+    }
+    // localtunnel often returns empty 408 while OCR is still running.
+    if (res.status === 408 || /408|timeout|Gateway Time-out/i.test(`${res.status} ${snippet}`)) {
+      throw Object.assign(new Error('SOLVE_PROXY_TIMEOUT_408'), {
+        code: 'functions/deadline-exceeded',
       });
     }
     throw Object.assign(
