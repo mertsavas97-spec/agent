@@ -229,8 +229,9 @@ export function repairPercentOcr(text) {
   t = t.replace(/\b94[,.]?25(\s+azalt)/gi, '%25$1');
   t = t.replace(/\b9425(\s+azalt)/gi, '%25$1');
   if (/yüzde|yuzde/i.test(t)) {
-    t = t.replace(/\bönce\s+(\d{1,2})\s+(artır)/gi, 'önce %$1 $2');
-    t = t.replace(/\bsonra\s+(\d{1,2})\s+(azalt)/gi, 'sonra %$1 $2');
+    // Avoid \\b — Turkish letters break JS word boundaries (ö/ü).
+    t = t.replace(/önce\s+(\d{1,2})\s+(artır)/gi, 'önce %$1 $2');
+    t = t.replace(/sonra\s+(\d{1,2})\s+(azalt)/gi, 'sonra %$1 $2');
   }
   return t;
 }
