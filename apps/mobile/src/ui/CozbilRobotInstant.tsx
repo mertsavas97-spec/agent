@@ -10,17 +10,16 @@ type Props = {
 
 /**
  * Instant brand mark for loading screens — pure Views, no Image/Metro asset
- * fetch. Remote Metro tunnels otherwise show a blank plate until PNG arrives.
+ * fetch. Circular plate so it clips cleanly inside analyzing rings (no square bleed).
  */
 export function CozbilRobotInstant({ size = 88, testID = 'cozbil-robot', style }: Props) {
-  const radius = Math.round(size * 0.22);
-  const headW = size * 0.52;
-  const headH = size * 0.42;
-  const eyeW = size * 0.08;
-  const eyeH = size * 0.16;
-  const ear = size * 0.09;
-  const antenna = size * 0.14;
-  const tip = size * 0.08;
+  const headW = size * 0.5;
+  const headH = size * 0.4;
+  const eyeW = size * 0.075;
+  const eyeH = size * 0.15;
+  const ear = size * 0.085;
+  const antenna = size * 0.13;
+  const tip = size * 0.075;
 
   return (
     <View
@@ -32,7 +31,7 @@ export function CozbilRobotInstant({ size = 88, testID = 'cozbil-robot', style }
         {
           width: size,
           height: size,
-          borderRadius: radius,
+          borderRadius: size / 2,
         },
         style,
       ]}>
@@ -92,6 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navy,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   antenna: {
     alignItems: 'center',

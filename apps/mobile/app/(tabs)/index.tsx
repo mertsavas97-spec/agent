@@ -255,9 +255,14 @@ export default function HomeScreen() {
               </Text>
             </View>
             {streakCount >= 1 ? (
-              <View style={styles.streakChip} testID="home-streak">
+              <PressableSurface
+                style={styles.streakChip}
+                testID="home-streak"
+                accessibilityRole="button"
+                accessibilityLabel={`${streakCount} gün seri, istatistiklere git`}
+                onPress={() => router.push('/(tabs)/stats')}>
                 <Text style={styles.streakChipText}>{streakCount} gün</Text>
-              </View>
+              </PressableSurface>
             ) : null}
           </View>
           <Pressable
@@ -286,7 +291,12 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.streakWeek} testID="home-streak-week">
+        <PressableSurface
+          style={styles.streakWeek}
+          testID="home-streak-week"
+          accessibilityRole="button"
+          accessibilityLabel="Günlük seri, istatistiklere git"
+          onPress={() => router.push('/(tabs)/stats')}>
           <View style={styles.streakWeekHeader}>
             <Text style={styles.streakWeekTitle}>
               {streakCount > 0 ? `${streakCount} gün seri` : 'Günlük seri'}
@@ -310,7 +320,7 @@ export default function HomeScreen() {
               );
             })}
           </View>
-        </View>
+        </PressableSurface>
 
         <ExamModeSwitcher
           value={examType}

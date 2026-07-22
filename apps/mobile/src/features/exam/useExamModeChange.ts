@@ -1,15 +1,12 @@
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 
-import { runRewardedExamSwitch } from '@/src/features/ads';
 import {
   hydrateEntitlement,
-  isPremiumActive,
   type EntitlementSnapshot,
 } from '@/src/features/paywall/entitlement';
 import type { ExamType } from '@/src/lib/api/types';
 
-import { EXAM_LABEL } from './examLabels';
 import { setExamPreferenceCache } from './examPreferenceCache';
 import { callUpdateExamType } from './updateExamClient';
 import { hapticSelection } from '@/src/ui/haptics';
@@ -22,12 +19,12 @@ export type UseExamModeChangeOptions = {
 
 /**
  * Shared exam switch — optimistic local preference, background sync.
- * Free users: rewarded gate (settings parity).
+ * Exam package is information architecture (not a paywall gate): free users
+ * switch immediately; ads stay on solve quota / multi-batch unlocks.
  */
 export function useExamModeChange(options: UseExamModeChangeOptions = {}) {
   const [switching, setSwitching] = useState(false);
   const onOptimistic = options.onOptimistic;
-  const ent = options.ent;
 
   const applyExam = useCallback(
     async (next: ExamType) => {
@@ -48,46 +45,11 @@ export function useExamModeChange(options: UseExamModeChangeOptions = {}) {
 
   const requestExamChange = useCallback(
     (current: ExamType | null, next: ExamType) => {
-      if (!current || next === current || switching) return;
-
-      const premium = isPremiumActive(ent ?? undefined);
-
-      if (premium) {
-        void applyExam(next);
-        return;
-      }
-
-      const label = EXAM_LABEL[next];
-      Alert.alert(
-        'Mod değiştir',
-        `${label} paketine geçmek için bir reklam izlemen gerekir.\n\nNot: Reklam SDK henüz bağlı değil; bu sürümde stub/demo akışı çalışır.`,
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          {
-            text: 'Reklam izle ve geç',
-            onPress: () => {
-              void (async () => {
-                setSwitching(true);
-                try {
-                  const unlock = await runRewardedExamSwitch();
-                  if (!unlock.allowed) {
-                    Alert.alert(
-                      'Devam edilmedi',
-                      'Reklam tamamlanmadan sınav paketi değiştirilemez.',
-                    );
-                    return;
-                  }
-                  await applyExam(next);
-                } finally {
-                  setSwitching(false);
-                }
-              })();
-            },
-          },
-        ],
-      );
+      // Allow first pick when preference is still null (boot / empty profile).
+      if (next === current || switching) return;
+      void applyExam(next);
     },
-    [applyExam, ent, switching],
+    [applyExam, switching],
   );
 
   return { switching, requestExamChange, applyExam };

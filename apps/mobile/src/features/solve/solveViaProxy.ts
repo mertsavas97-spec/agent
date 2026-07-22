@@ -5,6 +5,7 @@
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
 import { withHardTimeout } from './hardTimeout';
+import { decodeBase64ToBytes } from './imageBase64';
 import { PROXY_TIMEOUT_MS } from './solveTiming';
 
 /** Keep JSON safely below the proxy's 6 MiB body limit. Base64 expands bytes by ~33%. */
@@ -64,6 +65,40 @@ function timeoutError(): Error {
   });
 }
 
+async function postBinarySolveImage(input: {
+  base: string;
+  token: string;
+  bytes: ArrayBuffer | Uint8Array;
+  mimeType?: string;
+  examType?: ExamType;
+  subjectHint?: Subject;
+  requestId: string;
+  signal: AbortSignal;
+}): Promise<Response> {
+  const byteLength =
+    input.bytes instanceof Uint8Array ? input.bytes.byteLength : input.bytes.byteLength;
+  if (byteLength > MAX_BINARY_IMAGE_BYTES) {
+    throw Object.assign(new Error('BINARY_IMAGE_TOO_LARGE'), {
+      code: 'functions/invalid-argument',
+    });
+  }
+  const contentType = resolveImageContentType(input.mimeType, null);
+  return fetch(`${input.base}/solve-image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': contentType,
+      Accept: 'application/json',
+      'Bypass-Tunnel-Reminder': '1',
+      'X-Cozbil-Proxy-Token': input.token,
+      'X-Cozbil-Exam-Type': input.examType ?? 'lgs',
+      'X-Cozbil-Subject-Hint': input.subjectHint ?? '',
+      'X-Cozbil-Request-Id': input.requestId,
+    },
+    body: input.bytes as BodyInit,
+    signal: input.signal,
+  });
+}
+
 async function postSolveOnce(input: {
   base: string;
   token: string;
@@ -83,28 +118,31 @@ async function postSolveOnce(input: {
       : undefined;
 
   let res: Response;
-  if (input.imageUri) {
+  // Prefer picker base64 bytes over URI fetch — camera content:// / ph:// often fails.
+  if (input.imageBase64 && !input.imageUrl) {
+    const decoded = decodeBase64ToBytes(input.imageBase64);
+    res = await postBinarySolveImage({
+      base: input.base,
+      token: input.token,
+      bytes: decoded,
+      mimeType: input.mimeType,
+      examType: input.examType,
+      subjectHint: input.subjectHint,
+      requestId: input.requestId,
+      signal: input.signal,
+    });
+  } else if (input.imageUri && !input.imageUrl) {
     const local = await fetch(input.imageUri, { signal: input.signal });
     // Prefer ArrayBuffer — RN Blob round-trip is slow and often cancels mid-upload.
     const bytes = await local.arrayBuffer();
-    if (bytes.byteLength > MAX_BINARY_IMAGE_BYTES) {
-      throw Object.assign(new Error('BINARY_IMAGE_TOO_LARGE'), {
-        code: 'functions/invalid-argument',
-      });
-    }
-    const contentType = resolveImageContentType(input.mimeType, null);
-    res = await fetch(`${input.base}/solve-image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': contentType,
-        Accept: 'application/json',
-        'Bypass-Tunnel-Reminder': '1',
-        'X-Cozbil-Proxy-Token': input.token,
-        'X-Cozbil-Exam-Type': input.examType ?? 'lgs',
-        'X-Cozbil-Subject-Hint': input.subjectHint ?? '',
-        'X-Cozbil-Request-Id': input.requestId,
-      },
-      body: bytes,
+    res = await postBinarySolveImage({
+      base: input.base,
+      token: input.token,
+      bytes,
+      mimeType: input.mimeType,
+      examType: input.examType,
+      subjectHint: input.subjectHint,
+      requestId: input.requestId,
       signal: input.signal,
     });
   } else {
@@ -204,19 +242,12 @@ export async function callSolveQuestionViaProxy(input: {
       code: 'functions/invalid-argument',
     });
   }
-  if (
-    !input.imageUrl &&
-    input.imageBase64 &&
-    input.imageBase64.length > MAX_INLINE_IMAGE_BASE64_CHARS
-  ) {
-    throw Object.assign(
-      new Error('INLINE_IMAGE_TOO_LARGE — Storage URL gerekli'),
-      { code: 'functions/invalid-argument' },
-    );
-  }
+  // Large picker base64 is posted as binary `/solve-image` (not JSON). Only reject
+  // oversized base64 when the caller also has no URI and we somehow cannot decode —
+  // decode path below enforces MAX_BINARY_IMAGE_BYTES.
 
   // One retry only for empty tunnel 408 — never stack two full PROXY_TIMEOUT waits.
-  const maxAttempts = input.imageUri ? 2 : 1;
+  const maxAttempts = input.imageUri || (input.imageBase64 && !input.imageUrl) ? 2 : 1;
   const budgetStarted = Date.now();
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

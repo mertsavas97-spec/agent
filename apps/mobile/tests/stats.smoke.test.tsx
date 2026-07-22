@@ -49,6 +49,19 @@ jest.mock('@/src/lib/api/progressClient', () => {
   };
 });
 
+jest.mock('@/src/features/stats/localStreakStore', () => ({
+  loadLocalStreakState: jest.fn().mockResolvedValue({
+    streakCount: 3,
+    streakLastActiveDate: '2099-01-01',
+    activeDates: [],
+  }),
+  buildHomeStreakView: () => ({
+    streakCount: 3,
+    weekFilled: [true, true, true, false, false, false, false],
+    weekLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+  }),
+}));
+
 import StatsScreen from '@/app/(tabs)/stats';
 
 describe('StatsScreen', () => {
@@ -60,6 +73,7 @@ describe('StatsScreen', () => {
     await waitFor(() => {
       expect(screen.getByTestId('stats-mode-chip')).toHaveTextContent('MOD: KPSS');
       expect(screen.getByTestId('stats-streak')).toBeTruthy();
+      expect(screen.getByTestId('stats-streak-week')).toBeTruthy();
     });
     expect(screen.queryByTestId('stats-jump-ygs')).toBeNull();
   });

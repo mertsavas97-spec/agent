@@ -66,22 +66,45 @@ describe('callSolveQuestionViaProxy', () => {
       imageBase64: 'a'.repeat(100),
     });
 
-    const request = fetchMock.mock.calls[0]?.[1];
-    const body = JSON.parse(String(request?.body));
-    expect(body.imageBase64).toHaveLength(100);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://solve.example/solve-image');
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBeInstanceOf(Uint8Array);
   });
 
-  it('rejects a large inline image before network when no URL is available', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch');
+  it('posts large camera base64 as binary without requiring a Storage URL', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          status: 'solved',
+          attemptId: 'a-large',
+          solutionId: 's-large',
+          cached: false,
+          topicId: 'lgs-math-kesirler',
+          subject: 'math',
+          steps: [{ title: 'Cevap', body: 'Doğru şık: B) 3' }],
+          answer: { label: 'B', text: '3' },
+          transparencyNote: 'ok',
+          quota: { remainingToday: 4, unlimited: false },
+        }),
+    } as Response);
 
-    await expect(
-      callSolveQuestionViaProxy({
-        requestId: 'r3',
-        examType: 'kpss',
-        imageBase64: 'x'.repeat(3_500_001),
-      }),
-    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
-    expect(fetchMock).not.toHaveBeenCalled();
+    // "aaaa…" is valid base64 padding-free content for decode; length > JSON inline cap.
+    const huge = Buffer.from(new Uint8Array(200_000)).toString('base64');
+    expect(huge.length).toBeGreaterThan(3_500_000 / 20);
+
+    await callSolveQuestionViaProxy({
+      requestId: 'r3',
+      examType: 'kpss',
+      imageBase64: huge,
+      mimeType: 'image/jpeg',
+    });
+
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://solve.example/solve-image');
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
+      'Content-Type': 'image/jpeg',
+    });
   });
 
   it('sends a local phone image as binary without base64 expansion', async () => {

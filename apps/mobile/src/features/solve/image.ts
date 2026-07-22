@@ -12,6 +12,11 @@ export type PickedImage = {
   height: number;
   mimeType: string | undefined;
   fileName: string | undefined;
+  /**
+   * Raw base64 (no data: prefix). Camera captures should always set this —
+   * `content://` / `ph://` URI fetch is flaky and OCR then fails on clear photos.
+   */
+  base64?: string;
 };
 
 async function ensureCameraPermission(): Promise<boolean> {
@@ -35,6 +40,9 @@ function mapAsset(asset: ImagePicker.ImagePickerAsset): PickedImage {
     height: asset.height,
     mimeType: asset.mimeType,
     fileName: asset.fileName ?? undefined,
+    base64: typeof asset.base64 === 'string' && asset.base64.length > 0
+      ? asset.base64
+      : undefined,
   };
 }
 
@@ -52,6 +60,8 @@ export async function pickFromCamera(): Promise<PickedImage | null> {
     quality: CAMERA_JPEG_QUALITY,
     // Full frame as-is — no forced crop UI
     allowsEditing: false,
+    // Inline bytes — camera URIs often cannot be re-fetched for OCR upload.
+    base64: true,
     // iOS HEIC → JPEG so dogfood OCR (sharp/tesseract) can decode the bytes.
     preferredAssetRepresentationMode:
       ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
@@ -69,6 +79,8 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
     quality: LIBRARY_JPEG_QUALITY,
     // Full photo as-is — no forced crop UI
     allowsEditing: false,
+    // Gallery file:// usually re-fetches; base64 is a safe fallback on Android.
+    base64: true,
     preferredAssetRepresentationMode:
       ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   });

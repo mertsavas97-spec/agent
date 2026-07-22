@@ -31,6 +31,7 @@ describe('image picker crop policy', () => {
       expect.objectContaining({
         allowsEditing: false,
         quality: expect.any(Number),
+        base64: true,
       }),
     );
     const camOpts = (ImagePicker.launchCameraAsync as jest.Mock).mock.calls[0][0];

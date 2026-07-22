@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { colors, motion, radii, space, typography } from '@/src/theme';
@@ -28,8 +28,7 @@ const TIPS = [
 ];
 
 /**
- * Moodboard loading: brand mark on a light plate (separates from navy),
- * monotonic progress, orbit accents, shimmer — no progress bounce-back.
+ * Moodboard loading: circular brand mark, soft pulse, progress — no orbit demo.
  */
 export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProps) {
   const baseTarget = progressForStep(step);
@@ -37,7 +36,6 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
   const tipOpacity = useRef(new Animated.Value(1)).current;
   const halo = useRef(new Animated.Value(0)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
-  const orbit = useRef(new Animated.Value(0)).current;
   const enter = useRef(new Animated.Value(1)).current;
   const [displayPct, setDisplayPct] = useState(8);
   const [tipIndex, setTipIndex] = useState(0);
@@ -79,11 +77,11 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   useEffect(() => {
     // Subtle settle without hiding the mark (opacity stays 1).
-    enter.setValue(0.94);
+    enter.setValue(0.96);
     Animated.spring(enter, {
       toValue: 1,
-      friction: 6,
-      tension: 120,
+      friction: 8,
+      tension: 100,
       useNativeDriver: true,
     }).start();
 
@@ -91,13 +89,13 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
       Animated.sequence([
         Animated.timing(halo, {
           toValue: 1,
-          duration: 1400,
+          duration: 1800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(halo, {
           toValue: 0,
-          duration: 1400,
+          duration: 1800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -111,23 +109,13 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
         useNativeDriver: true,
       }),
     );
-    const orbitLoop = Animated.loop(
-      Animated.timing(orbit, {
-        toValue: 1,
-        duration: motion.orbit,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
     haloLoop.start();
     shimmerLoop.start();
-    orbitLoop.start();
     return () => {
       haloLoop.stop();
       shimmerLoop.stop();
-      orbitLoop.stop();
     };
-  }, [enter, halo, orbit, shimmer]);
+  }, [enter, halo, shimmer]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -147,36 +135,16 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   const haloScale = halo.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.06],
+    outputRange: [1, 1.04],
   });
   const haloOpacity = halo.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.25, 0.55],
+    outputRange: [0.18, 0.38],
   });
   const shimmerX = shimmer.interpolate({
     inputRange: [0, 1],
     outputRange: [-80, 220],
   });
-  const orbitRotate = orbit.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const orbitDots = useMemo(
-    () =>
-      [0, 180].map((deg) => (
-        <View
-          key={deg}
-          style={[
-            styles.orbitDot,
-            {
-              transform: [{ rotate: `${deg}deg` }, { translateY: -46 }],
-            },
-          ]}
-        />
-      )),
-    [],
-  );
 
   return (
     <View style={styles.container} testID="analyzing-view">
@@ -198,16 +166,8 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
           ]}
           pointerEvents="none"
         />
-        <Animated.View
-          style={[styles.orbitRing, { transform: [{ rotate: orbitRotate }] }]}
-          pointerEvents="none">
-          {orbitDots}
-        </Animated.View>
-        {/* Instant vector mark — remote Metro PNG arrives late over tunnel */}
         <View style={styles.iconPlate} testID="analyzing-icon-plate">
-          <View style={styles.iconInner}>
-            <CozbilRobotInstant size={72} testID="cozbil-robot" />
-          </View>
+          <CozbilRobotInstant size={72} testID="cozbil-robot" />
         </View>
       </Animated.View>
 
@@ -298,53 +258,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   hero: {
-    width: 112,
-    height: 112,
+    width: 104,
+    height: 104,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.sm,
   },
   halo: {
     position: 'absolute',
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: 'rgba(245, 158, 11, 0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.28)',
-  },
-  orbitRing: {
-    position: 'absolute',
-    width: 112,
-    height: 112,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orbitDot: {
-    position: 'absolute',
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.orange,
-    opacity: 0.7,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
   },
   iconPlate: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.navy,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(245, 158, 11, 0.65)',
-  },
-  iconInner: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: 'rgba(15, 12, 48, 0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'rgba(245, 158, 11, 0.45)',
     overflow: 'hidden',
   },
   title: {

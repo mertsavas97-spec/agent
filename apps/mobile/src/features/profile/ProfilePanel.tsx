@@ -1,11 +1,13 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import type { ExamType } from '@/src/lib/api/types';
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
-import { Eyebrow } from '@/src/ui/Eyebrow';
+import { Button } from '@/src/ui/Button';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
+import { Eyebrow } from '@/src/ui/Eyebrow';
+import { PressableSurface } from '@/src/ui/PressableSurface';
 
 export type ProfilePanelProps = {
   examType: ExamType | null;
@@ -48,19 +50,21 @@ export function ProfilePanel({
             <Text style={styles.title}>Profil</Text>
           </View>
         </View>
-        <Pressable
+        <PressableSurface
           testID="profile-settings-btn"
           accessibilityRole="button"
           accessibilityLabel="Ayarlar"
           style={styles.settingsBtn}
+          haptic="light"
           onPress={onOpenSettings}>
           <Text style={styles.settingsLabel}>Ayarlar</Text>
-        </Pressable>
+        </PressableSurface>
       </View>
 
-      <Pressable
+      <PressableSurface
         testID="profile-premium-card"
         style={[styles.premiumCard, isPremium && styles.premiumCardOn]}
+        haptic="light"
         onPress={onOpenPremium}>
         <Text style={styles.premiumKicker}>
           {isPremium ? 'PREMİUM AKTİF' : 'ÇÖZBİL PREMİUM'}
@@ -76,7 +80,7 @@ export function ProfilePanel({
         <Text style={styles.premiumCta}>
           {isPremium ? 'Planı gör →' : 'Premium’a geç →'}
         </Text>
-      </Pressable>
+      </PressableSurface>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Aktif sınav</Text>
@@ -84,16 +88,16 @@ export function ProfilePanel({
           {examType ? EXAM_LABEL[examType] : 'Henüz seçilmedi'}
         </Text>
         <Text style={styles.note}>
-          Paket değiştirmek için Ayarlar’a git. Ücretsiz planda her geçişte bir
-          reklam izlenir.
+          Paket değiştirmek için Ayarlar’a git. Ana sayfadan da istediğin zaman
+          değiştirebilirsin.
         </Text>
-        <Pressable
+        <PressableSurface
           testID="profile-change-exam"
           style={styles.linkRow}
           onPress={onOpenSettings}>
           <Text style={styles.linkLabel}>Sınav paketini değiştir</Text>
           <Text style={styles.chevron}>›</Text>
-        </Pressable>
+        </PressableSurface>
       </View>
 
       <View style={styles.card}>
@@ -111,42 +115,41 @@ export function ProfilePanel({
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Hızlı bağlantılar</Text>
-        <Pressable
+        <PressableSurface
           style={styles.linkRow}
           onPress={onOpenSettings}
           testID="profile-open-settings">
           <Text style={styles.linkLabel}>Ayarlar · bildirimler · hukuki</Text>
           <Text style={styles.chevron}>›</Text>
-        </Pressable>
-        <Pressable
+        </PressableSurface>
+        <PressableSurface
           style={styles.linkRow}
           onPress={onOpenPremium}
           testID="profile-open-premium">
           <Text style={styles.linkLabel}>Premium planlar</Text>
           <Text style={styles.chevron}>›</Text>
-        </Pressable>
+        </PressableSurface>
       </View>
 
-      <Pressable
+      <Button
         testID="profile-sign-out"
-        accessibilityRole="button"
-        style={styles.secondaryBtn}
-        onPress={onSignOut}>
-        <Text style={styles.secondaryLabel}>Çıkış yap</Text>
-      </Pressable>
+        label="Çıkış yap"
+        variant="secondary"
+        onPress={onSignOut}
+        style={styles.signOutBtn}
+      />
 
       {deleteRequested ? (
         <Text style={styles.deleteFlag} testID="profile-delete-pending">
           Veri silme talebin alındı. İşlem tamamlanınca hesabın kapatılacak.
         </Text>
       ) : (
-        <Pressable
+        <Button
           testID="profile-delete-request"
-          accessibilityRole="button"
-          style={styles.dangerBtn}
-          onPress={onRequestDelete}>
-          <Text style={styles.dangerLabel}>Veri silme talebi</Text>
-        </Pressable>
+          label="Veri silme talebi"
+          variant="danger"
+          onPress={onRequestDelete}
+        />
       )}
     </ScrollView>
   );
@@ -236,6 +239,7 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.soft,
   },
   cardTitle: {
     fontFamily: typography.fontFamilySemiBold,
@@ -272,33 +276,7 @@ const styles = StyleSheet.create({
     color: colors.navy,
   },
   chevron: { fontSize: 22, color: colors.navy },
-  secondaryBtn: {
-    borderWidth: 1.5,
-    borderColor: colors.navy,
-    borderRadius: radii.lg,
-    paddingVertical: space.md,
-    alignItems: 'center',
-    marginBottom: space.md,
-    backgroundColor: colors.white,
-  },
-  secondaryLabel: {
-    color: colors.navy,
-    fontWeight: '700',
-    fontFamily: typography.fontFamilySemiBold,
-  },
-  dangerBtn: {
-    borderWidth: 1.5,
-    borderColor: colors.danger,
-    borderRadius: radii.lg,
-    paddingVertical: space.md,
-    alignItems: 'center',
-    backgroundColor: colors.white,
-  },
-  dangerLabel: {
-    color: colors.danger,
-    fontWeight: '700',
-    fontFamily: typography.fontFamilySemiBold,
-  },
+  signOutBtn: { marginBottom: space.md },
   deleteFlag: {
     color: colors.textSecondary,
     fontSize: 13,

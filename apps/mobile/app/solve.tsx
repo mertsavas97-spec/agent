@@ -84,8 +84,12 @@ export default function SolveFlowScreen() {
       const imageUri =
         pendingImage?.uri ||
         (typeof params.uri === 'string' ? params.uri : '');
+      const imageBase64 =
+        typeof pendingImage?.base64 === 'string' && pendingImage.base64.length > 0
+          ? pendingImage.base64
+          : undefined;
       const mimeType = pendingImage?.mimeType || params.mimeType;
-      if (!imageUri) {
+      if (!imageUri && !imageBase64) {
         setError('Görsel bulunamadı');
         setPhase('error');
         return;
@@ -116,12 +120,14 @@ export default function SolveFlowScreen() {
             examType: resolvedExam,
             subjectHint,
             requestId: localId,
-            imageUri,
+            imageUri: imageUri || undefined,
+            imageBase64,
             prepareFirestore: async () => {
               const { imagePath, downloadUrl } = await uploadQuestionImage({
                 uid: user.uid,
                 localId,
-                uri: imageUri,
+                uri: imageUri || undefined,
+                base64: imageBase64,
                 mimeType,
                 examType: resolvedExam,
                 subjectHint,
