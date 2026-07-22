@@ -1,26 +1,35 @@
 # Sprint State
 
-**Aktif çalışma yeri:** Cloud agent (Cursor Mobile)  
+**Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** 3 residual kapanıyor → **Sprint 4’e GEÇİLMEDİ** (owner isteği)  
-**Şimdi:** Gerçek iPhone fotoğraf pipeline onarıldı — token-auth binary proxy,
-lazy Storage fallback, strict answer, raw exam guard; public E2E B/E/A/B PASS
+**Sprint:** **4 başladı** — EAS + listing/ASO prep (credential’lı adımlar owner)
 
 ## Sprint 3 residual
 
-- [x] `.env` Desktop/cozbil’den kopyalandı + privacy/support env
+- [x] `.env` + privacy/support env örnekleri
 - [x] Firebase Hosting klasörü (`hosting/public/privacy`)
-- [x] Data Safety draft: `docs/store/play-data-safety-draft.md`
-- [ ] Hosting deploy — **firebase login --reauth** gerekir (credential expired)
-- [ ] Counsel imzası — insan/avukat (agent yapamaz)
+- [x] Data Safety draft
+- [x] Hosting deploy **runbook** (`docs/store/hosting-deploy-runbook.md`)
+- [ ] Hosting deploy — **firebase login --reauth** (owner; agent auth yok)
+- [ ] Counsel imzası — insan/avukat
 
-## Beklenen privacy URL (deploy sonrası)
+## Sprint 4 (bu tur)
+
+- [x] `eas.json` production: AAB/store, no proxy, privacy URL env
+- [x] `app.config.js` — production’da expo-dev-client strip
+- [x] `docs/setup/EAS_PRODUCTION.md`
+- [x] Listing full copy + ASO keyword map + content rating draft
+- [ ] Owner: `eas init` (owner + projectId)
+- [ ] Owner: hosting deploy + Play screenshots / feature graphic
+- [ ] Owner: `eas build/submit` production
+
+## Beklenen privacy URL
 
 `https://cozbil-dev-f9583.web.app/privacy`
 
-## Sonraki (sen söyleyince)
+## Sonraki (owner veya “devam”)
 
-1. ~~FAZ 1 UI/UX audit~~ + ~~FAZ 2 remediation~~ (`docs/audit/`)
-2. Sprint 3 residual: Hosting deploy + counsel
-3. Sprint 4 — EAS + listing/ASO
-4. Backlog: moodboard PNG refresh; custom in-app camera
+1. `firebase login --reauth` → hosting deploy  
+2. `eas init` + Firebase public keys secrets → `eas build --profile production`  
+3. Play screenshots / feature graphic  
+4. Counsel final privacy metni

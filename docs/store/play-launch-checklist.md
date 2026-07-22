@@ -5,14 +5,17 @@
 
 ## P0 — Submit engeli
 
-- [ ] EAS `owner` + `extra.eas.projectId` dolu (`apps/mobile/app.json`)
-- [ ] Production EAS profile: AAB, env (Firebase, **no** `EXPO_PUBLIC_SOLVE_PROXY_URL`), `expo-dev-client` production’dan çıkarıldı
+- [ ] EAS `owner` + `extra.eas.projectId` dolu (`apps/mobile/app.json`) — **owner:** `eas init` (`docs/setup/EAS_PRODUCTION.md`)
+- [x] Production EAS profile iskeleti: AAB + store + env (**no** solve proxy; sandbox off) — `apps/mobile/eas.json`
+- [x] `app.config.js` production’da `expo-dev-client` strip
 - [ ] `eas submit` / Play service account credentials
 - [ ] Play Console app kaydı + imza (Play App Signing)
-- [ ] Store listing: title, short desc (80), full desc, screenshots (phone + 7" tablet önerilir), **feature graphic 1024×500**
-- [ ] Privacy Policy **public HTTPS URL** canlı deploy (`hosting/` hazır → `firebase login --reauth` + `npx firebase-tools deploy --only hosting`; beklenen `https://cozbil-dev-f9583.web.app/privacy`) + Data Safety formu
+- [x] Store listing **metin taslağı** (title/short/full) — `docs/store/listing-copy-draft-tr.md` + ASO map
+- [ ] Store listing **görseller**: screenshots + **feature graphic 1024×500**
+- [ ] Privacy Policy **public HTTPS URL** canlı deploy — artefact hazır; runbook: `docs/store/hosting-deploy-runbook.md` (`firebase login --reauth`)
 - [x] Data Safety doldurma taslağı: `docs/store/play-data-safety-draft.md`
-- [ ] Content rating questionnaire (education + photo upload + AI + minors LGS)
+- [x] Content rating questionnaire **taslağı**: `docs/store/play-content-rating-draft.md`
+- [ ] Content rating Console’da gönderildi
 - [ ] Play Billing product IDs in Console: `cozbil_premium_weekly_intro|monthly|yearly` + license testers
 - [x] Server token verify path (`syncSubscription` + `verifyPlayPurchase`) — credentials owner’da
 - [x] Production’da local `activateLocalPremium` kapalı / only `__DEV__` + sandbox env
