@@ -7,6 +7,7 @@ import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
 import { useExamModeChange } from '@/src/features/exam/useExamModeChange';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
+import { recordLocalSolveStreak } from '@/src/features/stats/localStreakStore';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import {
   MultiSolutionScreen,
@@ -178,6 +179,9 @@ export default function SolveBatchScreen() {
                 answer: normalized.answer ?? null,
                 transparencyNote: normalized.transparencyNote,
               }).catch((err) => console.warn('local history save failed', err));
+              void recordLocalSolveStreak().catch((err) =>
+                console.warn('local streak bump failed', err),
+              );
               ready += 1;
               setStatusLine(`${ready}/${initial.length} hazır`);
               if (!openedRef.current) {
