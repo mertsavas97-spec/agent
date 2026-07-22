@@ -11,6 +11,7 @@ import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient'
 import { subscribeOnboardingGate } from '@/src/features/onboarding/onboardingReplay';
 import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
+import { isFirebaseConfigured } from '@/src/lib/firebase';
 import { colors, space } from '@/src/theme';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
 
@@ -67,7 +68,11 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
       setUid(user?.uid ?? null);
       if (!user) {
         void ensureSignedIn().catch(() => {
-          setBootError('Giriş yapılamadı. İnternet / Anonymous Auth açık mı?');
+          setBootError(
+            isFirebaseConfigured()
+              ? 'Giriş yapılamadı. İnternet / Anonymous Auth açık mı?'
+              : 'Firebase yapılandırılmadı — Metro’da EXPO_PUBLIC_FIREBASE_API_KEY / APP_ID eksik.',
+          );
           setState({ status: 'ready' });
         });
       }
