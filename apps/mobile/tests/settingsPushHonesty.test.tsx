@@ -25,6 +25,13 @@ jest.mock('@/src/features/paywall/entitlement', () => ({
   isPremiumActive: () => false,
 }));
 
+jest.mock('@/src/features/paywall/demoForceFree', () => ({
+  hydrateDemoForceFree: jest.fn().mockResolvedValue(false),
+  isDemoForceFree: () => false,
+  isDemoPlanToolsAllowed: () => true,
+  setDemoForceFree: jest.fn(),
+}));
+
 jest.mock('@/src/lib/auth', () => ({
   ensureSignedIn: jest.fn().mockResolvedValue({ uid: 'u1' }),
 }));
@@ -60,6 +67,7 @@ jest.mock('@/src/ui/CozbilRobot', () => ({
 
 jest.mock('@/src/ui/haptics', () => ({
   hapticLight: jest.fn(),
+  hapticMedium: jest.fn(),
   hapticSelection: jest.fn(),
 }));
 

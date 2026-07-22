@@ -6,6 +6,11 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import {
+  hydrateDemoForceFree,
+  isDemoForceFree,
+  setDemoForceFree,
+} from './demoForceFree';
 import { planById, type PlanId, PRICING } from './pricing';
 
 const KEY = '@cozbil/premium_entitlement_v1';
@@ -18,6 +23,13 @@ export type EntitlementSnapshot = {
   productId: string | null;
   planId: PlanId | null;
 };
+
+const FREE_SNAP = (): EntitlementSnapshot => ({
+  status: 'free',
+  source: 'stub',
+  productId: null,
+  planId: null,
+});
 
 type Stored = {
   status: EntitlementStatus;
@@ -40,6 +52,10 @@ export function canUseLocalPremium(): boolean {
 }
 
 export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
+  await hydrateDemoForceFree();
+  if (isDemoForceFree()) {
+    return FREE_SNAP();
+  }
   if (isPremiumSandboxEnv()) {
     return {
       status: 'active',
@@ -52,7 +68,7 @@ export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) {
       memory = null;
-      return { status: 'free', source: 'stub', productId: null, planId: null };
+      return FREE_SNAP();
     }
     memory = JSON.parse(raw) as Stored;
     return {
@@ -62,11 +78,14 @@ export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
       planId: memory.planId,
     };
   } catch {
-    return { status: 'free', source: 'stub', productId: null, planId: null };
+    return FREE_SNAP();
   }
 }
 
 export function readLocalEntitlement(): EntitlementSnapshot {
+  if (isDemoForceFree()) {
+    return FREE_SNAP();
+  }
   if (isPremiumSandboxEnv()) {
     return {
       status: 'active',
@@ -83,10 +102,11 @@ export function readLocalEntitlement(): EntitlementSnapshot {
       planId: memory.planId,
     };
   }
-  return { status: 'free', source: 'stub', productId: null, planId: null };
+  return FREE_SNAP();
 }
 
 export function isPremiumActive(snap?: EntitlementSnapshot): boolean {
+  if (isDemoForceFree()) return false;
   const s = snap ?? readLocalEntitlement();
   return s.status === 'active' || s.status === 'grace';
 }
@@ -97,6 +117,10 @@ export async function writeEntitlementCache(input: {
   source: EntitlementSnapshot['source'];
   status?: EntitlementStatus;
 }): Promise<EntitlementSnapshot> {
+  // Activating Premium exits demo free override.
+  if (isDemoForceFree()) {
+    await setDemoForceFree(false);
+  }
   const stored: Stored = {
     status: input.status ?? 'active',
     planId: input.planId,

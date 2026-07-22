@@ -23,6 +23,13 @@ import {
 } from '@/src/features/legal/legalCopy';
 import { replayOnboardingForDemo } from '@/src/features/onboarding/completeClient';
 import {
+  hydrateDemoForceFree,
+  isDemoForceFree,
+  isDemoPlanToolsAllowed,
+  setDemoForceFree,
+} from '@/src/features/paywall/demoForceFree';
+import {
+  hydrateEntitlement,
   isPremiumActive,
   type EntitlementSnapshot,
 } from '@/src/features/paywall/entitlement';
@@ -40,7 +47,7 @@ import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { Button } from '@/src/ui/Button';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
 import { Eyebrow } from '@/src/ui/Eyebrow';
-import { hapticLight } from '@/src/ui/haptics';
+import { hapticLight, hapticMedium } from '@/src/ui/haptics';
 import { PressableSurface } from '@/src/ui/PressableSurface';
 
 export default function SettingsScreen() {
@@ -49,6 +56,8 @@ export default function SettingsScreen() {
   const [ent, setEnt] = useState<EntitlementSnapshot | null>(null);
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [replaying, setReplaying] = useState(false);
+  const [forceFree, setForceFree] = useState(false);
+  const [planSwitching, setPlanSwitching] = useState(false);
   const { requestExamChange } = useExamModeChange({
     ent,
     onOptimistic: (next) => setExamType(next),
@@ -57,6 +66,8 @@ export default function SettingsScreen() {
   useEffect(() => {
     void (async () => {
       setPrefs(await loadPushPrefs());
+      const forced = await hydrateDemoForceFree();
+      setForceFree(forced);
       setEnt(await loadEntitlementSnapshot());
       try {
         const user = await ensureSignedIn();
@@ -111,7 +122,37 @@ export default function SettingsScreen() {
     );
   }
 
+  function onToggleDemoPlan() {
+    const nextForceFree = !forceFree;
+    Alert.alert(
+      nextForceFree ? 'Ücretsiz plana geç (demo)' : 'Premium’a dön (demo)',
+      nextForceFree
+        ? 'Yalnızca bu geliştirme derlemesinde. Premium kaydı silinmez; free kota, banner ve reklam kapılarını denemek için kullanılır.'
+        : 'Demo free override kapanır. Daha önce aktif Premium varsa geri gelir.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: nextForceFree ? 'Free’ye geç' : 'Premium’a dön',
+          onPress: () => {
+            void (async () => {
+              setPlanSwitching(true);
+              try {
+                void hapticMedium();
+                await setDemoForceFree(nextForceFree);
+                setForceFree(isDemoForceFree());
+                setEnt(await hydrateEntitlement());
+              } finally {
+                setPlanSwitching(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }
+
   const premium = isPremiumActive(ent ?? undefined);
+  const demoTools = isDemoPlanToolsAllowed();
 
   return (
     <ScrollView
@@ -221,9 +262,26 @@ export default function SettingsScreen() {
         ))}
       </View>
 
-      {__DEV__ ? (
+      {demoTools ? (
         <View style={styles.card} testID="settings-demo">
           <Text style={styles.demoKicker}>DEMO · KİŞİSEL CİHAZ</Text>
+          <Text style={styles.cardTitle}>Plan denemesi</Text>
+          <Text style={styles.cardBody} testID="settings-demo-plan-status">
+            {forceFree
+              ? 'Demo free açık · Premium kaydı saklı. Kota, banner ve reklam kapıları free gibi.'
+              : premium
+                ? 'Premium aktif. Free deneyimi için aşağıdaki düğmeyi kullan.'
+                : 'Zaten free görünüyorsun. Premium denemek için üstteki Premium kartını kullan.'}
+          </Text>
+          <Button
+            testID="settings-demo-force-free"
+            label={forceFree ? 'Premium’a dön (demo)' : 'Ücretsiz plana geç (demo)'}
+            variant="secondary"
+            loading={planSwitching}
+            disabled={planSwitching}
+            onPress={onToggleDemoPlan}
+            style={{ marginBottom: space.sm }}
+          />
           <Text style={styles.cardTitle}>Onboarding</Text>
           <Text style={styles.cardBody}>
             Yalnızca geliştirme derlemesinde. Onboarding akışını baştan gösterir.
