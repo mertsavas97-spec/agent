@@ -38,14 +38,18 @@ function mapAsset(asset: ImagePicker.ImagePickerAsset): PickedImage {
   };
 }
 
+/** Camera needs higher quality — worksheets crush at 0.55 and OCR fails while gallery screenshots still read. */
+export const CAMERA_JPEG_QUALITY = 0.82;
+/** Gallery screenshots / saved photos are already sharp; keep uploads smaller. */
+export const LIBRARY_JPEG_QUALITY = 0.7;
+
 export async function pickFromCamera(): Promise<PickedImage | null> {
   const ok = await ensureCameraPermission();
   if (!ok) return null;
 
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
-    // Smaller JPEGs upload through dogfood tunnels before the proxy OCR budget.
-    quality: 0.55,
+    quality: CAMERA_JPEG_QUALITY,
     // Full frame as-is — no forced crop UI
     allowsEditing: false,
     // iOS HEIC → JPEG so dogfood OCR (sharp/tesseract) can decode the bytes.
@@ -62,7 +66,7 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    quality: 0.55,
+    quality: LIBRARY_JPEG_QUALITY,
     // Full photo as-is — no forced crop UI
     allowsEditing: false,
     preferredAssetRepresentationMode:
@@ -85,7 +89,7 @@ export async function pickMultipleFromLibrary(
   const limit = Math.max(1, Math.min(selectionLimit, 10));
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    quality: 0.55,
+    quality: LIBRARY_JPEG_QUALITY,
     allowsEditing: false,
     allowsMultipleSelection: true,
     selectionLimit: limit,

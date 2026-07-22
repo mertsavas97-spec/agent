@@ -49,7 +49,6 @@ export function ExamModeBlockScreen({
       testID="exam-mode-block-screen"
       showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
-        <View style={styles.heroGlow} />
         <View style={styles.heroTop}>
           <CozbilRobot size={52} animate tone="onDark" testID="exam-block-robot" />
           <View style={styles.heroTitles}>
@@ -165,15 +164,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
     ...shadows.soft,
-  },
-  heroGlow: {
-    position: 'absolute',
-    top: -40,
-    right: -20,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(245, 158, 11, 0.18)',
   },
   heroTop: {
     flexDirection: 'row',

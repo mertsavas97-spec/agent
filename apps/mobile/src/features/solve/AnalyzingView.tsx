@@ -147,11 +147,11 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   const haloScale = halo.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.12],
+    outputRange: [1, 1.06],
   });
   const haloOpacity = halo.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.35, 0.7],
+    outputRange: [0.25, 0.55],
   });
   const shimmerX = shimmer.interpolate({
     inputRange: [0, 1],
@@ -164,13 +164,13 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   const orbitDots = useMemo(
     () =>
-      [0, 120, 240].map((deg) => (
+      [0, 180].map((deg) => (
         <View
           key={deg}
           style={[
             styles.orbitDot,
             {
-              transform: [{ rotate: `${deg}deg` }, { translateY: -64 }],
+              transform: [{ rotate: `${deg}deg` }, { translateY: -46 }],
             },
           ]}
         />
@@ -180,9 +180,6 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   return (
     <View style={styles.container} testID="analyzing-view">
-      <View style={styles.ambientA} pointerEvents="none" />
-      <View style={styles.ambientB} pointerEvents="none" />
-
       <Animated.View
         style={[
           styles.hero,
@@ -209,7 +206,7 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
         {/* Instant vector mark — remote Metro PNG arrives late over tunnel */}
         <View style={styles.iconPlate} testID="analyzing-icon-plate">
           <View style={styles.iconInner}>
-            <CozbilRobotInstant size={88} testID="cozbil-robot" />
+            <CozbilRobotInstant size={72} testID="cozbil-robot" />
           </View>
         </View>
       </Animated.View>
@@ -300,77 +297,52 @@ const styles = StyleSheet.create({
     padding: space.lg,
     overflow: 'hidden',
   },
-  ambientA: {
-    position: 'absolute',
-    top: -60,
-    right: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: colors.orange,
-    opacity: 0.1,
-  },
-  ambientB: {
-    position: 'absolute',
-    bottom: 80,
-    left: -50,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#6366F1',
-    opacity: 0.12,
-  },
   hero: {
-    width: 148,
-    height: 148,
+    width: 112,
+    height: 112,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.sm,
   },
   halo: {
     position: 'absolute',
-    width: 136,
-    height: 136,
-    borderRadius: 68,
-    backgroundColor: 'rgba(245, 158, 11, 0.22)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(245, 158, 11, 0.45)',
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: 'rgba(245, 158, 11, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.28)',
   },
   orbitRing: {
     position: 'absolute',
-    width: 148,
-    height: 148,
+    width: 112,
+    height: 112,
     alignItems: 'center',
     justifyContent: 'center',
   },
   orbitDot: {
     position: 'absolute',
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: colors.orange,
-    opacity: 0.85,
+    opacity: 0.7,
   },
   iconPlate: {
-    width: 112,
-    height: 112,
-    borderRadius: 28,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: colors.navy,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(245, 158, 11, 0.55)',
-    shadowColor: colors.orange,
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(245, 158, 11, 0.65)',
   },
   iconInner: {
-    width: 96,
-    height: 96,
-    borderRadius: 22,
-    backgroundColor: colors.navy,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: 'rgba(15, 12, 48, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

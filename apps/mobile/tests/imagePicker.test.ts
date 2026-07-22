@@ -9,6 +9,11 @@ jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
   launchCameraAsync: jest.fn(),
   launchImageLibraryAsync: jest.fn(),
+  UIImagePickerPreferredAssetRepresentationMode: {
+    Compatible: 'compatible',
+    Current: 'current',
+    Automatic: 'automatic',
+  },
 }));
 
 describe('image picker crop policy', () => {
@@ -23,8 +28,15 @@ describe('image picker crop policy', () => {
     });
     await pickFromCamera();
     expect(ImagePicker.launchCameraAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ allowsEditing: false }),
+      expect.objectContaining({
+        allowsEditing: false,
+        quality: expect.any(Number),
+      }),
     );
+    const camOpts = (ImagePicker.launchCameraAsync as jest.Mock).mock.calls[0][0];
+    const libMock = ImagePicker.launchImageLibraryAsync as jest.Mock;
+    void libMock;
+    expect(camOpts.quality).toBeGreaterThanOrEqual(0.8);
   });
 
   it('does not force crop after gallery pick', async () => {
@@ -36,5 +48,7 @@ describe('image picker crop policy', () => {
     expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
       expect.objectContaining({ allowsEditing: false }),
     );
+    const libOpts = (ImagePicker.launchImageLibraryAsync as jest.Mock).mock.calls[0][0];
+    expect(libOpts.quality).toBeLessThan(0.8);
   });
 });

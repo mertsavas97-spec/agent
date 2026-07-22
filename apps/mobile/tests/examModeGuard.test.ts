@@ -88,6 +88,46 @@ describe('inferForeignExamFromResponse', () => {
       ),
     ).toBeNull();
   });
+
+  it.each([
+    ['lgs', 'ygs', 'ygs-math-temel', 'math'],
+    ['lgs', 'kpss', 'kpss-turkish-anlam', 'turkish'],
+    ['lgs', 'trafik', 'trafik-traffic-kurallar', 'traffic'],
+    ['ygs', 'lgs', 'lgs-math-kesirler', 'math'],
+    ['ygs', 'kpss', 'kpss-math-temel', 'math'],
+    ['ygs', 'trafik', 'trafik-firstaid-temel', 'firstaid'],
+    ['kpss', 'lgs', 'lgs-turkish-paragraf', 'turkish'],
+    ['kpss', 'ygs', 'ygs-physics-kuvvet', 'physics'],
+    ['kpss', 'trafik', 'trafik-vehicle-motor', 'vehicle'],
+    ['trafik', 'lgs', 'lgs-math-kesirler', 'math'],
+    ['trafik', 'ygs', 'ygs-chemistry-mol', 'chemistry'],
+    ['trafik', 'kpss', 'kpss-history-inkilap', 'history'],
+  ] as const)(
+    'blocks %s → %s via topic prefix',
+    (active, expected, topicId, subject) => {
+      expect(
+        inferForeignExamFromResponse(
+          solved({ topicId, subject }),
+          active,
+        ),
+      ).toBe(expected);
+    },
+  );
+
+  it('blocks academic subject under Ehliyet even without topicId', () => {
+    expect(
+      inferForeignExamFromResponse(
+        solved({ topicId: null, subject: 'math' }),
+        'trafik',
+      ),
+    ).toBe('lgs');
+    expect(
+      inferForeignExamFromResponse(
+        solved({ topicId: null, subject: 'turkish' }),
+        'trafik',
+      ),
+    ).toBe('kpss');
+  });
 });
 
 describe('resolveExamModeBlock', () => {

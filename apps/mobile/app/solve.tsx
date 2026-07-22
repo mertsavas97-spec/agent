@@ -20,12 +20,17 @@ import { ExamModeBlockScreen } from '@/src/features/solve/ExamModeBlockScreen';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
 import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
+import {
+  releaseClaimedSolveImage,
+  takePendingSolveImage,
+} from '@/src/features/solve/pendingSolveImageStore';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { routeSolveResponse } from '@/src/features/solve/solveResultRouting';
 import { SOLVE_UI_SETTLE_MS } from '@/src/features/solve/solveTiming';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
 import { withHardTimeout } from '@/src/features/solve/hardTimeout';
+import { recordLocalSolveStreak } from '@/src/features/stats/localStreakStore';
 import { findTopic, isKnownSubject, subjectsForExam } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -72,14 +77,18 @@ export default function SolveFlowScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    const pendingImage = takePendingSolveImage();
 
     async function run() {
-      if (!params.uri) {
+      const imageUri =
+        pendingImage?.uri ||
+        (typeof params.uri === 'string' ? params.uri : '');
+      const mimeType = pendingImage?.mimeType || params.mimeType;
+      if (!imageUri) {
         setError('Görsel bulunamadı');
         setPhase('error');
         return;
       }
-      const imageUri = params.uri;
       try {
         setAnalyzeStep('upload');
         const user = await ensureSignedIn();
@@ -102,7 +111,7 @@ export default function SolveFlowScreen() {
 
         const solvePromise = withHardTimeout(
           callSolveQuestion({
-            mimeType: params.mimeType,
+            mimeType,
             examType: resolvedExam,
             subjectHint,
             requestId: localId,
@@ -112,14 +121,14 @@ export default function SolveFlowScreen() {
                 uid: user.uid,
                 localId,
                 uri: imageUri,
-                mimeType: params.mimeType,
+                mimeType,
                 examType: resolvedExam,
                 subjectHint,
               });
               return {
                 imagePath,
                 imageUrl: downloadUrl,
-                mimeType: params.mimeType,
+                mimeType,
                 examType: resolvedExam,
                 subjectHint,
                 requestId: localId,
@@ -170,6 +179,8 @@ export default function SolveFlowScreen() {
         console.warn('solve flow used fallback or failed', err);
         setError(solveFailureMessage(err));
         setPhase('error');
+      } finally {
+        if (!cancelled) releaseClaimedSolveImage();
       }
     }
 
@@ -192,6 +203,9 @@ export default function SolveFlowScreen() {
       answer: result.answer ?? null,
       transparencyNote: result.transparencyNote,
     }).catch((err) => console.warn('local history save failed', err));
+    void recordLocalSolveStreak().catch((err) =>
+      console.warn('local streak bump failed', err),
+    );
   }, [phase, result, examType, params.uri]);
 
   async function switchToDetectedExam() {

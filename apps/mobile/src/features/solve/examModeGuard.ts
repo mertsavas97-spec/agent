@@ -70,12 +70,26 @@ export function inferForeignExamFromResponse(
     if (examHint?.suggested && examHint.suggested !== 'trafik') {
       return examHint.suggested;
     }
+    // Academic subject under Ehliyet with no topic/hint — still block (guess LGS for STEM).
+    return academicFallbackExam(response.subject);
   }
 
   const fromTopic = examFromTopicPrefix(response.topicId);
   if (fromTopic && fromTopic !== activeExam) return fromTopic;
 
   return null;
+}
+
+function academicFallbackExam(subject: string | undefined): ExamType {
+  if (
+    subject === 'turkish' ||
+    subject === 'history' ||
+    subject === 'geography' ||
+    subject === 'civics'
+  ) {
+    return 'kpss';
+  }
+  return 'lgs';
 }
 
 /**

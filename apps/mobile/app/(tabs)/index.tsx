@@ -34,10 +34,15 @@ import {
 } from '@/src/features/solve/image';
 import { MULTI_BATCH_MAX, multiBatchUserCopy } from '@/src/features/solve/multiBatchPolicy';
 import { setPendingMultiBatch } from '@/src/features/solve/multiBatchStore';
+import { setPendingSolveImage } from '@/src/features/solve/pendingSolveImageStore';
 import {
   peekPendingSubjectHint,
   takePendingSubjectHint,
 } from '@/src/features/solve/subjectHintStore';
+import {
+  buildHomeStreakView,
+  loadLocalStreakState,
+} from '@/src/features/stats/localStreakStore';
 import { fetchAttempts } from '@/src/lib/api/progressClient';
 import type { AttemptListItem, ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -60,6 +65,10 @@ export default function HomeScreen() {
   const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [streakCount, setStreakCount] = useState(0);
+  const [streakWeekFilled, setStreakWeekFilled] = useState<boolean[]>(
+    () => Array(7).fill(false),
+  );
+  const [streakWeekLabels] = useState(() => ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']);
   const [ent, setEnt] = useState<Awaited<ReturnType<typeof loadEntitlementSnapshot>>>(null);
   const bootedRef = useRef(false);
   const { switching: switchingExam, requestExamChange } = useExamModeChange({
@@ -94,11 +103,20 @@ export default function HomeScreen() {
           setEnt(entitlement);
           setIsPremium(isPremiumActive(entitlement ?? undefined));
           setRecent((attempts.items ?? []).filter((i) => i.status === 'solved'));
-          const streakRaw = userSnap.data()?.streakCount;
-          setStreakCount(
-            typeof streakRaw === 'number' && streakRaw > 0 ? Math.floor(streakRaw) : 0,
-          );
-          const et = userSnap.data()?.examType;
+          const data = userSnap.data();
+          const localStreak = await loadLocalStreakState();
+          const view = buildHomeStreakView({
+            remoteStreakCount:
+              typeof data?.streakCount === 'number' ? data.streakCount : 0,
+            remoteLastActiveDate:
+              typeof data?.streakLastActiveDate === 'string'
+                ? data.streakLastActiveDate
+                : null,
+            local: localStreak,
+          });
+          setStreakCount(view.streakCount);
+          setStreakWeekFilled(view.weekFilled);
+          const et = data?.examType;
           if (!cachedExam) {
             if (isExamType(et)) {
               setExamType(et);
@@ -141,9 +159,11 @@ export default function HomeScreen() {
     }
     const subjectHint = takePendingSubjectHint() ?? undefined;
     setSubjectHintBanner(null);
+    setPendingSolveImage(picked);
     router.push({
       pathname: '/capture-confirm',
       params: {
+        // Fallback only — prefer pendingSolveImageStore (camera content:// safe).
         uri: picked.uri,
         mimeType: picked.mimeType ?? 'image/jpeg',
         source,
@@ -277,8 +297,8 @@ export default function HomeScreen() {
             </Text>
           </View>
           <View style={styles.streakDaysRow}>
-            {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((label, i) => {
-              const filled = streakCount >= 7 - i;
+            {streakWeekLabels.map((label, i) => {
+              const filled = Boolean(streakWeekFilled[i]);
               return (
                 <View key={label} style={styles.streakDayCol} testID={`home-streak-day-${i + 1}`}>
                   <View style={[styles.streakDay, filled && styles.streakDayOn]} />

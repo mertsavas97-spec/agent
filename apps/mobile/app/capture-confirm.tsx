@@ -4,6 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
 import { isExamType } from '@/src/features/exam/examTypes';
+import { peekPendingSolveImage } from '@/src/features/solve/pendingSolveImageStore';
 import type { ExamType } from '@/src/lib/api/types';
 import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
@@ -22,7 +23,10 @@ export default function CaptureConfirmScreen() {
     subjectHint?: string;
   }>();
 
-  const uri = typeof params.uri === 'string' ? params.uri : '';
+  const pending = peekPendingSolveImage();
+  const uri =
+    pending?.uri || (typeof params.uri === 'string' ? params.uri : '');
+  const mimeType = pending?.mimeType || params.mimeType || 'image/jpeg';
   const examType: ExamType = isExamType(params.examType) ? params.examType : 'lgs';
   const theme = examThemeFor(examType)!;
   const sourceLabel =
@@ -34,7 +38,7 @@ export default function CaptureConfirmScreen() {
       pathname: '/solve',
       params: {
         uri,
-        mimeType: params.mimeType ?? 'image/jpeg',
+        mimeType,
         source: params.source ?? 'library',
         examType,
         ...(params.subjectHint ? { subjectHint: params.subjectHint } : {}),

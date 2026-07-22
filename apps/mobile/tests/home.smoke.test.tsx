@@ -81,6 +81,18 @@ jest.mock('@/src/features/exam/examPreference', () => ({
   readExamPreference: jest.fn().mockResolvedValue('ygs'),
 }));
 
+jest.mock('@/src/features/stats/localStreakStore', () => {
+  const actual = jest.requireActual('@/src/features/stats/localStreakStore');
+  return {
+    ...actual,
+    loadLocalStreakState: jest.fn().mockResolvedValue({
+      streakCount: 0,
+      streakLastActiveDate: null,
+      activeDates: [],
+    }),
+  };
+});
+
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
