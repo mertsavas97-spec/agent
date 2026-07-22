@@ -6,6 +6,9 @@ export function solveFailureMessage(err: unknown): string {
       : '';
   const message = err instanceof Error ? err.message : '';
 
+  if (/SOLVE_PROXY_TUNNEL_DOWN/i.test(message)) {
+    return 'Geliştirme çözüm tüneli kapalı. Metro bağlantısını yenileyip tekrar dene.';
+  }
   if (
     code === 'functions/not-found' ||
     code === 'functions/unavailable' ||

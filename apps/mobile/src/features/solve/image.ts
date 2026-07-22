@@ -47,6 +47,9 @@ export async function pickFromCamera(): Promise<PickedImage | null> {
     quality: 0.85,
     // Full frame as-is — no forced crop UI
     allowsEditing: false,
+    // iOS HEIC → JPEG so dogfood OCR (sharp/tesseract) can decode the bytes.
+    preferredAssetRepresentationMode:
+      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   });
   if (result.canceled || !result.assets[0]) return null;
   return mapAsset(result.assets[0]);
@@ -61,6 +64,8 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
     quality: 0.85,
     // Full photo as-is — no forced crop UI
     allowsEditing: false,
+    preferredAssetRepresentationMode:
+      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   });
   if (result.canceled || !result.assets[0]) return null;
   return mapAsset(result.assets[0]);
@@ -83,6 +88,8 @@ export async function pickMultipleFromLibrary(
     allowsEditing: false,
     allowsMultipleSelection: true,
     selectionLimit: limit,
+    preferredAssetRepresentationMode:
+      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   });
   if (result.canceled || !result.assets?.length) return null;
   return result.assets.slice(0, limit).map(mapAsset);

@@ -116,7 +116,9 @@ async function resolveFirestoreRequest(
 function isUsableResponse(response: SolveQuestionResponse): boolean {
   if (response.status !== 'solved') return true;
   if (response.assisted) return false;
-  return Boolean(response.answer?.text?.trim());
+  // Label-only (A–E) is enough — SolutionScreen can display it.
+  if (response.answer?.text?.trim()) return true;
+  return Boolean(response.answer?.label?.trim());
 }
 
 async function callableOrThrow(

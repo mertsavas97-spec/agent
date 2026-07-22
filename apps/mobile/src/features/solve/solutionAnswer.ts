@@ -18,6 +18,10 @@ export function resolveSolutionAnswer(
       text: answer.text.trim(),
     };
   }
+  if (answer?.label?.trim()) {
+    const label = answer.label.trim().toUpperCase();
+    return { label, text: label };
+  }
   return extractAnswerFromSteps(steps);
 }
 

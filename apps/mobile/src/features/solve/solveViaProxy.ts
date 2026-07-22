@@ -143,10 +143,14 @@ export async function callSolveQuestionViaProxy(input: {
     try {
       data = JSON.parse(text) as typeof data;
     } catch {
+      const snippet = text.slice(0, 120).replace(/\s+/g, ' ');
+      if (/no tunnel here|tunnel.*not found|502 Bad Gateway|503 Service/i.test(snippet)) {
+        throw Object.assign(new Error('SOLVE_PROXY_TUNNEL_DOWN'), {
+          code: 'functions/unavailable',
+        });
+      }
       throw Object.assign(
-        new Error(
-          `proxy_non_json (${res.status}): ${text.slice(0, 80).replace(/\s+/g, ' ')}`,
-        ),
+        new Error(`proxy_non_json (${res.status}): ${snippet}`),
         { code: 'functions/unavailable' },
       );
     }

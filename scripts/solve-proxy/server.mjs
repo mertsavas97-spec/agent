@@ -16,7 +16,7 @@ import {
   normalizeExamType,
   resolveSolveExam,
 } from './examPipeline.mjs';
-import { ocrImageBase64 } from './visionOcr.mjs';
+import { ocrImageBase64, isGarbageOcrText } from './visionOcr.mjs';
 import { tryVerbalSolve } from './verbalSolve.mjs';
 import {
   allowedImageUrl,
@@ -120,9 +120,9 @@ function solvedPayload({
       alternatives: classification.alternatives,
     },
   };
-  if (answer?.text) {
+  if (answer?.text || answer?.label) {
     payload.answer = {
-      text: String(answer.text),
+      text: String(answer.text ?? answer.label ?? ''),
       ...(answer.label ? { label: String(answer.label) } : {}),
     };
   }
@@ -270,6 +270,21 @@ const server = http.createServer(async (req, res) => {
     if (ocrTextOverride) {
       console.info('ocr: client-override');
     }
+    if (!ocrTextOverride && isGarbageOcrText(ocrText)) {
+      console.warn(
+        'solve-proxy rejected_not_question garbage_ocr',
+        JSON.stringify(ocrText.slice(0, 200)),
+      );
+      send(res, 200, {
+        status: 'rejected_not_question',
+        attemptId: `proxy-${requestId}`,
+        userMessage:
+          'Görseldeki yazı net okunamadı. Soruyu düz, yakından ve iyi ışıkta yeniden çek; şıklar da kadrajda olsun.',
+        quota: { remainingToday: 5, unlimited: false },
+        debugOcrPreview: ocrText.slice(0, 2048),
+      });
+      return;
+    }
     const profileExam = normalizeExamType(examType);
     // Hint is for the client mismatch sheet only — never switches the solve pipeline.
     const examHint = detectExamHint(ocrText, profileExam);
@@ -310,8 +325,11 @@ const server = http.createServer(async (req, res) => {
           note:
             'Metinden okunarak çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
           classification,
-          answer: verbal.answerText
-            ? { text: verbal.answerText, label: verbal.answerLabel }
+          answer: verbal.answerText || verbal.answerLabel
+            ? {
+                text: verbal.answerText || String(verbal.answerLabel),
+                label: verbal.answerLabel,
+              }
             : undefined,
           examHint: hintForClient,
         });

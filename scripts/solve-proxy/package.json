@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "for f in arithSolve.test.mjs verbalSolve.test.mjs trafficSolve.test.mjs examHint.test.mjs examPipeline.test.mjs pipelineMatrix.test.mjs remoteImagePolicy.test.mjs realImagePipeline.test.mjs serverBinary.test.mjs; do node \"$f\" || exit 1; done"
+    "test": "for f in arithSolve.test.mjs verbalSolve.test.mjs trafficSolve.test.mjs examHint.test.mjs examPipeline.test.mjs pipelineMatrix.test.mjs remoteImagePolicy.test.mjs realImagePipeline.test.mjs serverBinary.test.mjs ocrQuality.test.mjs; do node \"$f\" || exit 1; done"
   },
   "dependencies": {
     "sharp": "^0.35.3",

@@ -15,6 +15,13 @@ describe('solutionAnswer', () => {
     ).toEqual({ text: 'öyküleme' });
   });
 
+  it('accepts label-only answer payloads', () => {
+    expect(resolveSolutionAnswer({ label: 'B', text: '' }, [])).toEqual({
+      label: 'B',
+      text: 'B',
+    });
+  });
+
   it('extracts choice from Cevap step', () => {
     expect(
       extractAnswerFromSteps([

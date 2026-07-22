@@ -193,4 +193,25 @@ describe('callSolveQuestion orchestration', () => {
 
     await expect(callSolveQuestion(request)).rejects.toThrow(/nihai cevap|çözüm servisine/i);
   });
+
+  it('accepts solved payloads with label-only answers', async () => {
+    proxyMock.mockResolvedValue({
+      status: 'solved',
+      attemptId: 'proxy-label',
+      solutionId: 'proxy-label-s',
+      cached: false,
+      topicId: 'lgs-math-kesirler',
+      subject: 'math',
+      steps: [{ title: 'Cevap', body: 'Doğru şık: B' }],
+      answer: { label: 'B', text: '' },
+      transparencyNote: 'ok',
+      quota: { remainingToday: 5, unlimited: false },
+    } as unknown as SolveQuestionResponse);
+
+    await expect(callSolveQuestion(request)).resolves.toMatchObject({
+      status: 'solved',
+      answer: { label: 'B' },
+    });
+    expect(firestoreMock).not.toHaveBeenCalled();
+  });
 });
