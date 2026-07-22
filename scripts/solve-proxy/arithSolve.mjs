@@ -423,10 +423,17 @@ export function tryFractionOfChain(ocrText, choices = parseChoices(ocrText)) {
  * Plug MCQ choices into a linear equation (ax+b = cx+d). Handles 3(x-2)+4 = 2x+7.
  */
 export function tryLinearEquation(ocrText, choices = parseChoices(ocrText)) {
-  const headRaw = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '')
+  let headRaw = stripQuestionNumbers(ocrText.split(/\n\s*[A-Ea-e]\)/)[0] || '')
     .replace(/denklemini sağlayan.*$/i, '')
     .replace(/aşağıdakilerden.*$/i, '')
-    .replace(/[−–—]/g, '-');
+    .replace(/[−–—~∼]/g, '-');
+  // Camera/screen often loses "=" → recover ")+4 2x" / ")44 - 2x"
+  if (!/=/.test(headRaw) && /[xX]/.test(headRaw)) {
+    headRaw = headRaw
+      .replace(/\)(\d)\1\s*[-–—]\s*([0-9xX])/g, ')+$1=$2')
+      .replace(/\)(\d)(\d)\s*[-–—]\s*([0-9xX])/g, ')+$2=$3')
+      .replace(/(\)[+*]?\d+)\s+([0-9]*[xX])/i, '$1=$2');
+  }
   if (!/[xX]/.test(headRaw) || !/=/.test(headRaw)) return null;
 
   const eqIdx = headRaw.search(/=/);

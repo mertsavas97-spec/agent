@@ -46,10 +46,10 @@ function mapAsset(asset: ImagePicker.ImagePickerAsset): PickedImage {
   };
 }
 
-/** Camera needs higher quality — worksheets crush at 0.55 and OCR fails while gallery screenshots still read. */
-export const CAMERA_JPEG_QUALITY = 0.82;
+/** Camera needs higher quality — worksheets/screens crush at low quality and OCR fails. */
+export const CAMERA_JPEG_QUALITY = 0.92;
 /** Gallery screenshots / saved photos are already sharp; keep uploads smaller. */
-export const LIBRARY_JPEG_QUALITY = 0.7;
+export const LIBRARY_JPEG_QUALITY = 0.78;
 
 export async function pickFromCamera(): Promise<PickedImage | null> {
   const ok = await ensureCameraPermission();

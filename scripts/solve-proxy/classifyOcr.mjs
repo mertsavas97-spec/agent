@@ -133,6 +133,13 @@ export function classifyOcr(ocrText, examType = 'lgs') {
   if (TURKISH_STEM.test(t)) scores.turkish += 6;
   if (MATH_STEM.test(t)) scores.math += 5;
   if (MATH_OPS.test(t)) scores.math += 4;
+  // Camera OCR of equations often has noise prefixes — hard-boost math cues.
+  if (/denklem|sağlayan|[xX]\s*değeri|kaçtır|işlemin\s+sonucu/i.test(t)) {
+    scores.math += 6;
+  }
+  if (/[xX]\s*[=+\-]|=\s*[0-9]*[xX]|\)\+\d\s*=/i.test(t)) {
+    scores.math += 4;
+  }
   if (examType === 'lgs') {
     if (SCIENCE_STEM.test(t)) scores.science += 5;
   } else if (examType === 'ygs') {

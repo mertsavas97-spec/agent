@@ -19,6 +19,18 @@ export function isGarbageOcrText(text) {
   if (raw.length < 12) return true;
   const compact = raw.replace(/\s+/g, '');
   if (compact.length < 10) return true;
+
+  // Recoverable MCQ worksheets: keep even if Tesseract sprinkled pipes.
+  const hasChoices =
+    /A\s*\)\s*\S+/i.test(raw) &&
+    /B\s*\)\s*\S+/i.test(raw) &&
+    /[CDE]\s*\)\s*\S+/i.test(raw);
+  const hasQuestionCue =
+    /kaçtır|hangisidir|denklem|yüzde|sağlayan|aşağıdakilerden|işlemin/i.test(raw);
+  if (hasChoices && (hasQuestionCue || raw.length >= 60)) {
+    return false;
+  }
+
   const letters = (raw.match(/[A-Za-zÇĞİÖŞÜçğıöşü0-9]/g) || []).length;
   const ratio = letters / Math.max(compact.length, 1);
   if (ratio < 0.28) return true;
@@ -159,21 +171,34 @@ async function decodeImageBuffer(input) {
   }
 }
 
-async function buildOcrVariant(input, { threshold, boost } = {}) {
+async function buildOcrVariant(input, { threshold, boost, screen } = {}) {
   const meta = await sharp(input, SHARP_INPUT_OPTIONS).metadata();
   const sourceWidth = meta.width || 1200;
-  const targetWidth = Math.min(1400, Math.max(1000, sourceWidth));
+  const targetWidth = Math.min(1600, Math.max(1100, sourceWidth));
   let pipeline = sharp(input, SHARP_INPUT_OPTIONS)
     .rotate()
     .grayscale()
     .normalize();
-  if (boost) {
+  if (screen) {
+    // PC-monitor photos: reduce moiré/glare, lift contrast, avoid harsh sharpen.
+    pipeline = pipeline
+      .median(1)
+      .modulate({ brightness: 1.15 })
+      .linear(1.35, -28);
+  } else if (boost) {
     // Dark phone photos of worksheets — lift midtones before thresholding.
     pipeline = pipeline.modulate({ brightness: 1.2 }).linear(1.25, -20);
   }
-  pipeline = pipeline
-    .resize({ width: targetWidth, kernel: 'lanczos3', withoutEnlargement: false })
-    .sharpen({ sigma: 1 });
+  pipeline = pipeline.resize({
+    width: targetWidth,
+    kernel: 'lanczos3',
+    withoutEnlargement: false,
+  });
+  if (!screen) {
+    pipeline = pipeline.sharpen({ sigma: 1 });
+  } else {
+    pipeline = pipeline.sharpen({ sigma: 0.6 });
+  }
   if (typeof threshold === 'number') {
     pipeline = pipeline.threshold(threshold);
   }
@@ -236,18 +261,36 @@ export function repairPercentOcr(text) {
   return t;
 }
 
-/** Phone OCR often drops "+" in linear equations (3(x-2)+4=2x+7). */
+/** Phone OCR often drops "+" / "=" in linear equations (3(x-2)+4=2x+7). */
 export function repairEquationOcr(text) {
   let t = String(text || '');
-  t = t.replace(/[—–−]/g, '-');
+  t = t.replace(/[—–−~∼]/g, '-');
   // C) misread as 0)
   t = t.replace(/(^|\n)\s*0\)\s*/g, '$1C) ');
   // 3(x-2)4 4 = → 3(x-2)+4=
   t = t.replace(/\)(\d)\s+(\d)\s*=/g, ')+$2=');
   t = t.replace(/\)(\d)=/g, ')+$1=');
+  // Camera/screen: ")44 - 2x" or ")44-2x" is often "+4 = 2x"
+  t = t.replace(/\)(\d)\1\s*[-–—]\s*([0-9xX])/g, ')+$1=$2');
+  t = t.replace(/\)(\d)(\d)\s*[-–—]\s*([0-9xX])/g, ')+$2=$3');
+  // ")44=2x" → ")+4=2x"
+  t = t.replace(/\)(\d)\1\s*=/g, ')+$1=');
+  t = t.replace(/\)(\d)(\d)\s*=/g, ')+$2=');
+  // Missing "=" between sides: "3(x-2)+4 2x+7" → "3(x-2)+4=2x+7"
+  t = t.replace(
+    /(\)[+*]?\d|\d)\s+([0-9]*[xX][^\n=]{0,24})\s*(?=denklem|sağlayan|x\s*değeri|hangisidir)/i,
+    '$1=$2 ',
+  );
   // 2x4 7 → 2x+7
   t = t.replace(/([0-9])([xX])(\d)\s+(\d)\b/g, '$1$2+$4');
   t = t.replace(/([xX])(\d)\s+(\d)\b/g, '$1+$3');
+  // Ensure equation marker before "denklemini"
+  if (/denklem/i.test(t) && /[xX]/.test(t) && !/=/.test(t.split(/denklem/i)[0] || '')) {
+    t = t.replace(
+      /(\)[+*]?\d+)\s*([-–—]\s*)?([0-9]*[xX][0-9+*/().\s-]*)\s*(?=denklem)/i,
+      '$1=$3 ',
+    );
+  }
   return t;
 }
 
@@ -292,12 +335,15 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const input = await decodeImageBuffer(raw);
 
     // Soft / boosted first — hard threshold blanks many phone-camera worksheets.
+    // Screen pass targets glare/moiré from photographing a monitor.
     // Keep a hard AUTO pass for % signs (KPSS yüzde).
     const passPlan = [
-      { threshold: undefined, boost: false, psm: PSM.AUTO },
-      { threshold: undefined, boost: true, psm: PSM.AUTO },
-      { threshold: 180, boost: false, psm: PSM.AUTO },
-      { threshold: 180, boost: false, psm: PSM.SPARSE_TEXT },
+      { threshold: undefined, boost: false, screen: false, psm: PSM.AUTO },
+      { threshold: undefined, boost: true, screen: false, psm: PSM.AUTO },
+      { threshold: undefined, boost: false, screen: true, psm: PSM.AUTO },
+      { threshold: 170, boost: false, screen: true, psm: PSM.SPARSE_TEXT },
+      { threshold: 180, boost: false, screen: false, psm: PSM.AUTO },
+      { threshold: 180, boost: false, screen: false, psm: PSM.SPARSE_TEXT },
     ];
 
     const candidates = [];
@@ -306,13 +352,14 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const variantCache = new Map();
 
     for (const pass of passPlan) {
-      const cacheKey = `${pass.threshold ?? 'soft'}:${pass.boost ? 'b' : 'n'}`;
+      const cacheKey = `${pass.threshold ?? 'soft'}:${pass.boost ? 'b' : 'n'}:${pass.screen ? 's' : 'p'}`;
       if (!variantCache.has(cacheKey)) {
         variantCache.set(
           cacheKey,
           await buildOcrVariant(input, {
             threshold: pass.threshold,
             boost: pass.boost,
+            screen: pass.screen,
           }),
         );
       }

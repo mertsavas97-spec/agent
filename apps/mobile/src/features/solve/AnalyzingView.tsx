@@ -29,8 +29,8 @@ export type AnalyzingViewProps = {
 };
 
 /**
- * Moodboard loading: solid navy field, brand robot breathe, live pipeline copy.
- * No decorative generic shapes — atmosphere comes from navy depth + brand glow.
+ * Moodboard loading: solid navy, drifting brand light, bright robot plate.
+ * No decorative generic shapes — atmosphere is animated light washes only.
  */
 export function AnalyzingView({
   step = 'upload',
@@ -50,6 +50,8 @@ export function AnalyzingView({
   const tipOpacity = useRef(new Animated.Value(1)).current;
   const breathe = useRef(new Animated.Value(0)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
+  const washA = useRef(new Animated.Value(0)).current;
+  const washB = useRef(new Animated.Value(0)).current;
   const enter = useRef(new Animated.Value(1)).current;
   const [displayPct, setDisplayPct] = useState(8);
   const peakRef = useRef(0.08);
@@ -103,13 +105,13 @@ export function AnalyzingView({
       Animated.sequence([
         Animated.timing(breathe, {
           toValue: 1,
-          duration: 1600,
+          duration: 1400,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(breathe, {
           toValue: 0,
-          duration: 1600,
+          duration: 1400,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -123,13 +125,47 @@ export function AnalyzingView({
         useNativeDriver: true,
       }),
     );
+    const washLoop = Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(washA, {
+            toValue: 1,
+            duration: 3200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(washA, {
+            toValue: 0,
+            duration: 3200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(washB, {
+            toValue: 1,
+            duration: 4200,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(washB, {
+            toValue: 0,
+            duration: 4200,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    );
     breatheLoop.start();
     shimmerLoop.start();
+    washLoop.start();
     return () => {
       breatheLoop.stop();
       shimmerLoop.stop();
+      washLoop.stop();
     };
-  }, [enter, breathe, shimmer]);
+  }, [enter, breathe, shimmer, washA, washB]);
 
   useEffect(() => {
     if (copy.tip === prevTip.current) return;
@@ -148,21 +184,55 @@ export function AnalyzingView({
   });
   const robotScale = breathe.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.045],
+    outputRange: [1, 1.06],
   });
-  const glowOpacity = breathe.interpolate({
+  const plateGlow = breathe.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.22, 0.42],
+    outputRange: [0.55, 1],
   });
   const shimmerX = shimmer.interpolate({
     inputRange: [0, 1],
     outputRange: [-80, 220],
   });
+  const washAOpacity = washA.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.08, 0.22],
+  });
+  const washBOpacity = washB.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.05, 0.16],
+  });
+  const washAShift = washA.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-24, 28],
+  });
+  const washBShift = washB.interpolate({
+    inputRange: [0, 1],
+    outputRange: [18, -30],
+  });
 
   return (
     <View style={styles.container} testID="analyzing-view">
-      {/* Solid navy field + soft brand wash (no decorative shapes). */}
-      <View style={styles.atmosphereWash} pointerEvents="none" />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.washOrange,
+          {
+            opacity: washAOpacity,
+            transform: [{ translateY: washAShift }],
+          },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.washLight,
+          {
+            opacity: washBOpacity,
+            transform: [{ translateY: washBShift }],
+          },
+        ]}
+      />
 
       <Animated.View
         style={[
@@ -172,11 +242,10 @@ export function AnalyzingView({
           },
         ]}
         testID="analyzing-hero">
-        <Animated.View style={{ opacity: glowOpacity }}>
-          <View style={styles.iconPlate} testID="analyzing-icon-plate">
-            <CozbilRobotInstant size={72} testID="cozbil-robot" />
-          </View>
-        </Animated.View>
+        <Animated.View style={[styles.plateGlow, { opacity: plateGlow }]} />
+        <View style={styles.iconPlate} testID="analyzing-icon-plate">
+          <CozbilRobotInstant size={76} tone="bright" testID="cozbil-robot" />
+        </View>
       </Animated.View>
 
       <Text style={styles.title} testID="analyzing-title">
@@ -271,25 +340,45 @@ const styles = StyleSheet.create({
     padding: space.lg,
     overflow: 'hidden',
   },
-  atmosphereWash: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+  washOrange: {
+    position: 'absolute',
+    left: -40,
+    right: -40,
+    top: '8%',
+    height: '42%',
+    backgroundColor: 'rgba(245, 158, 11, 0.28)',
   },
-  hero: {    width: 104,
-    height: 104,
+  washLight: {
+    position: 'absolute',
+    left: -20,
+    right: -20,
+    bottom: '6%',
+    height: '38%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  hero: {
+    width: 120,
+    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.sm,
   },
+  plateGlow: {
+    position: 'absolute',
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    backgroundColor: 'rgba(245, 158, 11, 0.35)',
+  },
   iconPlate: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.navy,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(245, 158, 11, 0.45)',
+    borderWidth: 2,
+    borderColor: colors.orange,
     overflow: 'hidden',
   },
   title: {
@@ -303,7 +392,7 @@ const styles = StyleSheet.create({
   },
   wait: {
     marginTop: space.sm,
-    color: 'rgba(226, 232, 240, 0.85)',
+    color: 'rgba(241, 245, 249, 0.92)',
     fontSize: 15,
     fontFamily: typography.fontFamily,
     textAlign: 'center',
@@ -325,7 +414,7 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     height: 10,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
     overflow: 'hidden',
   },
   barFill: {
@@ -339,7 +428,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 48,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   pct: {
     marginTop: space.sm,
@@ -350,7 +439,7 @@ const styles = StyleSheet.create({
   },
   tip: {
     marginTop: space.lg,
-    color: 'rgba(226, 232, 240, 0.8)',
+    color: 'rgba(226, 232, 240, 0.88)',
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -378,15 +467,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: radii.lg,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   stepRowActive: {
-    backgroundColor: 'rgba(245, 158, 11, 0.14)',
+    backgroundColor: 'rgba(245, 158, 11, 0.18)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.35)',
+    borderColor: 'rgba(245, 158, 11, 0.5)',
   },
   stepRowDone: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   stepDot: {
     width: 22,
@@ -394,13 +483,13 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
   stepDotActive: {
     backgroundColor: colors.orange,
   },
   stepDotDone: {
-    backgroundColor: 'rgba(22, 163, 74, 0.85)',
+    backgroundColor: 'rgba(22, 163, 74, 0.9)',
   },
   stepDotText: {
     color: colors.white,
@@ -409,7 +498,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   stepItem: {
-    color: 'rgba(148, 163, 184, 0.95)',
+    color: 'rgba(203, 213, 225, 0.95)',
     fontSize: 14,
     fontFamily: typography.fontFamily,
     flex: 1,
@@ -420,6 +509,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   stepDone: {
-    color: 'rgba(203, 213, 225, 0.9)',
+    color: 'rgba(226, 232, 240, 0.95)',
   },
 });
