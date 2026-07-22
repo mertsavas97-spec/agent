@@ -263,7 +263,11 @@ export default function SolveBatchScreen() {
     return (
       <>
         <Stack.Screen options={{ title: 'Çoklu çözüm', headerBackTitle: 'Geri' }} />
-        <AnalyzingView step="solve" statusLine={statusLine} />
+        <AnalyzingView
+          step="solve"
+          live={liveCopyFor('solving')}
+          statusLine={statusLine}
+        />
       </>
     );
   }
