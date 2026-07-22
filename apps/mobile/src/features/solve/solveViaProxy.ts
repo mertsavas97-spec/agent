@@ -4,6 +4,7 @@
  */
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
+import { withHardTimeout } from './hardTimeout';
 import { PROXY_TIMEOUT_MS } from './solveTiming';
 
 /** Keep JSON safely below the proxy's 6 MiB body limit. Base64 expands bytes by ~33%. */
@@ -214,36 +215,47 @@ export async function callSolveQuestionViaProxy(input: {
     );
   }
 
+  // One retry only for empty tunnel 408 — never stack two full PROXY_TIMEOUT waits.
   const maxAttempts = input.imageUri ? 2 : 1;
+  const budgetStarted = Date.now();
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const remaining = PROXY_TIMEOUT_MS - (Date.now() - budgetStarted);
+    if (remaining < 3_000) break;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+    // Soft abort (often ignored by RN for large bodies) + hard Promise.race.
+    const softTimer = setTimeout(() => controller.abort(), remaining);
     try {
-      return await postSolveOnce({
-        base,
-        token,
-        imageUri: input.imageUri,
-        imageUrl: input.imageUrl,
-        imageBase64: input.imageBase64,
-        mimeType: input.mimeType,
-        examType: input.examType,
-        subjectHint: input.subjectHint,
-        requestId: attempt === 1 ? input.requestId : `${input.requestId}-r${attempt}`,
-        signal: controller.signal,
-      });
+      return await withHardTimeout(
+        postSolveOnce({
+          base,
+          token,
+          imageUri: input.imageUri,
+          imageUrl: input.imageUrl,
+          imageBase64: input.imageBase64,
+          mimeType: input.mimeType,
+          examType: input.examType,
+          subjectHint: input.subjectHint,
+          requestId: attempt === 1 ? input.requestId : `${input.requestId}-r${attempt}`,
+          signal: controller.signal,
+        }),
+        remaining,
+        'proxy OCR',
+      );
     } catch (err) {
       lastError = err;
+      const is408 =
+        err instanceof Error && /SOLVE_PROXY_TIMEOUT_408/i.test(err.message);
+      if (is408 && attempt < maxAttempts) {
+        console.warn('solve proxy empty 408, retrying once within budget', err);
+        continue;
+      }
       if (controller.signal.aborted || isAbortOrCancel(err)) {
-        if (attempt < maxAttempts) {
-          console.warn('solve proxy attempt canceled, retrying once', err);
-          continue;
-        }
         throw timeoutError();
       }
       throw err;
     } finally {
-      clearTimeout(timer);
+      clearTimeout(softTimer);
     }
   }
   throw lastError instanceof Error ? lastError : timeoutError();

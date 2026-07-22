@@ -6,9 +6,11 @@ import type {
 } from '@/src/lib/api/types';
 import { getFirebase } from '@/src/lib/firebase';
 
+import { withHardTimeout } from './hardTimeout';
 import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
+import { FIRESTORE_FALLBACK_MS } from './solveTiming';
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -46,7 +48,6 @@ export type SolveClientRequest = Omit<SolveQuestionRequest, 'imagePath'> & {
 export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
-  let proxyUnsupported: SolveQuestionResponse | null = null;
   if (
     isSolveProxyConfigured() &&
     (request.imageUri || request.imageUrl || request.imageBase64)
@@ -62,11 +63,20 @@ export async function callSolveQuestion(
         subjectHint: request.subjectHint,
         requestId: request.requestId,
       });
-      if (response.status === 'unsupported_type') {
-        proxyUnsupported = response;
-      } else if (isUsableResponse(response)) {
+      // Terminal OCR outcomes must not fall into Storage upload — that path
+      // hangs forever on flaky networks and leaves the UI stuck at ~99%.
+      if (
+        response.status === 'unsupported_type' ||
+        (typeof response.status === 'string' &&
+          response.status.startsWith('rejected'))
+      ) {
+        console.info('solve: proxy terminal', response.status);
+        return normalizeTerminalProxyResponse(response, request.requestId);
+      }
+      if (isUsableResponse(response)) {
         return response;
       }
+      // Solved-without-answer / assisted tip — try authoritative backend below.
     } catch (proxyError) {
       console.warn('solve proxy failed, trying Firestore', proxyError);
       const proxyMsg = proxyError instanceof Error ? proxyError.message : '';
@@ -85,22 +95,49 @@ export async function callSolveQuestion(
 
   let firestoreRequest: PreparedFirestoreRequest | undefined;
   try {
-    firestoreRequest = await resolveFirestoreRequest(request);
-    const firestore = await callSolveQuestionViaFirestore(firestoreRequest);
+    firestoreRequest = await withHardTimeout(
+      resolveFirestoreRequest(request),
+      FIRESTORE_FALLBACK_MS,
+      'Storage upload',
+    );
+    const firestore = await withHardTimeout(
+      callSolveQuestionViaFirestore(firestoreRequest),
+      FIRESTORE_FALLBACK_MS,
+      'Firestore solve',
+    );
     if (isUsableResponse(firestore)) return firestore;
     throw Object.assign(
       new Error('Çözüm üretildi ancak doğrulanabilir bir nihai cevap gelmedi.'),
       { code: 'functions/internal' },
     );
   } catch (firestoreError) {
-    if (!firestoreRequest) throw firestoreError;
-    // Preserve an honest OCR "unsupported" response instead of manufacturing
-    // generic solved steps when the authoritative backend is unavailable.
-    if (proxyUnsupported && isServerSolveUnavailable(firestoreError)) {
-      return proxyUnsupported;
+    // Hard timeout on upload/Firestore — still settle the UI with a real error.
+    if (
+      firestoreError instanceof Error &&
+      /SOLVE_TIMEOUT/i.test(firestoreError.message)
+    ) {
+      throw firestoreError;
     }
+    if (!firestoreRequest) throw firestoreError;
     return callableOrThrow(request, firestoreError, firestoreRequest);
   }
+}
+
+function normalizeTerminalProxyResponse(
+  response: SolveQuestionResponse,
+  requestId: string,
+): SolveQuestionResponse {
+  if (response.status === 'unsupported_type') {
+    return {
+      ...response,
+      status: 'rejected_not_question',
+      attemptId: response.attemptId || `proxy-unsup-${requestId}`,
+      userMessage:
+        response.userMessage?.trim() ||
+        'Bu görseldeki yazı net okunamadı. Soruyu düz, yakından ve iyi ışıkta yeniden çek.',
+    };
+  }
+  return response;
 }
 
 async function resolveFirestoreRequest(

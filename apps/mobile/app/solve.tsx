@@ -23,7 +23,9 @@ import { isOfflineSolutionId } from '@/src/features/solve/localSolveFallback';
 import { callSolveQuestion } from '@/src/features/solve/solveClient';
 import { solveFailureMessage } from '@/src/features/solve/solveFailureMessage';
 import { routeSolveResponse } from '@/src/features/solve/solveResultRouting';
+import { SOLVE_UI_SETTLE_MS } from '@/src/features/solve/solveTiming';
 import { uploadQuestionImage } from '@/src/features/solve/upload';
+import { withHardTimeout } from '@/src/features/solve/hardTimeout';
 import { findTopic, isKnownSubject, subjectsForExam } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -98,31 +100,35 @@ export default function SolveFlowScreen() {
         const moderateBeat = new Promise((r) => setTimeout(r, 280));
         setAnalyzeStep('solve');
 
-        const solvePromise = callSolveQuestion({
-          mimeType: params.mimeType,
-          examType: resolvedExam,
-          subjectHint,
-          requestId: localId,
-          imageUri,
-          prepareFirestore: async () => {
-            const { imagePath, downloadUrl } = await uploadQuestionImage({
-              uid: user.uid,
-              localId,
-              uri: imageUri,
-              mimeType: params.mimeType,
-              examType: resolvedExam,
-              subjectHint,
-            });
-            return {
-              imagePath,
-              imageUrl: downloadUrl,
-              mimeType: params.mimeType,
-              examType: resolvedExam,
-              subjectHint,
-              requestId: localId,
-            };
-          },
-        });
+        const solvePromise = withHardTimeout(
+          callSolveQuestion({
+            mimeType: params.mimeType,
+            examType: resolvedExam,
+            subjectHint,
+            requestId: localId,
+            imageUri,
+            prepareFirestore: async () => {
+              const { imagePath, downloadUrl } = await uploadQuestionImage({
+                uid: user.uid,
+                localId,
+                uri: imageUri,
+                mimeType: params.mimeType,
+                examType: resolvedExam,
+                subjectHint,
+              });
+              return {
+                imagePath,
+                imageUrl: downloadUrl,
+                mimeType: params.mimeType,
+                examType: resolvedExam,
+                subjectHint,
+                requestId: localId,
+              };
+            },
+          }),
+          SOLVE_UI_SETTLE_MS,
+          'solve UI settle',
+        );
         await moderateBeat;
         let response = await solvePromise;
         if (cancelled) return;

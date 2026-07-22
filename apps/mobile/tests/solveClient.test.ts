@@ -70,8 +70,11 @@ describe('callSolveQuestion orchestration', () => {
       userMessage: 'okunamadı',
       quota: { remainingToday: 5, unlimited: false },
     });
-    await expect(pending).resolves.toMatchObject({ solutionId: 'firestore-s' });
-    expect(firestoreMock).toHaveBeenCalledTimes(1);
+    await expect(pending).resolves.toMatchObject({
+      status: 'rejected_not_question',
+      attemptId: 'proxy-a',
+    });
+    expect(firestoreMock).not.toHaveBeenCalled();
   });
 
   it('does not upload to the Storage trigger path when proxy solves', async () => {
@@ -102,30 +105,15 @@ describe('callSolveQuestion orchestration', () => {
     expect(firestoreMock).not.toHaveBeenCalled();
   });
 
-  it('uploads lazily only after proxy reports unsupported', async () => {
-    const prepared = {
-      imagePath: 'users/u/uploads/lazy-r2.jpg',
-      requestId: 'lazy-r2',
-      examType: 'lgs' as const,
-    };
-    const prepareFirestore = jest.fn().mockResolvedValue(prepared);
+  it('returns terminal unsupported without hanging on Storage upload', async () => {
+    const prepareFirestore = jest.fn().mockImplementation(
+      () => new Promise(() => {}),
+    );
     proxyMock.mockResolvedValue({
       status: 'unsupported_type',
       attemptId: 'proxy-unsup-lazy',
       userMessage: 'okunamadı',
       quota: { remainingToday: 5, unlimited: false },
-    });
-    firestoreMock.mockResolvedValue({
-      status: 'solved',
-      attemptId: 'firestore-lazy-a',
-      solutionId: 'firestore-lazy-s',
-      cached: false,
-      topicId: 'lgs-math-kesirler',
-      subject: 'math',
-      steps: [{ title: 'Cevap', body: 'Doğru şık: B) 3' }],
-      answer: { label: 'B', text: '3' },
-      transparencyNote: 'ok',
-      quota: { remainingToday: 4, unlimited: false },
     });
 
     await expect(
@@ -135,10 +123,13 @@ describe('callSolveQuestion orchestration', () => {
         imageBase64: 'small-inline-image',
         prepareFirestore,
       }),
-    ).resolves.toMatchObject({ solutionId: 'firestore-lazy-s' });
+    ).resolves.toMatchObject({
+      status: 'rejected_not_question',
+      attemptId: 'proxy-unsup-lazy',
+    });
 
-    expect(prepareFirestore).toHaveBeenCalledTimes(1);
-    expect(firestoreMock).toHaveBeenCalledWith(prepared);
+    expect(prepareFirestore).not.toHaveBeenCalled();
+    expect(firestoreMock).not.toHaveBeenCalled();
   });
 
   it('does not disguise two unavailable backends as a solved result', async () => {
@@ -154,23 +145,19 @@ describe('callSolveQuestion orchestration', () => {
     await expect(callSolveQuestion(request)).rejects.toThrow(/çözüm servisine|unavailable/i);
   });
 
-  it('returns honest unsupported response when proxy cannot solve and Firestore is unavailable', async () => {
+  it('returns honest rejected response when proxy cannot OCR the image', async () => {
     proxyMock.mockResolvedValue({
       status: 'unsupported_type',
       attemptId: 'proxy-unsup',
       userMessage: 'Bu soru otomatik çözülemedi.',
       quota: { remainingToday: 5, unlimited: false },
     });
-    firestoreMock.mockRejectedValue(
-      Object.assign(new Error('SOLVE_TRIGGER_MISSING'), {
-        code: 'functions/unavailable',
-      }),
-    );
 
     await expect(callSolveQuestion(request)).resolves.toMatchObject({
-      status: 'unsupported_type',
+      status: 'rejected_not_question',
       attemptId: 'proxy-unsup',
     });
+    expect(firestoreMock).not.toHaveBeenCalled();
   });
 
   it('does not accept a solved payload without a final answer', async () => {
@@ -226,5 +213,26 @@ describe('callSolveQuestion orchestration', () => {
       status: 'rejected_not_question',
     });
     expect(firestoreMock).not.toHaveBeenCalled();
+  });
+
+  it('hard-times out a hung Storage upload during Firestore fallback', async () => {
+    jest.useFakeTimers();
+    proxyMock.mockRejectedValue(
+      Object.assign(new Error('proxy tunnel down'), { code: 'functions/unavailable' }),
+    );
+    const prepareFirestore = jest.fn().mockImplementation(
+      () => new Promise(() => {}),
+    );
+
+    const pending = callSolveQuestion({
+      requestId: 'hang-r1',
+      examType: 'lgs',
+      imageBase64: 'x',
+      prepareFirestore,
+    });
+    const expectation = expect(pending).rejects.toThrow(/SOLVE_TIMEOUT|Storage upload/i);
+    await jest.advanceTimersByTimeAsync(13_000);
+    await expectation;
+    jest.useRealTimers();
   });
 });
