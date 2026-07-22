@@ -58,44 +58,44 @@ fi
 PROVIDER=""
 TUNNEL_URL=""
 
-# --- Prefer Serveo: localhost.run drops large Hermes bundles mid-transfer ---
-SSH_LOG="/tmp/cozbil-metro-serveo.log"
-: >"$SSH_LOG"
-echo "==> serveo.net"
-tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
-  "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -R 80:127.0.0.1:${PORT} serveo.net 2>&1 | tee ${SSH_LOG}"
-for i in $(seq 1 45); do
-  TUNNEL_URL=$(rg -o 'https://[a-z0-9.-]+\.(serveousercontent\.com|serveo\.net)' "$SSH_LOG" 2>/dev/null | head -1 || true)
-  [[ -n "$TUNNEL_URL" ]] && break
-  sleep 1
-done
-if [[ -n "$TUNNEL_URL" ]]; then
-  PROVIDER=serveo
-else
-  echo "serveo URL alınamadı; cloudflared / localhost.run deneniyor."
-  tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
-  sleep 1
+# --- Prefer cloudflared: Serveo free tier often 502/Bad Gateway on phone Expo ---
+CF=$(resolve_cloudflared 2>/dev/null || true)
+if [[ -n "$CF" && -x "$CF" ]]; then
+  echo "==> cloudflared: $CF"
+  : >/tmp/cozbil-cf.log
+  tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
+    "${CF} tunnel --url http://127.0.0.1:${PORT} --no-autoupdate 2>&1 | tee /tmp/cozbil-cf.log"
+  for i in $(seq 1 45); do
+    TUNNEL_URL=$(rg -o 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cozbil-cf.log 2>/dev/null | head -1 || true)
+    [[ -n "$TUNNEL_URL" ]] && break
+    sleep 1
+  done
+  if [[ -n "$TUNNEL_URL" ]]; then
+    PROVIDER=cloudflared
+  else
+    echo "cloudflared URL alınamadı; Serveo / localhost.run deneniyor."
+    tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+    sleep 1
+  fi
 fi
 
-# --- cloudflared (often NXDOMAIN in this Cloud Agent egress) ---
+# --- Serveo fallback (works from cloud egress; phone may hit free-tier Bad Gateway) ---
 if [[ -z "$TUNNEL_URL" ]]; then
-  CF=$(resolve_cloudflared 2>/dev/null || true)
-  if [[ -n "$CF" && -x "$CF" ]]; then
-    echo "==> cloudflared: $CF"
-    tmux new-session -d -s cozbil-metro-tunnel -- \
-      "$CF" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate
-    for i in $(seq 1 45); do
-      TUNNEL_URL=$(tmux capture-pane -t cozbil-metro-tunnel -p -J -S -80 2>/dev/null \
-        | rg -o 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1 || true)
-      [[ -n "$TUNNEL_URL" ]] && break
-      sleep 1
-    done
-    if [[ -n "$TUNNEL_URL" ]]; then
-      PROVIDER=cloudflared
-    else
-      tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
-      sleep 1
-    fi
+  SSH_LOG="/tmp/cozbil-metro-serveo.log"
+  : >"$SSH_LOG"
+  echo "==> serveo.net"
+  tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
+    "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -R 80:127.0.0.1:${PORT} serveo.net 2>&1 | tee ${SSH_LOG}"
+  for i in $(seq 1 45); do
+    TUNNEL_URL=$(rg -o 'https://[a-z0-9.-]+\.(serveousercontent\.com|serveo\.net)' "$SSH_LOG" 2>/dev/null | head -1 || true)
+    [[ -n "$TUNNEL_URL" ]] && break
+    sleep 1
+  done
+  if [[ -n "$TUNNEL_URL" ]]; then
+    PROVIDER=serveo
+  else
+    tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+    sleep 1
   fi
 fi
 
@@ -141,13 +141,8 @@ if [[ "$ok" != "1" ]]; then
 fi
 
 # Rebind Metro so QR / deep link match public host.
-# localhost.run needs explicit :443 (RN otherwise defaults to :8081).
-# Serveo works on plain https://host (no port).
-if [[ "$PROVIDER" == "localhost.run" ]]; then
-  PACKAGER_URL="https://${HOST}:443"
-else
-  PACKAGER_URL="${TUNNEL_URL}"
-fi
+# ALWAYS pin :443 on HTTPS tunnels — RN/Expo otherwise defaults to :8081 → Bad Gateway.
+PACKAGER_URL="https://${HOST}:443"
 tmux kill-session -t cozbil-metro 2>/dev/null || true
 sleep 1
 fuser -k "${PORT}/tcp" 2>/dev/null || true
@@ -180,11 +175,7 @@ if [[ "$ok" != "1" ]]; then
 fi
 
 ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PACKAGER_URL}', safe=''))")
-if [[ "$PROVIDER" == "localhost.run" ]]; then
-  MANUAL_1="${HOST}:443"
-else
-  MANUAL_1="${HOST}"
-fi
+MANUAL_1="${HOST}:443"
 
 cat >"$INFO" <<EOF
 TUNNEL_URL=${TUNNEL_URL}
