@@ -9,6 +9,7 @@ import { useExamModeChange } from '@/src/features/exam/useExamModeChange';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { recordLocalSolveStreak } from '@/src/features/stats/localStreakStore';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
+import { liveCopyFor } from '@/src/features/solve/liveSolveCopy';
 import {
   MultiSolutionScreen,
   type MultiSolveSlot,

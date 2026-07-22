@@ -10,7 +10,7 @@ import { withHardTimeout } from './hardTimeout';
 import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
-import { FIRESTORE_FALLBACK_MS } from './solveTiming';
+import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -31,6 +31,8 @@ type PreparedFirestoreRequest = SolveQuestionRequest & {
   imageUrl?: string;
 };
 
+export type SolvePipelineStage = 'upload' | 'ocr' | 'solving';
+
 export type SolveClientRequest = Omit<SolveQuestionRequest, 'imagePath'> & {
   imagePath?: string;
   mimeType?: string;
@@ -42,18 +44,23 @@ export type SolveClientRequest = Omit<SolveQuestionRequest, 'imagePath'> & {
   imageUrl?: string;
   /** Lazily upload only if proxy is disabled/unsupported/unavailable. */
   prepareFirestore?: () => Promise<PreparedFirestoreRequest>;
+  /** Best-effort UI stage hooks (proxy / upload / solve). */
+  onStage?: (stage: SolvePipelineStage) => void;
 };
 
 /** Proxy is a bounded dogfood path; Firestore remains the authoritative fallback. */
 export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
+  let proxyAttempted = false;
   if (
     isSolveProxyConfigured() &&
     (request.imageUri || request.imageUrl || request.imageBase64)
   ) {
+    proxyAttempted = true;
     try {
       console.info('solve: bounded OCR proxy');
+      request.onStage?.('ocr');
       const response = await callSolveQuestionViaProxy({
         imageUri: request.imageUri,
         imageUrl: request.imageUrl,
@@ -62,6 +69,7 @@ export async function callSolveQuestion(
         examType: request.examType,
         subjectHint: request.subjectHint,
         requestId: request.requestId,
+        onStage: request.onStage,
       });
       // Terminal OCR outcomes must not fall into Storage upload — that path
       // hangs forever on flaky networks and leaves the UI stuck at ~99%.
@@ -93,16 +101,22 @@ export async function callSolveQuestion(
     }
   }
 
+  // Primary production path needs the full solve budget; after a proxy miss keep fallback snappy.
+  const firestoreWaitMs = proxyAttempted ? FIRESTORE_FALLBACK_MS : SOLVE_TIMEOUT_MS;
+  const uploadWaitMs = FIRESTORE_FALLBACK_MS;
+
   let firestoreRequest: PreparedFirestoreRequest | undefined;
   try {
+    request.onStage?.('upload');
     firestoreRequest = await withHardTimeout(
       resolveFirestoreRequest(request),
-      FIRESTORE_FALLBACK_MS,
+      uploadWaitMs,
       'Storage upload',
     );
+    request.onStage?.('solving');
     const firestore = await withHardTimeout(
       callSolveQuestionViaFirestore(firestoreRequest),
-      FIRESTORE_FALLBACK_MS,
+      firestoreWaitMs,
       'Firestore solve',
     );
     if (isUsableResponse(firestore)) return firestore;

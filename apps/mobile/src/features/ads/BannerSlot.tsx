@@ -1,27 +1,35 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { colors, typography } from '@/src/theme';
 
+import { adsStubForced, resolveAdUnits } from './adUnits';
 import { shouldShowBanner } from './policy';
 import { isPremiumAudience } from './premiumGate';
 
 /**
- * Anchored banner placeholder for free tab shell.
- * Replace inner view with AdMob <BannerAd> after EAS + unit ids.
+ * Anchored banner for free tab shell.
+ * Real AdMob <BannerAd> mounts after EAS + unit ids + SDK install.
  */
 export function BannerSlot() {
   if (!shouldShowBanner({ isPremium: isPremiumAudience() })) {
     return null;
   }
 
+  const units = resolveAdUnits();
+  const unitId =
+    Platform.OS === 'ios' ? units.bannerIos : units.bannerAndroid;
+  const stub = adsStubForced() || !unitId;
+
   return (
     <View
       style={styles.wrap}
       testID="ads-banner-slot"
-      accessibilityLabel="Reklam alanı yer tutucu">
-      <Text style={styles.label}>Reklam alanı · yakında</Text>
+      accessibilityLabel={stub ? 'Reklam alanı yer tutucu' : 'Reklam alanı'}>
+      <Text style={styles.label}>{stub ? 'Reklam alanı · hazırlık' : 'Reklam'}</Text>
       <Text style={styles.hint}>
-        Şu an yer tutucu · gerçek reklam SDK sonraki sürümde · Premium’da kapalı
+        {stub
+          ? 'Ücretsiz planda banner · Premium’da kapalı · AdMob unit id + SDK sonrası canlı'
+          : 'Ücretsiz plan · Premium’da kapalı'}
       </Text>
     </View>
   );
@@ -48,5 +56,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
 });

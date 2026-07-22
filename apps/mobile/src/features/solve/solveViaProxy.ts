@@ -229,6 +229,7 @@ export async function callSolveQuestionViaProxy(input: {
   examType?: ExamType;
   subjectHint?: Subject;
   requestId: string;
+  onStage?: (stage: 'upload' | 'ocr' | 'solving') => void;
 }): Promise<SolveQuestionResponse> {
   const base = proxyBaseUrl();
   const token = proxyToken();
@@ -242,6 +243,7 @@ export async function callSolveQuestionViaProxy(input: {
       code: 'functions/invalid-argument',
     });
   }
+  input.onStage?.('ocr');
   // Large picker base64 is posted as binary `/solve-image` (not JSON). Only reject
   // oversized base64 when the caller also has no URI and we somehow cannot decode —
   // decode path below enforces MAX_BINARY_IMAGE_BYTES.
@@ -257,6 +259,7 @@ export async function callSolveQuestionViaProxy(input: {
     // Soft abort (often ignored by RN for large bodies) + hard Promise.race.
     const softTimer = setTimeout(() => controller.abort(), remaining);
     try {
+      input.onStage?.(attempt === 1 ? 'ocr' : 'solving');
       return await withHardTimeout(
         postSolveOnce({
           base,

@@ -15,6 +15,7 @@ import {
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
+import { liveCopyFor, type LiveSolveCopy } from '@/src/features/solve/liveSolveCopy';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { ExamModeBlockScreen } from '@/src/features/solve/ExamModeBlockScreen';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
@@ -63,6 +64,7 @@ export default function SolveFlowScreen() {
   }>();
   const [phase, setPhase] = useState<Phase>('analyzing');
   const [analyzeStep, setAnalyzeStep] = useState<AnalyzeStepId>('upload');
+  const [liveSolve, setLiveSolve] = useState<LiveSolveCopy>(() => liveCopyFor('preparing'));
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [examType, setExamType] = useState<ExamType>('lgs');
@@ -96,6 +98,7 @@ export default function SolveFlowScreen() {
       }
       try {
         setAnalyzeStep('upload');
+        setLiveSolve(liveCopyFor('preparing'));
         const user = await ensureSignedIn();
         const resolved = await resolveActiveExamType(
           typeof params.examType === 'string' ? params.examType : null,
@@ -109,10 +112,15 @@ export default function SolveFlowScreen() {
             ? hintRaw
             : undefined;
 
+        setLiveSolve(liveCopyFor('upload'));
+        setAnalyzeStep('upload');
+        setLiveSolve(liveCopyFor('moderate'));
         setAnalyzeStep('moderate');
         // UI beat only — do not delay the Firestore/Storage wait behind this.
-        const moderateBeat = new Promise((r) => setTimeout(r, 280));
+        const moderateBeat = new Promise((r) => setTimeout(r, 180));
+        setLiveSolve(liveCopyFor('ocr'));
         setAnalyzeStep('solve');
+        setLiveSolve(liveCopyFor('solving'));
 
         const solvePromise = withHardTimeout(
           callSolveQuestion({
@@ -122,7 +130,24 @@ export default function SolveFlowScreen() {
             requestId: localId,
             imageUri: imageUri || undefined,
             imageBase64,
+            onStage: (stage) => {
+              if (cancelled) return;
+              if (stage === 'ocr') {
+                setLiveSolve(liveCopyFor('ocr'));
+                setAnalyzeStep('upload');
+              } else if (stage === 'solving') {
+                setLiveSolve(liveCopyFor('solving'));
+                setAnalyzeStep('solve');
+              } else if (stage === 'upload') {
+                setLiveSolve(liveCopyFor('upload'));
+                setAnalyzeStep('upload');
+              }
+            },
             prepareFirestore: async () => {
+              if (!cancelled) {
+                setLiveSolve(liveCopyFor('upload'));
+                setAnalyzeStep('upload');
+              }
               const { imagePath, downloadUrl } = await uploadQuestionImage({
                 uid: user.uid,
                 localId,
@@ -132,6 +157,12 @@ export default function SolveFlowScreen() {
                 examType: resolvedExam,
                 subjectHint,
               });
+              if (!cancelled) {
+                setLiveSolve(liveCopyFor('moderate'));
+                setAnalyzeStep('moderate');
+                setLiveSolve(liveCopyFor('solving'));
+                setAnalyzeStep('solve');
+              }
               return {
                 imagePath,
                 imageUrl: downloadUrl,
@@ -148,6 +179,7 @@ export default function SolveFlowScreen() {
         await moderateBeat;
         let response = await solvePromise;
         if (cancelled) return;
+        setLiveSolve(liveCopyFor('finishing'));
 
         const routed = routeSolveResponse(response, resolvedExam, {
           sourceText:
@@ -228,8 +260,15 @@ export default function SolveFlowScreen() {
   if (phase === 'analyzing') {
     return (
       <>
-        <Stack.Screen options={{ title: 'Çözüm', headerBackTitle: 'Geri' }} />
-        <AnalyzingView step={analyzeStep} />
+        <Stack.Screen
+          options={{
+            title: 'Çözüm',
+            headerBackTitle: 'Geri',
+            headerStyle: { backgroundColor: colors.navy },
+            headerTintColor: '#fff',
+          }}
+        />
+        <AnalyzingView step={analyzeStep} live={liveSolve} />
       </>
     );
   }

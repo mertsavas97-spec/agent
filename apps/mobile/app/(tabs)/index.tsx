@@ -209,6 +209,7 @@ export default function HomeScreen() {
             setSubjectHintBanner(null);
             if (picked.length === 1) {
               const subjectHint = takePendingSubjectHint() ?? undefined;
+              setPendingSolveImage(picked[0]!);
               router.push({
                 pathname: '/capture-confirm',
                 params: {

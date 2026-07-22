@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { colors, motion, radii, space, typography } from '@/src/theme';
@@ -10,36 +10,50 @@ import {
   labelForStep,
   progressForStep,
 } from './analyzeSteps';
+import {
+  liveCopyFor,
+  type LiveSolveCopy,
+  type LiveSolvePhase,
+  progressForLivePhase,
+} from './liveSolveCopy';
 import { SOLVE_PROGRESS_CRAWL_MS, SOLVE_PROGRESS_CRAWL_TARGET } from './solveTiming';
 
 export { SOLVE_PROGRESS_CRAWL_MS, SOLVE_PROGRESS_CRAWL_TARGET } from './solveTiming';
 
 export type AnalyzingViewProps = {
   step?: AnalyzeStepId;
+  /** Pipeline-aware live copy — overrides rotating tips when set. */
+  live?: LiveSolveCopy | null;
   /** Optional status under the tip — e.g. multi-batch "Soru 2/5 hazır" */
   statusLine?: string | null;
 };
 
-const TIPS = [
-  'Birkaç saniye — öğretmen gibi adım adım hazırlıyorum.',
-  'Net fotoğraf = daha net çözüm. Soru ve şıklar tam görünsün.',
-  'Diyagramlı sorularda metin yetmezse dürüstçe söylerim.',
-  'Sonra “Anlamadım” dersen daha sade anlatırım.',
-];
-
 /**
- * Moodboard loading: circular brand mark, soft pulse, progress — no orbit demo.
+ * Moodboard loading: solid navy field, brand robot breathe, live pipeline copy.
+ * No decorative generic shapes — atmosphere comes from navy depth + brand glow.
  */
-export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProps) {
-  const baseTarget = progressForStep(step);
+export function AnalyzingView({
+  step = 'upload',
+  live = null,
+  statusLine,
+}: AnalyzingViewProps) {
+  const effectiveStep = live?.step ?? step;
+  const baseTarget = live
+    ? progressForLivePhase(live.phase)
+    : progressForStep(effectiveStep);
+  const copy = useMemo(
+    () => live ?? liveCopyFor(stepToPhase(effectiveStep)),
+    [live, effectiveStep],
+  );
+
   const anim = useRef(new Animated.Value(0.08)).current;
   const tipOpacity = useRef(new Animated.Value(1)).current;
-  const halo = useRef(new Animated.Value(0)).current;
+  const breathe = useRef(new Animated.Value(0)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
   const enter = useRef(new Animated.Value(1)).current;
   const [displayPct, setDisplayPct] = useState(8);
-  const [tipIndex, setTipIndex] = useState(0);
   const peakRef = useRef(0.08);
+  const prevTip = useRef(copy.tip);
 
   useEffect(() => {
     const id = anim.addListener(({ value }) => {
@@ -62,9 +76,10 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     }).start();
   }, [anim, baseTarget]);
 
-  // Keep the bar moving through the healthy solve window without freezing at 92%.
   useEffect(() => {
-    if (step !== 'solve') return;
+    if (effectiveStep !== 'solve' && copy.phase !== 'solving' && copy.phase !== 'finishing') {
+      return;
+    }
     const crawl = Animated.timing(anim, {
       toValue: SOLVE_PROGRESS_CRAWL_TARGET,
       duration: SOLVE_PROGRESS_CRAWL_MS,
@@ -73,10 +88,9 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     });
     crawl.start();
     return () => crawl.stop();
-  }, [anim, step]);
+  }, [anim, effectiveStep, copy.phase]);
 
   useEffect(() => {
-    // Subtle settle without hiding the mark (opacity stays 1).
     enter.setValue(0.96);
     Animated.spring(enter, {
       toValue: 1,
@@ -85,17 +99,17 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
       useNativeDriver: true,
     }).start();
 
-    const haloLoop = Animated.loop(
+    const breatheLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(halo, {
+        Animated.timing(breathe, {
           toValue: 1,
-          duration: 1800,
+          duration: 1600,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(halo, {
+        Animated.timing(breathe, {
           toValue: 0,
-          duration: 1800,
+          duration: 1600,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -109,37 +123,36 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
         useNativeDriver: true,
       }),
     );
-    haloLoop.start();
+    breatheLoop.start();
     shimmerLoop.start();
     return () => {
-      haloLoop.stop();
+      breatheLoop.stop();
       shimmerLoop.stop();
     };
-  }, [enter, halo, shimmer]);
+  }, [enter, breathe, shimmer]);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      Animated.sequence([
-        Animated.timing(tipOpacity, { toValue: 0, duration: motion.fast, useNativeDriver: true }),
-        Animated.timing(tipOpacity, { toValue: 1, duration: motion.normal, useNativeDriver: true }),
-      ]).start();
-      setTipIndex((i) => (i + 1) % TIPS.length);
-    }, motion.tip);
-    return () => clearInterval(id);
-  }, [tipOpacity]);
+    if (copy.tip === prevTip.current) return;
+    prevTip.current = copy.tip;
+    tipOpacity.setValue(0);
+    Animated.timing(tipOpacity, {
+      toValue: 1,
+      duration: motion.normal,
+      useNativeDriver: true,
+    }).start();
+  }, [copy.tip, tipOpacity]);
 
   const widthInterp = anim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
-
-  const haloScale = halo.interpolate({
+  const robotScale = breathe.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.04],
+    outputRange: [1, 1.045],
   });
-  const haloOpacity = halo.interpolate({
+  const glowOpacity = breathe.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.18, 0.38],
+    outputRange: [0.22, 0.42],
   });
   const shimmerX = shimmer.interpolate({
     inputRange: [0, 1],
@@ -148,37 +161,32 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
   return (
     <View style={styles.container} testID="analyzing-view">
+      {/* Solid navy field + soft brand wash (no decorative shapes). */}
+      <View style={styles.atmosphereWash} pointerEvents="none" />
+
       <Animated.View
         style={[
           styles.hero,
           {
-            transform: [{ scale: enter }],
+            transform: [{ scale: enter }, { scale: robotScale }],
           },
         ]}
         testID="analyzing-hero">
-        <Animated.View
-          style={[
-            styles.halo,
-            {
-              opacity: haloOpacity,
-              transform: [{ scale: haloScale }],
-            },
-          ]}
-          pointerEvents="none"
-        />
-        <View style={styles.iconPlate} testID="analyzing-icon-plate">
-          <CozbilRobotInstant size={72} testID="cozbil-robot" />
-        </View>
+        <Animated.View style={{ opacity: glowOpacity }}>
+          <View style={styles.iconPlate} testID="analyzing-icon-plate">
+            <CozbilRobotInstant size={72} testID="cozbil-robot" />
+          </View>
+        </Animated.View>
       </Animated.View>
 
       <Text style={styles.title} testID="analyzing-title">
-        Sorun analiz ediliyor…
+        {copy.headline}
       </Text>
       <Text style={styles.wait} testID="analyzing-wait">
-        Lütfen birkaç saniye bekle — birlikte çözüyoruz.
+        {copy.detail}
       </Text>
       <Text style={styles.stepLabel} testID="analyzing-step-label">
-        {labelForStep(step)}
+        {labelForStep(effectiveStep)}
       </Text>
 
       <View style={styles.barTrack} testID="analyzing-progress-bar">
@@ -196,7 +204,7 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
       </Text>
 
       <Animated.Text style={[styles.tip, { opacity: tipOpacity }]} testID="analyzing-tip">
-        {TIPS[tipIndex]}
+        {copy.tip}
       </Animated.Text>
 
       {statusLine ? (
@@ -207,7 +215,7 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
 
       <View style={styles.steps} testID="analyzing-steps">
         {ANALYZE_STEPS.map((s, index) => {
-          const active = s.id === step;
+          const active = s.id === effectiveStep;
           const completed = progressForStep(s.id) < baseTarget && !active;
           return (
             <View
@@ -248,6 +256,12 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
   );
 }
 
+function stepToPhase(step: AnalyzeStepId): LiveSolvePhase {
+  if (step === 'moderate') return 'moderate';
+  if (step === 'solve') return 'solving';
+  return 'upload';
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -257,19 +271,15 @@ const styles = StyleSheet.create({
     padding: space.lg,
     overflow: 'hidden',
   },
-  hero: {
-    width: 104,
+  atmosphereWash: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+  },
+  hero: {    width: 104,
     height: 104,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.sm,
-  },
-  halo: {
-    position: 'absolute',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
   },
   iconPlate: {
     width: 80,
@@ -306,6 +316,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamilyMedium,
     fontWeight: typography.captionWeight,
+    textAlign: 'center',
+    paddingHorizontal: space.md,
   },
   barTrack: {
     marginTop: space.lg,
