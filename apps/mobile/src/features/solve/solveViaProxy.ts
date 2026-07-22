@@ -27,6 +27,25 @@ export function isSolveProxyConfigured(): boolean {
   return __DEV__ && Boolean(proxyBaseUrl()) && Boolean(proxyToken());
 }
 
+/** RN local file blobs often report type "" — never send empty Content-Type. */
+export function resolveImageContentType(
+  mimeType?: string | null,
+  blobType?: string | null,
+): string {
+  const candidates = [mimeType, blobType, 'image/jpeg'];
+  for (const raw of candidates) {
+    const v = String(raw ?? '')
+      .trim()
+      .toLowerCase()
+      .split(';')[0];
+    if (v.startsWith('image/') && v.length > 'image/'.length) {
+      // iOS sometimes reports image/jpg
+      return v === 'image/jpg' ? 'image/jpeg' : v;
+    }
+  }
+  return 'image/jpeg';
+}
+
 export async function callSolveQuestionViaProxy(input: {
   imageUri?: string;
   imageUrl?: string;
@@ -76,10 +95,11 @@ export async function callSolveQuestionViaProxy(input: {
           code: 'functions/invalid-argument',
         });
       }
+      const contentType = resolveImageContentType(input.mimeType, blob.type);
       res = await fetch(`${base}/solve-image`, {
         method: 'POST',
         headers: {
-          'Content-Type': input.mimeType ?? blob.type ?? 'image/jpeg',
+          'Content-Type': contentType,
           Accept: 'application/json',
           'Bypass-Tunnel-Reminder': '1',
           'X-Cozbil-Proxy-Token': token,

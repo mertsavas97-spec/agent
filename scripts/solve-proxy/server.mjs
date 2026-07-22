@@ -184,8 +184,12 @@ const server = http.createServer(async (req, res) => {
     let imageUrl = '';
     let mimeType = 'image/jpeg';
     if (isBinarySolve) {
-      const contentType = String(req.headers['content-type'] || '').toLowerCase();
-      if (!contentType.startsWith('image/')) {
+      const rawType = String(req.headers['content-type'] || '')
+        .toLowerCase()
+        .split(';')[0]
+        .trim();
+      // RN may send empty Content-Type for file:// blobs — default jpeg.
+      if (rawType && !rawType.startsWith('image/')) {
         send(res, 400, { error: 'image_content_type' });
         return;
       }
@@ -195,7 +199,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       imageBase64 = bytes.toString('base64');
-      mimeType = contentType.split(';')[0] || 'image/jpeg';
+      mimeType =
+        !rawType || rawType === 'image/jpg' ? 'image/jpeg' : rawType;
       input = {
         examType: req.headers['x-cozbil-exam-type'],
         subjectHint: req.headers['x-cozbil-subject-hint'],

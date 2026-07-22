@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, space, typography } from '@/src/theme';
-import { CozbilRobot } from '@/src/ui/CozbilRobot';
+import { CozbilRobotInstant } from '@/src/ui/CozbilRobotInstant';
 
 import {
   ANALYZE_STEPS,
@@ -206,10 +206,10 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
           pointerEvents="none">
           {orbitDots}
         </Animated.View>
-        {/* Navy plate: avoids white flash before brand mark decodes */}
+        {/* Instant vector mark — remote Metro PNG arrives late over tunnel */}
         <View style={styles.iconPlate} testID="analyzing-icon-plate">
           <View style={styles.iconInner}>
-            <CozbilRobot size={88} animate={false} tone="onDark" testID="cozbil-robot" />
+            <CozbilRobotInstant size={88} testID="cozbil-robot" />
           </View>
         </View>
       </Animated.View>

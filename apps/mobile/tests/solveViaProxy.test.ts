@@ -117,8 +117,44 @@ describe('callSolveQuestionViaProxy', () => {
     expect(fetchMock.mock.calls[1]?.[0]).toBe('https://solve.example/solve-image');
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(blob);
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({
+      'Content-Type': 'image/jpeg',
       'X-Cozbil-Exam-Type': 'lgs',
       'X-Cozbil-Request-Id': 'binary-r1',
+    });
+  });
+
+  it('forces image/jpeg when RN blob.type is empty', async () => {
+    const blob = { size: 1200, type: '' };
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce({ blob: async () => blob } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            status: 'solved',
+            attemptId: 'a-empty-type',
+            solutionId: 's-empty-type',
+            cached: false,
+            topicId: 'lgs-math-kesirler',
+            subject: 'math',
+            steps: [{ title: 'Cevap', body: 'Doğru şık: B) 3' }],
+            answer: { label: 'B', text: '3' },
+            transparencyNote: 'ok',
+            quota: { remainingToday: 5, unlimited: false },
+          }),
+      } as Response);
+
+    await callSolveQuestionViaProxy({
+      requestId: 'empty-type',
+      examType: 'ygs',
+      imageUri: 'file://phone-photo.jpg',
+      // mimeType omitted — reproduces iOS empty blob.type path
+    });
+
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({
+      'Content-Type': 'image/jpeg',
     });
   });
 });
