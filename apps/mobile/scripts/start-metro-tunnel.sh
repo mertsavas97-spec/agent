@@ -58,28 +58,48 @@ fi
 PROVIDER=""
 TUNNEL_URL=""
 
-# --- Prefer cloudflared ---
-CF=$(resolve_cloudflared 2>/dev/null || true)
-if [[ -n "$CF" && -x "$CF" ]]; then
-  echo "==> cloudflared: $CF"
-  tmux new-session -d -s cozbil-metro-tunnel -- \
-    "$CF" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate
-  for i in $(seq 1 45); do
-    TUNNEL_URL=$(tmux capture-pane -t cozbil-metro-tunnel -p -J -S -80 2>/dev/null \
-      | rg -o 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1 || true)
-    [[ -n "$TUNNEL_URL" ]] && break
-    sleep 1
-  done
-  if [[ -n "$TUNNEL_URL" ]]; then
-    PROVIDER=cloudflared
-  else
-    echo "cloudflared URL alınamadı; localhost.run deneniyor."
-    tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
-    sleep 1
+# --- Prefer Serveo: localhost.run drops large Hermes bundles mid-transfer ---
+SSH_LOG="/tmp/cozbil-metro-serveo.log"
+: >"$SSH_LOG"
+echo "==> serveo.net"
+tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
+  "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -R 80:127.0.0.1:${PORT} serveo.net 2>&1 | tee ${SSH_LOG}"
+for i in $(seq 1 45); do
+  TUNNEL_URL=$(rg -o 'https://[a-z0-9.-]+\.(serveousercontent\.com|serveo\.net)' "$SSH_LOG" 2>/dev/null | head -1 || true)
+  [[ -n "$TUNNEL_URL" ]] && break
+  sleep 1
+done
+if [[ -n "$TUNNEL_URL" ]]; then
+  PROVIDER=serveo
+else
+  echo "serveo URL alınamadı; cloudflared / localhost.run deneniyor."
+  tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+  sleep 1
+fi
+
+# --- cloudflared (often NXDOMAIN in this Cloud Agent egress) ---
+if [[ -z "$TUNNEL_URL" ]]; then
+  CF=$(resolve_cloudflared 2>/dev/null || true)
+  if [[ -n "$CF" && -x "$CF" ]]; then
+    echo "==> cloudflared: $CF"
+    tmux new-session -d -s cozbil-metro-tunnel -- \
+      "$CF" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate
+    for i in $(seq 1 45); do
+      TUNNEL_URL=$(tmux capture-pane -t cozbil-metro-tunnel -p -J -S -80 2>/dev/null \
+        | rg -o 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1 || true)
+      [[ -n "$TUNNEL_URL" ]] && break
+      sleep 1
+    done
+    if [[ -n "$TUNNEL_URL" ]]; then
+      PROVIDER=cloudflared
+    else
+      tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+      sleep 1
+    fi
   fi
 fi
 
-# --- Fallback: localhost.run ---
+# --- Last resort: localhost.run (fragile for ~12MB bundles) ---
 if [[ -z "$TUNNEL_URL" ]]; then
   SSH_LOG="/tmp/cozbil-metro-lhr.log"
   : >"$SSH_LOG"
