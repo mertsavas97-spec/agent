@@ -227,7 +227,12 @@ export default function HomeScreen() {
               tone="onLight"
               testID="home-brand-robot"
             />
-            <Text style={styles.brand}>{brand.name}</Text>
+            <View style={styles.brandBlock}>
+              <Text style={styles.brand}>{brand.name}</Text>
+              <Text style={styles.greeting} testID="home-greeting">
+                Merhaba
+              </Text>
+            </View>
             {streakCount >= 1 ? (
               <View style={styles.streakChip} testID="home-streak">
                 <Text style={styles.streakChipText}>{streakCount} gün</Text>
@@ -260,6 +265,23 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.streakWeek} testID="home-streak-week">
+          {Array.from({ length: 7 }, (_, i) => {
+            const day = i + 1;
+            const filled = streakCount >= 7 - i;
+            return (
+              <View
+                key={`streak-day-${day}`}
+                style={[styles.streakDay, filled && styles.streakDayOn]}
+                testID={`home-streak-day-${day}`}
+              />
+            );
+          })}
+          <Text style={styles.streakWeekLabel}>
+            {streakCount > 0 ? `${streakCount} gün seri` : 'Seriye başla'}
+          </Text>
+        </View>
+
         <ExamModeSwitcher
           value={examType}
           disabled={switchingExam}
@@ -272,7 +294,7 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        <View style={styles.hero}>
+        <View style={styles.hero} testID="home-hero">
           <Pressable
             style={[
               styles.primaryBtn,
@@ -300,7 +322,9 @@ export default function HomeScreen() {
             onPress={() => void openPicker('library')}>
             <Text style={styles.secondaryLinkLabel}>Galeriden seç</Text>
           </Pressable>
+        </View>
 
+        <View style={styles.moreSection} testID="home-more">
           <Pressable
             style={styles.multiBtn}
             accessibilityRole="button"
@@ -320,21 +344,20 @@ export default function HomeScreen() {
               Çoklu soru (en fazla {MULTI_BATCH_MAX})
             </Text>
           </Pressable>
-        </View>
 
-        <Pressable
-          style={styles.topicsLink}
-          accessibilityRole="button"
-          testID="home-topics-link"
-          onPress={() => router.push('/(tabs)/topics')}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.topicsLinkTitle}>Konu anlatımı</Text>
-            <Text style={styles.topicsLinkBody}>Derse göre konu ve örnek soru</Text>
-          </View>
-          <Text style={styles.topicsChevron}>›</Text>
-        </Pressable>
+          <Pressable
+            style={styles.topicsLink}
+            accessibilityRole="button"
+            testID="home-topics-link"
+            onPress={() => router.push('/(tabs)/topics')}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.topicsLinkTitle}>Konu anlatımı</Text>
+              <Text style={styles.topicsLinkBody}>Derse göre konu ve örnek soru</Text>
+            </View>
+            <Text style={styles.topicsChevron}>›</Text>
+          </Pressable>
 
-        <Text style={styles.section}>Son çözülenler</Text>
+          <Text style={styles.section}>Son çözülenler</Text>
         {loading ? (
           <ActivityIndicator color={colors.navy} />
         ) : recent.length === 0 ? (
@@ -370,6 +393,7 @@ export default function HomeScreen() {
             )}
           />
         )}
+        </View>
       </ScrollView>
       <BannerSlot />
     </View>
@@ -395,12 +419,49 @@ const styles = StyleSheet.create({
     gap: 10,
     flexShrink: 1,
   },
+  brandBlock: {
+    flexShrink: 1,
+  },
   brand: {
     fontFamily: typography.fontFamilyBold,
     fontSize: 24,
     fontWeight: '700',
     color: colors.navy,
     letterSpacing: -0.3,
+  },
+  greeting: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  streakWeek: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: space.md,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  streakDay: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.border,
+  },
+  streakDayOn: {
+    backgroundColor: colors.orange,
+  },
+  streakWeekLabel: {
+    marginLeft: 4,
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.navy,
   },
   streakChip: {
     backgroundColor: colors.orangeSoft,
@@ -460,8 +521,14 @@ const styles = StyleSheet.create({
   },
   hero: {
     marginTop: space.md,
-    marginBottom: space.lg,
+    marginBottom: space.md,
     alignItems: 'stretch',
+  },
+  moreSection: {
+    marginTop: space.sm,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   primaryBtn: {
     backgroundColor: colors.orange,
@@ -493,7 +560,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   multiBtn: {
-    marginTop: space.sm,
+    marginBottom: space.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

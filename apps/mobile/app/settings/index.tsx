@@ -226,10 +226,13 @@ export default function SettingsScreen() {
       <View style={styles.card} testID="settings-push">
         <Eyebrow tone="navy">{TR_EYEBROW.push}</Eyebrow>
         <Text style={styles.cardTitle}>Bildirimler</Text>
-        <Text style={styles.cardBody}>
-          Tercihler cihazda saklanır. Push gönderimi henüz bağlı değil — bildirim
-          gelmez; tercihler saklanır.
-        </Text>
+        <View style={styles.honestyBanner} testID="settings-push-honesty">
+          <Text style={styles.honestyTitle}>Gönderim henüz yok</Text>
+          <Text style={styles.honestyBody}>
+            Tercihler cihazda saklanır. FCM/APNs bağlı değil — bildirim gelmez;
+            aç/kapa yalnızca ilerideki gönderim için hazırlık.
+          </Text>
+        </View>
         {prefs ? (
           <>
             <View style={styles.row}>
@@ -349,6 +352,27 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.textSecondary,
     marginBottom: space.md,
+  },
+  honestyBanner: {
+    backgroundColor: colors.orangeSoft,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.orange,
+    padding: space.sm,
+    marginBottom: space.md,
+  },
+  honestyTitle: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.navy,
+    marginBottom: 4,
+  },
+  honestyBody: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
   },
   primaryBtn: {
     backgroundColor: colors.orange,

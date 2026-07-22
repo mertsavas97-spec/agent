@@ -75,14 +75,23 @@ export default function CaptureConfirmScreen() {
         Soru metni ve şıklar net görünsün. Değilse yeniden seç.
       </Text>
 
-      <View style={[styles.frame, { borderColor: theme.accent }]}>
+      <View
+        style={[styles.frame, { borderColor: theme.accent }]}
+        testID="capture-confirm-frame">
         <Image
           source={{ uri }}
           style={styles.image}
           resizeMode="contain"
           accessibilityLabel="Seçilen soru fotoğrafı"
         />
+        <View style={[styles.corner, styles.cornerTL]} testID="capture-crop-tl" />
+        <View style={[styles.corner, styles.cornerTR]} testID="capture-crop-tr" />
+        <View style={[styles.corner, styles.cornerBL]} testID="capture-crop-bl" />
+        <View style={[styles.corner, styles.cornerBR]} testID="capture-crop-br" />
       </View>
+      <Text style={styles.cropHint} testID="capture-crop-hint">
+        Soruyu köşe çerçevelerinin içinde tut; bulanık veya kesik metin yeniden seç.
+      </Text>
 
       <Pressable
         testID="capture-confirm-solve"
@@ -143,16 +152,54 @@ const styles = StyleSheet.create({
   frame: {
     flex: 1,
     minHeight: 280,
-    backgroundColor: colors.white,
+    backgroundColor: '#0B1220',
     borderRadius: radii.xl,
     borderWidth: 2,
     overflow: 'hidden',
-    marginBottom: space.lg,
+    marginBottom: space.sm,
+    position: 'relative',
     ...shadows.soft,
   },
   image: {
     width: '100%',
     height: '100%',
+  },
+  corner: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderColor: colors.orange,
+  },
+  cornerTL: {
+    top: 12,
+    left: 12,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+  },
+  cornerTR: {
+    top: 12,
+    right: 12,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+  },
+  cornerBL: {
+    bottom: 12,
+    left: 12,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+  },
+  cornerBR: {
+    bottom: 12,
+    right: 12,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+  },
+  cropHint: {
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    marginBottom: space.md,
   },
   primaryBtn: {
     backgroundColor: colors.orange,

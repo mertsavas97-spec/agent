@@ -13,12 +13,13 @@ export const PAYWALL_COPY = {
   rewardedCta: 'Reklam izle · +1 soru',
   dismiss: 'Şimdilik ücretsiz devam',
   restore: 'Satın alımları geri yükle',
-  legalHint: 'Abonelik otomatik yenilenir. İstediğin zaman iptal edebilirsin.',
+  legalHint:
+    'Haftalık plan ücretli giriş teklifidir (ücretsiz deneme değildir). Abonelik otomatik yenilenir; istediğin zaman iptal edebilirsin.',
   benefits: [
     {
       id: 'unlimited',
       title: 'Sınırsız soru çözümü',
-      body: 'Günlük 5 hak sınırına takılma — deneme, kitap, defter; hepsi açık.',
+      body: 'Günlük 5 hak sınırına takılma — kitap, defter, test; hepsi açık.',
       icon: { ios: 'infinity', android: 'all_inclusive', web: 'all_inclusive' },
     },
     {

@@ -44,8 +44,19 @@ jest.mock('firebase/firestore', () => ({
   doc: jest.fn(),
   getDoc: jest.fn().mockResolvedValue({
     exists: () => true,
-    data: () => ({ examType: 'ygs' }),
+    data: () => ({ examType: 'ygs', streakCount: 3 }),
   }),
+}));
+
+jest.mock('@/src/features/ads', () => ({
+  BannerSlot: () => null,
+  isPremiumAudience: () => false,
+  runRewardedMultiBatchUnlock: jest.fn(),
+}));
+
+jest.mock('@/src/features/paywall/entitlement', () => ({
+  hydrateEntitlement: jest.fn().mockResolvedValue(null),
+  isPremiumActive: () => false,
 }));
 
 jest.mock('@/src/features/exam/examPreferenceCache', () => ({
@@ -73,16 +84,22 @@ jest.mock('@/src/features/exam/examPreference', () => ({
 import HomeScreen from '@/app/(tabs)/index';
 
 describe('HomeScreen', () => {
-  it('shows inline exam switcher on home', async () => {
+  it('shows brand, greeting, streak week, hero CTA, and more section', async () => {
     render(<HomeScreen />);
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByTestId('home-brand-robot')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
+    expect(screen.getByTestId('home-greeting')).toHaveTextContent('Merhaba');
+    expect(screen.getByTestId('home-streak-week')).toBeTruthy();
+    expect(screen.getByTestId('home-hero')).toBeTruthy();
     expect(screen.getByTestId('home-premium-cta')).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toHaveTextContent('Soru fotoğrafı çek');
+    expect(screen.getByTestId('home-more')).toBeTruthy();
+    expect(screen.getByTestId('multi-batch-cta')).toBeTruthy();
     await waitFor(() => {
       expect(screen.getByTestId('exam-mode-switcher')).toBeTruthy();
       expect(screen.getByTestId('exam-mode-title')).toHaveTextContent(/Sınav paketini seç/i);
+      expect(screen.getByTestId('home-streak')).toHaveTextContent('3 gün');
     });
   });
 });

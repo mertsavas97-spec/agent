@@ -59,6 +59,12 @@ describe('PaywallScreen', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it('does not claim a free trial; weekly is paid intro', () => {
+    render(<PaywallScreen onStart={jest.fn()} onDismiss={jest.fn()} />);
+    expect(screen.queryByText(/7.?gün ücretsiz/i)).toBeNull();
+    expect(screen.getByText(/ücretsiz deneme değildir/i)).toBeTruthy();
+  });
+
   it('exposes optional rewarded CTA without replacing Premium', () => {
     const onWatchRewarded = jest.fn();
     render(

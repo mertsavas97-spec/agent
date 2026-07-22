@@ -32,5 +32,5 @@ Load **one** specialist skill per task. Prefer Spec Kit artifacts over inventing
 ## Hard boundaries
 
 - Spec-First: no product code without `specs/002-cozbil-mvp/tasks.md` coverage.
-- Exams: LGS + YGS + KPSS all active.
+- Exams: LGS + YGS + KPSS + Ehliyet (`trafik`) all active.
 - Coordinator speaks to the user; workers report inward.

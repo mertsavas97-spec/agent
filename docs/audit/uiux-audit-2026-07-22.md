@@ -142,7 +142,17 @@
 
 ---
 
-## Stop — FAZ 2 yok
+## FAZ 2 durumu (2026-07-22)
 
-Bu dosya **yalnızca audit**. Kod, asset veya moodboard PNG değiştirilmedi.  
-Owner P0 kararlarını onaylamadan uygulama/FAZ 2 başlamaz.
+Owner “devam” → FAZ 2 uygulandı. Kararlar: `docs/audit/faz2-decisions-2026-07-22.md`.
+
+| P0 | Durum |
+|----|--------|
+| İkon robot SSoT + moodboard README | Done (PNG sonraki design pass) |
+| 4 sınav moodboard README | Done |
+| 5 tab moodboard README | Done |
+| Kamera = sistem + crop-guide onay | Done (custom kamera ertelendi) |
+| Push honesty | Done |
+
+P1: home declutter / streak week / Merhaba; paywall trial copy; checklist 320; guardian skills.  
+PNG piksel refresh ve full custom camera: backlog.
