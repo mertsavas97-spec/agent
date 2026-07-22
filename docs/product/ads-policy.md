@@ -17,19 +17,19 @@
 | Format | Ne zaman | Ne zaman değil |
 |--------|----------|----------------|
 | **Banner** (küçük, alt şerit) | Ana Sayfa / Geçmiş / İstatistik / Profil tab shell | Çözüm akışı (`/solve`), Analyzing, SolutionScreen, onboarding |
-| **Interstitial** (tam ekran) | Günde **en fazla 1**: günün **3. başarılı çözümünden sonra**, kullanıcı çözüm ekranından **çıkarken** (doğal mola) | Çözüm okurken; kamera/analiz sırasında; her soruda; onboarding |
-| **Rewarded** (ödüllü, isteğe bağlı) | (1) Günlük 5 hak bitince paywall’da: “Reklam izle · +1 soru”. (2) **Çoklu soru batch** açmak için free’de **1 rewarded** (Premium muaf; batch yine ≤5) | Çözüm okurken dayatma; premium’a reklam |
+| **Interstitial** (tam ekran) | Ücretsiz: başarılı çözüm ekranından **çıkarken** (doğal mola), günde en fazla günlük free solve bütçesi kadar (≤5). Premium: yok | Çözüm okurken; kamera/analiz sırasında; onboarding |
+| **Rewarded** (ödüllü) | (1) Günlük 5 hak bitince paywall’da: “Reklam izle · +1 soru”. (2) **Her çoklu soru batch** açılışında free’de **1 rewarded zorunlu** (Premium muaf; batch yine ≤5) | Çözüm okurken dayatma; premium’a reklam |
 
 ### Frekans tavanı
 
 - Banner: tab’larda sürekli (Premium’da yok).
-- Interstitial: **≤1 / İstanbul günü** (oturum başına da ≤1).
+- Interstitial: **≤5 / İstanbul günü**, yalnızca çözüm çıkışında (`atNaturalBreak`).
 - Rewarded ekstra hak: **≤2 / İstanbul günü** (Premium’u öldürmemek için).
+- Rewarded çoklu batch: **her açılışta 1** (günlük unlock tavanı ayrıca `rewardedMultiBatchMaxPerIstanbulDay`).
 
-### “3 haktan sonra zorunlu reklam izle” — **hayır**
+### Çözüm bitiminde tam ekran
 
-Erken sürtünme “ceza” gibi algılanır; haklar 4–5 hâlâ ücretsiz kalmalı.  
-3. çözümeden sonra gelen **tek** interstitial çıkış anındadır (izleme zorunlu rewarded değil; kapatılabilir tam ekran AdMob formatı).  
+Ücretsiz kullanıcı çözüm ekranından çıkınca (Başka soru / Done) stub veya AdMob interstitial çalışır. Premium’da tamamen kapalı.  
 Ek hak için reklam **yalnızca seçmeli rewarded**.
 
 ### Rewarded × paywall

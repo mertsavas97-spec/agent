@@ -55,7 +55,9 @@ import {
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { findTopic, subjectLabel } from '@/src/data';
 import { TR_EYEBROW } from '@/src/lib/trCase';
+import { Button } from '@/src/ui/Button';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
+import { hapticSelection } from '@/src/ui/haptics';
 import { PressableSurface } from '@/src/ui/PressableSurface';
 
 export default function HomeScreen() {
@@ -72,7 +74,7 @@ export default function HomeScreen() {
   const [streakWeekLabels] = useState(() => ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']);
   const [ent, setEnt] = useState<Awaited<ReturnType<typeof loadEntitlementSnapshot>>>(null);
   const bootedRef = useRef(false);
-  const { switching: switchingExam, requestExamChange } = useExamModeChange({
+  const { requestExamChange } = useExamModeChange({
     ent,
     onOptimistic: (next) => setExamType(next),
   });
@@ -260,6 +262,7 @@ export default function HomeScreen() {
                 testID="home-streak"
                 accessibilityRole="button"
                 accessibilityLabel={`${streakCount} gün seri, istatistiklere git`}
+                haptic="selection"
                 onPress={() => router.push('/(tabs)/stats')}>
                 <Text style={styles.streakChipText}>{streakCount} gün</Text>
               </PressableSurface>
@@ -270,7 +273,10 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={isPremium ? 'Premium planı gör' : 'Premium’a geç'}
             style={[styles.premiumPill, isPremium && styles.premiumPillOn]}
-            onPress={() => router.push('/premium')}>
+            onPress={() => {
+              void hapticSelection();
+              router.push('/premium');
+            }}>
             <SymbolView
               name={{
                 ios: 'crown.fill',
@@ -296,6 +302,7 @@ export default function HomeScreen() {
           testID="home-streak-week"
           accessibilityRole="button"
           accessibilityLabel="Günlük seri, istatistiklere git"
+          haptic="selection"
           onPress={() => router.push('/(tabs)/stats')}>
           <View style={styles.streakWeekHeader}>
             <Text style={styles.streakWeekTitle}>
@@ -324,7 +331,6 @@ export default function HomeScreen() {
 
         <ExamModeSwitcher
           value={examType}
-          disabled={switchingExam}
           onChange={(next) => requestExamChange(examType, next)}
         />
 
@@ -355,42 +361,54 @@ export default function HomeScreen() {
             </View>
           </PressableSurface>
 
-          <PressableSurface
-            style={styles.secondaryLink}
-            accessibilityRole="button"
+          <Button
+            label="Galeriden seç"
+            variant="secondary"
+            haptic="light"
             accessibilityLabel="Galeriden soru fotoğrafı seç"
             testID="gallery-cta"
-            onPress={() => void openPicker('library')}>
-            <Text style={styles.secondaryLinkLabel}>Galeriden seç</Text>
-          </PressableSurface>
+            style={styles.galleryBtn}
+            left={
+              <SymbolView
+                name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }}
+                tintColor={colors.navy}
+                size={18}
+              />
+            }
+            onPress={() => void openPicker('library')}
+          />
         </View>
 
         <View style={styles.moreSection} testID="home-more">
-          <PressableSurface
-            style={styles.multiBtn}
-            accessibilityRole="button"
+          <Button
+            label={`Çoklu çöz · en fazla ${MULTI_BATCH_MAX}`}
+            variant="secondary"
+            haptic="medium"
             accessibilityLabel="Çoklu soru seç"
             testID="multi-batch-cta"
-            onPress={() => void openMultiBatch()}>
-            <SymbolView
-              name={{
-                ios: 'square.stack.3d.up.fill',
-                android: 'layers',
-                web: 'layers',
-              }}
-              tintColor={colors.navy}
-              size={16}
-            />
-            <Text style={styles.multiBtnLabel}>
-              Çoklu soru (en fazla {MULTI_BATCH_MAX})
-            </Text>
-          </PressableSurface>
+            style={styles.multiBtn}
+            left={
+              <SymbolView
+                name={{
+                  ios: 'square.stack.3d.up.fill',
+                  android: 'layers',
+                  web: 'layers',
+                }}
+                tintColor={colors.navy}
+                size={18}
+              />
+            }
+            onPress={() => void openMultiBatch()}
+          />
 
           <Pressable
             style={styles.topicsLink}
             accessibilityRole="button"
             testID="home-topics-link"
-            onPress={() => router.push('/(tabs)/topics')}>
+            onPress={() => {
+              void hapticSelection();
+              router.push('/(tabs)/topics');
+            }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.topicsLinkTitle}>Konu anlatımı</Text>
               <Text style={styles.topicsLinkBody}>Derse göre konu ve örnek soru</Text>
@@ -617,35 +635,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
   },
-  secondaryLink: {
+  galleryBtn: {
     marginTop: space.md,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  secondaryLinkLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    color: colors.navy,
-    fontSize: 15,
-    fontWeight: '600',
+    alignSelf: 'stretch',
   },
   multiBtn: {
     marginBottom: space.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: radii.lg,
-    paddingVertical: 12,
-    paddingHorizontal: space.md,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  multiBtnLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    color: colors.navy,
-    fontSize: 14,
-    fontWeight: '600',
+    alignSelf: 'stretch',
   },
   topicsLink: {
     flexDirection: 'row',

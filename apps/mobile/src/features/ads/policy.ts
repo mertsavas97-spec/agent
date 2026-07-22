@@ -4,10 +4,14 @@
  */
 
 export const ADS_LIMITS = {
-  interstitialMaxPerIstanbulDay: 1,
+  /**
+   * Free: up to one full-screen interstitial per billed solve leave
+   * (aligned with daily free solve budget). Premium: never.
+   */
+  interstitialMaxPerIstanbulDay: 5,
   rewardedExtraMaxPerIstanbulDay: 2,
-  /** Soft interstitial only after this many billed free solves today */
-  interstitialAfterBilledSolves: 3,
+  /** Show interstitial after this many billed free solves today (1 = every leave). */
+  interstitialAfterBilledSolves: 1,
   freeDailySolves: 5,
   /** Max photos in one multi-question batch (abuse cap; also Premium) */
   multiBatchMax: 5,

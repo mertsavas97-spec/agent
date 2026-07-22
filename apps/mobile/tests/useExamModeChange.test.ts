@@ -55,4 +55,44 @@ describe('useExamModeChange', () => {
     expect(onOptimistic).toHaveBeenCalledWith('kpss');
     expect(callUpdateExamType).toHaveBeenCalledWith('kpss');
   });
+
+  it('allows re-tap after sync settles even for a previously requested package', async () => {
+    let resolveUpdate: ((v: string) => void) | undefined;
+    (callUpdateExamType as jest.Mock).mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+
+    const onOptimistic = jest.fn();
+    const { result } = renderHook(() => useExamModeChange({ onOptimistic }));
+
+    await act(async () => {
+      result.current.requestExamChange('lgs', 'ygs');
+    });
+    expect(callUpdateExamType).toHaveBeenCalledTimes(1);
+
+    // Same target while in flight — ignored (no stuck disable, but no spam).
+    await act(async () => {
+      result.current.requestExamChange('lgs', 'ygs');
+    });
+    expect(callUpdateExamType).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveUpdate?.('ygs');
+    });
+
+    // After settle, focus race can leave UI on lgs while last pick was ygs —
+    // re-tap must work again.
+    await act(async () => {
+      result.current.requestExamChange('lgs', 'ygs');
+    });
+    expect(callUpdateExamType).toHaveBeenCalledTimes(2);
+  });
+
+  it('never reports switching=true so segmented tabs stay enabled', () => {
+    const { result } = renderHook(() => useExamModeChange());
+    expect(result.current.switching).toBe(false);
+  });
 });

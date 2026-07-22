@@ -49,7 +49,7 @@ export default function SettingsScreen() {
   const [ent, setEnt] = useState<EntitlementSnapshot | null>(null);
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [replaying, setReplaying] = useState(false);
-  const { switching, requestExamChange } = useExamModeChange({
+  const { requestExamChange } = useExamModeChange({
     ent,
     onOptimistic: (next) => setExamType(next),
   });
@@ -147,7 +147,6 @@ export default function SettingsScreen() {
         <ExamModeSwitcher
           value={examType}
           onChange={(next) => requestExamChange(examType, next)}
-          disabled={switching}
         />
       </View>
 

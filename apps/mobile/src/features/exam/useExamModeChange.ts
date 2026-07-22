@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 
 import {
@@ -9,7 +9,6 @@ import type { ExamType } from '@/src/lib/api/types';
 
 import { setExamPreferenceCache } from './examPreferenceCache';
 import { callUpdateExamType } from './updateExamClient';
-import { hapticSelection } from '@/src/ui/haptics';
 
 export type UseExamModeChangeOptions = {
   ent?: EntitlementSnapshot | null;
@@ -19,25 +18,29 @@ export type UseExamModeChangeOptions = {
 
 /**
  * Shared exam switch — optimistic local preference, background sync.
- * Exam package is information architecture (not a paywall gate): free users
- * switch immediately; ads stay on solve quota / multi-batch unlocks.
+ * Never disables the segmented control: awaiting network was making taps
+ * feel “stuck”. In-flight duplicate for the *same* target is ignored; after
+ * settle, the same package can be requested again (focus races / retries).
  */
 export function useExamModeChange(options: UseExamModeChangeOptions = {}) {
-  const [switching, setSwitching] = useState(false);
   const onOptimistic = options.onOptimistic;
+  const inFlightRef = useRef<ExamType | null>(null);
 
   const applyExam = useCallback(
     async (next: ExamType) => {
-      setSwitching(true);
+      inFlightRef.current = next;
+      setExamPreferenceCache(next);
+      onOptimistic?.(next);
       try {
-        setExamPreferenceCache(next);
-        onOptimistic?.(next);
-        void hapticSelection();
         await callUpdateExamType(next);
       } catch {
-        Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
+        if (inFlightRef.current === next) {
+          Alert.alert('Sınav değiştirilemedi', 'Bağlantını kontrol edip tekrar dene.');
+        }
       } finally {
-        setSwitching(false);
+        if (inFlightRef.current === next) {
+          inFlightRef.current = null;
+        }
       }
     },
     [onOptimistic],
@@ -45,14 +48,20 @@ export function useExamModeChange(options: UseExamModeChangeOptions = {}) {
 
   const requestExamChange = useCallback(
     (current: ExamType | null, next: ExamType) => {
-      // Allow first pick when preference is still null (boot / empty profile).
-      if (next === current || switching) return;
+      if (next === current) return;
+      // Only skip while this exact package change is already syncing.
+      if (inFlightRef.current === next) return;
       void applyExam(next);
     },
-    [applyExam, switching],
+    [applyExam],
   );
 
-  return { switching, requestExamChange, applyExam };
+  return {
+    /** Kept for API compat — UI must not disable tabs on this. */
+    switching: false,
+    requestExamChange,
+    applyExam,
+  };
 }
 
 /** Refresh entitlement snapshot (settings / home). */
