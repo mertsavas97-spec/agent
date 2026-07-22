@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
@@ -8,6 +8,7 @@ import { peekPendingSolveImage } from '@/src/features/solve/pendingSolveImageSto
 import type { ExamType } from '@/src/lib/api/types';
 import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { Button } from '@/src/ui/Button';
 import { Eyebrow } from '@/src/ui/Eyebrow';
 
 /**
@@ -54,9 +55,7 @@ export default function CaptureConfirmScreen() {
     return (
       <View style={styles.missing}>
         <Text style={styles.missingText}>Fotoğraf bulunamadı.</Text>
-        <Pressable onPress={() => router.back()} style={styles.secondaryBtn}>
-          <Text style={styles.secondaryText}>Geri dön</Text>
-        </Pressable>
+        <Button label="Geri dön" variant="secondary" onPress={() => router.back()} />
       </View>
     );
   }
@@ -97,21 +96,21 @@ export default function CaptureConfirmScreen() {
         Soruyu köşe çerçevelerinin içinde tut; bulanık veya kesik metin yeniden seç.
       </Text>
 
-      <Pressable
+      <Button
         testID="capture-confirm-solve"
+        label="Evet, çöz"
+        onPress={goSolve}
         style={styles.primaryBtn}
-        onPress={goSolve}>
-        <Text style={styles.primaryText}>Evet, çöz</Text>
-      </Pressable>
+        haptic="medium"
+      />
 
-      <Pressable
+      <Button
         testID="capture-confirm-retake"
-        style={[styles.secondaryBtn, { borderColor: theme.solid }]}
-        onPress={retake}>
-        <Text style={[styles.secondaryText, { color: theme.solid }]}>
-          Yeniden seç
-        </Text>
-      </Pressable>
+        label="Yeniden seç"
+        variant="secondary"
+        onPress={retake}
+        style={styles.secondaryBtn}
+      />
     </View>
   );
 }
@@ -156,13 +155,13 @@ const styles = StyleSheet.create({
   frame: {
     flex: 1,
     minHeight: 280,
-    backgroundColor: '#0B1220',
-    borderRadius: radii.xl,
+    backgroundColor: colors.navyDeep,
+    borderRadius: radii.lg,
     borderWidth: 2,
     overflow: 'hidden',
     marginBottom: space.sm,
     position: 'relative',
-    ...shadows.soft,
+    ...shadows.raised,
   },
   image: {
     width: '100%',
@@ -206,31 +205,9 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   primaryBtn: {
-    backgroundColor: colors.orange,
-    borderRadius: radii.lg,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: space.sm,
-    ...shadows.cta,
-  },
-  primaryText: {
-    fontFamily: typography.fontFamilySemiBold,
-    color: colors.navy,
-    fontSize: 16,
-    fontWeight: '700',
+    marginTop: space.md,
   },
   secondaryBtn: {
-    borderRadius: radii.lg,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-  },
-  secondaryText: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.navy,
+    marginTop: space.sm,
   },
 });

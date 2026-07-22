@@ -56,6 +56,7 @@ import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { findTopic, subjectLabel } from '@/src/data';
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
+import { PressableSurface } from '@/src/ui/PressableSurface';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -324,7 +325,7 @@ export default function HomeScreen() {
         ) : null}
 
         <View style={styles.hero} testID="home-hero">
-          <Pressable
+          <PressableSurface
             style={[
               styles.primaryBtn,
               examTheme ? { backgroundColor: examTheme.accent } : null,
@@ -332,6 +333,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Soru fotoğrafı çek"
             testID="capture-cta"
+            haptic="medium"
             onPress={() => void openPicker('camera')}>
             <View style={styles.primaryBtnInner}>
               <SymbolView
@@ -341,20 +343,20 @@ export default function HomeScreen() {
               />
               <Text style={styles.primaryBtnLabel}>Soru fotoğrafı çek</Text>
             </View>
-          </Pressable>
+          </PressableSurface>
 
-          <Pressable
+          <PressableSurface
             style={styles.secondaryLink}
             accessibilityRole="button"
             accessibilityLabel="Galeriden soru fotoğrafı seç"
             testID="gallery-cta"
             onPress={() => void openPicker('library')}>
             <Text style={styles.secondaryLinkLabel}>Galeriden seç</Text>
-          </Pressable>
+          </PressableSurface>
         </View>
 
         <View style={styles.moreSection} testID="home-more">
-          <Pressable
+          <PressableSurface
             style={styles.multiBtn}
             accessibilityRole="button"
             accessibilityLabel="Çoklu soru seç"
@@ -372,7 +374,7 @@ export default function HomeScreen() {
             <Text style={styles.multiBtnLabel}>
               Çoklu soru (en fazla {MULTI_BATCH_MAX})
             </Text>
-          </Pressable>
+          </PressableSurface>
 
           <Pressable
             style={styles.topicsLink}

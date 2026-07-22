@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
 import { resolveActiveExamType } from '@/src/features/exam/resolveActiveExam';
@@ -37,6 +37,7 @@ import { ensureSignedIn } from '@/src/lib/auth';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { colors, space, typography } from '@/src/theme';
+import { Button } from '@/src/ui/Button';
 
 function billedSolvesFromQuota(result: SolveQuestionResponse): number {
   if (result.status !== 'solved') return 0;
@@ -295,9 +296,7 @@ export default function SolveFlowScreen() {
       <View style={styles.center}>
         <Text style={styles.errorTitle}>Çözüm alınamadı</Text>
         <Text style={styles.error}>{error}</Text>
-        <Pressable onPress={() => router.back()} style={styles.btn}>
-          <Text style={styles.btnText}>Ana sayfaya dön</Text>
-        </Pressable>
+        <Button label="Ana sayfaya dön" onPress={() => router.back()} />
       </View>
     );
   }
@@ -310,9 +309,7 @@ export default function SolveFlowScreen() {
       <View style={styles.center} testID="solve-rejected">
         <Text style={styles.errorTitle}>Bu görsel işlenemedi</Text>
         <Text style={styles.error}>{rejectMsg}</Text>
-        <Pressable onPress={() => router.back()} style={styles.btn}>
-          <Text style={styles.btnText}>Ana sayfaya dön</Text>
-        </Pressable>
+        <Button label="Ana sayfaya dön" onPress={() => router.back()} />
       </View>
     );
   }
@@ -392,17 +389,5 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamilySemiBold,
     marginBottom: space.sm,
     textAlign: 'center',
-  },
-  btn: {
-    alignSelf: 'center',
-    backgroundColor: colors.navy,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
-    borderRadius: 12,
-  },
-  btnText: {
-    color: colors.white,
-    fontWeight: '600',
-    fontFamily: typography.fontFamilySemiBold,
   },
 });

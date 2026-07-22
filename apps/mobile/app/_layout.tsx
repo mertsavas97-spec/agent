@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { BootstrapGate } from '@/src/features/auth/BootstrapGate';
-import { colors } from '@/src/theme';
+import { colors, screenHeaderOptions } from '@/src/theme';
 
 export {
   ErrorBoundary,
@@ -42,9 +42,6 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  // Splash stays up until BootstrapGate resolves destination (avoids home flash).
-  // Fonts still gate first paint below.
-
   if (!loaded) {
     return null;
   }
@@ -62,107 +59,19 @@ function RootLayoutNav() {
             name="onboarding"
             options={{ headerShown: false, gestureEnabled: false }}
           />
-          <Stack.Screen
-            name="capture-confirm"
-            options={{
-              title: 'Fotoğrafı kontrol et',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
+          <Stack.Screen name="capture-confirm" options={screenHeaderOptions('Fotoğrafı kontrol et')} />
           <Stack.Screen
             name="capture-confirm-batch"
-            options={{
-              title: 'Fotoğrafları kontrol et',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
+            options={screenHeaderOptions('Fotoğrafları kontrol et')}
           />
-          <Stack.Screen
-            name="premium"
-            options={{
-              title: 'Premium',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="settings/index"
-            options={{
-              title: 'Ayarlar',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="settings/legal/[id]"
-            options={{
-              title: 'Hukuki',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="solve"
-            options={{
-              title: 'Çözüm',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="solve-batch"
-            options={{
-              title: 'Çoklu çözüm',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="sample/[id]"
-            options={{
-              title: 'Örnek anlatım',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="topic/[id]"
-            options={{
-              title: 'Konu anlatımı',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen
-            name="history/[attemptId]"
-            options={{
-              title: 'Geçmiş çözüm',
-              headerBackTitle: 'Geri',
-              headerStyle: { backgroundColor: colors.navy },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontFamily: 'Poppins-SemiBold' },
-            }}
-          />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="premium" options={screenHeaderOptions('Premium')} />
+          <Stack.Screen name="settings/index" options={screenHeaderOptions('Ayarlar')} />
+          <Stack.Screen name="settings/legal/[id]" options={screenHeaderOptions('Hukuki')} />
+          <Stack.Screen name="solve" options={screenHeaderOptions('Çözüm')} />
+          <Stack.Screen name="solve-batch" options={screenHeaderOptions('Çoklu çözüm')} />
+          <Stack.Screen name="sample/[id]" options={screenHeaderOptions('Örnek anlatım')} />
+          <Stack.Screen name="topic/[id]" options={screenHeaderOptions('Konu anlatımı')} />
+          <Stack.Screen name="history/[attemptId]" options={screenHeaderOptions('Geçmiş çözüm')} />
         </Stack>
       </BootstrapGate>
     </ThemeProvider>

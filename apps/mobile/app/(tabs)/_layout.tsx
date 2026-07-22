@@ -28,10 +28,14 @@ export default function TabLayout() {
           height: 88,
           paddingTop: 6,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+          fontFamily: 'Poppins-SemiBold',
+        },
         headerStyle: { backgroundColor: colors.navy },
         headerTintColor: colors.white,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontWeight: '700', fontFamily: 'Poppins-SemiBold' },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen

@@ -36,10 +36,10 @@ function captionColor(
   selected: boolean,
 ): string | undefined {
   if (tone === 'ready') {
-    return selected ? '#BBF7D0' : colors.success;
+    return selected ? colors.orangeSoft : colors.success;
   }
   if (tone === 'empty') {
-    return selected ? 'rgba(255,255,255,0.55)' : colors.textMuted;
+    return selected ? colors.textOnDarkMuted : colors.textMuted;
   }
   return undefined;
 }
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
     borderColor: colors.navy,
   },
   segmentMuted: {
-    backgroundColor: '#F1F5F9',
-    borderColor: '#CBD5E1',
+    backgroundColor: colors.track,
+    borderColor: colors.borderStrong,
     opacity: 0.85,
   },
   segmentLabel: {

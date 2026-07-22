@@ -1,7 +1,7 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, space, typography } from '@/src/theme';
+import { colors, radii, space, typography } from '@/src/theme';
 
 export default function NotFoundScreen() {
   return (
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     paddingHorizontal: space.lg,
     backgroundColor: colors.navy,
-    borderRadius: 12,
+    borderRadius: radii.md,
   },
   linkText: {
     fontSize: 15,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, space, typography } from '@/src/theme';
+import { colors, motion, radii, space, typography } from '@/src/theme';
 import { CozbilRobotInstant } from '@/src/ui/CozbilRobotInstant';
 
 import {
@@ -58,7 +58,7 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     const target = Math.max(peakRef.current, baseTarget);
     Animated.timing(anim, {
       toValue: target,
-      duration: 480,
+      duration: motion.slow,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -114,7 +114,7 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     const orbitLoop = Animated.loop(
       Animated.timing(orbit, {
         toValue: 1,
-        duration: 7200,
+        duration: motion.orbit,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
@@ -132,11 +132,11 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
   useEffect(() => {
     const id = setInterval(() => {
       Animated.sequence([
-        Animated.timing(tipOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-        Animated.timing(tipOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+        Animated.timing(tipOpacity, { toValue: 0, duration: motion.fast, useNativeDriver: true }),
+        Animated.timing(tipOpacity, { toValue: 1, duration: motion.normal, useNativeDriver: true }),
       ]).start();
       setTipIndex((i) => (i + 1) % TIPS.length);
-    }, 4200);
+    }, motion.tip);
     return () => clearInterval(id);
   }, [tipOpacity]);
 

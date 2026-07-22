@@ -1,14 +1,14 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EXAM_LABEL, EXAM_SHORT } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
 import type { ExamType } from '@/src/lib/api/types';
 import { TR_EYEBROW } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { Button } from '@/src/ui/Button';
 import { CozbilRobot } from '@/src/ui/CozbilRobot';
 import { Eyebrow } from '@/src/ui/Eyebrow';
-import { hapticMedium, hapticSelection } from '@/src/ui/haptics';
 
 export type ExamModeBlockScreenProps = {
   activeExam: ExamType;
@@ -115,31 +115,26 @@ export function ExamModeBlockScreen({
         </View>
       </View>
 
-      <Pressable
+      <Button
         testID="exam-block-switch"
-        accessibilityRole="button"
         accessibilityLabel={`${EXAM_LABEL[detectedExam]} moduna geç`}
-        style={[styles.primary, switching && styles.primaryDisabled]}
+        label={
+          switching ? 'Mod değiştiriliyor…' : `${EXAM_LABEL[detectedExam]} moduna geç`
+        }
         disabled={switching}
-        onPress={() => {
-          void hapticMedium();
-          onSwitchMode();
-        }}>
-        <Text style={styles.primaryText}>
-          {switching ? 'Mod değiştiriliyor…' : `${EXAM_LABEL[detectedExam]} moduna geç`}
-        </Text>
-      </Pressable>
+        loading={switching}
+        onPress={onSwitchMode}
+        haptic="medium"
+        style={styles.primary}
+      />
 
-      <Pressable
+      <Button
         testID="exam-block-back"
-        accessibilityRole="button"
+        label="Ana sayfaya dön"
+        variant="onDark"
+        onPress={onGoBack}
         style={styles.secondary}
-        onPress={() => {
-          void hapticSelection();
-          onGoBack();
-        }}>
-        <Text style={styles.secondaryText}>Ana sayfaya dön</Text>
-      </Pressable>
+      />
     </ScrollView>
   );
 }
@@ -229,30 +224,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   primary: {
-    backgroundColor: colors.orange,
-    borderRadius: radii.lg,
-    paddingVertical: 16,
-    alignItems: 'center',
-    ...shadows.cta,
-  },
-  primaryDisabled: {
-    opacity: 0.7,
-  },
-  primaryText: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 16,
-    color: colors.navy,
+    // Button owns chrome; keep spacing only
   },
   secondary: {
-    borderRadius: radii.lg,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  secondaryText: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 15,
-    color: colors.white,
   },
 });

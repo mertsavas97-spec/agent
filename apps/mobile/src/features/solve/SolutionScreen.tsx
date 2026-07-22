@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -21,8 +20,11 @@ import type {
 } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
 import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
-import { colors, radii, space, typography } from '@/src/theme';
+import { colors, radii, shadows, space, typography } from '@/src/theme';
+import { Button } from '@/src/ui/Button';
+import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 import { Eyebrow } from '@/src/ui/Eyebrow';
+import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
 
 import {
   buildShortSummary,
@@ -134,7 +136,23 @@ export function SolutionScreen({
         </View>
       ) : null}
 
-      {(examType || subject || topicName) && (
+      {examType && subject && subject !== 'unknown' ? (
+        <View
+          style={[
+            styles.metaBand,
+            examTheme ? { backgroundColor: examTheme.soft } : null,
+          ]}
+          testID="solution-meta">
+          <CatalogBreadcrumb
+            examType={examType}
+            examLabel={EXAM_TITLE[examType]}
+            subject={subject}
+            subjectLabel={subjectLabel(subject)}
+            topicLabel={topicName}
+            testID="solution-breadcrumb"
+          />
+        </View>
+      ) : (examType || subject || topicName) ? (
         <View
           style={[
             styles.metaBand,
@@ -163,7 +181,7 @@ export function SolutionScreen({
           ) : null}
           {topicName ? <Text style={styles.metaTopic}>{topicName}</Text> : null}
         </View>
-      )}
+      ) : null}
 
       {imageUri ? (
         <Image
@@ -183,20 +201,16 @@ export function SolutionScreen({
         </View>
       ) : null}
 
-      <View style={styles.tabs} testID="solution-tabs">
-        {tabs.map((t) => (
-          <Pressable
-            key={t.id}
-            style={[styles.tab, tab === t.id && styles.tabOn]}
-            onPress={() => setTab(t.id)}
-            testID={t.testID}>
-            <Text style={[styles.tabLabel, tab === t.id && styles.tabLabelOn]} numberOfLines={1}>
-              {t.label}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.tabsWrap}>
+        <SegmentedTabs
+          items={tabs.map((t) => ({ id: t.id, label: t.label }))}
+          value={tab}
+          onChange={setTab}
+          testID="solution-tabs"
+          itemTestIDPrefix="tab"
+          accentColor={examTheme?.accent ?? colors.orange}
+        />
       </View>
-
       {tab === 'steps' ? (
         <>
           <Text style={styles.tabLead} testID="steps-lead">
@@ -314,17 +328,15 @@ export function SolutionScreen({
       </Text>
 
       {solutionId && onExplainAgain ? (
-        <Pressable
-          style={styles.explainBtn}
+        <Button
+          label="Anlamadım, tekrar açıkla"
           onPress={() => void handleExplain()}
-          disabled={loading}
-          testID="explain-again-btn">
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.explainLabel}>Anlamadım, tekrar açıkla</Text>
-          )}
-        </Pressable>
+          loading={loading}
+          variant="secondary"
+          style={styles.explainBtn}
+          testID="explain-again-btn"
+          haptic="medium"
+        />
       ) : null}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -336,13 +348,13 @@ export function SolutionScreen({
       ) : null}
 
       {onDone ? (
-        <Pressable
-          style={styles.doneBtn}
+        <Button
+          label="Tamam"
           onPress={onDone}
           testID="solution-done-btn"
-          accessibilityRole="button">
-          <Text style={styles.doneLabel}>Tamam</Text>
-        </Pressable>
+          style={styles.doneBtn}
+          haptic="medium"
+        />
       ) : null}
     </ScrollView>
   );
@@ -419,6 +431,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
     marginBottom: space.md,
+    borderWidth: 1.5,
+    borderColor: colors.orange,
+    ...shadows.raised,
   },
   answerEyebrow: {
     fontSize: 11,
@@ -427,10 +442,13 @@ const styles = StyleSheet.create({
   },
   answerText: {
     fontFamily: typography.fontFamilyBold,
-    fontSize: 26,
+    fontSize: typography.size.display,
     fontWeight: '700',
     color: colors.white,
-    lineHeight: 32,
+    lineHeight: 34,
+  },
+  tabsWrap: {
+    marginBottom: space.md,
   },
   tabs: {
     flexDirection: 'row',
@@ -577,15 +595,6 @@ const styles = StyleSheet.create({
   },
   explainBtn: {
     marginTop: space.md,
-    backgroundColor: colors.navy,
-    borderRadius: radii.md,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  explainLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    color: colors.white,
-    fontWeight: '700',
   },
   error: { color: colors.danger, marginTop: space.sm },
   followUp: {
@@ -602,15 +611,5 @@ const styles = StyleSheet.create({
   },
   doneBtn: {
     marginTop: space.lg,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: colors.navy,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  doneLabel: {
-    fontFamily: typography.fontFamilySemiBold,
-    fontWeight: '700',
-    color: colors.navy,
   },
 });
