@@ -91,6 +91,7 @@ describe('HomeScreen', () => {
     expect(screen.getByText('ÇözBil')).toBeTruthy();
     expect(screen.getByTestId('home-greeting')).toHaveTextContent('Merhaba');
     expect(screen.getByTestId('home-streak-week')).toBeTruthy();
+    expect(screen.getByTestId('home-streak-hint')).toBeTruthy();
     expect(screen.getByTestId('home-hero')).toBeTruthy();
     expect(screen.getByTestId('home-premium-cta')).toBeTruthy();
     expect(screen.getByTestId('capture-cta')).toHaveTextContent('Soru fotoğrafı çek');

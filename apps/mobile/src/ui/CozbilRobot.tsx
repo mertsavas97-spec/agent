@@ -124,6 +124,8 @@ export function CozbilRobot({
         resizeMode="cover"
         // Android defaults to a ~300ms fade-in — feels like the icon "arrives late"
         fadeDuration={0}
+        // Avoid a blank/white decode frame on first paint (iOS).
+        defaultSource={BRAND_MARK}
         accessibilityIgnoresInvertColors
       />
     </Animated.View>

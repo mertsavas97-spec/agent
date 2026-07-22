@@ -266,20 +266,29 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.streakWeek} testID="home-streak-week">
-          {Array.from({ length: 7 }, (_, i) => {
-            const day = i + 1;
-            const filled = streakCount >= 7 - i;
-            return (
-              <View
-                key={`streak-day-${day}`}
-                style={[styles.streakDay, filled && styles.streakDayOn]}
-                testID={`home-streak-day-${day}`}
-              />
-            );
-          })}
-          <Text style={styles.streakWeekLabel}>
-            {streakCount > 0 ? `${streakCount} gün seri` : 'Seriye başla'}
-          </Text>
+          <View style={styles.streakWeekHeader}>
+            <Text style={styles.streakWeekTitle}>
+              {streakCount > 0 ? `${streakCount} gün seri` : 'Günlük seri'}
+            </Text>
+            <Text style={styles.streakWeekHint} testID="home-streak-hint">
+              {streakCount > 0
+                ? 'Bugün de bir soru çöz, kopmasın'
+                : 'Bugün bir soru çöz — seri başlar'}
+            </Text>
+          </View>
+          <View style={styles.streakDaysRow}>
+            {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((label, i) => {
+              const filled = streakCount >= 7 - i;
+              return (
+                <View key={label} style={styles.streakDayCol} testID={`home-streak-day-${i + 1}`}>
+                  <View style={[styles.streakDay, filled && styles.streakDayOn]} />
+                  <Text style={[styles.streakDayLabel, filled && styles.streakDayLabelOn]}>
+                    {label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
         <ExamModeSwitcher
@@ -436,32 +445,60 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   streakWeek: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     marginBottom: space.md,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     backgroundColor: colors.white,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  streakWeekHeader: {
+    marginBottom: 10,
+  },
+  streakWeekTitle: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+  streakWeekHint: {
+    marginTop: 2,
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  streakDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  streakDayCol: {
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
   streakDay: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.border,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.navySoft,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   streakDayOn: {
     backgroundColor: colors.orange,
+    borderColor: colors.orange,
   },
-  streakWeekLabel: {
-    marginLeft: 4,
-    fontFamily: typography.fontFamilySemiBold,
-    fontSize: 12,
-    fontWeight: '600',
+  streakDayLabel: {
+    fontFamily: typography.fontFamily,
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  streakDayLabelOn: {
     color: colors.navy,
+    fontFamily: typography.fontFamilySemiBold,
+    fontWeight: '600',
   },
   streakChip: {
     backgroundColor: colors.orangeSoft,

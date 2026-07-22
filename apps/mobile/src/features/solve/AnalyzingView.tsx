@@ -10,9 +10,9 @@ import {
   labelForStep,
   progressForStep,
 } from './analyzeSteps';
-import { SOLVE_PROGRESS_CRAWL_MS } from './solveTiming';
+import { SOLVE_PROGRESS_CRAWL_MS, SOLVE_PROGRESS_CRAWL_TARGET } from './solveTiming';
 
-export { SOLVE_PROGRESS_CRAWL_MS } from './solveTiming';
+export { SOLVE_PROGRESS_CRAWL_MS, SOLVE_PROGRESS_CRAWL_TARGET } from './solveTiming';
 
 export type AnalyzingViewProps = {
   step?: AnalyzeStepId;
@@ -64,14 +64,13 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
     }).start();
   }, [anim, baseTarget]);
 
-  // Healthy proxy/Vertex solves target ~15–20s. Backend failures have explicit
-  // timeouts and must not be disguised by a minute-long progress crawl.
+  // Keep the bar moving through the healthy solve window without freezing at 92%.
   useEffect(() => {
     if (step !== 'solve') return;
     const crawl = Animated.timing(anim, {
-      toValue: 0.92,
+      toValue: SOLVE_PROGRESS_CRAWL_TARGET,
       duration: SOLVE_PROGRESS_CRAWL_MS,
-      easing: Easing.out(Easing.quad),
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     });
     crawl.start();
@@ -207,10 +206,10 @@ export function AnalyzingView({ step = 'upload', statusLine }: AnalyzingViewProp
           pointerEvents="none">
           {orbitDots}
         </Animated.View>
-        {/* Light plate separates navy brand mark from navy screen */}
+        {/* Navy plate: avoids white flash before brand mark decodes */}
         <View style={styles.iconPlate} testID="analyzing-icon-plate">
           <View style={styles.iconInner}>
-            <CozbilRobot size={88} animate tone="onDark" testID="cozbil-robot" />
+            <CozbilRobot size={88} animate={false} tone="onDark" testID="cozbil-robot" />
           </View>
         </View>
       </Animated.View>
@@ -356,7 +355,7 @@ const styles = StyleSheet.create({
     width: 112,
     height: 112,
     borderRadius: 28,
-    backgroundColor: colors.orangeSoft,
+    backgroundColor: colors.navy,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 22,
-    backgroundColor: colors.white,
+    backgroundColor: colors.navy,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
