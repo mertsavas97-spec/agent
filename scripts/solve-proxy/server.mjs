@@ -198,6 +198,15 @@ const server = http.createServer(async (req, res) => {
         send(res, 400, { error: 'image_empty' });
         return;
       }
+      const magic = bytes.subarray(0, 12).toString('hex');
+      console.info(
+        'solve-image bytes',
+        bytes.length,
+        'magic',
+        magic,
+        'type',
+        rawType || '(default-jpeg)',
+      );
       imageBase64 = bytes.toString('base64');
       mimeType =
         !rawType || rawType === 'image/jpg' ? 'image/jpeg' : rawType;
@@ -427,9 +436,21 @@ const server = http.createServer(async (req, res) => {
       send(res, 413, { error: 'payload_too_large' });
       return;
     }
+    const message = err instanceof Error ? err.message : 'unknown';
+    // OCR miss must not become a generic client "Çözüm alınamadı" via 500→Firestore.
+    if (/OCR unavailable|garbage_ocr|empty image|unsupported image format/i.test(message)) {
+      send(res, 200, {
+        status: 'rejected_not_question',
+        attemptId: `proxy-${requestId || Date.now()}`,
+        userMessage:
+          'Görseldeki yazı net okunamadı. Soruyu düz, yakından ve iyi ışıkta yeniden çek; şıklar da kadrajda olsun.',
+        quota: { remainingToday: 5, unlimited: false },
+      });
+      return;
+    }
     send(res, 500, {
       error: 'internal',
-      message: err instanceof Error ? err.message : 'unknown',
+      message,
     });
   } finally {
     activeSolves -= 1;

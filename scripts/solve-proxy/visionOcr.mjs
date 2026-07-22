@@ -159,14 +159,19 @@ async function decodeImageBuffer(input) {
   }
 }
 
-async function buildOcrVariant(input, { threshold } = {}) {
+async function buildOcrVariant(input, { threshold, boost } = {}) {
   const meta = await sharp(input, SHARP_INPUT_OPTIONS).metadata();
   const sourceWidth = meta.width || 1200;
   const targetWidth = Math.min(1800, Math.max(1200, sourceWidth));
   let pipeline = sharp(input, SHARP_INPUT_OPTIONS)
     .rotate()
     .grayscale()
-    .normalize()
+    .normalize();
+  if (boost) {
+    // Dark phone photos of worksheets — lift midtones before thresholding.
+    pipeline = pipeline.modulate({ brightness: 1.2 }).linear(1.25, -20);
+  }
+  pipeline = pipeline
     .resize({ width: targetWidth, kernel: 'lanczos3', withoutEnlargement: false })
     .sharpen({ sigma: 1 });
   if (typeof threshold === 'number') {
@@ -285,13 +290,13 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const raw = Buffer.from(cleaned, 'base64');
     const input = await decodeImageBuffer(raw);
 
-    // Fast ordered passes — early-exit when choices + stem look usable.
-    // Full 3×2 grid was blowing the client abort budget on phone photos.
+    // Soft / boosted first — hard threshold blanks many phone-camera worksheets.
     const passPlan = [
-      { threshold: 180, psm: PSM.AUTO },
-      { threshold: undefined, psm: PSM.AUTO },
-      { threshold: 180, psm: PSM.SPARSE_TEXT },
-      { threshold: 160, psm: PSM.SPARSE_TEXT },
+      { threshold: undefined, boost: false, psm: PSM.AUTO },
+      { threshold: undefined, boost: true, psm: PSM.AUTO },
+      { threshold: 180, boost: false, psm: PSM.AUTO },
+      { threshold: 160, boost: true, psm: PSM.SPARSE_TEXT },
+      { threshold: 180, boost: false, psm: PSM.SPARSE_TEXT },
     ];
 
     const candidates = [];
@@ -300,11 +305,14 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const variantCache = new Map();
 
     for (const pass of passPlan) {
-      const cacheKey = String(pass.threshold ?? 'soft');
+      const cacheKey = `${pass.threshold ?? 'soft'}:${pass.boost ? 'b' : 'n'}`;
       if (!variantCache.has(cacheKey)) {
         variantCache.set(
           cacheKey,
-          await buildOcrVariant(input, { threshold: pass.threshold }),
+          await buildOcrVariant(input, {
+            threshold: pass.threshold,
+            boost: pass.boost,
+          }),
         );
       }
       const variant = variantCache.get(cacheKey);
@@ -314,8 +322,16 @@ async function ocrViaTesseract(cleaned, mimeType) {
       if (isGoodEnoughOcr(best, bestScore)) break;
     }
 
+    // If every pass looked like garbage, keep the longest raw text for diagnostics
+    // and let the server return rejected_not_question instead of empty OCR.
     let result = bestScore >= 0 ? best : '';
-
+    if (!result && candidates.length > 0) {
+      result = candidates.reduce((a, b) => (b.length > a.length ? b : a), '');
+      console.warn(
+        'tesseract best was garbage; using longest candidate',
+        result.slice(0, 120).replace(/\s+/g, ' '),
+      );
+    }
     // Tesseract normally drops vertically stacked fraction digits. Recover
     // numerator/denominator around isolated fraction bars and inject tokens
     // before choices so the arithmetic solver receives 3/8, 1/3, etc.

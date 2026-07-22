@@ -69,6 +69,17 @@ export async function callSolveQuestion(
       }
     } catch (proxyError) {
       console.warn('solve proxy failed, trying Firestore', proxyError);
+      const proxyMsg = proxyError instanceof Error ? proxyError.message : '';
+      // Don't fall through to a dead Functions path for honest OCR failures.
+      if (/OCR unavailable|garbage_ocr|unsupported image format/i.test(proxyMsg)) {
+        return {
+          status: 'rejected_not_question',
+          attemptId: `proxy-ocr-${request.requestId}`,
+          userMessage:
+            'Görseldeki yazı net okunamadı. Soruyu düz, yakından ve iyi ışıkta yeniden çek; şıklar da kadrajda olsun.',
+          quota: { remainingToday: 5, unlimited: false },
+        };
+      }
     }
   }
 

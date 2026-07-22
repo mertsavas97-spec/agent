@@ -214,4 +214,17 @@ describe('callSolveQuestion orchestration', () => {
     });
     expect(firestoreMock).not.toHaveBeenCalled();
   });
+
+  it('maps proxy OCR failures to rejected_not_question instead of unavailable', async () => {
+    proxyMock.mockRejectedValue(
+      Object.assign(new Error('OCR unavailable (tesseract: empty)'), {
+        code: 'functions/internal',
+      }),
+    );
+
+    await expect(callSolveQuestion(request)).resolves.toMatchObject({
+      status: 'rejected_not_question',
+    });
+    expect(firestoreMock).not.toHaveBeenCalled();
+  });
 });
