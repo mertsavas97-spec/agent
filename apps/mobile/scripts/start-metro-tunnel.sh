@@ -120,13 +120,15 @@ if [[ "$ok" != "1" ]]; then
   exit 1
 fi
 
-# Rebind Metro so QR / deep link match public host
+# Rebind Metro so QR / deep link match public host.
+# Explicit :443 is required: React Native defaults a missing port to :8081,
+# which breaks localhost.run / cloudflared HTTPS frontends.
 tmux kill-session -t cozbil-metro 2>/dev/null || true
 sleep 1
 fuser -k "${PORT}/tcp" 2>/dev/null || true
 sleep 1
 tmux new-session -d -s cozbil-metro -c "$ROOT" -- \
-  env REACT_NATIVE_PACKAGER_HOSTNAME="${HOST}" EXPO_PACKAGER_PROXY_URL="${TUNNEL_URL}" \
+  env REACT_NATIVE_PACKAGER_HOSTNAME="${HOST}" EXPO_PACKAGER_PROXY_URL="https://${HOST}:443" \
   npx expo start --dev-client --port "${PORT}"
 
 for i in $(seq 1 60); do
@@ -152,16 +154,20 @@ if [[ "$ok" != "1" ]]; then
   exit 1
 fi
 
-ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${TUNNEL_URL}', safe=''))")
-ENC_HTTP=$(python3 -c "import urllib.parse; print(urllib.parse.quote('http://${HOST}', safe=''))")
+# iOS/RN defaults missing ports to :8081. localhost.run terminates TLS on :443,
+# so the packager URL MUST include an explicit :443 (or bare host:443).
+TUNNEL_URL_443="https://${HOST}:443"
+ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${TUNNEL_URL_443}', safe=''))")
+ENC_BARE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${HOST}:443', safe=''))")
 
 cat >"$INFO" <<EOF
 TUNNEL_URL=${TUNNEL_URL}
+TUNNEL_URL_443=${TUNNEL_URL_443}
 MANUAL_1=${HOST}:443
-MANUAL_2=${TUNNEL_URL}
-MANUAL_3=http://${HOST}
+MANUAL_2=${TUNNEL_URL_443}
+MANUAL_3=${TUNNEL_URL}
 DEEP_LINK=exp+cozbil://expo-development-client/?url=${ENC}
-DEEP_LINK_HTTP=exp+cozbil://expo-development-client/?url=${ENC_HTTP}
+DEEP_LINK_BARE=exp+cozbil://expo-development-client/?url=${ENC_BARE}
 PROVIDER=${PROVIDER}
 EOF
 
@@ -169,12 +175,13 @@ echo ""
 echo "=============================================="
 echo "Metro + tunnel HAZIR (${PROVIDER})"
 echo ""
-echo "Dev client → Enter URL manually:"
+echo "Dev client → Enter URL manually (use :443, NEVER :8081):"
 echo "  1) ${HOST}:443"
-echo "  2) ${TUNNEL_URL}"
+echo "  2) ${TUNNEL_URL_443}"
 echo ""
-echo "Deep link (Safari/Chrome):"
+echo "Deep link (Safari/Notes):"
 echo "  exp+cozbil://expo-development-client/?url=${ENC}"
 echo ""
+echo "Yanlış: https://${HOST}:8081  (tunnel'da 8081 yok → Could not connect)"
 echo "Eski lhr.life / 172.30.x / localhost URL'leri ÇALIŞMAZ."
 echo "=============================================="
