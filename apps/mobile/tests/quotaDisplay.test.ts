@@ -29,6 +29,22 @@ describe('quotaDisplay', () => {
     ).toMatch(/Premium/);
   });
 
+  it('counts rewarded bonus toward remaining free solves', () => {
+    expect(
+      remainingFreeSolves(
+        {
+          dailySolveCount: 5,
+          dailySolveDate: '2026-07-23',
+          subscriptionStatus: 'free',
+          rewardedBonusCount: 1,
+          rewardedBonusDate: '2026-07-23',
+        },
+        '2026-07-23',
+      ),
+    ).toBe(1);
+  });
+
+
   it('labels consent for adult vs parental paths', () => {
     expect(
       consentLabel({ consentAcceptedAt: null, parentalConsentAt: null }),

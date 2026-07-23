@@ -56,5 +56,21 @@ describe('ProfilePanel', () => {
     render(<ProfilePanel {...base} examType="lgs" deleteRequested />);
     expect(screen.getByTestId('profile-delete-pending')).toBeTruthy();
     expect(screen.queryByTestId('profile-delete-request')).toBeNull();
+    expect(screen.queryByTestId('profile-purge-account')).toBeNull();
+  });
+
+  it('offers hard purge when delete is already requested', () => {
+    const onPurgeAccount = jest.fn();
+    render(
+      <ProfilePanel
+        {...base}
+        examType="lgs"
+        deleteRequested
+        onPurgeAccount={onPurgeAccount}
+      />,
+    );
+    fireEvent.press(screen.getByTestId('profile-purge-account'));
+    expect(onPurgeAccount).toHaveBeenCalled();
   });
 });
+

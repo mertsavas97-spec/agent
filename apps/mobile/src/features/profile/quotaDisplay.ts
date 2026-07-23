@@ -6,19 +6,33 @@ export type ProfileQuotaInput = {
   dailySolveCount: number;
   dailySolveDate: string | null;
   subscriptionStatus: string;
+  rewardedBonusCount?: number;
+  rewardedBonusDate?: string | null;
 };
+
+export function dailyLimitForProfile(
+  input: ProfileQuotaInput,
+  today = istanbulDateKey(),
+): number {
+  const bonus =
+    input.rewardedBonusDate === today ? Number(input.rewardedBonusCount ?? 0) : 0;
+  return FREE_DAILY_LIMIT + bonus;
+}
 
 export function remainingFreeSolves(input: ProfileQuotaInput, today = istanbulDateKey()): number {
   if (input.subscriptionStatus === 'active' || input.subscriptionStatus === 'grace') {
     return Number.POSITIVE_INFINITY;
   }
   const count = input.dailySolveDate === today ? input.dailySolveCount : 0;
-  return Math.max(0, FREE_DAILY_LIMIT - count);
+  return Math.max(0, dailyLimitForProfile(input, today) - count);
 }
 
-export function formatRemainingQuota(remaining: number): string {
+export function formatRemainingQuota(
+  remaining: number,
+  dailyLimit = FREE_DAILY_LIMIT,
+): string {
   if (!Number.isFinite(remaining)) return 'Sınırsız (Premium)';
-  return `${remaining} / ${FREE_DAILY_LIMIT}`;
+  return `${remaining} / ${dailyLimit}`;
 }
 
 export function consentLabel(input: {

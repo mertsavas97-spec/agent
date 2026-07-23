@@ -27,6 +27,23 @@ jest.mock('@/src/features/paywall/entitlement', () => ({
   hydrateEntitlement: jest.fn(async () => null),
 }));
 
+jest.mock('@/src/lib/firebase', () => ({
+  isFirebaseConfigured: jest.fn(() => false),
+  getFirebase: jest.fn(),
+}));
+
+jest.mock('@/src/features/push/localPush', () => ({
+  bootLocalPush: jest.fn(async () => ({
+    ok: true,
+    scheduled: [],
+    permissionGranted: false,
+  })),
+}));
+
+jest.mock('@/src/features/push/pushPrefs', () => ({
+  loadPushPrefs: jest.fn(async () => ({ master: false })),
+}));
+
 const mockFetchOnboardingStatus = jest.fn();
 
 jest.mock('@/src/features/onboarding/completeClient', () => ({

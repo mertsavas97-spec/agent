@@ -2,9 +2,9 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **4 + store P0 impl** — ads hide / permissions / IAP UX / terms / EAS guards
+**Sprint:** **4 + store P0/P1 impl** — grant/purge/hydrate/CI/privacy
 
-## Store P0 (bu tur — listing görselleri hariç)
+## Store P0 (listing görselleri hariç)
 
 - [x] Stub reklam gizle (`isLiveAdsDeliveryReady` / unavailable engine)
 - [x] `expo-image-picker` plugin + Android permissions
@@ -12,6 +12,15 @@
 - [x] Public `/terms` artefact + `termsUrl` + EAS env
 - [x] EAS Firebase fail-fast + `check-eas-*.sh`
 - [x] Production solve proxy guard tests
+
+## Store P1 (bu tur)
+
+- [x] `grantRewardedSolve` callable + client
+- [x] Account hard purge (`purgeAccount`)
+- [x] Entitlement hydrate from `users/{uid}`
+- [x] CI workflow (typecheck + jest)
+- [x] POST_NOTIFICATIONS + privacy/local-push copy hizası
+- [ ] Owner: Functions deploy (grant + purge)
 - [ ] Owner: `eas init` (owner/projectId)
 - [ ] Owner: hosting deploy (privacy + terms)
 - [ ] Owner: Play SKU + billing credentials

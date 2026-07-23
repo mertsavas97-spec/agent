@@ -51,14 +51,23 @@
   <h2>3. Amaçlar ve hukuki sebepler</h2>
   <p>
     Hizmetin ifası (çözüm üretimi, kota, abonelik), güvenlik / kötüye kullanım önleme,
-    yasal yükümlülükler ve — ayrı açık rıza ile — hatırlatma bildirimleri.
+    yasal yükümlülükler ve — ayrı açık rıza ile — cihaz içi hatırlatma bildirimleri.
+  </p>
+
+  <h2>3a. Bildirimler</h2>
+  <p>
+    ÇözBil hatırlatmaları şu an sunucu push (FCM/APNs) kullanmaz; tercihlerine göre
+    cihazında yerel olarak zamanlanır. Android 13 ve üzeri cihazlarda bildirim izni
+    (POST_NOTIFICATIONS) istenir. İzin veya tercih kapatıldığında yerel hatırlatmalar
+    durdurulur.
   </p>
 
   <h2>4. Saklama ve üçüncü taraflar</h2>
   <p>
     Veriler Google Cloud / Firebase altyapısında saklanır. OCR / AI çözüm altyapısı ve
     Google Play Billing (abonelik) kullanılabilir. Ücretsiz planda reklam SDK’ları
-    politikaya uygun şekilde eklenebilir.
+    politikaya uygun şekilde eklenebilir. Silme talebi sonrası kalıcı silme; hesap,
+    çözüm kayıtları ve yüklenen görselleri kaldırır.
   </p>
 
   <h2>5. Çocuklar ve LGS</h2>

@@ -79,13 +79,13 @@
 
 ## P1 — Submit kalitesi / politika
 
-| ID | İş | Not |
-|----|-----|-----|
-| P1-1 | `grantRewardedSolve` callable + client | Kota +1 sunucuda; rate-limit |
-| P1-2 | Account hard purge | Auth + Firestore/Storage cascade |
-| P1-3 | Entitlement hydrate from `users/{uid}` | Restore sonrası tek kaynak |
-| P1-4 | CI: typecheck + jest | `.github/workflows/ci.yml` |
-| P1-5 | `POST_NOTIFICATIONS` + privacy hizası | Local push v1 |
+| ID | İş | Not | Durum |
+|----|-----|-----|--------|
+| P1-1 | `grantRewardedSolve` callable + client | Kota +1 sunucuda; rate-limit | **DONE** (deploy owner) |
+| P1-2 | Account hard purge | Auth + Firestore/Storage cascade | **DONE** (`purgeAccount`) |
+| P1-3 | Entitlement hydrate from `users/{uid}` | Restore sonrası tek kaynak | **DONE** |
+| P1-4 | CI: typecheck + jest | `.github/workflows/ci.yml` | **DONE** |
+| P1-5 | `POST_NOTIFICATIONS` + privacy hizası | Local push v1 | **DONE** |
 
 ---
 

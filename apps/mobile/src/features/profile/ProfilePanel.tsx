@@ -19,6 +19,7 @@ export type ProfilePanelProps = {
   planLabel: string;
   onSignOut: () => void;
   onRequestDelete: () => void;
+  onPurgeAccount?: () => void;
   onOpenPremium: () => void;
   onOpenSettings: () => void;
 };
@@ -33,6 +34,7 @@ export function ProfilePanel({
   planLabel,
   onSignOut,
   onRequestDelete,
+  onPurgeAccount,
   onOpenPremium,
   onOpenSettings,
 }: ProfilePanelProps) {
@@ -140,9 +142,21 @@ export function ProfilePanel({
       />
 
       {deleteRequested ? (
-        <Text style={styles.deleteFlag} testID="profile-delete-pending">
-          Veri silme talebin alındı. İşlem tamamlanınca hesabın kapatılacak.
-        </Text>
+        <View testID="profile-delete-pending">
+          <Text style={styles.deleteFlag}>
+            Veri silme talebin alındı. Kalıcı silme hesabını, çözümlerini ve
+            yüklenen görselleri kaldırır.
+          </Text>
+          {onPurgeAccount ? (
+            <Button
+              testID="profile-purge-account"
+              label="Hesabı kalıcı sil"
+              variant="danger"
+              onPress={onPurgeAccount}
+              style={{ marginTop: space.sm }}
+            />
+          ) : null}
+        </View>
       ) : (
         <Button
           testID="profile-delete-request"

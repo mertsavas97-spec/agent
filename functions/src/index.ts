@@ -25,7 +25,10 @@ import { listAttemptsForUser } from './progress/listAttempts';
 import { ensureUserDocument } from './users/bootstrapUser';
 import { completeOnboardingDocument } from './users/completeOnboarding';
 import { requestAccountDeletionDocument } from './users/requestAccountDeletion';
+import { purgeAccountForUser } from './users/purgeAccount';
 import { updateExamTypeDocument } from './users/updateExamType';
+import { grantRewardedSolveForUser } from './quota/grantRewardedSolve';
+import { assertRateLimit } from './abuse/rateLimit';
 import { syncSubscriptionForUser } from './subscription/syncSubscription';
 import { isExamType } from './theme/examTypes';
 import type { Subject } from './types/contracts';
@@ -126,6 +129,56 @@ export const requestAccountDeletion = regional.https.onCall(async (_data, contex
     throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
   }
   return requestAccountDeletionDocument(context.auth.uid);
+});
+
+/**
+ * Hard purge after soft-delete flag — deletes Auth user, user doc,
+ * subcollections, and Storage uploads under users/{uid}/.
+ */
+export const purgeAccount = regional
+  .runWith({ timeoutSeconds: 120, memory: '512MB' })
+  .https.onCall(async (_data, context) => {
+    if (!context.auth?.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+    }
+    try {
+      assertRateLimit(`purge:${context.auth.uid}`, {
+        maxCalls: 3,
+        windowMs: 60 * 60 * 1000,
+      });
+    } catch {
+      throw new functions.https.HttpsError(
+        'resource-exhausted',
+        'Silme işlemi için biraz bekleyip tekrar dene',
+      );
+    }
+    const result = await purgeAccountForUser(context.auth.uid);
+    if (!result.purged && result.reason === 'delete_not_requested') {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Önce veri silme talebi oluşturmalısın',
+      );
+    }
+    return result;
+  });
+
+/** Rewarded ad → +1 free solve (Istanbul day, max 2). */
+export const grantRewardedSolve = regional.https.onCall(async (_data, context) => {
+  if (!context.auth?.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
+  }
+  try {
+    assertRateLimit(`rewarded:${context.auth.uid}`, {
+      maxCalls: 6,
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+  } catch {
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      'Ödüllü hak limiti aşıldı; yarın tekrar dene',
+    );
+  }
+  return grantRewardedSolveForUser(context.auth.uid);
 });
 
 /** US1: moderate → cache → Gemini (Vertex) → stepped solution (HTTP callable) */

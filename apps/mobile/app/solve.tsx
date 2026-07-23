@@ -301,9 +301,21 @@ export default function SolveFlowScreen() {
         onWatchRewarded={() => {
           void runRewardedExtra({ freeRemainingToday: 0 }).then((outcome) => {
             if (outcome.rewarded) {
+              if (outcome.granted) {
+                const left =
+                  typeof outcome.remainingToday === 'number'
+                    ? ` Kalan hak: ${outcome.remainingToday}.`
+                    : '';
+                Alert.alert('+1 soru hakkı', `Ödüllü reklam tamam; ekstra çözüm hakkın eklendi.${left}`);
+                return;
+              }
               Alert.alert(
-                '+1 soru hakkı',
-                'Ödüllü reklam tamam. Sunucu grant sonraki adımda bağlanacak; şimdilik sandbox onayı.',
+                'Reklam tamam',
+                outcome.grantReason === 'already_max'
+                  ? 'Bugünkü ödüllü hak limitin doldu.'
+                  : outcome.grantReason === 'premium'
+                    ? 'Premium aktifken ekstra hak gerekmez.'
+                    : 'Ekstra hak sunucuda kaydedilemedi. Bağlantını kontrol edip tekrar dene.',
               );
               return;
             }

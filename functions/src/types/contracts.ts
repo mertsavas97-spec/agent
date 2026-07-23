@@ -126,7 +126,12 @@ export type UserDoc = {
   streakLastActiveDate: string | null;
   dailySolveCount: number;
   dailySolveDate: string | null;
+  /** Rewarded-ad bonus solves (Istanbul day) */
+  rewardedBonusCount?: number;
+  rewardedBonusDate?: string | null;
   subscriptionStatus: 'free' | 'active' | 'grace' | 'expired';
+  subscriptionProductId?: string | null;
+  subscriptionExpiresAt?: string | null;
   invalidImageScore: number;
   restrictedUntil?: unknown | null;
   /** Soft delete / KVKK erasure request flag (MVP) */

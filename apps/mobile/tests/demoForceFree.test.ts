@@ -19,6 +19,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+jest.mock('@/src/features/paywall/serverEntitlement', () => ({
+  fetchServerEntitlement: jest.fn(async () => null),
+}));
+
 describe('demo force free (dogfood)', () => {
   beforeEach(async () => {
     __resetDemoForceFreeForTests();

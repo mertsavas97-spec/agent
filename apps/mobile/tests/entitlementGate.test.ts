@@ -1,3 +1,7 @@
+jest.mock('@/src/features/paywall/serverEntitlement', () => ({
+  fetchServerEntitlement: jest.fn(async () => null),
+}));
+
 import {
   activateLocalPremium,
   canUseLocalPremium,

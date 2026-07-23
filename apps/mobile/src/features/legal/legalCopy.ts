@@ -11,11 +11,15 @@ export const LEGAL_DOCS = {
       },
       {
         heading: 'Amaç',
-        body: 'Fotoğraftan soru çözümü üretmek, konu anlatımı sunmak, kota/abonelik yönetmek ve (izin verirsen) hatırlatma bildirimleri göndermek.',
+        body: 'Fotoğraftan soru çözümü üretmek, konu anlatımı sunmak, kota/abonelik yönetmek ve (izin verirsen) cihaz içi hatırlatma bildirimleri zamanlamak.',
+      },
+      {
+        heading: 'Bildirimler',
+        body: 'Hatırlatmalar sunucu bildirimi (FCM) olmadan, cihazında yerel olarak zamanlanır. Android 13+ için bildirim izni istenir; tercihler Ayarlar’dan kapatılabilir.',
       },
       {
         heading: 'Saklama',
-        body: 'Veriler hesabına bağlı olarak Google Cloud / Firebase altyapısında saklanır. Silme talebi profilinden oluşturulabilir.',
+        body: 'Veriler hesabına bağlı olarak Google Cloud / Firebase altyapısında saklanır. Profilinden silme talebi oluşturabilir; ardından kalıcı silme hesabını ve yüklerini kaldırır.',
       },
       {
         heading: 'Üçüncü taraflar',
@@ -23,7 +27,7 @@ export const LEGAL_DOCS = {
       },
       {
         heading: 'Hakların',
-        body: 'KVKK kapsamında erişim, düzeltme, silme ve itiraz hakların vardır. Taleplerini profil → veri silme veya destek e-postasından iletebilirsin.',
+        body: 'KVKK kapsamında erişim, düzeltme, silme ve itiraz hakların vardır. Taleplerini profil → veri silme / kalıcı silme veya destek e-postasından iletebilirsin.',
       },
     ],
   },

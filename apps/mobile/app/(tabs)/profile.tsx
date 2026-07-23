@@ -14,9 +14,11 @@ import {
 } from '@/src/features/paywall/entitlement';
 import { planById } from '@/src/features/paywall/pricing';
 import { callRequestAccountDeletion } from '@/src/features/profile/deleteRequestClient';
+import { callPurgeAccount } from '@/src/features/profile/purgeAccountClient';
 import { ProfilePanel } from '@/src/features/profile/ProfilePanel';
 import {
   consentLabel,
+  dailyLimitForProfile,
   formatRemainingQuota,
   remainingFreeSolves,
 } from '@/src/features/profile/quotaDisplay';
@@ -45,15 +47,19 @@ export default function ProfileScreen() {
     if (preferred) setExamType(preferred);
     else if (isExamType(et)) setExamType(et);
     const premium = isPremiumActive(entitlement);
+    const quotaInput = {
+      dailySolveCount: Number(data.dailySolveCount ?? 0),
+      dailySolveDate: (data.dailySolveDate as string | null) ?? null,
+      subscriptionStatus: String(data.subscriptionStatus ?? 'free'),
+      rewardedBonusCount: Number(data.rewardedBonusCount ?? 0),
+      rewardedBonusDate: (data.rewardedBonusDate as string | null) ?? null,
+    };
     setQuotaLabel(
       premium
         ? 'Sınırsız (Premium)'
         : formatRemainingQuota(
-            remainingFreeSolves({
-              dailySolveCount: Number(data.dailySolveCount ?? 0),
-              dailySolveDate: (data.dailySolveDate as string | null) ?? null,
-              subscriptionStatus: String(data.subscriptionStatus ?? 'free'),
-            }),
+            remainingFreeSolves(quotaInput),
+            dailyLimitForProfile(quotaInput),
           ),
     );
     setConsentText(
@@ -105,7 +111,7 @@ export default function ProfileScreen() {
   function onRequestDelete() {
     Alert.alert(
       'Veri silme talebi',
-      'Hesap ve çözüm verilerin için silme talebi oluşturulacak. Bu işlem geri alınamaz.',
+      'Hesap ve çözüm verilerin için silme talebi oluşturulacak. İstersen ardından kalıcı silme adımını da çalıştırabilirsin.',
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -116,9 +122,50 @@ export default function ProfileScreen() {
               try {
                 await callRequestAccountDeletion();
                 setDeleteRequested(true);
-                Alert.alert('Talep alındı', 'Veri silme talebin kaydedildi.');
+                Alert.alert(
+                  'Talep alındı',
+                  'Veri silme talebin kaydedildi. Kalıcı silmek için “Hesabı kalıcı sil”e dokun.',
+                );
               } catch {
                 Alert.alert('Talep gönderilemedi', 'Bağlantını kontrol edip tekrar dene.');
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }
+
+  function onPurgeAccount() {
+    Alert.alert(
+      'Hesabı kalıcı sil',
+      'Hesabın, çözümlerin ve yüklenen görseller kalıcı olarak silinir. Bu işlem geri alınamaz.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Kalıcı sil',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                const result = await callPurgeAccount();
+                if (!result.ok) {
+                  Alert.alert(
+                    'Silinemedi',
+                    result.reason === 'delete_not_requested'
+                      ? 'Önce veri silme talebi oluşturmalısın.'
+                      : 'Bağlantını kontrol edip tekrar dene.',
+                  );
+                  return;
+                }
+                try {
+                  await signOutUser();
+                } catch {
+                  /* auth user may already be gone */
+                }
+                router.replace('/onboarding');
+              } catch {
+                Alert.alert('Silinemedi', 'Bağlantını kontrol edip tekrar dene.');
               }
             })();
           },
@@ -145,6 +192,7 @@ export default function ProfileScreen() {
       planLabel={planLabel}
       onSignOut={onSignOut}
       onRequestDelete={onRequestDelete}
+      onPurgeAccount={onPurgeAccount}
       onOpenPremium={() => router.push('/premium')}
       onOpenSettings={() => router.push('/settings')}
     />

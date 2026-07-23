@@ -1,6 +1,6 @@
 /**
- * Local Premium entitlement (MVP 1.0).
- * Production: Play Billing → syncSubscription callable.
+ * Premium entitlement — local cache + server hydrate from users/{uid}.
+ * Production: Play Billing → syncSubscription callable → Firestore.
  * Local activate only in __DEV__ or EXPO_PUBLIC_PREMIUM_SANDBOX=1.
  */
 
@@ -12,6 +12,7 @@ import {
   setDemoForceFree,
 } from './demoForceFree';
 import { planById, type PlanId, PRICING } from './pricing';
+import { fetchServerEntitlement } from './serverEntitlement';
 
 const KEY = '@cozbil/premium_entitlement_v1';
 
@@ -51,19 +52,7 @@ export function canUseLocalPremium(): boolean {
   return typeof __DEV__ !== 'undefined' && __DEV__ === true;
 }
 
-export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
-  await hydrateDemoForceFree();
-  if (isDemoForceFree()) {
-    return FREE_SNAP();
-  }
-  if (isPremiumSandboxEnv()) {
-    return {
-      status: 'active',
-      source: 'sandbox',
-      productId: PRICING.monthly.productId,
-      planId: 'monthly',
-    };
-  }
+async function readLocalCache(): Promise<EntitlementSnapshot> {
   try {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) {
@@ -82,6 +71,58 @@ export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
   }
 }
 
+/**
+ * Hydrate entitlement: demo/sandbox overrides → server users/{uid} → local cache.
+ * Server active/grace wins over stale local free; server free clears play/server cache
+ * (local/dev activate kept when canUseLocalPremium).
+ */
+export async function hydrateEntitlement(): Promise<EntitlementSnapshot> {
+  await hydrateDemoForceFree();
+  if (isDemoForceFree()) {
+    return FREE_SNAP();
+  }
+  if (isPremiumSandboxEnv()) {
+    return {
+      status: 'active',
+      source: 'sandbox',
+      productId: PRICING.monthly.productId,
+      planId: 'monthly',
+    };
+  }
+
+  const local = await readLocalCache();
+  const server = await fetchServerEntitlement();
+
+  if (server && (server.status === 'active' || server.status === 'grace')) {
+    if (server.planId && server.productId) {
+      await writeEntitlementCache({
+        planId: server.planId,
+        productId: server.productId,
+        source: 'server',
+        status: server.status,
+      });
+    }
+    return {
+      status: server.status,
+      source: 'server',
+      productId: server.productId,
+      planId: server.planId,
+    };
+  }
+
+  if (
+    server &&
+    server.status === 'free' &&
+    (local.source === 'server' || local.source === 'play') &&
+    (local.status === 'active' || local.status === 'grace')
+  ) {
+    await clearLocalPremium();
+    return FREE_SNAP();
+  }
+
+  return local;
+}
+
 export function readLocalEntitlement(): EntitlementSnapshot {
   if (isDemoForceFree()) {
     return FREE_SNAP();
@@ -94,9 +135,9 @@ export function readLocalEntitlement(): EntitlementSnapshot {
       planId: 'monthly',
     };
   }
-  if (memory?.status === 'active') {
+  if (memory?.status === 'active' || memory?.status === 'grace') {
     return {
-      status: 'active',
+      status: memory.status,
       source: memory.source ?? 'local',
       productId: memory.productId,
       planId: memory.planId,

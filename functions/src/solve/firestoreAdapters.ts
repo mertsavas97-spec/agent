@@ -29,13 +29,21 @@ export function createFirestoreCache(): CacheStore {
 export async function loadQuota(uid: string): Promise<QuotaState> {
   const snap = await getFirestore().collection('users').doc(uid).get();
   if (!snap.exists) {
-    return { dailySolveCount: 0, dailySolveDate: null, subscriptionStatus: 'free' };
+    return {
+      dailySolveCount: 0,
+      dailySolveDate: null,
+      subscriptionStatus: 'free',
+      rewardedBonusCount: 0,
+      rewardedBonusDate: null,
+    };
   }
   const data = snap.data()!;
   return {
     dailySolveCount: Number(data.dailySolveCount ?? 0),
     dailySolveDate: (data.dailySolveDate as string | null) ?? null,
     subscriptionStatus: (data.subscriptionStatus as QuotaState['subscriptionStatus']) ?? 'free',
+    rewardedBonusCount: Number(data.rewardedBonusCount ?? 0),
+    rewardedBonusDate: (data.rewardedBonusDate as string | null) ?? null,
   };
 }
 
