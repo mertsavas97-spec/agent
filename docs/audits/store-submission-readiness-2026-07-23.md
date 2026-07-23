@@ -10,6 +10,30 @@
 
 ---
 
+## Scorecard (0–100)
+
+| Alan | Puan | Not |
+|------|-----:|-----|
+| Ürün kapsamı (4 sınav, MVP akış) | **88** | LGS+YGS+KPSS+Ehliyet kilitli; konu/çözüm/dogfood olgun |
+| UI / UX / moodboard | **78** | Ana akışlar var; store screenshot seti yok |
+| Mobil kod kalitesi / test | **72** | Mobile typecheck+Jest yeşil; lint/CI yok |
+| EAS / native build iskeleti | **55** | Profile+AAB hazır; `owner`/`projectId` boş |
+| Production solve (Firebase/AI) | **42** | Proxy dogfood; prod trigger/Vertex smoke owner |
+| Play IAP (billing) | **48** | Client+verify kodu var; Console ürün/secret yok |
+| App Store IAP | **22** | Product id SSoT; StoreKit verify yok |
+| AdMob / ads | **35** | Policy+stub; native SDK yok; +1 grant stub |
+| Legal / KVKK | **50** | In-app + draft privacy URL; counsel final yok; /terms 404 |
+| Store listing varlıkları | **40** | Metin/ASO/icon draft; screenshot+feature graphic yok |
+| Push | **60** | Cihaz-içi local hazır; remote yok (v1 için OK) |
+| **Android Play — production submit** | **38 / 100** | **NO-GO** |
+| **Android Play — internal/closed test** | **52 / 100** | Blocker’lar kapanınca mümkün |
+| **iOS App Store** | **28 / 100** | **NO-GO** (brief: iOS birincil değil) |
+| **Dogfood / internal preview build** | **70 / 100** | Bugün için en gerçekçi hedef |
+
+**Okuma:** 80+ store-ready · 60–79 soft-launch adayı · 40–59 iskelet+kod · &lt;40 submit etme.
+
+---
+
 ## Area status (READY / PARTIAL / MISSING)
 
 ### 1. EAS / build config — **PARTIAL**
