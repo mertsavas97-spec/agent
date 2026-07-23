@@ -15,8 +15,9 @@
 **Skill bypass:** Spec Kit (infra)
 
 **QA Gate:**
-- typecheck/lint/tests: (run in commit step)
-- smoke: script exits non-Darwin with clear error
+- typecheck: PASS
+- lint: PASS
+- smoke: PASS (`build-ios-ipa-local.sh` Linux’ta net hata; Jest easProductionProfile)
 - guardian: PASS
 
 **Sonraki önerilen adım:** PR merge → Actions **iOS production IPA** (veya Mac’te `bash scripts/build-ios-ipa-local.sh`); `ascAppId` doldur → TestFlight submit.
