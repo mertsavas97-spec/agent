@@ -2,32 +2,32 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **Metro dogfood soft-load (ExpoStoreReview) + iOS/Android owner ops parallel**
+**Sprint:** **Play Photo/Video permissions (Photo Picker) + owner store ops**
 
-## Dogfood / Metro (bu tur)
+## Play Photo & Video policy (bu tur)
 
-- [x] Soft-load `expo-store-review` via `requireOptionalNativeModule('ExpoStoreReview')`
-- [x] Soft-load push / haptics / image-picker same pattern
-- [ ] Owner: full app kill + Metro reload on phone
-- [ ] Owner (önerilen): yeni **development** profile build (native ↔ JS uyumu)
+- [x] Remove `READ_MEDIA_IMAGES` / block READ_MEDIA_* in `app.json`
+- [x] Android gallery skips media-library permission (Photo Picker)
+- [x] Owner runbook `docs/store/PLAY_PHOTO_VIDEO_PERMISSIONS.md`
+- [ ] Owner: production AAB rebuild + Internal upload (eski AAB izni temizlemek için)
+
+## Dogfood / Metro
+
+- [x] Soft-load StoreReview / push / haptics / image-picker
+- [ ] Owner: full app kill + Metro reload
+- [ ] Owner (önerilen): yeni **development** profile build
 
 ## Store P0–P2 (Android agent)
 
-- [x] P0–P2 agent closeout (ads, IAP UX, terms, CI, review, ESLint, AdMob pin 16.0.0)
-- [x] Production Android AAB (owner build OK)
+- [x] P0–P2 agent closeout
+- [x] Production Android AAB (önceki; **izin fix sonrası yeniden build gerekir**)
 - [ ] Owner: Play Console app + submit + SKU + billing secret
 - [ ] Owner: Org policy invoker (callables)
 
 ## iOS prep
 
-- [x] `verifyAppStorePurchase` → App Store Server API live client
-- [x] Client purchase proof: purchaseToken / transactionId / JWS
-- [x] `eas.json` production iOS resourceClass
-- [x] `docs/store/OWNER_OPS_IOS.md`
-- [ ] Owner: ASC app + IAP products
-- [ ] Owner: Apple API key Functions secrets
-- [ ] Owner: `eas.json` ascAppId / appleTeamId
-- [ ] Owner: `eas build/submit` iOS → TestFlight
+- [x] StoreKit live verify + docs
+- [ ] Owner: ASC / secrets / REPLACE_* / TestFlight
 
 ## Legal
 

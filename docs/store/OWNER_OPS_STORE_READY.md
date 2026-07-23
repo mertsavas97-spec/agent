@@ -28,6 +28,7 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
    - [ ] 3 abonelik SKU (pricing SSoT)
    - [ ] License testers
    - [ ] Internal testing track
+   - [ ] **Fotoğraf/video izinleri:** `READ_MEDIA_*` kaldırma — bkz. `docs/store/PLAY_PHOTO_VIDEO_PERMISSIONS.md` (beyan doldurma, Photo Picker + yeni AAB)
 
 5. **Hosting**
    - [ ] `firebase login --reauth`

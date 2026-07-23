@@ -4,7 +4,12 @@
  *
  * Dynamic require: old native builds without ImagePicker native module must not
  * crash when Metro serves newer JS.
+ *
+ * Android gallery uses the system Photo Picker (PickVisualMedia) — do not declare
+ * READ_MEDIA_IMAGES (Play Photo & Video Permissions policy).
  */
+
+import { Platform } from 'react-native';
 
 import { hasExpoNativeModule } from '@/src/lib/hasExpoNativeModule';
 
@@ -65,6 +70,10 @@ async function ensureCameraPermission(ImagePicker: ImagePickerModule): Promise<b
 }
 
 async function ensureLibraryPermission(ImagePicker: ImagePickerModule): Promise<boolean> {
+  // Android Photo Picker does not need READ_MEDIA_* — requesting would push us
+  // toward broad gallery access that Play rejects for occasional question uploads.
+  if (Platform.OS === 'android') return true;
+
   const current = await ImagePicker.getMediaLibraryPermissionsAsync();
   if (current.granted) return true;
   const requested = await ImagePicker.requestMediaLibraryPermissionsAsync();

@@ -34,6 +34,31 @@ describe('EAS production profile', () => {
     expect(appJson.expo.ios?.supportsTablet).toBe(false);
   });
 
+  it('blocks Play-restricted photo/video permissions (Photo Picker path)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const appJson = require('../app.json') as {
+      expo: {
+        android?: {
+          permissions?: string[];
+          blockedPermissions?: string[];
+        };
+      };
+    };
+    const perms = appJson.expo.android?.permissions ?? [];
+    const blocked = appJson.expo.android?.blockedPermissions ?? [];
+    expect(perms).not.toContain('android.permission.READ_MEDIA_IMAGES');
+    expect(perms).not.toContain('android.permission.READ_MEDIA_VIDEO');
+    expect(perms).not.toContain('android.permission.READ_EXTERNAL_STORAGE');
+    expect(perms).toContain('android.permission.CAMERA');
+    expect(blocked).toEqual(
+      expect.arrayContaining([
+        'android.permission.READ_MEDIA_IMAGES',
+        'android.permission.READ_MEDIA_VIDEO',
+        'android.permission.READ_MEDIA_VISUAL_USER_SELECTED',
+      ]),
+    );
+  });
+
   it('strips expo-dev-client when EAS_BUILD_PROFILE=production and Firebase keys set', () => {
     const prev = process.env.EAS_BUILD_PROFILE;
     const prevKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;

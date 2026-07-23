@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
 
 import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
 
@@ -21,8 +22,15 @@ jest.mock('expo-image-picker', () => ({
 }));
 
 describe('image picker crop policy', () => {
+  const originalOS = Platform.OS;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => originalOS });
+  });
+
+  afterAll(() => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => originalOS });
   });
 
   it('does not force crop after camera capture', async () => {
@@ -55,5 +63,17 @@ describe('image picker crop policy', () => {
     );
     const libOpts = (ImagePicker.launchImageLibraryAsync as jest.Mock).mock.calls[0][0];
     expect(libOpts.quality).toBeLessThan(0.8);
+  });
+
+  it('skips media-library permission request on Android (Photo Picker)', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'file://c.jpg', width: 100, height: 200 }],
+    });
+    await pickFromLibrary();
+    expect(ImagePicker.getMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+    expect(ImagePicker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
   });
 });
