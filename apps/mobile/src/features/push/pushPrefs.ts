@@ -63,86 +63,86 @@ export const PUSH_CATEGORIES: PushCategory[] = [
 export const PUSH_COPY: Record<PushCategoryId, { title: string; body: string }[]> = {
   streak: [
     {
-      title: 'Serin seni bekliyor',
-      body: 'Bugün tek bir soru yeter — dünü de yanına alırsın.',
+      title: 'Serini bozma',
+      body: 'Bugün bir soru çöz, dünün emeği boşa gitmesin.',
     },
     {
-      title: 'Koparma, tamamla',
-      body: 'Bir fotoğraf, bir çözüm. Seri orada kalsın.',
+      title: 'Seri devam etsin',
+      body: 'Tek soru, bir dakika. Hepsi bu.',
     },
     {
-      title: 'Küçük adım, büyük alışkanlık',
-      body: 'Defterden bir soru çek; serin devam etsin.',
+      title: 'Küçük adım, kalıcı alışkanlık',
+      body: 'Bir fotoğraf çek, seriyi sürdür.',
     },
   ],
   dailyReminder: [
     {
-      title: 'Bugünün sorusu hazır',
-      body: 'Kitaptan bir sayfa seç, ÇözBil adım adım anlatsın.',
+      title: 'Bugünün sorusu seni bekliyor',
+      body: 'Kitaptan bir sayfa seç, gerisini ÇözBil halletsin.',
     },
     {
-      title: '10 dakikalık sprint',
-      body: 'Kısa bir oturum: çek, çöz, kontrol et.',
+      title: '10 dakikan var mı?',
+      body: 'Çek, çöz, öğren. Kısa ama etkili.',
     },
     {
-      title: 'Sınav temposu şimdi',
-      body: 'LGS · YGS · KPSS · Ehliyet — hangisiyse, bir soruyla başla.',
+      title: 'Sınav neyse, bugün ona çalış',
+      body: 'LGS, YGS, KPSS, Ehliyet — bir soruyla başla.',
     },
   ],
   weakTopic: [
     {
-      title: 'Zayıf konu seni çağırıyor',
-      body: 'İstatistikteki o başlığa bak — kısa bir anlatım fark eder.',
+      title: 'Bu konuda biraz destek olalım',
+      body: 'İstatistiklerindeki zayıf başlığa bir bak.',
     },
     {
-      title: 'Bugün netleştir',
-      body: 'Takıldığın konuyu aç; örnek soruyla pekiştir.',
+      title: 'Eksik kalan yeri kapat',
+      body: 'Takıldığın konudan bir örnek daha çöz.',
     },
     {
-      title: 'Eksik halkayı tamamla',
-      body: 'Bir konu anlatımı + bir fotoğraf çözüm = daha sağlam.',
+      title: 'Küçük bir tekrar fark yaratır',
+      body: 'Zayıf konunu bugün netleştir.',
     },
   ],
   quotaReset: [
     {
-      title: 'Hakların yenilendi',
-      body: 'Bugünkü ücretsiz soru hakkın hazır. İstersen Premium ile sınırsız.',
+      title: 'Bugünkü hakların hazır',
+      body: '5 ücretsiz soru seni bekliyor.',
     },
     {
-      title: 'Yeni gün, yeni hak',
-      body: '5 ücretsiz çözüm seni bekliyor. Haydi bir tanesini kullan.',
+      title: 'Yeni gün, yeni haklar',
+      body: 'İlk soruyu şimdi çek.',
     },
     {
       title: 'Sayaç sıfırlandı',
-      body: 'İstanbul gününe göre hakların taze. İlk soruyu çek.',
+      body: 'Ücretsiz sorularını kullanmaya hazırsın.',
     },
   ],
   premiumOffer: [
     {
-      title: 'Yıllıkta %32 indirim',
-      body: '320 TL / yıl — ayda ≈27 TL. Reklamsız, sınırsız çözüm.',
+      title: 'Yıllık planda %32 tasarruf',
+      body: 'Aya böldüğünde yaklaşık 27 TL; reklamsız, sınırsız çözüm.',
     },
     {
-      title: 'Odak bozulmasın',
-      body: 'Premium: reklamsız alan + kişisel AI özeti. Bir haftalıkla da dene.',
+      title: 'Hakların yetmiyor mu?',
+      body: "Premium'a geç, istediğin kadar soru çöz.",
     },
     {
-      title: 'Sınırsız tempo',
-      body: 'Günlük hak yetmiyorsa Premium’a geç; dershane cebinde.',
+      title: 'Bir haftalığına dene',
+      body: "Premium'la kesintisiz çalış.",
     },
   ],
   productUpdate: [
     {
-      title: 'Yenilik var',
-      body: 'Konu anlatımları ve istatistikler daha net. Bir tur at.',
+      title: 'Yenilikler burada',
+      body: 'Konu anlatımları ve istatistikler daha akıcı.',
     },
     {
-      title: 'ÇözBil güncellendi',
-      body: 'Daha akıcı çoklu çözüm ve sınav temaları seni bekliyor.',
+      title: 'ÇözBil tazelendi',
+      body: 'Küçük dokunuşlarla daha rahat kullanım.',
     },
     {
-      title: 'Küçük ama işe yarar',
-      body: 'Arayüz cilalandı — fotoğraf çek, farkı gör.',
+      title: 'Fark yaratan detaylar eklendi',
+      body: 'Bir göz at.',
     },
   ],
 };
