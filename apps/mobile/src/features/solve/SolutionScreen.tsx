@@ -10,7 +10,12 @@ import {
 } from 'react-native';
 
 import { subjectLabel } from '@/src/data';
-import type { TopicLesson } from '@/src/data/topicLessons';
+import {
+  fullLessonCtaLabel,
+  solutionLessonBullets,
+  type TopicLesson,
+} from '@/src/data/topicLessons';
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
 import type {
   ExamType,
@@ -278,7 +283,10 @@ export function SolutionScreen({
             {topicLesson ? (
               <>
                 <Text style={styles.lessonHeadline}>{topicLesson.headline}</Text>
-                {topicLesson.bullets.map((b, i) => {
+                <Text style={styles.lessonSummary} testID="solution-lesson-summary">
+                  {topicLesson.summary}
+                </Text>
+                {solutionLessonBullets(topicLesson).map((b, i) => {
                   const highlight =
                     !!answer?.text &&
                     b.toLocaleLowerCase('tr-TR').includes(answer.text.toLocaleLowerCase('tr-TR'));
@@ -293,6 +301,10 @@ export function SolutionScreen({
                     </View>
                   );
                 })}
+                <View style={styles.examCueBox} testID="solution-lesson-exam-cue">
+                  <Eyebrow style={styles.tipLabel}>SINAVDA DİKKAT</Eyebrow>
+                  <Text style={styles.stepBody}>{topicLesson.examCue}</Text>
+                </View>
                 <View style={styles.tipBox}>
                   <Eyebrow style={styles.tipLabel}>{TR_EYEBROW.tip}</Eyebrow>
                   <Text style={styles.stepBody}>{topicLesson.tip}</Text>
@@ -301,7 +313,9 @@ export function SolutionScreen({
             ) : (
               <>
                 <Text style={styles.lessonHeadline}>
-                  {topicName ? `${topicName} — kısa hatırlatma` : 'Konu anlatımı'}
+                  {topicName
+                    ? `${examType ? `${EXAM_LABEL[examType]} · ` : ''}${topicName} — kısa hatırlatma`
+                    : 'Konu anlatımı'}
                 </Text>
                 <Text style={styles.stepBody}>
                   Bu soru için konu özeti henüz bağlanmadı. Adım adım gerekçeyi oku; takılırsan
@@ -313,10 +327,14 @@ export function SolutionScreen({
               <Pressable
                 style={styles.fullLessonLink}
                 testID="open-full-topic-lesson"
+                accessibilityRole="button"
+                accessibilityLabel={fullLessonCtaLabel({ examType, topicName })}
                 onPress={() =>
                   router.push({ pathname: '/topic/[id]', params: { id: topicId } })
                 }>
-                <Text style={styles.fullLessonLinkText}>Tam konu anlatımına git →</Text>
+                <Text style={styles.fullLessonLinkText}>
+                  {fullLessonCtaLabel({ examType, topicName })}
+                </Text>
               </Pressable>
             ) : null}
           </View>
@@ -523,8 +541,24 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: colors.navy,
-    marginBottom: space.md,
+    marginBottom: space.sm,
     lineHeight: 24,
+  },
+  lessonSummary: {
+    fontFamily: typography.fontFamily,
+    fontSize: 14,
+    color: colors.textPrimary,
+    lineHeight: 21,
+    marginBottom: space.md,
+  },
+  examCueBox: {
+    marginTop: space.sm,
+    marginBottom: space.sm,
+    backgroundColor: colors.white,
+    borderRadius: radii.md,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.orange,
   },
   bulletRow: {
     flexDirection: 'row',

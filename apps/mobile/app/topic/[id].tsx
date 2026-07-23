@@ -59,6 +59,9 @@ export default function TopicLessonScreen() {
       </Eyebrow>
       <Text style={[styles.title, theme ? { color: theme.solid } : null]}>{topic.nameTr}</Text>
       <Text style={styles.headline}>{lesson.headline}</Text>
+      <Text style={styles.summary} testID="topic-lesson-summary">
+        {lesson.summary}
+      </Text>
 
       {lesson.bullets.map((b, i) => (
         <View
@@ -73,6 +76,23 @@ export default function TopicLessonScreen() {
           <Text style={styles.bulletBody}>{b}</Text>
         </View>
       ))}
+
+      <View
+        style={[
+          styles.cueBox,
+          theme ? { borderColor: theme.accent } : null,
+        ]}
+        testID="topic-lesson-exam-cue">
+        <Eyebrow style={[styles.tipLabel, theme ? { color: theme.solid } : null]}>
+          SINAVDA DİKKAT
+        </Eyebrow>
+        <Text style={styles.tipBody}>{lesson.examCue}</Text>
+      </View>
+
+      <View style={styles.checkBox} testID="topic-lesson-check">
+        <Eyebrow style={styles.tipLabel}>KENDİNE SOR</Eyebrow>
+        <Text style={styles.tipBody}>{lesson.checkPrompt}</Text>
+      </View>
 
       <View
         style={[
@@ -156,6 +176,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 22,
+    marginBottom: space.sm,
+  },
+  summary: {
+    fontFamily: typography.fontFamily,
+    fontSize: 15,
+    color: colors.textPrimary,
+    lineHeight: 22,
     marginBottom: space.lg,
   },
   bulletCard: {
@@ -189,8 +216,25 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: 22,
   },
-  tipBox: {
+  cueBox: {
     marginTop: space.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.orange,
+    marginBottom: space.sm,
+  },
+  checkBox: {
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: space.sm,
+  },
+  tipBox: {
+    marginTop: space.sm,
     backgroundColor: colors.orangeSoft,
     borderRadius: radii.lg,
     padding: space.md,

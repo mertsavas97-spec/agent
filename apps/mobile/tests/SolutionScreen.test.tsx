@@ -82,19 +82,31 @@ describe('SolutionScreen', () => {
       <SolutionScreen
         steps={[{ title: '1', body: 'x' }]}
         answer={{ text: 'öyküleme' }}
+        examType="kpss"
+        topicId="kpss-turkish-paragraf"
+        topicName="Paragraf"
         topicLesson={{
           topicId: 'kpss-turkish-paragraf',
-          headline: 'Paragraf ve anlatım biçimleri',
+          headline: 'KPSS · Türkçe · Paragraf',
+          summary: 'KPSS paragraf: anlatım biçimleri.',
           bullets: [
             'Öyküleme: olayları zaman içinde anlatır.',
             'Betimleme: duyularla resmeder.',
+            'Şıkları metne götür.',
           ],
+          examCue: 'KPSS: anlatım biçimi ile düşünceyi geliştirme karışmasın.',
+          checkPrompt: 'Metinde zaman mı, tasvir mi baskın?',
           tip: 'Eylem/zaman mı bak.',
         }}
       />,
     );
     fireEvent.press(screen.getByTestId('tab-lesson'));
     expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/Öyküleme/);
+    expect(screen.getByTestId('solution-lesson-summary')).toHaveTextContent(/anlatım/);
+    expect(screen.getByTestId('solution-lesson-exam-cue')).toHaveTextContent(/KPSS/);
+    expect(screen.getByTestId('open-full-topic-lesson')).toHaveTextContent(
+      /KPSS · Paragraf — tam anlatıma git/,
+    );
     expect(screen.getByTestId('topic-lesson')).toHaveTextContent(/İpucu|İPUCU/i);
   });
 

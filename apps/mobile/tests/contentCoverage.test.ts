@@ -44,7 +44,10 @@ describe('catalog content coverage', () => {
         });
         expect(lesson).toBeTruthy();
         expect(lesson!.bullets.length).toBeGreaterThanOrEqual(2);
-        const blob = `${lesson!.headline}\n${lesson!.bullets.join('\n')}\n${lesson!.tip}`;
+        expect(lesson!.summary.length).toBeGreaterThan(8);
+        expect(lesson!.examCue.length).toBeGreaterThan(8);
+        expect(lesson!.checkPrompt.length).toBeGreaterThan(5);
+        const blob = `${lesson!.headline}\n${lesson!.summary}\n${lesson!.bullets.join('\n')}\n${lesson!.examCue}\n${lesson!.tip}`;
         if (!EXAM_VOICE[exam].test(blob)) {
           weak.push(`${topic.id}: missing exam voice`);
         }
