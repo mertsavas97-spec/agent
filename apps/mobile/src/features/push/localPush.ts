@@ -1,10 +1,12 @@
 /**
  * Backend-less (device-local) notification schedules.
  * Uses expo-notifications — no FCM/APNs server. Prefs + PUSH_COPY drive content.
+ *
+ * Dynamic require: old native builds without ExpoPushTokenManager must not crash
+ * when Metro serves newer JS (dev-client without rebuild).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import {
@@ -37,9 +39,52 @@ const PLANS: SchedulePlan[] = [
   { id: 'productUpdate', trigger: { type: 'weekly', weekday: 2, hour: 12, minute: 0 } }, // Mon
 ];
 
+type NotificationsModule = {
+  setNotificationHandler: (handler: {
+    handleNotification: () => Promise<{
+      shouldShowBanner: boolean;
+      shouldShowList: boolean;
+      shouldPlaySound: boolean;
+      shouldSetBadge: boolean;
+    }>;
+  }) => void;
+  getPermissionsAsync: () => Promise<{
+    granted: boolean;
+    ios?: { status?: number };
+  }>;
+  requestPermissionsAsync: () => Promise<{
+    granted: boolean;
+    ios?: { status?: number };
+  }>;
+  IosAuthorizationStatus: { PROVISIONAL: number };
+  cancelScheduledNotificationAsync: (id: string) => Promise<void>;
+  scheduleNotificationAsync: (input: unknown) => Promise<string>;
+  SchedulableTriggerInputTypes: { DAILY: string; WEEKLY: string };
+  setNotificationChannelAsync: (id: string, opts: unknown) => Promise<unknown>;
+  AndroidImportance: { DEFAULT: number };
+};
+
+let cachedNotifications: NotificationsModule | null | undefined;
+
+function loadNotifications(): NotificationsModule | null {
+  if (cachedNotifications !== undefined) return cachedNotifications;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cachedNotifications = require('expo-notifications') as NotificationsModule;
+  } catch {
+    cachedNotifications = null;
+  }
+  return cachedNotifications;
+}
+
+/** Test helper — clear cached native module resolution. */
+export function __resetNotificationsCacheForTests(): void {
+  cachedNotifications = undefined;
+}
+
 let handlerReady = false;
 
-function ensureHandler() {
+function ensureHandler(Notifications: NotificationsModule) {
   if (handlerReady) return;
   handlerReady = true;
   Notifications.setNotificationHandler({
@@ -73,7 +118,9 @@ async function saveLastIndex(category: PushCategoryId, index: number): Promise<v
 }
 
 export async function ensureLocalPushPermission(): Promise<boolean> {
-  ensureHandler();
+  const Notifications = loadNotifications();
+  if (!Notifications) return false;
+  ensureHandler(Notifications);
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
   if (current.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
@@ -86,7 +133,10 @@ export async function ensureLocalPushPermission(): Promise<boolean> {
   );
 }
 
-async function cancelCategory(category: PushCategoryId): Promise<void> {
+async function cancelCategory(
+  Notifications: NotificationsModule,
+  category: PushCategoryId,
+): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(notifId(category));
   } catch {
@@ -94,11 +144,14 @@ async function cancelCategory(category: PushCategoryId): Promise<void> {
   }
 }
 
-async function scheduleCategory(plan: SchedulePlan): Promise<void> {
+async function scheduleCategory(
+  Notifications: NotificationsModule,
+  plan: SchedulePlan,
+): Promise<void> {
   const last = await loadLastIndexes();
   const copy = pickPushCopy(plan.id, last[plan.id] ?? -1);
   await saveLastIndex(plan.id, copy.index);
-  await cancelCategory(plan.id);
+  await cancelCategory(Notifications, plan.id);
 
   if (plan.trigger.type === 'daily') {
     await Notifications.scheduleNotificationAsync({
@@ -145,12 +198,16 @@ export type LocalPushSyncResult = {
  * Apply prefs → cancel disabled categories, schedule enabled ones with PUSH_COPY.
  */
 export async function syncLocalPushSchedules(prefs: PushPrefs): Promise<LocalPushSyncResult> {
-  ensureHandler();
+  const Notifications = loadNotifications();
+  if (!Notifications) {
+    return { ok: false, scheduled: [], permissionGranted: false };
+  }
+  ensureHandler(Notifications);
   const scheduled: PushCategoryId[] = [];
 
   if (!prefs.master) {
     for (const plan of PLANS) {
-      await cancelCategory(plan.id);
+      await cancelCategory(Notifications, plan.id);
     }
     return { ok: true, scheduled, permissionGranted: false };
   }
@@ -158,7 +215,7 @@ export async function syncLocalPushSchedules(prefs: PushPrefs): Promise<LocalPus
   const permissionGranted = await ensureLocalPushPermission();
   if (!permissionGranted) {
     for (const plan of PLANS) {
-      await cancelCategory(plan.id);
+      await cancelCategory(Notifications, plan.id);
     }
     return { ok: false, scheduled, permissionGranted: false };
   }
@@ -172,10 +229,10 @@ export async function syncLocalPushSchedules(prefs: PushPrefs): Promise<LocalPus
 
   for (const plan of PLANS) {
     if (!prefs[plan.id]) {
-      await cancelCategory(plan.id);
+      await cancelCategory(Notifications, plan.id);
       continue;
     }
-    await scheduleCategory(plan);
+    await scheduleCategory(Notifications, plan);
     scheduled.push(plan.id);
   }
 

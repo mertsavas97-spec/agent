@@ -1,8 +1,10 @@
 /**
  * Camera / gallery helpers via expo-image-picker.
  * Official Expo docs: https://docs.expo.dev/versions/latest/sdk/imagepicker/
+ *
+ * Dynamic require: old native builds without ImagePicker native module must not
+ * crash when Metro serves newer JS.
  */
-import * as ImagePicker from 'expo-image-picker';
 
 export { buildUploadPath } from './paths';
 
@@ -19,30 +21,64 @@ export type PickedImage = {
   base64?: string;
 };
 
-async function ensureCameraPermission(): Promise<boolean> {
+type ImagePickerAsset = {
+  uri: string;
+  width: number;
+  height: number;
+  mimeType?: string | null;
+  fileName?: string | null;
+  base64?: string | null;
+};
+
+type ImagePickerResult = {
+  canceled: boolean;
+  assets?: ImagePickerAsset[] | null;
+};
+
+type ImagePickerModule = {
+  getCameraPermissionsAsync: () => Promise<{ granted: boolean }>;
+  requestCameraPermissionsAsync: () => Promise<{ granted: boolean }>;
+  getMediaLibraryPermissionsAsync: () => Promise<{ granted: boolean }>;
+  requestMediaLibraryPermissionsAsync: () => Promise<{ granted: boolean }>;
+  launchCameraAsync: (opts: unknown) => Promise<ImagePickerResult>;
+  launchImageLibraryAsync: (opts: unknown) => Promise<ImagePickerResult>;
+  UIImagePickerPreferredAssetRepresentationMode: { Compatible: unknown };
+};
+
+function loadImagePicker(): ImagePickerModule | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-image-picker') as ImagePickerModule;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureCameraPermission(ImagePicker: ImagePickerModule): Promise<boolean> {
   const current = await ImagePicker.getCameraPermissionsAsync();
   if (current.granted) return true;
   const requested = await ImagePicker.requestCameraPermissionsAsync();
   return requested.granted;
 }
 
-async function ensureLibraryPermission(): Promise<boolean> {
+async function ensureLibraryPermission(ImagePicker: ImagePickerModule): Promise<boolean> {
   const current = await ImagePicker.getMediaLibraryPermissionsAsync();
   if (current.granted) return true;
   const requested = await ImagePicker.requestMediaLibraryPermissionsAsync();
   return requested.granted;
 }
 
-function mapAsset(asset: ImagePicker.ImagePickerAsset): PickedImage {
+function mapAsset(asset: ImagePickerAsset): PickedImage {
   return {
     uri: asset.uri,
     width: asset.width,
     height: asset.height,
-    mimeType: asset.mimeType,
+    mimeType: asset.mimeType ?? undefined,
     fileName: asset.fileName ?? undefined,
-    base64: typeof asset.base64 === 'string' && asset.base64.length > 0
-      ? asset.base64
-      : undefined,
+    base64:
+      typeof asset.base64 === 'string' && asset.base64.length > 0
+        ? asset.base64
+        : undefined,
   };
 }
 
@@ -52,39 +88,38 @@ export const CAMERA_JPEG_QUALITY = 0.92;
 export const LIBRARY_JPEG_QUALITY = 0.78;
 
 export async function pickFromCamera(): Promise<PickedImage | null> {
-  const ok = await ensureCameraPermission();
+  const ImagePicker = loadImagePicker();
+  if (!ImagePicker) return null;
+  const ok = await ensureCameraPermission(ImagePicker);
   if (!ok) return null;
 
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
     quality: CAMERA_JPEG_QUALITY,
-    // Full frame as-is — no forced crop UI
     allowsEditing: false,
-    // Inline bytes — camera URIs often cannot be re-fetched for OCR upload.
     base64: true,
-    // iOS HEIC → JPEG so dogfood OCR (sharp/tesseract) can decode the bytes.
     preferredAssetRepresentationMode:
       ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   });
-  if (result.canceled || !result.assets[0]) return null;
+  if (result.canceled || !result.assets?.[0]) return null;
   return mapAsset(result.assets[0]);
 }
 
 export async function pickFromLibrary(): Promise<PickedImage | null> {
-  const ok = await ensureLibraryPermission();
+  const ImagePicker = loadImagePicker();
+  if (!ImagePicker) return null;
+  const ok = await ensureLibraryPermission(ImagePicker);
   if (!ok) return null;
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     quality: LIBRARY_JPEG_QUALITY,
-    // Full photo as-is — no forced crop UI
     allowsEditing: false,
-    // Gallery file:// usually re-fetches; base64 is a safe fallback on Android.
     base64: true,
     preferredAssetRepresentationMode:
       ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   });
-  if (result.canceled || !result.assets[0]) return null;
+  if (result.canceled || !result.assets?.[0]) return null;
   return mapAsset(result.assets[0]);
 }
 
@@ -95,7 +130,9 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
 export async function pickMultipleFromLibrary(
   selectionLimit: number,
 ): Promise<PickedImage[] | null> {
-  const ok = await ensureLibraryPermission();
+  const ImagePicker = loadImagePicker();
+  if (!ImagePicker) return null;
+  const ok = await ensureLibraryPermission(ImagePicker);
   if (!ok) return null;
 
   const limit = Math.max(1, Math.min(selectionLimit, 10));

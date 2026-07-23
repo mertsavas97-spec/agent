@@ -1,5 +1,6 @@
 import {
   LOCAL_PUSH_STATUS_COPY,
+  __resetNotificationsCacheForTests,
   syncLocalPushSchedules,
 } from '@/src/features/push/localPush';
 import { PUSH_COPY, type PushPrefs } from '@/src/features/push/pushPrefs';
@@ -48,6 +49,7 @@ function prefs(partial: Partial<PushPrefs> = {}): PushPrefs {
 describe('localPush', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __resetNotificationsCacheForTests();
   });
 
   it('ships honest device-local status copy', () => {
@@ -76,5 +78,18 @@ describe('localPush', () => {
     await syncLocalPushSchedules(prefs({ master: false }));
     expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
     expect(mockCancelScheduledNotificationAsync).toHaveBeenCalled();
+  });
+
+  it('returns ok:false when expo-notifications native module is missing', async () => {
+    jest.resetModules();
+    jest.doMock('expo-notifications', () => {
+      throw new Error("Cannot find native module 'ExpoPushTokenManager'");
+    });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@/src/features/push/localPush') as typeof import('@/src/features/push/localPush');
+    mod.__resetNotificationsCacheForTests();
+    const result = await mod.syncLocalPushSchedules(prefs());
+    expect(result.ok).toBe(false);
+    expect(result.scheduled).toEqual([]);
   });
 });

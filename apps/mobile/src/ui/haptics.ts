@@ -1,9 +1,27 @@
-import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 
-/** Safe haptics — no-ops on web / when unavailable. */
+type HapticsModule = {
+  selectionAsync: () => Promise<void>;
+  impactAsync: (style: unknown) => Promise<void>;
+  notificationAsync: (type: unknown) => Promise<void>;
+  ImpactFeedbackStyle: { Light: unknown; Medium: unknown };
+  NotificationFeedbackType: { Success: unknown };
+};
+
+function loadHaptics(): HapticsModule | null {
+  if (Platform.OS === 'web') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-haptics') as HapticsModule;
+  } catch {
+    return null;
+  }
+}
+
+/** Safe haptics — no-ops on web / when native module missing. */
 export async function hapticSelection(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  const Haptics = loadHaptics();
+  if (!Haptics) return;
   try {
     await Haptics.selectionAsync();
   } catch {
@@ -12,7 +30,8 @@ export async function hapticSelection(): Promise<void> {
 }
 
 export async function hapticLight(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  const Haptics = loadHaptics();
+  if (!Haptics) return;
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   } catch {
@@ -21,7 +40,8 @@ export async function hapticLight(): Promise<void> {
 }
 
 export async function hapticMedium(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  const Haptics = loadHaptics();
+  if (!Haptics) return;
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   } catch {
@@ -30,7 +50,8 @@ export async function hapticMedium(): Promise<void> {
 }
 
 export async function hapticSuccess(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  const Haptics = loadHaptics();
+  if (!Haptics) return;
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   } catch {
