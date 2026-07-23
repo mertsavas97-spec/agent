@@ -1,0 +1,29 @@
+# Shrink EAS local / GitHub Actions archives (monorepo).
+# Patterns relative to git root when packing for builds from apps/mobile.
+
+.agents/
+.codex/
+.cursor/
+.specify/
+.tools/
+docs/qa/
+docs/sprint-reports/
+docs/audits/
+docs/audit/
+docs/superpowers/
+content/
+hosting/
+scripts/solve-proxy/
+scripts/lhr-metro-keeper.py
+scripts/stable-metro-keeper.py
+**/*.md
+!apps/mobile/README.md
+**/node_modules/
+**/.expo/
+**/coverage/
+**/dist/
+**/.git/
+functions/lib/
+functions/tests/
+apps/mobile/tests/
+.git/

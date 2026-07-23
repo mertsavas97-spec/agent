@@ -40,6 +40,9 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
    - [ ] Release build’de `EXPO_PUBLIC_SOLVE_PROXY_*` yok
 
 7. **Build / submit**
+   - Tercih (Mac disk / Expo cloud kota): GitHub Actions  
+     `docs/setup/GITHUB_ACTIONS_ANDROID_BUILD.md` → Actions → **Android production AAB**
+   - Alternatif cloud EAS (kota varsa):
    ```bash
    cd apps/mobile
    eas build --platform android --profile production
