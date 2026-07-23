@@ -1,24 +1,18 @@
 # Sprint State
 
-**Aktif çalışma yeri:** Cloud agent  
-**Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **GHA Android AAB (EAS local) + Play photo perms**
+**Branch:** `cursor/ios-local-ipa-2914`  
+**Sprint:** iOS production IPA path (Mac local + GHA macOS)
 
-## Android build path (bu tur)
+## iOS IPA
 
-- [x] `.easignore` (slim archive)
-- [x] `.github/workflows/android-production-aab.yml` (manual)
-- [x] `docs/setup/GITHUB_ACTIONS_ANDROID_BUILD.md`
-- [ ] Owner: GitHub Secrets (`EXPO_TOKEN` + Firebase public)
-- [ ] Owner: Actions → Run **Android production AAB** → Play Internal
+- [x] `appleTeamId` = `J46LLRJA44`
+- [x] `ITSAppUsesNonExemptEncryption: false`
+- [x] GHA `ios-production-ipa.yml` (macos-14, eas --local)
+- [x] `scripts/build-ios-ipa-local.sh`
+- [ ] Owner: ASC app + `ascAppId` + IAP + EAS iOS credentials
+- [ ] Owner: Run **iOS production IPA** on Actions (or Mac script)
+- [ ] Agent note: Linux cloud host cannot produce IPA (no Xcode)
 
-## Play Photo & Video policy
+## Android (önceki)
 
-- [x] Kod: READ_MEDIA_* blocked + Photo Picker
-- [ ] Owner: yeni AAB (GHA) yükle + formda picker yolu
-
-## Store / iOS owner (aynı)
-
-- [ ] Play SKU + billing secret + org policy invoker
-- [ ] iOS ASC / secrets / TestFlight
-- [ ] Counsel legal
+- [x] GHA AAB + Play SKUs owner path
