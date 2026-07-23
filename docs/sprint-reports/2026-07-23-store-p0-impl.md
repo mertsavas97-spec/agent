@@ -26,5 +26,12 @@
 **Kullanılan ekipler:** Mobile, QA, Guardian  
 **Kullanılan skill/agent setleri:** cozbil-team-skills, cozbil-expo-mobile, cozbil-guardian  
 **Skill bypass:** Context7 MCP yok (Expo image-picker resmi plugin sözleşmesi)  
-**QA Gate:** typecheck / lint / targeted jest / guardian (aşağıda)  
+**QA Gate:**
+- typecheck: PASS
+- lint: N/A (Phase 1 echo stub)
+- smoke: PASS (`check-eas-production-env.sh`; targeted Jest 28)
+- errors: temiz
+- guardian: PASS (terms/IAP copy abartısız; sınav scope korunuyor)
+- `check-eas-project.sh`: FAIL beklenen (owner/projectId boş — owner `eas init`)
+
 **Sonraki önerilen adım:** Owner `eas init` + hosting deploy; ardından P1 grantRewardedSolve
