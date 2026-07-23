@@ -43,4 +43,19 @@ describe('inAppReview', () => {
     await expect(maybeRequestInAppReview()).resolves.toBe('skipped_already');
     expect(mockRequestReview).toHaveBeenCalledTimes(1);
   });
+
+  it('skips when native ExpoStoreReview module is missing', async () => {
+    jest.resetModules();
+    jest.doMock('expo-store-review', () => {
+      throw new Error("Cannot find native module 'ExpoStoreReview'");
+    });
+    // Re-import after mock throw
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@/src/features/review/inAppReview') as typeof import('@/src/features/review/inAppReview');
+    await mod.__resetInAppReviewForTests();
+    for (let i = 0; i < mod.REVIEW_AFTER_SOLVES; i += 1) {
+      await mod.recordSuccessfulSolveForReview();
+    }
+    await expect(mod.maybeRequestInAppReview()).resolves.toBe('skipped_unavailable');
+  });
 });
