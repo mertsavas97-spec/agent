@@ -66,12 +66,14 @@ bash scripts/deploy-store-functions.sh
 4. [ ] (İsteğe) gerçek AdMob unit ids + child-directed console
 5. [ ] Production track promote
 
-## iOS (sonra; Android-first)
+## iOS (Android ile paralel hazırlık)
 
-1. [ ] ASC app + aynı product id’ler
-2. [ ] `eas.json` → `submit.production.ios` içindeki `REPLACE_*` değerlerini doldur
-3. [ ] Apple API key env → full `verifyAppStorePurchase` (stub → live)
-4. [ ] TestFlight
+1. [ ] ASC app + aynı product id’ler  
+2. [ ] `eas.json` → `submit.production.ios` içindeki `REPLACE_*` değerlerini doldur  
+3. [ ] Apple API key env → `verifyAppStorePurchase` live (kod hazır; secret owner)  
+4. [ ] TestFlight → App Store  
+
+Detay: `docs/store/OWNER_OPS_IOS.md`
 
 ## Doğrulama komutları
 

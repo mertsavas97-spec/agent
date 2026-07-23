@@ -22,8 +22,10 @@ Kaynak: `apps/mobile/src/features/paywall/pricing.ts` + `docs/product/pricing-po
 ### iOS (StoreKit)
 - [ ] App Store Connect’te aynı product id’lerle auto-renewable
 - [ ] App Store Connect API key env: `APPLE_BUNDLE_ID` / `APPLE_ISSUER_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY`
-- [x] Backend stub: `verifyAppStorePurchase.ts` + `syncSubscription(platform: 'ios')` (credentials_missing / not_implemented — asla sahte elevate)
-- [ ] Full App Store Server API client (stub → live)
+- [x] Backend live client: `verifyAppStorePurchase.ts` (App Store Server API getTransactionInfo; Production→Sandbox fallback)
+- [x] Client: `syncSubscription(platform: 'ios')` + purchaseToken / transactionId / JWS proof
+- [ ] Owner: Functions secrets + ASC IAP + `eas.json` ascAppId/appleTeamId
+- Runbook: `docs/store/OWNER_OPS_IOS.md`
 - [x] Client product id SSoT hazır; `expo-iap` iOS’u da hedefler (`platform` gönderir)
 - [ ] Production EAS iOS submit profili (`eas.json` placeholder `REPLACE_*` → gerçek ASC id)
 - [x] `supportsTablet: false` (phone-first)

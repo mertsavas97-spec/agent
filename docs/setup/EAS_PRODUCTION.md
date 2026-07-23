@@ -58,24 +58,28 @@ Diğer Firebase domain / project / bucket / sender değerleri `.env.example` ile
 
 **Asla production’a koyma:** `EXPO_PUBLIC_SOLVE_PROXY_URL`, `EXPO_PUBLIC_SOLVE_PROXY_TOKEN`, `EXPO_PUBLIC_PREMIUM_SANDBOX=1`.
 
-## Ads / IAP notları
-
-- Production’da stub reklam UI gizlenir; `react-native-google-mobile-ads` + `adMobEngine` scaffold hazır.
-- Plugin app id: EAS `EXPO_PUBLIC_ADMOB_ANDROID_APP_ID` / `_IOS_APP_ID` (yoksa Google test app id).
-- Unit id’ler yokken `isLiveAdsDeliveryReady=false` → banner/rewarded UI yok.
-- Play Billing verify secret yoksa `credentials_missing`; iOS stub `credentials_missing` / `ios_not_implemented`.
-
 ## iOS submit (EAS)
 
-`eas.json` → `submit.production.ios` içinde placeholder:
+`eas.json` → `submit.production.ios`:
 
-- `ascAppId`: App Store Connect app id
-- `appleTeamId`: Apple Developer Team id
+- `ascAppId`: App Store Connect app id (owner doldurur)
+- `appleTeamId`: Apple Developer Team id (owner doldurur)
 
 ```bash
+eas build --platform ios --profile production
 eas submit --platform ios --profile production --latest
 ```
 
+StoreKit verify (Functions): `APPLE_BUNDLE_ID`, `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`  
+Runbook: `docs/store/OWNER_OPS_IOS.md`
+
+## Ads / IAP notları
+
+- Production’da stub reklam UI gizlenir; `react-native-google-mobile-ads@16.0.0` (Kotlin 2.1 uyumu).
+- Plugin app id: EAS `EXPO_PUBLIC_ADMOB_*` veya Google test app id.
+- Unit id’ler yokken `isLiveAdsDeliveryReady=false` → banner/rewarded UI yok.
+- Play Billing verify secret yoksa `credentials_missing`.
+- iOS: App Store Server API live; credential yoksa `credentials_missing` (elevate yok).
 ## QA Gate (build öncesi)
 
 ```bash

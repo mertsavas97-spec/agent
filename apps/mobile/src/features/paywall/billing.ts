@@ -39,7 +39,7 @@ export function billingFailureMessage(reason?: string | null): string {
         : 'Satın alma doğrulaması sunucuda yapılandırılmamış. Play Billing credential eklenene kadar Premium yükseltmesi tamamlanamaz.';
     case 'ios_not_implemented':
     case 'unimplemented':
-      return 'App Store satın alma doğrulaması henüz tamamlanmadı. Android-first sürümde Premium Play üzerinden açılır.';
+      return 'App Store satın alma doğrulaması sunucuda tamamlanamadı. Functions Apple API anahtarlarını kontrol et.';
     case 'billing_not_configured':
     case 'billing_unavailable':
       return 'Mağaza faturalaması bu derlemede kullanılamıyor. Prod’da mağaza ürünleri + syncSubscription gerekir.';
@@ -74,8 +74,19 @@ type ExpoIapModule = {
 type PurchaseLike = {
   productId?: string;
   purchaseToken?: string;
+  /** StoreKit / OpenIAP transaction id fallback when purchaseToken absent */
   id?: string;
+  transactionId?: string;
 };
+
+function resolvePurchaseProof(purchase: PurchaseLike): string | null {
+  const token =
+    purchase.purchaseToken?.trim() ||
+    purchase.transactionId?.trim() ||
+    purchase.id?.trim() ||
+    '';
+  return token.length >= 6 ? token : null;
+}
 
 async function loadIap(): Promise<ExpoIapModule | null> {
   if (Platform.OS === 'web') return null;
@@ -149,7 +160,8 @@ export async function purchasePremiumPlan(
       type: 'subs',
     });
     const purchase = pickPurchase(purchased, productId);
-    if (!purchase?.purchaseToken) {
+    const proof = purchase ? resolvePurchaseProof(purchase) : null;
+    if (!purchase || !proof) {
       // Some stores deliver via listener only — treat as unavailable for sync
       if (canUseLocalPremium()) {
         const local = await activateLocalPremium(planId);
@@ -164,7 +176,7 @@ export async function purchasePremiumPlan(
 
     const sync = await callSyncSubscription({
       productId: purchase.productId ?? productId,
-      purchaseToken: purchase.purchaseToken,
+      purchaseToken: proof,
       platform: Platform.OS === 'ios' ? 'ios' : 'android',
     });
     if (!sync.ok) {
@@ -229,15 +241,17 @@ export async function restorePremiumPurchases(): Promise<{
   try {
     await iap.initConnection();
     const purchases = await iap.getAvailablePurchases();
-    const match = purchases.find(
-      (p) => p.productId && SUB_SKUS.includes(p.productId) && p.purchaseToken,
-    );
-    if (!match?.purchaseToken || !match.productId) {
+    const match = purchases.find((p) => {
+      if (!p.productId || !SUB_SKUS.includes(p.productId)) return false;
+      return Boolean(resolvePurchaseProof(p));
+    });
+    const proof = match ? resolvePurchaseProof(match) : null;
+    if (!match?.productId || !proof) {
       return { ok: false, reason: 'none' };
     }
     const sync = await callSyncSubscription({
       productId: match.productId,
-      purchaseToken: match.purchaseToken,
+      purchaseToken: proof,
       platform: Platform.OS === 'ios' ? 'ios' : 'android',
     });
     if (sync.ok) return { ok: true, reason: 'restored' };

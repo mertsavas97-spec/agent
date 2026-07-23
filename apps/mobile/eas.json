@@ -38,6 +38,9 @@
       "android": {
         "buildType": "app-bundle"
       },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
       "env": {
         "EXPO_PUBLIC_SCREENSHOT_MODE": "0",
         "EXPO_PUBLIC_USE_EMULATORS": "0",
