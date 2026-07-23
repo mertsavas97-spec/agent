@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { ADS_LIMITS, runInterstitialIfNeeded, runRewardedExtra } from '@/src/features/ads';
@@ -15,7 +15,12 @@ import {
 import { isQuotaExceededError } from '@/src/features/paywall/isQuotaExceeded';
 import { AnalyzingView } from '@/src/features/solve/AnalyzingView';
 import type { AnalyzeStepId } from '@/src/features/solve/analyzeSteps';
-import { liveCopyFor, type LiveSolveCopy } from '@/src/features/solve/liveSolveCopy';
+import {
+  advanceLiveCopy,
+  liveCopyFor,
+  type LiveSolveCopy,
+  type LiveSolvePhase,
+} from '@/src/features/solve/liveSolveCopy';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
 import { ExamModeBlockScreen } from '@/src/features/solve/ExamModeBlockScreen';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
@@ -65,6 +70,7 @@ export default function SolveFlowScreen() {
   const [phase, setPhase] = useState<Phase>('analyzing');
   const [analyzeStep, setAnalyzeStep] = useState<AnalyzeStepId>('upload');
   const [liveSolve, setLiveSolve] = useState<LiveSolveCopy>(() => liveCopyFor('preparing'));
+  const liveSolveRef = useRef<LiveSolveCopy>(liveCopyFor('preparing'));
   const [result, setResult] = useState<SolveQuestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [examType, setExamType] = useState<ExamType>('lgs');
@@ -77,6 +83,13 @@ export default function SolveFlowScreen() {
   const { switching: switchingExam, applyExam } = useExamModeChange({
     onOptimistic: (next) => setExamType(next),
   });
+
+  function bumpLive(next: LiveSolvePhase) {
+    const advanced = advanceLiveCopy(liveSolveRef.current, next);
+    liveSolveRef.current = advanced;
+    setLiveSolve(advanced);
+    setAnalyzeStep(advanced.step);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -97,8 +110,8 @@ export default function SolveFlowScreen() {
         return;
       }
       try {
-        setAnalyzeStep('upload');
-        setLiveSolve(liveCopyFor('preparing'));
+        liveSolveRef.current = liveCopyFor('preparing');
+        bumpLive('preparing');
         const user = await ensureSignedIn();
         const resolved = await resolveActiveExamType(
           typeof params.examType === 'string' ? params.examType : null,
@@ -112,17 +125,9 @@ export default function SolveFlowScreen() {
             ? hintRaw
             : undefined;
 
-        setLiveSolve(liveCopyFor('upload'));
-        setAnalyzeStep('upload');
-        setLiveSolve(liveCopyFor('moderate'));
-        setAnalyzeStep('moderate');
-        // UI beat only — do not delay the Firestore/Storage wait behind this.
-        const moderateBeat = new Promise((r) => setTimeout(r, 180));
-        setLiveSolve(liveCopyFor('ocr'));
-        setAnalyzeStep('solve');
-        setLiveSolve(liveCopyFor('solving'));
+        if (!cancelled) bumpLive('upload');
 
-        const solvePromise = withHardTimeout(
+        const response = await withHardTimeout(
           callSolveQuestion({
             mimeType,
             examType: resolvedExam,
@@ -132,22 +137,10 @@ export default function SolveFlowScreen() {
             imageBase64,
             onStage: (stage) => {
               if (cancelled) return;
-              if (stage === 'ocr') {
-                setLiveSolve(liveCopyFor('ocr'));
-                setAnalyzeStep('upload');
-              } else if (stage === 'solving') {
-                setLiveSolve(liveCopyFor('solving'));
-                setAnalyzeStep('solve');
-              } else if (stage === 'upload') {
-                setLiveSolve(liveCopyFor('upload'));
-                setAnalyzeStep('upload');
-              }
+              bumpLive(stage);
             },
             prepareFirestore: async () => {
-              if (!cancelled) {
-                setLiveSolve(liveCopyFor('upload'));
-                setAnalyzeStep('upload');
-              }
+              if (!cancelled) bumpLive('upload');
               const { imagePath, downloadUrl } = await uploadQuestionImage({
                 uid: user.uid,
                 localId,
@@ -157,12 +150,7 @@ export default function SolveFlowScreen() {
                 examType: resolvedExam,
                 subjectHint,
               });
-              if (!cancelled) {
-                setLiveSolve(liveCopyFor('moderate'));
-                setAnalyzeStep('moderate');
-                setLiveSolve(liveCopyFor('solving'));
-                setAnalyzeStep('solve');
-              }
+              if (!cancelled) bumpLive('moderate');
               return {
                 imagePath,
                 imageUrl: downloadUrl,
@@ -176,10 +164,8 @@ export default function SolveFlowScreen() {
           SOLVE_UI_SETTLE_MS,
           'solve UI settle',
         );
-        await moderateBeat;
-        let response = await solvePromise;
         if (cancelled) return;
-        setLiveSolve(liveCopyFor('finishing'));
+        bumpLive('finishing');
 
         const routed = routeSolveResponse(response, resolvedExam, {
           sourceText:

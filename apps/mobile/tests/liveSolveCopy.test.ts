@@ -1,4 +1,10 @@
-import { liveCopyFor, progressForLivePhase } from '@/src/features/solve/liveSolveCopy';
+import {
+  advanceLiveCopy,
+  liveCopyFor,
+  progressForLivePhase,
+  shouldCrawlProgress,
+  statusLabelForPhase,
+} from '@/src/features/solve/liveSolveCopy';
 
 describe('liveSolveCopy', () => {
   it('returns pipeline-aware headlines for each phase', () => {
@@ -22,5 +28,21 @@ describe('liveSolveCopy', () => {
       expect(next).toBeGreaterThanOrEqual(prev);
       prev = next;
     }
+  });
+
+  it('never regresses live copy when stages fire out of order', () => {
+    const solving = liveCopyFor('solving');
+    expect(advanceLiveCopy(solving, 'ocr').phase).toBe('solving');
+    expect(advanceLiveCopy(solving, 'finishing').phase).toBe('finishing');
+  });
+
+  it('crawls progress during OCR and solve waits', () => {
+    expect(shouldCrawlProgress('ocr')).toBe(true);
+    expect(shouldCrawlProgress('solving')).toBe(true);
+    expect(shouldCrawlProgress('upload')).toBe(false);
+  });
+
+  it('surfaces OCR-specific status label', () => {
+    expect(statusLabelForPhase('ocr')).toMatch(/Metin okunuyor/i);
   });
 });

@@ -8,6 +8,8 @@ import {
   type StyleProp,
 } from 'react-native';
 
+import { colors } from '@/src/theme';
+
 export type CozbilRobotTone = 'onDark' | 'onLight';
 
 export type CozbilRobotProps = {
@@ -32,6 +34,10 @@ export const BRAND_MARK_FULL = require('../../assets/images/brand-mark.png');
 
 // Warm the image cache as soon as this module loads.
 void BRAND_MARK;
+const brandUri = Image.resolveAssetSource(BRAND_MARK)?.uri;
+if (brandUri) {
+  void Image.prefetch(brandUri);
+}
 
 /**
  * Brand mark from the official app icon pack.
@@ -118,6 +124,8 @@ export function CozbilRobot({
             width: size,
             height: size,
             borderRadius: radius,
+            // Match icon plate so a late decode never flashes white/orange.
+            backgroundColor: colors.navy,
           },
           style,
         ]}
@@ -137,5 +145,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    backgroundColor: colors.navy,
   },
 });

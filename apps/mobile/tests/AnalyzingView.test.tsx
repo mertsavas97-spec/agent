@@ -24,11 +24,12 @@ describe('AnalyzingView', () => {
       backgroundColor: '#1E1B4B',
     });
     expect(screen.getByTestId('analyzing-icon-plate')).toBeTruthy();
+    expect(screen.getByTestId('analyzing-orbit-ring')).toBeTruthy();
     expect(screen.getByTestId('analyzing-hero')).toBeTruthy();
     expect(screen.getByTestId('cozbil-robot')).toBeTruthy();
   });
 
-  it('surfaces live pipeline headline when provided', () => {
+  it('surfaces live pipeline headline and OCR status when provided', () => {
     render(
       <AnalyzingView
         step="solve"
@@ -42,6 +43,8 @@ describe('AnalyzingView', () => {
       />,
     );
     expect(screen.getByTestId('analyzing-title')).toHaveTextContent(/Metin okunuyor/);
+    expect(screen.getByTestId('analyzing-step-label')).toHaveTextContent(/Metin okunuyor/);
+    expect(screen.getByTestId('analyzing-step-upload')).toHaveTextContent(/Metin okunuyor/);
     expect(screen.getByTestId('analyzing-tip')).toHaveTextContent(/El yazısı/);
   });
 });

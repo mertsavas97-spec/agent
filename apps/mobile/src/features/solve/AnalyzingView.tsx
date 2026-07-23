@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, motion, radii, space, typography } from '@/src/theme';
-import { CozbilRobot } from '@/src/ui/CozbilRobot';
+import { BRAND_MARK, CozbilRobot } from '@/src/ui/CozbilRobot';
 
 import {
   ANALYZE_STEPS,
   type AnalyzeStepId,
-  labelForStep,
   progressForStep,
 } from './analyzeSteps';
 import {
+  checklistLabelFor,
   liveCopyFor,
   type LiveSolveCopy,
   type LiveSolvePhase,
+  phaseRank,
   progressForLivePhase,
+  shouldCrawlProgress,
+  statusLabelForPhase,
 } from './liveSolveCopy';
 import { SOLVE_PROGRESS_CRAWL_MS, SOLVE_PROGRESS_CRAWL_TARGET } from './solveTiming';
 
@@ -30,10 +33,19 @@ export type AnalyzingViewProps = {
 
 const ICON_SIZE = 72;
 const ICON_RADIUS = Math.round(ICON_SIZE * 0.22);
+const RING_PAD = 14;
+const RING_SIZE = ICON_SIZE + RING_PAD * 2;
+const RING_RADIUS = Math.round(RING_SIZE * 0.28);
+
+// Decode brand mark as soon as this module loads (home already warms it too).
+const brandUri = Image.resolveAssetSource(BRAND_MARK)?.uri;
+if (brandUri) {
+  void Image.prefetch(brandUri);
+}
 
 /**
- * Moodboard loading: solid navy, official app icon, quiet premium frame.
- * Progress bar is the only motion — no background washes or robot pulse.
+ * Moodboard loading: solid navy, official app icon, animated premium rings.
+ * Progress tracks live pipeline phases and soft-crawls during OCR/solve waits.
  */
 export function AnalyzingView({
   step = 'upload',
@@ -41,16 +53,18 @@ export function AnalyzingView({
   statusLine,
 }: AnalyzingViewProps) {
   const effectiveStep = live?.step ?? step;
-  const baseTarget = live
-    ? progressForLivePhase(live.phase)
-    : progressForStep(effectiveStep);
   const copy = useMemo(
     () => live ?? liveCopyFor(stepToPhase(effectiveStep)),
     [live, effectiveStep],
   );
+  const baseTarget = live
+    ? progressForLivePhase(live.phase)
+    : progressForStep(effectiveStep);
 
   const anim = useRef(new Animated.Value(0.08)).current;
   const tipOpacity = useRef(new Animated.Value(1)).current;
+  const ringSpin = useRef(new Animated.Value(0)).current;
+  const ringPulse = useRef(new Animated.Value(0)).current;
   const [displayPct, setDisplayPct] = useState(8);
   const peakRef = useRef(0.08);
   const prevTip = useRef(copy.tip);
@@ -77,9 +91,10 @@ export function AnalyzingView({
   }, [anim, baseTarget]);
 
   useEffect(() => {
-    if (effectiveStep !== 'solve' && copy.phase !== 'solving' && copy.phase !== 'finishing') {
-      return;
-    }
+    if (!shouldCrawlProgress(copy.phase)) return;
+    // Resume crawl from the current peak so OCR/solve waits keep the bar moving.
+    const from = Math.max(peakRef.current, baseTarget);
+    anim.setValue(from);
     const crawl = Animated.timing(anim, {
       toValue: SOLVE_PROGRESS_CRAWL_TARGET,
       duration: SOLVE_PROGRESS_CRAWL_MS,
@@ -88,7 +103,40 @@ export function AnalyzingView({
     });
     crawl.start();
     return () => crawl.stop();
-  }, [anim, effectiveStep, copy.phase]);
+  }, [anim, baseTarget, copy.phase]);
+
+  useEffect(() => {
+    const spin = Animated.loop(
+      Animated.timing(ringSpin, {
+        toValue: 1,
+        duration: motion.orbit,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ringPulse, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(ringPulse, {
+          toValue: 0,
+          duration: 1400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    spin.start();
+    pulse.start();
+    return () => {
+      spin.stop();
+      pulse.stop();
+    };
+  }, [ringPulse, ringSpin]);
 
   useEffect(() => {
     if (copy.tip === prevTip.current) return;
@@ -105,20 +153,43 @@ export function AnalyzingView({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
+  const spinRotate = ringSpin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  const pulseScale = ringPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.04],
+  });
+  const pulseOpacity = ringPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.45, 0.95],
+  });
+
+  const activeRank = phaseRank(copy.phase);
 
   return (
     <View style={styles.container} testID="analyzing-view">
       <View style={styles.hero} testID="analyzing-hero">
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.orbitRing,
+            {
+              opacity: pulseOpacity,
+              transform: [{ rotate: spinRotate }, { scale: pulseScale }],
+            },
+          ]}
+          testID="analyzing-orbit-ring"
+        />
         <View style={styles.ringOuter} testID="analyzing-icon-plate">
-          <View style={styles.ringGap}>
-            <View style={styles.ringAccent}>
-              <CozbilRobot
-                animate={false}
-                size={ICON_SIZE}
-                testID="cozbil-robot"
-                style={styles.icon}
-              />
-            </View>
+          <View style={styles.iconWell}>
+            <CozbilRobot
+              animate={false}
+              size={ICON_SIZE}
+              testID="cozbil-robot"
+              style={styles.icon}
+            />
           </View>
         </View>
       </View>
@@ -130,7 +201,7 @@ export function AnalyzingView({
         {copy.detail}
       </Text>
       <Text style={styles.stepLabel} testID="analyzing-step-label">
-        {labelForStep(effectiveStep)}
+        {statusLabelForPhase(copy.phase)}
       </Text>
 
       <View style={styles.barTrack} testID="analyzing-progress-bar">
@@ -152,38 +223,34 @@ export function AnalyzingView({
 
       <View style={styles.steps} testID="analyzing-steps">
         {ANALYZE_STEPS.map((s, index) => {
-          const active = s.id === effectiveStep;
-          const completed = progressForStep(s.id) < baseTarget && !active;
+          const stepActive = checklistActive(s.id, copy.phase);
+          const completed = checklistCompleted(s.id, activeRank) && !stepActive;
           return (
             <View
               key={s.id}
               style={[
                 styles.stepRow,
-                active && styles.stepRowActive,
+                stepActive && styles.stepRowActive,
                 completed && styles.stepRowDone,
               ]}>
               <View
                 style={[
                   styles.stepDot,
-                  active && styles.stepDotActive,
+                  stepActive && styles.stepDotActive,
                   completed && styles.stepDotDone,
                 ]}>
                 <Text style={styles.stepDotText}>
-                  {completed ? '✓' : active ? String(index + 1) : '·'}
+                  {completed ? '✓' : stepActive ? String(index + 1) : '·'}
                 </Text>
               </View>
               <Text
                 testID={`analyzing-step-${s.id}`}
                 style={[
                   styles.stepItem,
-                  active && styles.stepActive,
+                  stepActive && styles.stepActive,
                   completed && styles.stepDone,
                 ]}>
-                {completed && s.id === 'upload'
-                  ? 'Fotoğraf yüklendi'
-                  : completed && s.id === 'moderate'
-                    ? 'Güvenlik tamam'
-                    : s.label}
+                {checklistLabelFor(s.id, copy.phase, completed)}
               </Text>
             </View>
           );
@@ -199,6 +266,20 @@ function stepToPhase(step: AnalyzeStepId): LiveSolvePhase {
   return 'upload';
 }
 
+function checklistActive(stepId: AnalyzeStepId, phase: LiveSolvePhase): boolean {
+  if (stepId === 'upload') {
+    return phase === 'preparing' || phase === 'upload' || phase === 'ocr';
+  }
+  if (stepId === 'moderate') return phase === 'moderate';
+  return phase === 'solving' || phase === 'finishing';
+}
+
+function checklistCompleted(stepId: AnalyzeStepId, activeRank: number): boolean {
+  if (stepId === 'upload') return activeRank > phaseRank('ocr');
+  if (stepId === 'moderate') return activeRank > phaseRank('moderate');
+  return false;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -208,30 +289,46 @@ const styles = StyleSheet.create({
     padding: space.lg,
   },
   hero: {
+    width: RING_SIZE + 8,
+    height: RING_SIZE + 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.sm,
   },
-  /** Outer hairline — soft white for depth on navy */
-  ringOuter: {
-    padding: 1.5,
-    borderRadius: ICON_RADIUS + 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+  /** Spinning accent arc — premium motion around the mark, not a filled plate. */
+  orbitRing: {
+    position: 'absolute',
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_RADIUS,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    borderTopColor: colors.orange,
+    borderRightColor: 'rgba(245, 158, 11, 0.35)',
   },
-  /** Quiet gap between hairline and accent */
-  ringGap: {
+  /** Static hairline frame */
+  ringOuter: {
     padding: 3,
-    borderRadius: ICON_RADIUS + 8,
+    borderRadius: ICON_RADIUS + 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
     backgroundColor: colors.navy,
   },
-  /** Brand accent stroke */
-  ringAccent: {
-    padding: 2,
-    borderRadius: ICON_RADIUS + 4,
-    backgroundColor: colors.orange,
+  /** Navy well — never flash orange while the PNG decodes */
+  iconWell: {
+    width: ICON_SIZE,
+    height: ICON_SIZE,
+    borderRadius: ICON_RADIUS,
+    backgroundColor: colors.navy,
+    borderWidth: 1.5,
+    borderColor: colors.orange,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   icon: {
     borderRadius: ICON_RADIUS,
+    backgroundColor: colors.navy,
   },
   title: {
     color: colors.white,

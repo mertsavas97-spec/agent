@@ -258,9 +258,12 @@ export async function callSolveQuestionViaProxy(input: {
     const controller = new AbortController();
     // Soft abort (often ignored by RN for large bodies) + hard Promise.race.
     const softTimer = setTimeout(() => controller.abort(), remaining);
+    // Proxy does OCR+solve in one request — promote UI past "Metin okunuyor"
+    // after a short beat so the bar/checklist don't freeze at ~40%.
+    const promoteSolving = setTimeout(() => input.onStage?.('solving'), attempt === 1 ? 1600 : 0);
     try {
       input.onStage?.(attempt === 1 ? 'ocr' : 'solving');
-      return await withHardTimeout(
+      const response = await withHardTimeout(
         postSolveOnce({
           base,
           token,
@@ -276,6 +279,8 @@ export async function callSolveQuestionViaProxy(input: {
         remaining,
         'proxy OCR',
       );
+      input.onStage?.('solving');
+      return response;
     } catch (err) {
       lastError = err;
       const is408 =
@@ -290,6 +295,7 @@ export async function callSolveQuestionViaProxy(input: {
       throw err;
     } finally {
       clearTimeout(softTimer);
+      clearTimeout(promoteSolving);
     }
   }
   throw lastError instanceof Error ? lastError : timeoutError();
