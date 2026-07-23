@@ -10,6 +10,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { fetchOnboardingStatus } from '@/src/features/onboarding/completeClient';
 import { subscribeOnboardingGate } from '@/src/features/onboarding/onboardingReplay';
 import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
+import { bootLocalPush } from '@/src/features/push/localPush';
+import { loadPushPrefs } from '@/src/features/push/pushPrefs';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
 import { isFirebaseConfigured } from '@/src/lib/firebase';
 import { colors, space } from '@/src/theme';
@@ -131,6 +133,13 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- boot on uid or demo replay
   }, [uid, replayToken]);
+
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    void bootLocalPush(loadPushPrefs).catch((err) =>
+      console.warn('local push boot failed', err),
+    );
+  }, [state.status]);
 
   useEffect(() => {
     if (state.status === 'loading') return;

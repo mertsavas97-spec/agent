@@ -20,6 +20,18 @@ jest.mock('@/src/features/push/pushPrefs', () => ({
   setPushCategory: jest.fn(),
 }));
 
+jest.mock('@/src/features/push/localPush', () => ({
+  LOCAL_PUSH_STATUS_COPY: {
+    title: 'Cihaz içi hatırlatmalar açık',
+    body: 'Sunucu yok — bildirimler bu telefonda zamanlanır.',
+  },
+  syncLocalPushSchedules: jest.fn().mockResolvedValue({
+    ok: true,
+    scheduled: [],
+    permissionGranted: true,
+  }),
+}));
+
 jest.mock('@/src/features/paywall/entitlement', () => ({
   hydrateEntitlement: jest.fn().mockResolvedValue(null),
   isPremiumActive: () => false,
@@ -73,13 +85,13 @@ jest.mock('@/src/ui/haptics', () => ({
 
 import SettingsScreen from '@/app/settings/index';
 
-describe('Settings push honesty', () => {
-  it('states that push delivery is not wired', async () => {
+describe('Settings local push status', () => {
+  it('states that device-local reminders are active with copy', async () => {
     render(<SettingsScreen />);
     await waitFor(() => {
       expect(screen.getByTestId('settings-push-honesty')).toBeTruthy();
     });
-    expect(screen.getByText(/Gönderim henüz yok/i)).toBeTruthy();
-    expect(screen.getByText(/bildirim gelmez/i)).toBeTruthy();
+    expect(screen.getByText(/Cihaz içi hatırlatmalar açık/i)).toBeTruthy();
+    expect(screen.getByText(/Sunucu yok/i)).toBeTruthy();
   });
 });

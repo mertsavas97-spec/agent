@@ -146,5 +146,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: colors.navy,
+    // Avoid a blank frame while PNG decode finishes on cold navigations.
   },
 });

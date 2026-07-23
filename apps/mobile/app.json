@@ -46,7 +46,15 @@
           "backgroundColor": "#1E1B4B"
         }
       ],
-      "expo-iap"
+      "expo-iap",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#F59E0B",
+          "defaultChannel": "cozbil-reminders"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

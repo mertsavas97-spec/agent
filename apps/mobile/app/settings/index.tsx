@@ -34,6 +34,10 @@ import {
   type EntitlementSnapshot,
 } from '@/src/features/paywall/entitlement';
 import {
+  LOCAL_PUSH_STATUS_COPY,
+  syncLocalPushSchedules,
+} from '@/src/features/push/localPush';
+import {
   loadPushPrefs,
   PUSH_CATEGORIES,
   setPushCategory,
@@ -65,7 +69,9 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     void (async () => {
-      setPrefs(await loadPushPrefs());
+      const loaded = await loadPushPrefs();
+      setPrefs(loaded);
+      void syncLocalPushSchedules(loaded);
       const forced = await hydrateDemoForceFree();
       setForceFree(forced);
       setEnt(await loadEntitlementSnapshot());
@@ -87,11 +93,15 @@ export default function SettingsScreen() {
 
   async function toggle(id: keyof PushPrefs, value: boolean) {
     void hapticLight();
-    if (id === 'master') {
-      setPrefs(await setPushCategory('master', value));
-      return;
+    const next = await setPushCategory(id, value);
+    setPrefs(next);
+    const sync = await syncLocalPushSchedules(next);
+    if (id === 'master' && value && !sync.permissionGranted) {
+      Alert.alert(
+        'Bildirim izni gerekli',
+        'Cihaz hatırlatmaları için ayarlardan ÇözBil bildirimlerine izin ver.',
+      );
     }
-    setPrefs(await setPushCategory(id, value));
   }
 
   function onReplayOnboarding() {
@@ -209,11 +219,8 @@ export default function SettingsScreen() {
         <Eyebrow tone="navy">{TR_EYEBROW.push}</Eyebrow>
         <Text style={styles.cardTitle}>Bildirimler</Text>
         <View style={styles.honestyBanner} testID="settings-push-honesty">
-          <Text style={styles.honestyTitle}>Gönderim henüz yok</Text>
-          <Text style={styles.honestyBody}>
-            Tercihler cihazda saklanır. FCM/APNs bağlı değil — bildirim gelmez;
-            aç/kapa yalnızca ilerideki gönderim için hazırlık.
-          </Text>
+          <Text style={styles.honestyTitle}>{LOCAL_PUSH_STATUS_COPY.title}</Text>
+          <Text style={styles.honestyBody}>{LOCAL_PUSH_STATUS_COPY.body}</Text>
         </View>
         {prefs ? (
           <>

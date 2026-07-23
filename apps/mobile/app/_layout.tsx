@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { BootstrapGate } from '@/src/features/auth/BootstrapGate';
 import { colors, screenHeaderOptions } from '@/src/theme';
+import { BrandMarkCache } from '@/src/ui/BrandMarkCache';
 
 export {
   ErrorBoundary,
@@ -52,6 +53,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   return (
     <ThemeProvider value={cozbilTheme}>
+      <BrandMarkCache />
       <BootstrapGate>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

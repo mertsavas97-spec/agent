@@ -1,6 +1,6 @@
 /**
  * Push notification preferences + copy variants (MVP 1.0).
- * Delivery wiring (FCM/APNs) is stubbed; prefs + texts ship for product readiness.
+ * Delivery is device-local via `localPush` (no FCM/APNs server).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
