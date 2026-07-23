@@ -150,12 +150,14 @@
 2. **Production solve path not store-proven** — org-policy callable 403; must ship Storage/Firestore trigger path with Vertex/demo verified; dogfood proxy must stay out of production (`ORG_POLICY_SOLVE_BYPASS.md`, `solveClient.ts`).
 3. **Play Billing products + service-account verify credentials missing** — client/server code exists; Console SKUs + secrets do not (`iap-admob-readiness.md`, `verifyPlayPurchase.ts`).
 4. **KVKK / privacy counsel final** — public URL is live but explicitly a working draft; store + TR compliance risk (`hosting/public/privacy/index.html`).
-5. **Store listing visuals missing** — screenshots + Play feature graphic 1024×500 (`play-launch-checklist.md`).
-6. **AdMob: no native SDK + no production unit wiring** — production `EXPO_PUBLIC_ADS_STUB=0` still stub-engine; shipping “ads” UI honesty or real SDK required (`adEngine.ts`, `BannerSlot.tsx`).
+5. ~~**Store listing visuals**~~ — **PAS (owner/user prepares screenshots + feature graphic).** Not an agent blocker.
+6. **AdMob: no native SDK + no production unit wiring** — production `EXPO_PUBLIC_ADS_STUB=0` still stub-engine; shipping “ads” UI honesty or real SDK required (`adEngine.ts`, `BannerSlot.tsx`). **Impl:** hide stub → `docs/audits/store-impl-backlog-2026-07-23.md` P0-1.
 7. **Rewarded +1 is local stub only** — no server quota grant; monetization/policy mismatch if ads claim +1 (`runRewardedExtra.ts`).
 8. **Firebase / Functions production secrets + rules deploy smoke** — EAS must inject Firebase public config; Firestore/Storage rules + Functions deploy verified (`EAS_PRODUCTION.md`, checklists).
 9. **Android camera/media permission plugin gap** — `expo-image-picker` not in Expo plugins; Android `permissions` not declared in `app.json` (risk of missing CAMERA / media permissions after prebuild).
 10. **iOS App Store path incomplete** (if iOS in first submit) — no StoreKit server verify, no iOS `submit` profile, `supportsTablet: true` without iPad assets; Android-first can defer iOS but must not claim dual launch.
+
+**Code backlog (listing excluded):** `docs/audits/store-impl-backlog-2026-07-23.md`
 
 ### Nice-to-haves (not first-submit blockers if scoped)
 
