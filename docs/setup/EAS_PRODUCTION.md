@@ -60,8 +60,21 @@ Diğer Firebase domain / project / bucket / sender değerleri `.env.example` ile
 
 ## Ads / IAP notları
 
-- Production’da stub reklam UI gizlenir (`isLiveAdsDeliveryReady`); canlı AdMob unit + native SDK sonra.
-- Play Billing verify secret yoksa kullanıcıya `credentials_missing` dürüst mesaj; sahte Premium yok.
+- Production’da stub reklam UI gizlenir; `react-native-google-mobile-ads` + `adMobEngine` scaffold hazır.
+- Plugin app id: EAS `EXPO_PUBLIC_ADMOB_ANDROID_APP_ID` / `_IOS_APP_ID` (yoksa Google test app id).
+- Unit id’ler yokken `isLiveAdsDeliveryReady=false` → banner/rewarded UI yok.
+- Play Billing verify secret yoksa `credentials_missing`; iOS stub `credentials_missing` / `ios_not_implemented`.
+
+## iOS submit (EAS)
+
+`eas.json` → `submit.production.ios` içinde placeholder:
+
+- `ascAppId`: App Store Connect app id
+- `appleTeamId`: Apple Developer Team id
+
+```bash
+eas submit --platform ios --profile production --latest
+```
 
 ## QA Gate (build öncesi)
 

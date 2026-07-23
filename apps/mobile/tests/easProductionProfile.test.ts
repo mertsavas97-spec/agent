@@ -52,6 +52,7 @@ describe('EAS production profile', () => {
       const names = plugins.map((p) => (Array.isArray(p) ? p[0] : p));
       expect(names).not.toContain('expo-dev-client');
       expect(names).toContain('expo-image-picker');
+      expect(names).toContain('react-native-google-mobile-ads');
     } finally {
       if (prev === undefined) delete process.env.EAS_BUILD_PROFILE;
       else process.env.EAS_BUILD_PROFILE = prev;

@@ -1,10 +1,11 @@
 /**
- * Ad engine port — unavailable by default in production until AdMob ships.
+ * Ad engine port — unavailable by default in production until AdMob units+SDK ready.
  * Dogfood: EXPO_PUBLIC_ADS_STUB=1 keeps a stub that resolves rewarded/shown for QA.
  *
  * Do not statically import `react-native-google-mobile-ads` (breaks Expo Go).
  */
 
+import { tryCreateAdMobEngine } from './adMobEngine';
 import {
   adsStubForced,
   hasProductionAdUnits,
@@ -59,9 +60,11 @@ export function createAdEngine(): AdEngine {
   if (!isLiveAdsDeliveryReady(units)) {
     return createUnavailableAdEngine();
   }
-  // Real AdMob wrappers land in adMobEngine.ts once wiring ships.
-  console.info('ads: AdMob ids + native module present — enable adMobEngine wiring');
-  return createUnavailableAdEngine();
+  const live = tryCreateAdMobEngine(units);
+  if (!live) {
+    return createUnavailableAdEngine();
+  }
+  return live;
 }
 
 let engine: AdEngine = createAdEngine();

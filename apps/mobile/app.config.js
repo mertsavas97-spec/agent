@@ -1,8 +1,12 @@
 /**
  * Dynamic Expo config — strips expo-dev-client from production EAS builds.
- * Base metadata lives in app.json; this file is the Expo entry when present.
+ * Injects AdMob config plugin with env app ids (Google test ids as safe fallback).
  */
 const appJson = require('./app.json');
+
+/** Google sample app ids — safe for dogfood / until owner sets real ids. */
+const GOOGLE_TEST_ANDROID_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
+const GOOGLE_TEST_IOS_APP_ID = 'ca-app-pub-3940256099942544~1458002511';
 
 function missingFirebasePublicKeys() {
   const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim();
@@ -13,10 +17,31 @@ function missingFirebasePublicKeys() {
   return missing;
 }
 
+function withAdMobPlugin(plugins) {
+  const list = Array.isArray(plugins) ? [...plugins] : [];
+  const filtered = list.filter((plugin) => {
+    const name = Array.isArray(plugin) ? plugin[0] : plugin;
+    return name !== 'react-native-google-mobile-ads';
+  });
+  filtered.push([
+    'react-native-google-mobile-ads',
+    {
+      androidAppId:
+        process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID?.trim() ||
+        GOOGLE_TEST_ANDROID_APP_ID,
+      iosAppId:
+        process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID?.trim() || GOOGLE_TEST_IOS_APP_ID,
+    },
+  ]);
+  return filtered;
+}
+
 /** @param {{ config?: { expo?: Record<string, unknown> } }} ctx */
 module.exports = () => {
   const expo = structuredClone(appJson.expo);
   const profile = process.env.EAS_BUILD_PROFILE ?? '';
+
+  expo.plugins = withAdMobPlugin(expo.plugins ?? []);
 
   if (profile === 'production') {
     expo.plugins = (expo.plugins ?? []).filter((plugin) => {

@@ -2,7 +2,7 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **4 + store P0–P2 agent closeout** — StoreKit stub / ESLint / phone-first
+**Sprint:** **4 + store agent closeout + AdMob scaffold**
 
 ## Store P0 (listing görselleri hariç)
 
@@ -21,7 +21,7 @@
 - [x] CI workflow (typecheck + jest)
 - [x] POST_NOTIFICATIONS + privacy/local-push copy hizası
 
-## Rewarded policy (bu tur)
+## Rewarded policy
 
 - [x] Günlük max kaldırıldı (+1 ve çoklu unlock)
 - [x] Her çoklu açılışta reklam → unlock + `grantRewardedSolve`
@@ -34,11 +34,13 @@
 - [x] StoreKit verify stub (`verifyAppStorePurchase` + platform=ios)
 - [x] ESLint (`eslint-config-expo`, lint app/src)
 - [x] `supportsTablet: false` (phone-first)
+- [x] AdMob SDK scaffold (`react-native-google-mobile-ads` + `adMobEngine`)
+- [x] Owner ops runbook (`docs/store/OWNER_OPS_STORE_READY.md`)
 - [ ] Owner: Functions deploy (grant + purge + sync ios path)
 - [ ] Owner: `eas init` (owner/projectId)
 - [ ] Owner: hosting deploy (privacy + terms)
 - [ ] Owner: Play SKU + billing credentials
-- [ ] Owner: AdMob native SDK + store products
+- [ ] Owner: AdMob **production** unit ids (+ child-directed console)
 - [ ] Owner: iOS App Store Server API full verify
 
 ## Sprint 3 residual
@@ -53,7 +55,7 @@
 ## Sprint 4
 
 - [x] `eas.json` production: AAB/store, privacy + terms URL env
-- [x] `app.config.js` — production’da expo-dev-client strip + Firebase fail-fast
+- [x] `app.config.js` — production’da expo-dev-client strip + Firebase fail-fast + AdMob plugin
 - [x] Listing / ASO drafts
 - [ ] Owner: `eas init` + `eas build/submit`
 

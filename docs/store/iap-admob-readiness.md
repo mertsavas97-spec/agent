@@ -1,6 +1,6 @@
 # IAP + AdMob 1.0 readiness (iOS + Android)
 
-**Durum:** Policy + stub wiring tamam. Canlı SDK / store ürünleri owner adımı.
+**Durum:** Policy + AdMob native SDK scaffold + IAP stub wiring. Canlı unit id / Play ürünleri owner.
 
 ## Premium ürün ID’leri (her iki mağaza)
 
@@ -25,16 +25,17 @@ Kaynak: `apps/mobile/src/features/paywall/pricing.ts` + `docs/product/pricing-po
 - [x] Backend stub: `verifyAppStorePurchase.ts` + `syncSubscription(platform: 'ios')` (credentials_missing / not_implemented — asla sahte elevate)
 - [ ] Full App Store Server API client (stub → live)
 - [x] Client product id SSoT hazır; `expo-iap` iOS’u da hedefler (`platform` gönderir)
-- [ ] Production EAS iOS submit profili
+- [ ] Production EAS iOS submit profili (`eas.json` placeholder `REPLACE_*` → gerçek ASC id)
 - [x] `supportsTablet: false` (phone-first)
+- [x] AdMob native paket + config plugin + `adMobEngine` (test/prod unit id owner)
 
 ## Reklam formatları
 
 | Format | Free | Premium | Kod | Canlı AdMob |
 |--------|------|---------|-----|-------------|
-| Banner | Tab shell | Kapalı | `BannerSlot` | Unit id + SDK |
-| Interstitial | Çözüm çıkışı (≤5/gün, her billed leave) | Kapalı | `runInterstitialIfNeeded` | Unit id + SDK |
-| Rewarded | Kota bitince +1; her çoklu açılış | Kapalı | `runRewarded*` | Unit id + SDK |
+| Banner | Tab shell | Kapalı | `BannerSlot` + AdMob BannerAd | Unit id (SDK scaffold hazır) |
+| Interstitial | Çözüm çıkışı (≤5/gün, her billed leave) | Kapalı | `adMobEngine` / stub | Unit id |
+| Rewarded | Kota bitince +1; her çoklu açılış | Kapalı | `adMobEngine` + grant | Unit id |
 
 ### Env (EAS secrets)
 

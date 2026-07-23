@@ -1,10 +1,29 @@
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import type { ComponentType } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 
-import { colors, typography } from '@/src/theme';
+import { colors } from '@/src/theme';
 
 import { isLiveAdsDeliveryReady, resolveAdUnits } from './adUnits';
 import { shouldShowBanner } from './policy';
 import { isPremiumAudience } from './premiumGate';
+
+type BannerAdsModule = {
+  BannerAd: ComponentType<{
+    unitId: string;
+    size: string;
+    requestOptions?: Record<string, unknown>;
+  }>;
+  BannerAdSize: { ANCHORED_ADAPTIVE_BANNER: string; BANNER: string };
+};
+
+function loadBannerModule(): BannerAdsModule | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('react-native-google-mobile-ads') as BannerAdsModule;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Anchored banner for free tab shell.
@@ -22,14 +41,22 @@ export function BannerSlot() {
   const unitId = Platform.OS === 'ios' ? units.bannerIos : units.bannerAndroid;
   if (!unitId) return null;
 
-  // Real <BannerAd> mounts in a follow-up once adMobEngine wiring ships.
+  const ads = loadBannerModule();
+  if (!ads?.BannerAd) return null;
+
+  const size =
+    ads.BannerAdSize?.ANCHORED_ADAPTIVE_BANNER ?? ads.BannerAdSize?.BANNER ?? 'BANNER';
+
   return (
     <View
       style={styles.wrap}
       testID="ads-banner-slot"
       accessibilityLabel="Reklam alanı">
-      <Text style={styles.label}>Reklam</Text>
-      <Text style={styles.hint}>Ücretsiz plan · Premium’da kapalı</Text>
+      <ads.BannerAd
+        unitId={unitId}
+        size={size}
+        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+      />
     </View>
   );
 }
@@ -42,20 +69,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  label: {
-    fontFamily: typography.fontFamily,
-    fontSize: 11,
-    fontWeight: typography.captionWeight,
-    color: colors.textSecondary,
-  },
-  hint: {
-    fontFamily: typography.fontFamily,
-    fontSize: 10,
-    color: colors.textMuted,
-    marginTop: 2,
-    textAlign: 'center',
-    paddingHorizontal: 12,
+    paddingVertical: 4,
+    overflow: 'hidden',
   },
 });
