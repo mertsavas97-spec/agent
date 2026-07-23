@@ -15,5 +15,10 @@
 **Kullanılan ekipler:** Mobile, Architect, QA, Guardian  
 **Skill/agent setleri:** cozbil-team-skills, cozbil-expo-mobile, cozbil-guardian  
 **Skill bypass:** Context7 yok; Expo ESLint docs (WebSearch)  
-**QA Gate:** (koşulacak)  
+**QA Gate:**
+- typecheck: PASS (mobile + functions)
+- lint: PASS (0 errors / 2 warnings)
+- smoke: PASS (mobile Jest 260 / StoreKit+sync 11)
+- guardian: PASS (iOS stub abartısız; tablet phone-first)
+
 **Sonraki:** Owner ops (`eas init`, Functions deploy, Play SKU)
