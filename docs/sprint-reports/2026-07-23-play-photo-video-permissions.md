@@ -17,7 +17,10 @@
 **Skill bypass:** Spec Kit re-specify (policy compliance on existing solve gallery path)
 
 **QA Gate:**
-- typecheck / lint / Jest image + EAS profile permission assertions: (run after edit)
+- typecheck: PASS
+- lint: PASS
+- smoke: PASS (Jest imagePicker + easProductionProfile permission assertions)
+- errors: temiz
 - guardian: PASS — no overclaim; honest “ara sıra seçim” copy for Play
 
 **Sonraki önerilen adım:** Owner `eas build --platform android --profile production` → Internal’a yükle; Play formunda Photo Picker / izin kaldırıldı yolunu seç.
