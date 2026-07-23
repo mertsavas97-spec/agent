@@ -1,0 +1,43 @@
+{
+  "id": "qa-kpss-math-yuzde-dogfood-001",
+  "examType": "kpss",
+  "subject": "math",
+  "topicId": "kpss-math-yuzde",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "Bir ürünün fiyatı önce %20 artırılıp sonra %25 azaltılıyor. İşlemler sonunda ürünün fiyatı, başlangıçtaki fiyatının yüzde kaçıdır?",
+  "choices": {
+    "A": "90",
+    "B": "95",
+    "C": "100",
+    "D": "105",
+    "E": "110"
+  },
+  "answerKey": "A",
+  "explanationSteps": [
+    {
+      "title": "1. Artış",
+      "body": "100 birim → %20 artış = 120."
+    },
+    {
+      "title": "2. Azalış",
+      "body": "120 × (1 − 0,25) = 120 × 0,75 = 90."
+    },
+    {
+      "title": "Cevap",
+      "body": "Doğru şık: A) 90"
+    }
+  ],
+  "answer": { "label": "A", "text": "90" },
+  "transparencyNote": "Özgün dogfood maddesi — KPSS yüzde; telifli kitapçık metni değildir.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "KPSS GY matematik yüzde ölçeği; özgün",
+  "image": "images/kpss-math-yuzde-dogfood-001.png",
+  "review": {
+    "author": "qa-fixtures",
+    "reviewedAt": "2026-07-21",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

@@ -2,23 +2,32 @@
 
 **Asset:** [cozbil-mvp-moodboard.png](./cozbil-mvp-moodboard.png)
 
-Owner’ın ilettiği MVP moodboard referansı (navy + turuncu, Poppins, çoklu
-sınav seçimi). UI implementasyonunda bağlayıcı görsel kaynaktır; ürün UI’sinde
-taste-skill / transitions.dev kullanılmaz — designer + ui-ux-pro-max bu
-dosyadan token üretir.
+Owner’ın ilettiği MVP moodboard referansı (navy + turuncu, Poppins).  
+UI implementasyonunda bağlayıcı **token / akış** kaynağıdır; ürün UI’sinde
+taste-skill / transitions.dev kullanılmaz.
 
-## Sınav kapsamı (moodboard ile kilit)
+> **2026-07-22 FAZ 2 sync:** PNG çerçevesi tarihsel olarak 3 sınav / 4 tab /
+> kitap+ampul ikon gösterir. **Canonical ürün kilidi** aşağıdadır — runtime ve
+> spec buna uyar; PNG bir sonraki design pass’te yenilenecek.
 
-Onboarding’de **üç seçenek de aktif**:
+## Sınav kapsamı (ürün kilidi)
+
+Onboarding’de **dört seçenek de aktif**:
 
 | Kod | Etiket | Anlam |
 |-----|--------|--------|
 | `lgs` | LGS | Lise giriş |
 | `ygs` | YGS | Yükseköğretime geçiş (owner etiketi; YKS ile aynı aile) |
 | `kpss` | KPSS | Kamu personeli seçme |
+| `trafik` | Ehliyet | Sürücü adayı (trafik / araç / ilk yardım) |
 
 > Not: Moodboard/metinlerde “YGS” kullanılır. Resmi güncel ad “YKS” olsa da
 > ürün MVP’sinde owner kararıyla **YGS** etiketi geçerlidir.
+
+## Marka işareti
+
+Canonical UI/store mark: **navy zemin + beyaz robot** (`apps/mobile` brand pack /
+`CozbilRobot`). PNG’deki kitap+ampul tarihi taslak; yeni asset gelene kadar robot SSoT’tir.
 
 ## Tasarım token özeti
 
@@ -31,22 +40,23 @@ Onboarding’de **üç seçenek de aktif**:
 | Radius | ~12–16px buton/kart |
 | İkon | İnce outline |
 
-## Ekran envanteri (moodboard)
+## Ekran envanteri (hedef IA)
 
-1. App icon — navy kare, kitap + turuncu ampul  
+1. App icon — navy + robot mark  
 2. Onboarding 1 — fotoğrafla çöz  
 3. Onboarding 2 — adım adım anlatır  
-4. Onboarding 3 — sınav seçimi **LGS / YGS / KPSS**  
-5. Ana ekran — streak + büyük turuncu kamera CTA  
-6. Kamera  
+4. Onboarding 3 — sınav seçimi **LGS / YGS / KPSS / Ehliyet**  
+5. Ana ekran — streak + büyük turuncu kamera CTA (ikincil: galeri; fold altı: çoklu / konular / geçmiş özeti)  
+6. Kamera — **sistem kamera/galeri** → onay ekranı (crop guide)  
 7. Analiz / loading — robot maskot (“Sorun analiz ediliyor…”)  
-8. Çözüm — adım adım (+ kısa çözüm sekmesi moodboard’da)  
+8. Çözüm — adım adım + kısa çözüm (+ konu anlatımı sekmesi)  
 9. İstatistik / ilerleme — ders bar’ları  
-10. Premium paywall — “Hemen Başla”  
+10. Premium paywall — “Hemen Başla” (ücretli haftalık giriş; **ücretsiz deneme vaadi yok**)  
 
 ## Navigasyon
 
-Alt tab (moodboard): **Ana Sayfa / Geçmiş / İstatistik / Profil** (4 sekme).
+Alt tab: **Ana Sayfa / Konular / Geçmiş / İstatistik / Profil** (5 sekme).  
+Konular = sınav sekmeli konu anlatımı + örnek soru (item-bank).
 
 ## Maskot
 

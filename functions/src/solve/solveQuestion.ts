@@ -1,3 +1,5 @@
+import { clampTopicId } from '../data/topics';
+import { isKnownSubject } from '../data/subjects';
 import { SAFETY_MESSAGES } from '../safety/messages';
 import type { CacheStore } from '../cache/solutionCache';
 import { lookupCache, writeCache } from '../cache/solutionCache';
@@ -7,6 +9,7 @@ import type { VisionClient } from '../moderation/visionClient';
 import { assertHasQuota, istanbulDate, remainingQuota, type QuotaState } from '../quota/dailyQuota';
 import type {
   ExamType,
+  Subject,
   SolveQuestionRejected,
   SolveQuestionResponse,
   SolveQuestionSuccess,
@@ -18,6 +21,8 @@ export type SolveDeps = {
   vision: VisionClient;
   solver: VisionSolver;
   cache: CacheStore;
+  /** false → skip solutionCache write (demo/stub poison prevention). Default true for unit tests. */
+  writeCacheEnabled?: boolean;
   loadQuota: (uid: string) => Promise<QuotaState>;
   persistSolved: (input: {
     uid: string;
@@ -26,7 +31,7 @@ export type SolveDeps = {
     examType: ExamType;
     result: SolveQuestionSuccess;
     billed: boolean;
-  }) => Promise<{ attemptId: string }>;
+  }) => Promise<{ attemptId: string; solutionId: string }>;
   persistRejected: (input: {
     uid: string;
     imagePath: string;
@@ -41,6 +46,7 @@ export type SolveInput = {
   imageBuffer: Buffer;
   examType: ExamType;
   mimeType?: string;
+  subjectHint?: Subject | null;
 };
 
 export async function runSolveQuestion(
@@ -74,21 +80,25 @@ export async function runSolveQuestion(
   }
 
   const cached = await lookupCache(deps.cache, phash, input.examType);
-  if (cached) {
+  // Old cache rows may predate the structured-answer contract. Do not bill or
+  // return them as solved; regenerate through the model instead.
+  if (cached?.answer?.text?.trim()) {
     const success: SolveQuestionSuccess = {
       attemptId: 'pending',
+      solutionId: 'pending',
       status: 'solved',
       cached: true,
       topicId: cached.topicId,
       subject: cached.subject,
       steps: cached.steps,
+      answer: cached.answer,
       transparencyNote: SAFETY_MESSAGES.transparency,
       quota: {
         remainingToday: Math.max(0, remainingQuota(quotaState, today) - 1),
         unlimited: remainingQuota(quotaState, today) > 1000,
       },
     };
-    const { attemptId } = await deps.persistSolved({
+    const { attemptId, solutionId } = await deps.persistSolved({
       uid: input.uid,
       phash,
       imagePath: input.imagePath,
@@ -96,14 +106,22 @@ export async function runSolveQuestion(
       result: success,
       billed: shouldBillQuota('solved'),
     });
-    return { ...success, attemptId };
+    return { ...success, attemptId, solutionId };
   }
 
   const parsed = await deps.solver.solve({
     imageBase64: input.imageBuffer.toString('base64'),
     mimeType: input.mimeType ?? 'image/jpeg',
     examType: input.examType,
+    subjectHint: input.subjectHint,
   });
+
+  const topicId = clampTopicId(input.examType, parsed.topicId);
+  const subject: Subject = isKnownSubject(parsed.subject)
+    ? parsed.subject
+    : parsed.subject === 'unknown'
+      ? 'unknown'
+      : 'unknown';
 
   if (!parsed.isQuestion) {
     const { attemptId } = await deps.persistRejected({
@@ -123,7 +141,11 @@ export async function runSolveQuestion(
     };
   }
 
-  if (isGeometryUnsupported(parsed) || parsed.steps.length === 0) {
+  if (
+    isGeometryUnsupported(parsed) ||
+    parsed.steps.length === 0 ||
+    !parsed.answer?.text?.trim()
+  ) {
     const { attemptId } = await deps.persistRejected({
       uid: input.uid,
       imagePath: input.imagePath,
@@ -143,11 +165,13 @@ export async function runSolveQuestion(
 
   const success: SolveQuestionSuccess = {
     attemptId: 'pending',
+    solutionId: 'pending',
     status: 'solved',
     cached: false,
-    topicId: parsed.topicId,
-    subject: parsed.subject,
+    topicId,
+    subject,
     steps: parsed.steps,
+    answer: parsed.answer,
     transparencyNote: SAFETY_MESSAGES.transparency,
     quota: {
       remainingToday: Math.max(0, remainingQuota(quotaState, today) - 1),
@@ -155,14 +179,18 @@ export async function runSolveQuestion(
     },
   };
 
-  await writeCache(deps.cache, phash, input.examType, {
-    phash,
-    topicId: parsed.topicId,
-    steps: parsed.steps,
-    subject: parsed.subject,
-  });
+  // Production (index) sets writeCacheEnabled=false for demo/stub; unit tests default true.
+  if (deps.writeCacheEnabled !== false) {
+    await writeCache(deps.cache, phash, input.examType, {
+      phash,
+      topicId,
+      steps: parsed.steps,
+      subject,
+      answer: parsed.answer,
+    });
+  }
 
-  const { attemptId } = await deps.persistSolved({
+  const { attemptId, solutionId } = await deps.persistSolved({
     uid: input.uid,
     phash,
     imagePath: input.imagePath,
@@ -171,5 +199,5 @@ export async function runSolveQuestion(
     billed: shouldBillQuota('solved'),
   });
 
-  return { ...success, attemptId };
+  return { ...success, attemptId, solutionId };
 }

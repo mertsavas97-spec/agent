@@ -1,0 +1,18 @@
+# Same rules as repo-root .easignore (EAS looks next to eas.json).
+../../.agents/
+../../.codex/
+../../.cursor/
+../../.specify/
+../../.tools/
+../../docs/
+../../content/
+../../hosting/
+../../scripts/
+../../functions/tests/
+../../functions/lib/
+node_modules/
+.expo/
+tests/
+coverage/
+dist/
+**/*.md

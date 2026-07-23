@@ -1,0 +1,31 @@
+jest.mock('@/src/features/paywall/syncSubscriptionClient', () => ({
+  callSyncSubscription: jest.fn(),
+}));
+
+jest.mock('@/src/features/paywall/entitlement', () => ({
+  activateLocalPremium: jest.fn(),
+  canUseLocalPremium: jest.fn(() => false),
+  isPremiumSandboxEnv: jest.fn(() => false),
+}));
+
+import { billingFailureMessage } from '@/src/features/paywall/billing';
+
+describe('billingFailureMessage', () => {
+  it('explains credentials_missing without promising Premium', () => {
+    const msg = billingFailureMessage('credentials_missing');
+    expect(msg).toMatch(/doğrulaması|yapılandırılmamış/i);
+    expect(msg).not.toMatch(/aktif|premium açıldı/i);
+  });
+
+  it('maps failed-precondition like credentials_missing', () => {
+    expect(billingFailureMessage('failed-precondition')).toEqual(
+      billingFailureMessage('credentials_missing'),
+    );
+  });
+
+  it('covers restore-none, cancel, and ios stub paths', () => {
+    expect(billingFailureMessage('none')).toMatch(/bulunamadı/i);
+    expect(billingFailureMessage('user_cancelled')).toMatch(/iptal/i);
+    expect(billingFailureMessage('ios_not_implemented')).toMatch(/App Store/i);
+  });
+});

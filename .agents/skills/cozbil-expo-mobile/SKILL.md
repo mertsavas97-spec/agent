@@ -15,7 +15,7 @@ tags: [cozbil, expo, react-native, android, mobile]
 | Spec | `specs/002-cozbil-mvp/` |
 | Structure | `apps/mobile/` + `functions/` (see plan.md) |
 | Theme | `docs/design/moodboard/` → navy `#1E1B4B`, orange `#F59E0B`, Poppins |
-| Exams | `lgs` \| `ygs` \| `kpss` |
+| Exams | `lgs` \| `ygs` \| `kpss` \| `trafik` (Ehliyet) |
 
 ## When to apply
 

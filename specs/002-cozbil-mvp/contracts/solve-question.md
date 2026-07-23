@@ -24,10 +24,12 @@
 ```json
 {
   "attemptId": "string",
+  "solutionId": "string",
   "status": "solved",
   "cached": false,
   "topicId": "math-kesirler",
   "subject": "math",
+  "answer": { "label": "B", "text": "3" },
   "steps": [
     { "title": "1. Adım", "body": "..." }
   ],
@@ -35,6 +37,10 @@
   "quota": { "remainingToday": 4, "unlimited": false }
 }
 ```
+
+`status="solved"` için `answer.text` zorunludur. Nihai cevap üretilemeyen
+çıktı `unsupported_type` veya hata olarak dönmelidir; jenerik ipucu adımları
+`solved` kabul edilmez.
 
 ### Response — rejected / unsupported
 

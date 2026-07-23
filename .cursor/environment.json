@@ -1,0 +1,4 @@
+{
+  "install": "npm install --prefix apps/mobile && npm install --prefix functions && npm install --prefix scripts/solve-proxy",
+  "terminals": []
+}

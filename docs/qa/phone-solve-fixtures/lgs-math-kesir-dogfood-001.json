@@ -1,0 +1,43 @@
+{
+  "id": "qa-lgs-math-kesir-dogfood-001",
+  "examType": "lgs",
+  "subject": "math",
+  "topicId": "lgs-math-kesirler",
+  "difficulty": "mid",
+  "format": "multiple_choice",
+  "stem": "Bir sınıfta 24 öğrenci vardır. Öğrencilerin 3/8'i kızdır. Kız öğrencilerin 1/3'ü spor kulübüne gidiyorsa, spor kulübüne giden kız öğrenci sayısı kaçtır?",
+  "choices": {
+    "A": "2",
+    "B": "3",
+    "C": "4",
+    "D": "6",
+    "E": "8"
+  },
+  "answerKey": "B",
+  "explanationSteps": [
+    {
+      "title": "1. Kız sayısı",
+      "body": "24 × (3/8) = 9 kız öğrenci."
+    },
+    {
+      "title": "2. Kulübe gidenler",
+      "body": "9 × (1/3) = 3."
+    },
+    {
+      "title": "Cevap",
+      "body": "Doğru şık: B) 3"
+    }
+  ],
+  "answer": { "label": "B", "text": "3" },
+  "transparencyNote": "Özgün dogfood maddesi — geçmiş sınav tarzı; telifli kitapçık metni değildir.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "LGS matematik kesir problemi ölçeği; özgün senaryo",
+  "image": "images/lgs-math-kesir-dogfood-001.png",
+  "review": {
+    "author": "qa-fixtures",
+    "reviewedAt": "2026-07-21",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

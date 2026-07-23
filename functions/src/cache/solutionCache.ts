@@ -1,11 +1,12 @@
-import type { SolutionStep } from '../types/contracts';
+import type { SolutionAnswer, SolutionStep, Subject } from '../types/contracts';
 import { cacheKeyFromPhash } from './phash';
 
 export type CachedSolution = {
   phash: string;
   topicId: string | null;
   steps: SolutionStep[];
-  subject: 'math' | 'turkish' | 'unknown';
+  subject: Subject;
+  answer?: SolutionAnswer;
 };
 
 export type CacheStore = {

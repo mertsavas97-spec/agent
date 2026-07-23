@@ -2,7 +2,7 @@
 Sync Impact Report
 - Version change: 1.1.0 → 1.1.1
 - Modified principles: none renamed; Locked Product Identity amended
-  (multi-exam: LGS + YGS + KPSS; was LGS-only)
+  (multi-exam: LGS + YGS + KPSS + Ehliyet; was LGS-only then LGS+YGS+KPSS)
 - Added sections: none
 - Removed sections: none
 - Templates: no structural change
@@ -96,12 +96,13 @@ specs implementable.
 - **Primary job**: Help exam candidates in Türkiye solve photographed
   questions with step-by-step Turkish explanations, and surface topic
   weaknesses.
-- **Exam scope (MVP)**: **LGS, YGS, and KPSS** are all first-class selectable
-  exam tracks (not “coming soon”). Topic catalogs and prompts MUST be
-  exam-aware.
+- **Exam scope (MVP)**: **LGS, YGS, KPSS, and Ehliyet (`trafik`)** are all
+  first-class selectable exam tracks (not “coming soon”). Topic catalogs and
+  prompts MUST be exam-aware.
 - **Primary persona**: Sınava hazırlanan öğrenci/aday (LGS: typically 13–15;
-  YGS: lise/üniversite öncesi; KPSS: yetişkin aday). Payer may be parent
-  (esp. LGS) or the candidate; parent account/report is post-MVP 1.1.
+  YGS: lise/üniversite öncesi; KPSS: yetişkin aday; Ehliyet: sürücü adayı).
+  Payer may be parent (esp. LGS) or the candidate; parent account/report is
+  post-MVP 1.1.
 - **Primary surface**: Mobile, Android-first.
 - **Design reference**: `docs/design/moodboard/` (MVP moodboard + tokens).
 - **Authoritative MVP feature dir**: `specs/002-cozbil-mvp/`.

@@ -1,6 +1,6 @@
 # ÇözBil — Agent Kit + Spec Harness
 
-Android-first AI sınav çalışma arkadaşı (**LGS · YGS · KPSS**).  
+Android-first AI sınav çalışma arkadaşı (**LGS · YGS · KPSS · Ehliyet**).  
 Bu repo: Spec Kit ürün kilidi + **cursor-agent-kit** koordinatör/skill paketi.
 
 ## iOS Cursor / Cloud Agent (devam)
@@ -9,16 +9,34 @@ Bu repo: Spec Kit ürün kilidi + **cursor-agent-kit** koordinatör/skill paketi
 2. Prompt: `docs/agent/IOS_CONTINUE.md` içindeki kopyala-yapıştır metin
 3. Detay: `SPRINT_STATE.md` → sıradaki iş Phase 1 scaffold
 
-## Mac Cursor
+## Mac masaüstü (önerilen — iOS Simulator)
+
+Eksiksiz lokal kurulum + Simulator demo:
+
+→ **`docs/setup/DESKTOP_LOCAL_SETUP.md`**
+
+```bash
+cd ~/Desktop
+git clone https://github.com/mertsavas97-spec/agent.git cozbil
+cd cozbil
+git checkout cursor/cozbil-polish-capture-loading-9131
+bash scripts/setup-desktop-macos.sh
+# apps/mobile/.env doldur, script’i tekrar çalıştır
+cd apps/mobile && npx expo prebuild --platform ios && npx expo run:ios
+```
+
+Cursor’da klasör: `~/Desktop/cozbil`
+
+## Mac Cursor (eski not)
 
 ```bash
 git clone https://github.com/mertsavas97-spec/agent.git
 cd agent
-git checkout main
-cp .cursor/mcp.json.example .cursor/mcp.json   # Context7 key
+git checkout cursor/cozbil-polish-capture-loading-9131
+cp .cursor/mcp.json.example .cursor/mcp.json   # Context7 key (opsiyonel)
 ```
 
-Cursor’da klasörü aç → `docs/agent/OPENING_PROMPT.md` veya `IOS_CONTINUE.md`.
+Cursor’da klasörü aç → `docs/setup/DESKTOP_LOCAL_SETUP.md`.
 
 ## Koordinatör modeli
 

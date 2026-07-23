@@ -6,14 +6,14 @@ export default {
     text: colors.textPrimary,
     background: colors.surface,
     tint: colors.navy,
-    tabIconDefault: '#94A3B8',
+    tabIconDefault: colors.textMuted,
     tabIconSelected: colors.orange,
   },
   dark: {
     text: colors.white,
     background: colors.navy,
     tint: colors.orange,
-    tabIconDefault: '#64748B',
+    tabIconDefault: colors.textSecondary,
     tabIconSelected: colors.orange,
   },
 };

@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# Metro + public tunnel for phone native (dev-client) from Cloud Agents.
+# Prefer cloudflared (stable). Fallback: localhost.run SSH.
+# Do NOT use pkill -f patterns that appear in this script's argv (kills self).
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PORT="${METRO_PORT:-8081}"
+INFO="/tmp/cozbil-metro-connect.txt"
+CF_BIN="${CLOUDFLARED_BIN:-}"
+TMUX_CONF="-f /exec-daemon/tmux.portal.conf"
+tmux() { command tmux $TMUX_CONF "$@"; }
+
+resolve_cloudflared() {
+  if [[ -n "$CF_BIN" && -x "$CF_BIN" ]]; then
+    echo "$CF_BIN"
+    return 0
+  fi
+  if command -v cloudflared >/dev/null 2>&1; then
+    command -v cloudflared
+    return 0
+  fi
+  if [[ -x /tmp/cloudflared ]]; then
+    echo /tmp/cloudflared
+    return 0
+  fi
+  local dest="/tmp/cloudflared"
+  echo "==> downloading cloudflared → $dest" >&2
+  curl -fsSL -o "$dest" \
+    "https://github.com/cloudflare/cloudflared/releases/download/2025.2.1/cloudflared-linux-amd64" \
+    && chmod +x "$dest" && echo "$dest"
+}
+
+echo "==> Metro + tunnel (port $PORT)"
+
+# Clean previous tunnel session only (avoid pkill -f self-match)
+tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+sleep 1
+
+# Metro once
+if ! curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1; then
+  tmux kill-session -t cozbil-metro 2>/dev/null || true
+  sleep 1
+  fuser -k "${PORT}/tcp" 2>/dev/null || true
+  sleep 1
+  tmux new-session -d -s cozbil-metro -c "$ROOT" -- \
+    npx expo start --dev-client --port "${PORT}"
+  for i in $(seq 1 60); do
+    curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1 && break
+    sleep 1
+  done
+fi
+
+if ! curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1; then
+  echo "Metro başlamadı."
+  exit 1
+fi
+
+PROVIDER=""
+TUNNEL_URL=""
+
+# --- Prefer cloudflared: Serveo free tier often 502/Bad Gateway on phone Expo ---
+CF=$(resolve_cloudflared 2>/dev/null || true)
+if [[ -n "$CF" && -x "$CF" ]]; then
+  echo "==> cloudflared: $CF"
+  : >/tmp/cozbil-cf.log
+  tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
+    "${CF} tunnel --url http://127.0.0.1:${PORT} --no-autoupdate 2>&1 | tee /tmp/cozbil-cf.log"
+  for i in $(seq 1 45); do
+    TUNNEL_URL=$(rg -o 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cozbil-cf.log 2>/dev/null | head -1 || true)
+    [[ -n "$TUNNEL_URL" ]] && break
+    sleep 1
+  done
+  if [[ -n "$TUNNEL_URL" ]]; then
+    PROVIDER=cloudflared
+  else
+    echo "cloudflared URL alınamadı; Serveo / localhost.run deneniyor."
+    tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+    sleep 1
+  fi
+fi
+
+# --- Serveo fallback (works from cloud egress; phone may hit free-tier Bad Gateway) ---
+if [[ -z "$TUNNEL_URL" ]]; then
+  SSH_LOG="/tmp/cozbil-metro-serveo.log"
+  : >"$SSH_LOG"
+  echo "==> serveo.net"
+  tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
+    "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -R 80:127.0.0.1:${PORT} serveo.net 2>&1 | tee ${SSH_LOG}"
+  for i in $(seq 1 45); do
+    TUNNEL_URL=$(rg -o 'https://[a-z0-9.-]+\.(serveousercontent\.com|serveo\.net)' "$SSH_LOG" 2>/dev/null | head -1 || true)
+    [[ -n "$TUNNEL_URL" ]] && break
+    sleep 1
+  done
+  if [[ -n "$TUNNEL_URL" ]]; then
+    PROVIDER=serveo
+  else
+    tmux kill-session -t cozbil-metro-tunnel 2>/dev/null || true
+    sleep 1
+  fi
+fi
+
+# --- Last resort: localhost.run (fragile for ~12MB bundles) ---
+if [[ -z "$TUNNEL_URL" ]]; then
+  SSH_LOG="/tmp/cozbil-metro-lhr.log"
+  : >"$SSH_LOG"
+  tmux new-session -d -s cozbil-metro-tunnel -- bash -lc \
+    "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -R 80:127.0.0.1:${PORT} nokey@localhost.run 2>&1 | tee ${SSH_LOG}"
+  for i in $(seq 1 45); do
+    TUNNEL_URL=$(rg -o 'https://[a-z0-9.-]+\.lhr\.life' "$SSH_LOG" 2>/dev/null | head -1 || true)
+    [[ -n "$TUNNEL_URL" ]] && break
+    sleep 1
+  done
+  PROVIDER=localhost.run
+fi
+
+if [[ -z "$TUNNEL_URL" ]]; then
+  echo "Tunnel URL alınamadı."
+  tmux capture-pane -t cozbil-metro-tunnel -p -J -S -100 2>/dev/null || true
+  exit 1
+fi
+
+HOST="${TUNNEL_URL#https://}"
+echo "Tunnel ($PROVIDER): $TUNNEL_URL"
+
+ok=0
+for i in $(seq 1 30); do
+  code=$(curl -sS -m 12 -o /tmp/cozbil-tunnel-status.body -w "%{http_code}" \
+    -A 'okhttp/4.9.0' "${TUNNEL_URL}/status" 2>/dev/null || echo 000)
+  body=$(cat /tmp/cozbil-tunnel-status.body 2>/dev/null || true)
+  echo "  verify $i -> HTTP $code ($body)"
+  if [[ "$code" == "200" && "$body" == *"packager-status:running"* ]]; then
+    ok=1
+    break
+  fi
+  sleep 2
+done
+
+if [[ "$ok" != "1" ]]; then
+  echo "Tunnel Metro'ya ulaşamıyor."
+  exit 1
+fi
+
+# Rebind Metro so QR / deep link match public host.
+# ALWAYS pin :443 on HTTPS tunnels — RN/Expo otherwise defaults to :8081 → Bad Gateway.
+PACKAGER_URL="https://${HOST}:443"
+tmux kill-session -t cozbil-metro 2>/dev/null || true
+sleep 1
+fuser -k "${PORT}/tcp" 2>/dev/null || true
+sleep 1
+tmux new-session -d -s cozbil-metro -c "$ROOT" -- \
+  env REACT_NATIVE_PACKAGER_HOSTNAME="${HOST}" EXPO_PACKAGER_PROXY_URL="${PACKAGER_URL}" \
+  npx expo start --dev-client --port "${PORT}"
+
+for i in $(seq 1 60); do
+  curl -sf "http://127.0.0.1:${PORT}/status" >/dev/null 2>&1 && break
+  sleep 1
+done
+
+ok=0
+for i in $(seq 1 30); do
+  code=$(curl -sS -m 12 -o /tmp/cozbil-tunnel-status.body -w "%{http_code}" \
+    -A 'okhttp/4.9.0' "${TUNNEL_URL}/status" 2>/dev/null || echo 000)
+  body=$(cat /tmp/cozbil-tunnel-status.body 2>/dev/null || true)
+  echo "  post-metro $i -> HTTP $code ($body)"
+  if [[ "$code" == "200" && "$body" == *"packager-status:running"* ]]; then
+    ok=1
+    break
+  fi
+  sleep 2
+done
+
+if [[ "$ok" != "1" ]]; then
+  echo "Metro restart sonrası tunnel doğrulaması başarısız."
+  exit 1
+fi
+
+ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PACKAGER_URL}', safe=''))")
+MANUAL_1="${HOST}:443"
+
+cat >"$INFO" <<EOF
+TUNNEL_URL=${TUNNEL_URL}
+PACKAGER_URL=${PACKAGER_URL}
+MANUAL_1=${MANUAL_1}
+MANUAL_2=${PACKAGER_URL}
+DEEP_LINK=exp+cozbil://expo-development-client/?url=${ENC}
+PROVIDER=${PROVIDER}
+EOF
+
+echo ""
+echo "=============================================="
+echo "Metro + tunnel HAZIR (${PROVIDER})"
+echo ""
+echo "Dev client → Enter URL manually:"
+echo "  ${MANUAL_1}"
+echo "  ${PACKAGER_URL}"
+echo ""
+echo "Deep link (Safari/Notes):"
+echo "  exp+cozbil://expo-development-client/?url=${ENC}"
+echo ""
+echo "NEVER use :8081 on tunnel hosts. Old lhr.life / 172.30.x URLs die quickly."
+echo "=============================================="

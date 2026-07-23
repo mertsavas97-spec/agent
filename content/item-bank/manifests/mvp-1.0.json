@@ -1,0 +1,21 @@
+{
+  "package": "mvp-1.0",
+  "description": "Mini özgün item bank — büyütülecek taban paket",
+  "targetCount": 54,
+  "items": [
+    "lgs-math-kesirler-001",
+    "lgs-math-yuzdeler-001",
+    "lgs-math-oran-001",
+    "lgs-turkish-paragraf-001",
+    "ygs-math-denklemler-001",
+    "ygs-math-fonksiyon-001",
+    "ygs-math-temel-001",
+    "kpss-math-yuzde-001",
+    "kpss-math-oran-001",
+    "kpss-math-problem-001",
+    "lgs-math-kesir-dogfood-001",
+    "ygs-math-denklem-dogfood-001",
+    "kpss-math-yuzde-dogfood-001"
+  ],
+  "notes": "Özgün maddeler + dogfood; görseller docs/qa/phone-solve-fixtures/. Telifli kaynak yok. Ehliyet dogfood QA paketinde."
+}

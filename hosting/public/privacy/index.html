@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ÇözBil — Gizlilik Politikası</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.55;
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 1.5rem;
+      color: #1e1b4b;
+      background: #f8fafc;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+    .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.4rem; }
+    p { margin: 0.5rem 0 0; color: #334155; }
+    .note {
+      margin-top: 2rem;
+      padding: 0.9rem 1rem;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>ÇözBil Gizlilik Politikası</h1>
+  <p class="meta">Son güncelleme: 2026-07-21 · Çalışma taslağı (hukuki onay sonrası kesinleşir)</p>
+
+  <h2>1. Veri sorumlusu</h2>
+  <p>
+    ÇözBil uygulaması kapsamında kişisel veriler, sınav hazırlık / fotoğrafla soru çözme
+    hizmetinin sunulması amacıyla işlenir. Yayın sürümünde resmi unvan, adres ve
+    destek e-postası bu sayfada güncellenir.
+  </p>
+
+  <h2>2. İşlenen veriler</h2>
+  <p>
+    Hesap kimliği (Firebase UID), sınav tercihi, yaş bandı ve gerektiğinde veli
+    bilgilendirme onayı, yüklenen soru görselleri, çözüm / konu anlatım kayıtları,
+    kota ve abonelik durumu, bildirim tercihleri, cihaz / uygulama tanıma verileri
+    (işletim sistemi seviyesinde).
+  </p>
+
+  <h2>3. Amaçlar ve hukuki sebepler</h2>
+  <p>
+    Hizmetin ifası (çözüm üretimi, kota, abonelik), güvenlik / kötüye kullanım önleme,
+    yasal yükümlülükler ve — ayrı açık rıza ile — cihaz içi hatırlatma bildirimleri.
+  </p>
+
+  <h2>3a. Bildirimler</h2>
+  <p>
+    ÇözBil hatırlatmaları şu an sunucu push (FCM/APNs) kullanmaz; tercihlerine göre
+    cihazında yerel olarak zamanlanır. Android 13 ve üzeri cihazlarda bildirim izni
+    (POST_NOTIFICATIONS) istenir. İzin veya tercih kapatıldığında yerel hatırlatmalar
+    durdurulur.
+  </p>
+
+  <h2>4. Saklama ve üçüncü taraflar</h2>
+  <p>
+    Veriler Google Cloud / Firebase altyapısında saklanır. OCR / AI çözüm altyapısı ve
+    Google Play Billing (abonelik) kullanılabilir. Ücretsiz planda reklam SDK’ları
+    politikaya uygun şekilde eklenebilir. Silme talebi sonrası kalıcı silme; hesap,
+    çözüm kayıtları ve yüklenen görselleri kaldırır.
+  </p>
+
+  <h2>5. Çocuklar ve LGS</h2>
+  <p>
+    13–17 yaş bandında veli bilgilendirmesi ve onay kaydı aranır. 13 yaş altı için
+    veli onayı zorunludur; ürün çocuklara yönelik reklam hedeflemesi yapmaz.
+  </p>
+
+  <h2>6. Haklar</h2>
+  <p>
+    KVKK md. 11 kapsamındaki haklarını (erişim, düzeltme, silme, itiraz vb.) uygulama
+    içi Profil → Veri silme talebi veya destek e-postası üzerinden kullanabilirsin.
+  </p>
+
+  <h2>7. İletişim</h2>
+  <p>
+    Destek: uygulama ayarlarındaki iletişim alanı veya
+    <span id="support">destek e-postası (yayında tanımlanır)</span>.
+  </p>
+
+  <div class="note">
+    Bu sayfa mağaza Data Safety / Privacy Policy URL’si için hazırlanmıştır.
+    Avukat onaylı metin geldiğinde aynı URL altında güncellenir.
+  </div>
+</body>
+</html>

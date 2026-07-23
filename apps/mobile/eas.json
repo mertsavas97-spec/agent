@@ -1,0 +1,67 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_EMULATORS": "0",
+        "EXPO_PUBLIC_SCREENSHOT_MODE": "0"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_SCREENSHOT_MODE": "0",
+        "EXPO_PUBLIC_USE_EMULATORS": "0",
+        "EXPO_PUBLIC_ADS_STUB": "1"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_SCREENSHOT_MODE": "0",
+        "EXPO_PUBLIC_USE_EMULATORS": "0",
+        "EXPO_PUBLIC_ADS_STUB": "0",
+        "EXPO_PUBLIC_PREMIUM_SANDBOX": "0",
+        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://cozbil-dev-f9583.web.app/privacy",
+        "EXPO_PUBLIC_TERMS_URL": "https://cozbil-dev-f9583.web.app/terms",
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "destek@cozbil.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      },
+      "ios": {
+        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+      }
+    }
+  }
+}

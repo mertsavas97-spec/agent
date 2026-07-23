@@ -1,7 +1,27 @@
 /** Mirror of specs/002-cozbil-mvp/contracts — keep in sync with mobile src/lib/api/types.ts */
 
-export type ExamType = 'lgs' | 'ygs' | 'kpss';
-export type Subject = 'math' | 'turkish' | 'unknown';
+export type ExamType = 'lgs' | 'ygs' | 'kpss' | 'trafik';
+/** Exam branch / ders — see docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md */
+export type Subject =
+  | 'math'
+  | 'turkish'
+  | 'science'
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'history'
+  | 'geography'
+  | 'philosophy'
+  | 'literature'
+  | 'religion'
+  | 'english'
+  | 'geometry'
+  | 'civics'
+  | 'current'
+  | 'traffic'
+  | 'vehicle'
+  | 'firstaid'
+  | 'unknown';
 
 export type AttemptStatus =
   | 'pending_moderation'
@@ -17,6 +37,12 @@ export type SolutionStep = {
   body: string;
 };
 
+/** Highlighted final answer for result UI (choice letter optional). */
+export type SolutionAnswer = {
+  label?: string;
+  text: string;
+};
+
 export type QuotaInfo = {
   remainingToday: number;
   unlimited: boolean;
@@ -30,11 +56,14 @@ export type SolveQuestionRequest = {
 
 export type SolveQuestionSuccess = {
   attemptId: string;
+  solutionId: string;
   status: 'solved';
   cached: boolean;
   topicId: string | null;
   subject: Subject;
   steps: SolutionStep[];
+  /** Final answer / choice — required for mobile DOĞRU CEVAP hero */
+  answer: SolutionAnswer;
   transparencyNote: string;
   quota: QuotaInfo;
 };
@@ -91,13 +120,22 @@ export type UserDoc = {
   examType: ExamType;
   ageBand?: 'under13' | '13to17' | '18plus';
   parentalConsentAt?: unknown | null;
+  consentAcceptedAt?: unknown | null;
+  onboardingCompletedAt?: unknown | null;
   streakCount: number;
   streakLastActiveDate: string | null;
   dailySolveCount: number;
   dailySolveDate: string | null;
+  /** Rewarded-ad bonus solves (Istanbul day) */
+  rewardedBonusCount?: number;
+  rewardedBonusDate?: string | null;
   subscriptionStatus: 'free' | 'active' | 'grace' | 'expired';
+  subscriptionProductId?: string | null;
+  subscriptionExpiresAt?: string | null;
   invalidImageScore: number;
   restrictedUntil?: unknown | null;
+  /** Soft delete / KVKK erasure request flag (MVP) */
+  deleteRequestedAt?: unknown | null;
   createdAt: unknown;
   updatedAt: unknown;
 };

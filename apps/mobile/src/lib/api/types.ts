@@ -1,7 +1,27 @@
 /** Shared client DTOs — mirror `specs/002-cozbil-mvp/contracts/` */
 
-export type ExamType = 'lgs' | 'ygs' | 'kpss';
-export type Subject = 'math' | 'turkish' | 'unknown';
+export type ExamType = 'lgs' | 'ygs' | 'kpss' | 'trafik';
+/** Exam branch / ders — see docs/architecture/EXAM_SUBJECT_TREE_2020_2026.md */
+export type Subject =
+  | 'math'
+  | 'turkish'
+  | 'science'
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'history'
+  | 'geography'
+  | 'philosophy'
+  | 'literature'
+  | 'religion'
+  | 'english'
+  | 'geometry'
+  | 'civics'
+  | 'current'
+  | 'traffic'
+  | 'vehicle'
+  | 'firstaid'
+  | 'unknown';
 
 export type AttemptStatus =
   | 'pending_moderation'
@@ -17,6 +37,12 @@ export type SolutionStep = {
   body: string;
 };
 
+/** Highlighted final answer for result UI (choice letter optional). */
+export type SolutionAnswer = {
+  label?: string;
+  text: string;
+};
+
 export type QuotaInfo = {
   remainingToday: number;
   unlimited: boolean;
@@ -28,8 +54,26 @@ export type SolveQuestionRequest = {
   examType?: ExamType;
 };
 
+export type SubjectClassificationMeta = {
+  subject: Subject;
+  confidence: 'high' | 'medium' | 'low';
+  needsConfirm: boolean;
+  topicKey?: string;
+  score?: number;
+  alternatives?: { subject: string; score: number }[];
+};
+
+export type ExamHintMeta = {
+  suggested: ExamType | null;
+  confidence: 'high' | 'medium' | 'low';
+  reason?: string | null;
+  questionNumber?: number | null;
+  mismatchesProfile: boolean;
+};
+
 export type SolveQuestionSuccess = {
   attemptId: string;
+  solutionId: string;
   status: 'solved';
   cached: boolean;
   topicId: string | null;
@@ -37,6 +81,17 @@ export type SolveQuestionSuccess = {
   steps: SolutionStep[];
   transparencyNote: string;
   quota: QuotaInfo;
+  /** Preferred display answer — result screen hero */
+  answer: SolutionAnswer;
+  /**
+   * Tip-only / offline assist — not a verified final answer.
+   * UI must show honesty banner; do not imply “çözüldü”.
+   */
+  assisted?: boolean;
+  /** Dogfood / proxy: when needsConfirm, UI asks user before showing result */
+  classification?: SubjectClassificationMeta;
+  /** Profile exam vs OCR booklet mismatch */
+  examHint?: ExamHintMeta;
 };
 
 export type SolveQuestionRejected = {
@@ -44,6 +99,9 @@ export type SolveQuestionRejected = {
   status: 'rejected_moderation' | 'rejected_not_question' | 'unsupported_type';
   userMessage: string;
   quota: QuotaInfo;
+  /** Dogfood / proxy: OCR may still suggest a better exam package */
+  examHint?: ExamHintMeta;
+  classification?: SubjectClassificationMeta;
 };
 
 export type SolveQuestionResponse = SolveQuestionSuccess | SolveQuestionRejected;
@@ -64,11 +122,24 @@ export type ProgressTopic = {
   followUpCount: number;
 };
 
+export type ProgressSubjectMix = {
+  subject: Subject;
+  label: string;
+  count: number;
+  pct: number;
+};
+
 export type ProgressSummary = {
   streakCount: number;
   weakestTopic: (ProgressTopic & { followUpCount: number }) | null;
   topics: ProgressTopic[];
   weekly: { date: string; solvedCount: number }[];
+  /** Active exam scope when known */
+  examType?: ExamType;
+  totalSolved?: number;
+  subjectMix?: ProgressSubjectMix[];
+  /** Why the focus card picked this topic */
+  focusHint?: string | null;
 };
 
 export type ListAttemptsRequest = {
@@ -85,6 +156,9 @@ export type AttemptListItem = {
   topicId: string | null;
   status: AttemptStatus;
   thumbnailUrl: string | null;
+  /** Present on dogfood local history + server when persisted */
+  examType?: ExamType;
+  solutionId?: string | null;
 };
 
 export type ListAttemptsResponse = {
@@ -97,6 +171,9 @@ export type UserProfile = {
   examType: ExamType;
   ageBand?: 'under13' | '13to17' | '18plus';
   parentalConsentAt?: string | null;
+  consentAcceptedAt?: string | null;
+  deleteRequestedAt?: string | null;
+  onboardingCompletedAt?: string | null;
   streakCount: number;
   dailySolveCount: number;
   subscriptionStatus: 'free' | 'active' | 'grace' | 'expired';

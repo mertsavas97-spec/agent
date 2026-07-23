@@ -1,0 +1,112 @@
+import assert from 'node:assert/strict';
+import { classifyOcr } from './classifyOcr.mjs';
+import { tryTrafficSolve } from './trafficSolve.mjs';
+import { tryVerbalSolve } from './verbalSolve.mjs';
+
+const redYellow = `
+Soru 1. Şekildeki gibi ışıklı trafik işaret cihazında, sarı ve kırmızı ışığın birlikte yandığını gören sürücü ne yapmalıdır?
+A) Harekete hazırlanmalı
+B) Yolun en sağına yaklaşmalı
+C) Hızlanmalı
+D) Geçmeli
+`;
+
+const lane = `
+Şekildeki şerit kontrol işaretlerinde kırmızı X ve yeşil ok yanıyorsa sürücü ne yapmalıdır?
+A) X olan şeride girmeli
+B) Okun gösterdiği yöne devam etmeli
+C) Geri gitmeli
+D) Durmadan sollamalı
+`;
+
+const powertrain = `
+Şekildeki araç güç aktarma organlarının adları hangi seçenekte doğru olarak verilmiştir?
+A) I. Şaft II. Diferansiyel III. Aks
+B) I. Şaft II. Aks III. Diferansiyel
+C) I. Diferansiyel II. Aks III. Şaft
+D) I. Aks II. Diferansiyel III. Şaft
+`;
+
+const classTraffic = { subject: 'traffic', confidence: 'high', topicKey: 'kurallar' };
+
+const ry = tryTrafficSolve(redYellow, classTraffic);
+assert.ok(ry?.steps?.length >= 3);
+assert.equal(ry.answerLabel, 'A');
+assert.match(ry.answerText, /hazırlan/i);
+assert.equal(ry.subject, 'traffic');
+assert.equal(ry.topicKey, 'kurallar');
+assert.match(ry.steps[0].title, /İşaret/i);
+
+const ln = tryTrafficSolve(lane, classTraffic);
+assert.ok(ln?.answerLabel);
+assert.equal(ln.answerLabel, 'B');
+assert.equal(ln.subject, 'traffic');
+
+const viaVerbal = tryVerbalSolve(redYellow, classTraffic, 'trafik');
+assert.equal(viaVerbal?.answerLabel, 'A');
+assert.equal(viaVerbal?.subject, 'traffic');
+
+// Cross-package: same OCR under KPSS must not run Ehliyet solver
+const blockedKpss = tryVerbalSolve(redYellow, classTraffic, 'kpss');
+assert.equal(blockedKpss, null);
+
+const pt = tryTrafficSolve(powertrain, classTraffic);
+assert.equal(pt?.answerLabel, 'A');
+assert.equal(pt?.subject, 'vehicle');
+assert.equal(pt?.topicKey, 'motor');
+assert.match(pt?.answerText ?? '', /Şaft/i);
+
+const powertrainMultiline = `
+Şekildeki araç güç aktarma organlarının
+adları hangi seçenekte doğru olarak
+verilmiştir?
+A)
+I. Şaft
+II. Diferansiyel
+III. Aks
+B)
+I. Şaft
+II. Aks
+III. Diferansiyel
+C)
+I. Diferansiyel
+II. Aks
+III. Şaft
+D)
+I. Aks
+II. Diferansiyel
+III. Şaft
+`;
+
+const ptMl = tryTrafficSolve(powertrainMultiline, classTraffic);
+assert.equal(ptMl?.answerLabel, 'A');
+assert.equal(ptMl?.subject, 'vehicle');
+assert.match(ptMl?.answerText ?? '', /Şaft/i);
+
+// Noisy Instagram-ish OCR: stem clear, choices messy — still lock vehicle + classic order
+const noisy = `
+EHLIYETIMI AL
+Sekildeki arac guc aktarma organlarinin adlari hangi secenekte dogru olarak verilmistir?
+A) I. Saft II. Diferansiyel III. Aks
+B) I. Saft II. Aks III. Diferansiyel
+ABONE OL
+`;
+const ptNoisy = tryTrafficSolve(noisy, { subject: 'traffic' });
+assert.equal(ptNoisy?.subject, 'vehicle');
+assert.equal(ptNoisy?.topicKey, 'motor');
+assert.ok(ptNoisy?.answerLabel === 'A' || /Saft|Şaft/i.test(ptNoisy?.answerText ?? ''));
+
+// Dogfood fixture: "kilometre" (not "km") must still resolve to 50
+const speedKmWord = `
+Yerleşim yeri içinde, aksini belirten bir trafik işareti yoksa, otomobiller için azami hız sınırı saatte kaç kilometredir?
+A) 30
+B) 50
+C) 70
+D) 90
+E) 120
+`;
+const sp = tryTrafficSolve(speedKmWord, classTraffic);
+assert.equal(sp?.answerLabel, 'B');
+assert.match(sp?.answerText ?? '', /50/);
+
+console.log('trafficSolve.test.mjs OK');

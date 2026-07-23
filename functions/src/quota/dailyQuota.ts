@@ -4,6 +4,9 @@ export type QuotaState = {
   dailySolveCount: number;
   dailySolveDate: string | null;
   subscriptionStatus: 'free' | 'active' | 'grace' | 'expired';
+  /** Extra free solves granted via rewarded ads (Istanbul day). */
+  rewardedBonusCount?: number;
+  rewardedBonusDate?: string | null;
 };
 
 export function istanbulDate(now = new Date()): string {
@@ -15,7 +18,9 @@ export function remainingQuota(state: QuotaState, today = istanbulDate()): numbe
     return Number.MAX_SAFE_INTEGER;
   }
   const count = state.dailySolveDate === today ? state.dailySolveCount : 0;
-  return Math.max(0, FREE_DAILY_LIMIT - count);
+  const bonus =
+    state.rewardedBonusDate === today ? Number(state.rewardedBonusCount ?? 0) : 0;
+  return Math.max(0, FREE_DAILY_LIMIT + bonus - count);
 }
 
 export function assertHasQuota(state: QuotaState, today = istanbulDate()): void {

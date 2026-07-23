@@ -1,23 +1,24 @@
 # Sprint State
 
-**Aktif sprint:** US1 — fotoğrafla soru çöz — COMPLETE  
-**Hedef:** T014–T024 ✅  
-**Branch:** `cursor/cozbil-us1-solve-9131` → `main`  
-**Sonraki:** US2 — Anlamadım, tekrar açıkla (T025+)  
-**AI kredileri:** ertelendi → demo AI (`docs/setup/OWNER_LATER.md`)
+**Aktif çalışma yeri:** Cloud agent  
+**Branch:** `cursor/solve-word-eq-proxy-6767`  
+**Sprint:** **GHA Android AAB (EAS local) + Play photo perms**
 
-## Backlog
+## Android build path (bu tur)
 
-1. ~~Phase 1–2~~
-2. ~~US1 solve pipeline~~
-3. **NEXT:** US2 explainAgain (kredi gerekmez)
-4. US3 onboarding · US4–6 UI
-5. *(Sonra)* Gemini + Vision + Firebase prod keys
+- [x] `.easignore` (slim archive)
+- [x] `.github/workflows/android-production-aab.yml` (manual)
+- [x] `docs/setup/GITHUB_ACTIONS_ANDROID_BUILD.md`
+- [ ] Owner: GitHub Secrets (`EXPO_TOKEN` + Firebase public)
+- [ ] Owner: Actions → Run **Android production AAB** → Play Internal
 
-## Son QA Gate
+## Play Photo & Video policy
 
-- typecheck: PASS
-- lint: N/A
-- smoke: PASS
-- guardian: PASS
-- demo AI: varsayılan (key yok)
+- [x] Kod: READ_MEDIA_* blocked + Photo Picker
+- [ ] Owner: yeni AAB (GHA) yükle + formda picker yolu
+
+## Store / iOS owner (aynı)
+
+- [ ] Play SKU + billing secret + org policy invoker
+- [ ] iOS ASC / secrets / TestFlight
+- [ ] Counsel legal

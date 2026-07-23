@@ -1,37 +1,61 @@
-# iOS Cursor — devam rehberi
+# Cursor Mobile / Cloud Agents — devam rehberi
 
-Sohbet geçmişi telefona taşınmaz. **Kaynak gerçek: GitHub repo.**
+Sohbet geçmişi telefona taşınmaz. **Kaynak gerçek: GitHub repo**  
+`https://github.com/mertsavas97-spec/agent`
 
-## 1) Aç
+## Telefonda nasıl açılır
 
-1. Cursor iOS → aynı hesap  
-2. **Cloud Agents** / repo: `mertsavas97-spec/agent`  
-3. Branch: **`main`** (kit + ÇözBil spec burada)
+### iPhone (Cursor app)
+1. [App Store — Cursor](https://apps.apple.com/app/cursor/id6767085653) (iOS 26+ beta)
+2. **Aynı Cursor hesabı** (Pro+) ile giriş
+3. Repo seç: **`mertsavas97-spec/agent`**
+4. Branch: `main` veya aktif feature branch (ör. `cursor/mvp-10-launch-audit-9131`)
+5. Cloud Agent başlat → diff / PR incele
 
-PR (arşiv): https://github.com/mertsavas97-spec/agent/pull/2
+### Android
+Native app yok → Chrome’da [cursor.com/agents](https://cursor.com/agents) → Install App (PWA)
 
-## 2) İlk mesaj (kopyala)
+## Desktop’ta bir kez (zorunlu)
+
+1. [cursor.com/dashboard](https://cursor.com/dashboard) → **Integrations → GitHub**  
+   → `mertsavas97-spec/agent` erişimi (read-write)
+2. [cursor.com/agents](https://cursor.com/agents) → repo listesinde görünmeli
+3. Cloud Agents → Environment: bu repo için snapshot / secrets (isteğe bağlı)  
+   Repo’da `.cursor/environment.json` var (`apps/mobile` + `functions` + `solve-proxy` npm install)
+4. Privacy Mode (Legacy) kapalı olmalı — Cloud Agents için
+
+## Mac Metro / fiziksel telefon
+
+Cloud Agent **Mac Metro’ya veya USB telefona bağlanamaz.**  
+Cihaz dogfood için:
+
+- Desktop Cursor’da çalış, **veya**
+- **Remote Control** (Cursor ≥ 3.9.8, Mac uyanık) — Agents → Remote Control
+
+## Secrets (chat’e yapıştırma)
+
+Cloud dashboard Secrets’a koy (örnek isimler):
+
+| Secret | Ne için |
+|--------|---------|
+| `EXPO_PUBLIC_FIREBASE_*` | Mobile Firebase (public) |
+| `GOOGLE_CLOUD_VISION_API_KEY` | OCR proxy / Functions |
+| `GEMINI_API_KEY` | Kullanma — AI Studio prepaid bitmiş olabilir |
+| `COZBIL_USE_VERTEX` | Functions’ta `1` (Startup/billing) |
+
+## İlk mesaj (telefondan)
 
 ```
-@koordinatör devam — iOS handoff
+@koordinatör devam
 
-Oku: SPRINT_STATE.md, PROJECT_BRIEF.md, docs/agent/COORDINATOR.md, docs/agent/TEAM_ROSTER.md
+Oku: SPRINT_STATE.md, docs/agent/IOS_CONTINUE.md, AGENTS.md
 
-Mod: Koordinatör. Skill map: cozbil-team-skills. QA Gate zorunlu.
-Exam: LGS+YGS+KPSS. Moodboard: docs/design/moodboard/
-
-Aktif hedef: specs/002-cozbil-mvp/tasks.md US2 — Anlamadım tekrar açıkla (T025+).
-
-İlk iş: SPRINT_STATE oku, US1’in main’de olduğunu doğrula, US2’ye başla.
+Cloud Agent’sın. Lokal Metro/device yok — JS/docs/functions/proxy testleri yap.
+Push + PR aç. Force push / store submit yok.
 ```
 
-## 3) Sonraki iş sırası
+## Dokunma
 
-1. ~~Phase 1–2~~  
-2. ~~US1 fotoğrafla çöz~~  
-3. US2 explainAgain · US3 onboarding  
-
-## 4) Dokunma
-
-- Secrets: `.cursor/mcp.json` (Context7) — iOS Cloud Agent ortamına ayrı eklenmeli  
-- Force push / store submit yok  
+- Chat’e API key yapıştırma  
+- Force push / Play-App Store submit yok  
+- `.env` dosyalarını commit etme

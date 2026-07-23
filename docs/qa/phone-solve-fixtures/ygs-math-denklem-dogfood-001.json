@@ -1,0 +1,43 @@
+{
+  "id": "qa-ygs-math-denklem-dogfood-001",
+  "examType": "ygs",
+  "subject": "math",
+  "topicId": "ygs-math-denklemler",
+  "difficulty": "easy",
+  "format": "multiple_choice",
+  "stem": "3(x − 2) + 4 = 2x + 7 denklemini sağlayan x değeri aşağıdakilerden hangisidir?",
+  "choices": {
+    "A": "1",
+    "B": "3",
+    "C": "5",
+    "D": "7",
+    "E": "9"
+  },
+  "answerKey": "E",
+  "explanationSteps": [
+    {
+      "title": "1. Dağıt",
+      "body": "3x − 6 + 4 = 2x + 7 → 3x − 2 = 2x + 7."
+    },
+    {
+      "title": "2. Topla",
+      "body": "3x − 2x = 7 + 2 → x = 9."
+    },
+    {
+      "title": "Cevap",
+      "body": "Doğru şık: E) 9"
+    }
+  ],
+  "answer": { "label": "E", "text": "9" },
+  "transparencyNote": "Özgün dogfood maddesi — YGS/YKS tarzı denklem; telifli kitapçık metni değildir.",
+  "source": "original",
+  "license": "owned",
+  "styleRefNote": "YGS matematik denklem ölçeği; özgün",
+  "image": "images/ygs-math-denklem-dogfood-001.png",
+  "review": {
+    "author": "qa-fixtures",
+    "reviewedAt": "2026-07-21",
+    "similarityCheck": "pass"
+  },
+  "version": 1
+}

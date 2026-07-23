@@ -1,14 +1,19 @@
 # ÇözBil theme tokens
 
-Source of truth: `docs/design/moodboard/`  
+Source of truth: `docs/design/moodboard/` + repo-root `DESIGN.md`  
 Code: `apps/mobile/src/theme/tokens.ts`
 
 | Token | Value |
 |-------|-------|
 | navy | `#1E1B4B` |
+| navySoft | `#EEF0F7` |
 | orange | `#F59E0B` |
-| surface | `#F8FAFC` |
+| orangeSoft | `#FFF7E6` |
+| surface | `#F5F6FA` |
 | font | Poppins |
+| text scale | xs→display (`typography.size`) |
+| motion | fast 180 / normal 280 / slow 480 |
+| interaction | pressedOpacity 0.88, minTouch 48 |
 
-Note: `ui-ux-pro-max-cli` was not available in the scaffold environment;
-tokens were derived directly from the locked moodboard (T006).
+Note: moodboard HEX kilitli; soft yüzey / shadow / motion `ui-design-system`
+(modern) ile rafine edildi. Detay: `DESIGN.md`, `docs/design/premium-polish-brief.md`.

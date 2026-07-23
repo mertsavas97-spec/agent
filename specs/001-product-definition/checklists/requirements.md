@@ -33,5 +33,8 @@
 ## Notes
 
 - Validation iteration 3 (2026-07-18): Exam scope amended to **LGS + YGS + KPSS**
-  (all active). Moodboard linked under `docs/design/moodboard/`.
+- Validation iteration 4 (2026-07-21): Exam scope amended to **LGS + YGS + KPSS + Ehliyet**; yearly price SSoT later locked at **320 TL**
+  (see `docs/product/pricing-policy.md`; iteration note historically said 279 — superseded).
+  Moodboard linked under `docs/design/moodboard/`.
+- Validation iteration 5 (2026-07-22): Confirm yearly price SSoT **320 TL/yıl** across checklist + runtime.
 - Status: **Locked**.
