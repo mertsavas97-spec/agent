@@ -1,3 +1,13 @@
+jest.mock('@/src/features/paywall/syncSubscriptionClient', () => ({
+  callSyncSubscription: jest.fn(),
+}));
+
+jest.mock('@/src/features/paywall/entitlement', () => ({
+  activateLocalPremium: jest.fn(),
+  canUseLocalPremium: jest.fn(() => false),
+  isPremiumSandboxEnv: jest.fn(() => false),
+}));
+
 import { billingFailureMessage } from '@/src/features/paywall/billing';
 
 describe('billingFailureMessage', () => {
