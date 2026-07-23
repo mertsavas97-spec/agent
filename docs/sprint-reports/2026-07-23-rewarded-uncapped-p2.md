@@ -15,5 +15,10 @@
 **Kullanılan ekipler:** Mobile, Architect, Growth, QA, Guardian  
 **Skill/agent setleri:** cozbil-team-skills, cozbil-expo-mobile, cozbil-guardian  
 **Skill bypass:** Context7 MCP yok  
-**QA Gate:** (koşulacak)  
+**QA Gate:**
+- typecheck: PASS (mobile + functions)
+- lint: N/A
+- smoke: PASS (mobile Jest 259 / grantRewardedSolve 4)
+- guardian: PASS (ödüllü hak abartısız; günlük tavan kaldırıldı, abuse rate-limit duruyor)
+
 **Sonraki:** Owner Functions deploy; P2 ESLint / StoreKit stub
