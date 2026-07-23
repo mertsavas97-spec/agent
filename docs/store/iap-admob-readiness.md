@@ -21,10 +21,12 @@ Kaynak: `apps/mobile/src/features/paywall/pricing.ts` + `docs/product/pricing-po
 
 ### iOS (StoreKit)
 - [ ] App Store Connect’te aynı product id’lerle auto-renewable
-- [ ] App-specific shared secret / StoreKit 2 Server API
-- [ ] Backend `verifyAppStorePurchase` (henüz yok — Sprint 4+ owner)
-- [x] Client product id SSoT hazır; `expo-iap` iOS’u da hedefler
+- [ ] App Store Connect API key env: `APPLE_BUNDLE_ID` / `APPLE_ISSUER_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY`
+- [x] Backend stub: `verifyAppStorePurchase.ts` + `syncSubscription(platform: 'ios')` (credentials_missing / not_implemented — asla sahte elevate)
+- [ ] Full App Store Server API client (stub → live)
+- [x] Client product id SSoT hazır; `expo-iap` iOS’u da hedefler (`platform` gönderir)
 - [ ] Production EAS iOS submit profili
+- [x] `supportsTablet: false` (phone-first)
 
 ## Reklam formatları
 

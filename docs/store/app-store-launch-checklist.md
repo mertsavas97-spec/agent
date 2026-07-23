@@ -25,7 +25,7 @@
 ## P1
 
 - [ ] ATT only if tracking/ads SDK; else omit `NSUserTrackingUsageDescription`
-- [ ] Tablet support gerçek test veya `supportsTablet: false`
+- [x] Tablet support: `supportsTablet: false` (phone-first; iPad assets yok)
 - [ ] Minör / guardian policy App Review notes
 - [ ] Pricing / exam scope copy = Android ile aynı karar
 

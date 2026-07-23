@@ -2,7 +2,7 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **4 + store P0/P1 + rewarded uncapped + P2 analytics/review**
+**Sprint:** **4 + store P0–P2 agent closeout** — StoreKit stub / ESLint / phone-first
 
 ## Store P0 (listing görselleri hariç)
 
@@ -27,16 +27,19 @@
 - [x] Her çoklu açılışta reklam → unlock + `grantRewardedSolve`
 - [x] Saatlik abuse rate-limit (40/saat)
 
-## Store P2 (kısmi)
+## Store P2
 
 - [x] Analytics event wrapper
 - [x] In-app review (`expo-store-review`)
-- [ ] Owner: Functions deploy (grant + purge)
+- [x] StoreKit verify stub (`verifyAppStorePurchase` + platform=ios)
+- [x] ESLint (`eslint-config-expo`, lint app/src)
+- [x] `supportsTablet: false` (phone-first)
+- [ ] Owner: Functions deploy (grant + purge + sync ios path)
 - [ ] Owner: `eas init` (owner/projectId)
 - [ ] Owner: hosting deploy (privacy + terms)
 - [ ] Owner: Play SKU + billing credentials
 - [ ] Owner: AdMob native SDK + store products
-- [ ] Owner: iOS App Store purchase verify
+- [ ] Owner: iOS App Store Server API full verify
 
 ## Sprint 3 residual
 

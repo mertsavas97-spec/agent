@@ -21,7 +21,7 @@ let sink: AnalyticsSink = () => {
   /* no-op until owner wires GA */
 };
 
-const buffer: Array<{ event: string; params?: AnalyticsParams }> = [];
+const buffer: { event: string; params?: AnalyticsParams }[] = [];
 const MAX_BUFFER = 40;
 
 export function setAnalyticsSink(next: AnalyticsSink | null): void {
@@ -40,10 +40,10 @@ export function track(event: string, params?: AnalyticsParams): void {
 }
 
 /** Test helper */
-export function __drainAnalyticsBufferForTests(): Array<{
+export function __drainAnalyticsBufferForTests(): {
   event: string;
   params?: AnalyticsParams;
-}> {
+}[] {
   return buffer.splice(0, buffer.length);
 }
 

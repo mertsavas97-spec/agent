@@ -93,12 +93,12 @@
 
 | ID | İş | Durum |
 |----|-----|--------|
-| P2-1 | StoreKit `verifyAppStorePurchase` stub → full | open (iOS) |
+| P2-1 | StoreKit `verifyAppStorePurchase` stub → full | **STUB DONE** (full = owner/iOS later) |
 | P2-2 | Analytics event wrapper | **DONE** (`src/lib/analytics.ts`) |
 | P2-3 | In-app review | **DONE** (`expo-store-review` + SolutionScreen) |
 | P2-4 | Real AdMob SDK | owner / later |
-| P2-5 | ESLint gerçek kurulum | open |
-| P2-6 | `supportsTablet: false` veya iPad assets | open | 
+| P2-5 | ESLint gerçek kurulum | **DONE** (`eslint-config-expo`) |
+| P2-6 | `supportsTablet: false` veya iPad assets | **DONE** (`supportsTablet: false`) | 
 
 ---
 

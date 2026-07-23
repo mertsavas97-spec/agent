@@ -23,8 +23,9 @@ describe('billingFailureMessage', () => {
     );
   });
 
-  it('covers restore-none and cancel paths', () => {
+  it('covers restore-none, cancel, and ios stub paths', () => {
     expect(billingFailureMessage('none')).toMatch(/bulunamadı/i);
     expect(billingFailureMessage('user_cancelled')).toMatch(/iptal/i);
+    expect(billingFailureMessage('ios_not_implemented')).toMatch(/App Store/i);
   });
 });

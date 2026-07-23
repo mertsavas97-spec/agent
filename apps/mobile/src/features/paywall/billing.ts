@@ -24,7 +24,8 @@ export type PurchasePremiumResult = {
     | 'billing_unavailable'
     | 'sync_failed'
     | 'billing_not_configured'
-    | 'credentials_missing';
+    | 'credentials_missing'
+    | 'ios_not_implemented';
   productId: string;
 };
 
@@ -33,16 +34,21 @@ export function billingFailureMessage(reason?: string | null): string {
   switch (reason) {
     case 'credentials_missing':
     case 'failed-precondition':
-      return 'Satın alma doğrulaması sunucuda yapılandırılmamış. Play Billing credential eklenene kadar Premium yükseltmesi tamamlanamaz.';
+      return Platform.OS === 'ios'
+        ? 'App Store doğrulaması sunucuda yapılandırılmamış. iOS satın alma doğrulaması tamamlanana kadar Premium yükseltmesi bitmez.'
+        : 'Satın alma doğrulaması sunucuda yapılandırılmamış. Play Billing credential eklenene kadar Premium yükseltmesi tamamlanamaz.';
+    case 'ios_not_implemented':
+    case 'unimplemented':
+      return 'App Store satın alma doğrulaması henüz tamamlanmadı. Android-first sürümde Premium Play üzerinden açılır.';
     case 'billing_not_configured':
     case 'billing_unavailable':
-      return 'Mağaza faturalaması bu derlemede kullanılamıyor. Prod’da Play ürünleri + syncSubscription gerekir.';
+      return 'Mağaza faturalaması bu derlemede kullanılamıyor. Prod’da mağaza ürünleri + syncSubscription gerekir.';
     case 'none':
       return 'Geri yüklenecek satın alma bulunamadı.';
     case 'user_cancelled':
       return 'Satın alma iptal edildi.';
     case 'sync_failed':
-      return 'Satın alma sunucuda doğrulanamadı. İnternet ve Play hesabını kontrol edip tekrar dene.';
+      return 'Satın alma sunucuda doğrulanamadı. İnternet ve mağaza hesabını kontrol edip tekrar dene.';
     default:
       return 'İşlem tamamlanamadı. Biraz sonra tekrar dene.';
   }
@@ -159,6 +165,7 @@ export async function purchasePremiumPlan(
     const sync = await callSyncSubscription({
       productId: purchase.productId ?? productId,
       purchaseToken: purchase.purchaseToken,
+      platform: Platform.OS === 'ios' ? 'ios' : 'android',
     });
     if (!sync.ok) {
       const reason =
@@ -166,7 +173,9 @@ export async function purchasePremiumPlan(
         sync.reason === 'failed-precondition' ||
         /credentials_missing|failed-precondition/i.test(sync.reason ?? '')
           ? 'credentials_missing'
-          : 'sync_failed';
+          : sync.reason === 'ios_not_implemented' || sync.reason === 'unimplemented'
+            ? 'ios_not_implemented'
+            : 'sync_failed';
       return { ok: false, reason, productId };
     }
 
@@ -229,6 +238,7 @@ export async function restorePremiumPurchases(): Promise<{
     const sync = await callSyncSubscription({
       productId: match.productId,
       purchaseToken: match.purchaseToken,
+      platform: Platform.OS === 'ios' ? 'ios' : 'android',
     });
     if (sync.ok) return { ok: true, reason: 'restored' };
     if (
@@ -237,6 +247,12 @@ export async function restorePremiumPurchases(): Promise<{
       /credentials_missing|failed-precondition/i.test(sync.reason ?? '')
     ) {
       return { ok: false, reason: 'credentials_missing' };
+    }
+    if (
+      sync.reason === 'ios_not_implemented' ||
+      sync.reason === 'unimplemented'
+    ) {
+      return { ok: false, reason: 'ios_not_implemented' };
     }
     return { ok: false, reason: sync.reason ?? 'sync_failed' };
   } catch {

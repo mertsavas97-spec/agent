@@ -26,6 +26,14 @@ describe('EAS production profile', () => {
     );
   });
 
+  it('keeps iOS phone-first (no iPad tablet target)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const appJson = require('../app.json') as {
+      expo: { ios?: { supportsTablet?: boolean } };
+    };
+    expect(appJson.expo.ios?.supportsTablet).toBe(false);
+  });
+
   it('strips expo-dev-client when EAS_BUILD_PROFILE=production and Firebase keys set', () => {
     const prev = process.env.EAS_BUILD_PROFILE;
     const prevKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;

@@ -1,5 +1,5 @@
 import type { Topic } from '@/src/data/topics';
-import type { ExamType, Subject } from '@/src/lib/api/types';
+import type { Subject } from '@/src/lib/api/types';
 import { SUBJECT_LABEL } from '@/src/data/subjects';
 
 /** Rich primer pieces — exam + topic specific, telifsiz öğretmen sesi. */

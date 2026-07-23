@@ -49,10 +49,7 @@ import type { AttemptListItem, ExamType } from '@/src/lib/api/types';
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
-import {
-  hydrateEntitlement,
-  isPremiumActive,
-} from '@/src/features/paywall/entitlement';
+import { isPremiumActive } from '@/src/features/paywall/entitlement';
 import { brand, colors, radii, shadows, space, typography } from '@/src/theme';
 import { findTopic, subjectLabel } from '@/src/data';
 import { TR_EYEBROW } from '@/src/lib/trCase';

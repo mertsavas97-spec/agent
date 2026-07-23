@@ -6,7 +6,6 @@ import { findTopic, subjectLabel } from '@/src/data';
 import { lessonForTopic } from '@/src/data/topicLessons';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { examThemeFor } from '@/src/features/exam/examTheme';
-import { subjectThemeFor } from '@/src/features/exam/subjectTheme';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 import { TR_EYEBROW } from '@/src/lib/trCase';
@@ -27,7 +26,6 @@ export default function SampleItemScreen() {
         ? lessonForTopic(item.topicId)
         : null;
   const examTheme = item ? examThemeFor(item.examType) : null;
-  const subjectTheme = item ? subjectThemeFor(item.subject) : null;
 
   if (!item) {
     return (

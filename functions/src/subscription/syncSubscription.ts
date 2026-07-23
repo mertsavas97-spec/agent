@@ -1,20 +1,29 @@
 /**
- * Sync Play / sandbox entitlement → decision + Firestore persist.
+ * Sync Play / App Store / sandbox entitlement → decision + Firestore persist.
  */
 
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 import type { QuotaState } from '../quota/dailyQuota';
 import {
+  appStoreCredentialsConfigured,
+  verifyAppStorePurchase,
+  type VerifyAppStoreResult,
+} from './verifyAppStorePurchase';
+import {
   isAllowedProductId,
   verifyPlayPurchase,
   type VerifyPlayResult,
 } from './verifyPlayPurchase';
 
+export type BillingPlatform = 'android' | 'ios';
+
 export type SyncSubscriptionInput = {
   uid: string;
   productId?: string;
   purchaseToken?: string;
+  /** android (Play) default; ios uses StoreKit verify stub */
+  platform?: BillingPlatform;
   /** Dogfood only — requires COZBIL_BILLING_SANDBOX=1 on Functions */
   sandboxActive?: boolean;
 };
@@ -31,24 +40,35 @@ export type SyncSubscriptionResult = {
     | 'invalid_product'
     | 'credentials_missing'
     | 'verify_failed'
-    | 'sandbox_disabled';
+    | 'sandbox_disabled'
+    | 'ios_not_implemented';
 };
 
 const DEFAULT_SANDBOX_PRODUCT = 'cozbil_premium_yearly';
 
-export type VerifyFn = (input: {
+export type VerifyPlayFn = (input: {
   productId: string;
   purchaseToken: string;
 }) => Promise<VerifyPlayResult>;
+
+export type VerifyAppStoreFn = (input: {
+  productId: string;
+  transactionId: string;
+}) => Promise<VerifyAppStoreResult>;
 
 export function billingSandboxEnabled(): boolean {
   return process.env.COZBIL_BILLING_SANDBOX === '1';
 }
 
+function resolvePlatform(input: SyncSubscriptionInput): BillingPlatform {
+  return input.platform === 'ios' ? 'ios' : 'android';
+}
+
 /** Pure sync decision (testable). */
 export async function syncSubscriptionDecision(
   input: SyncSubscriptionInput,
-  verify: VerifyFn = verifyPlayPurchase,
+  verifyPlay: VerifyPlayFn = verifyPlayPurchase,
+  verifyIos: VerifyAppStoreFn = verifyAppStorePurchase,
 ): Promise<SyncSubscriptionResult> {
   if (input.sandboxActive) {
     if (!billingSandboxEnabled()) {
@@ -75,6 +95,7 @@ export async function syncSubscriptionDecision(
 
   const productId = input.productId?.trim() ?? '';
   const purchaseToken = input.purchaseToken?.trim() ?? '';
+  const platform = resolvePlatform(input);
 
   if (!purchaseToken) {
     return {
@@ -95,7 +116,32 @@ export async function syncSubscriptionDecision(
     };
   }
 
-  const verified = await verify({ productId, purchaseToken });
+  if (platform === 'ios') {
+    const verified = await verifyIos({ productId, transactionId: purchaseToken });
+    if (!verified.ok) {
+      return {
+        subscriptionStatus: 'free',
+        productId: null,
+        synced: false,
+        expiresAt: null,
+        reason:
+          verified.reason === 'credentials_missing'
+            ? 'credentials_missing'
+            : verified.reason === 'not_implemented'
+              ? 'ios_not_implemented'
+              : 'verify_failed',
+      };
+    }
+    return {
+      subscriptionStatus: 'active',
+      productId,
+      synced: true,
+      expiresAt: verified.expiresAt,
+      reason: 'ok',
+    };
+  }
+
+  const verified = await verifyPlay({ productId, purchaseToken });
   if (!verified.ok) {
     return {
       subscriptionStatus: 'free',
@@ -138,11 +184,14 @@ export async function persistSubscription(
 
 export async function syncSubscriptionForUser(
   input: SyncSubscriptionInput,
-  verify: VerifyFn = verifyPlayPurchase,
+  verifyPlay: VerifyPlayFn = verifyPlayPurchase,
+  verifyIos: VerifyAppStoreFn = verifyAppStorePurchase,
 ): Promise<SyncSubscriptionResult> {
-  const decision = await syncSubscriptionDecision(input, verify);
+  const decision = await syncSubscriptionDecision(input, verifyPlay, verifyIos);
   if (decision.synced) {
     await persistSubscription(input.uid, decision);
   }
   return decision;
 }
+
+export { appStoreCredentialsConfigured };

@@ -322,7 +322,7 @@ export const getProgressSummary = regional.https.onCall(async (_data, context) =
   return getProgressSummaryForUser(context.auth.uid);
 });
 
-/** US6: Play Billing entitlement sync (verify token → users.subscriptionStatus) */
+/** US6: Play / App Store entitlement sync (verify token → users.subscriptionStatus) */
 export const syncSubscription = regional.https.onCall(async (data, context) => {
   if (!context.auth?.uid) {
     throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
@@ -331,19 +331,30 @@ export const syncSubscription = regional.https.onCall(async (data, context) => {
   const purchaseToken =
     typeof data?.purchaseToken === 'string' ? data.purchaseToken : undefined;
   const sandboxActive = Boolean(data?.sandboxActive);
+  const platformRaw = typeof data?.platform === 'string' ? data.platform : 'android';
+  const platform = platformRaw === 'ios' ? 'ios' : 'android';
 
   const result = await syncSubscriptionForUser({
     uid: context.auth.uid,
     productId,
     purchaseToken,
     sandboxActive,
+    platform,
   });
 
   if (!result.synced) {
     if (result.reason === 'credentials_missing') {
       throw new functions.https.HttpsError(
         'failed-precondition',
-        'Play doğrulama kimlik bilgileri yapılandırılmamış',
+        platform === 'ios'
+          ? 'App Store doğrulama kimlik bilgileri yapılandırılmamış'
+          : 'Play doğrulama kimlik bilgileri yapılandırılmamış',
+      );
+    }
+    if (result.reason === 'ios_not_implemented') {
+      throw new functions.https.HttpsError(
+        'unimplemented',
+        'App Store satın alma doğrulaması henüz tamamlanmadı (Android-first)',
       );
     }
     if (result.reason === 'sandbox_disabled') {

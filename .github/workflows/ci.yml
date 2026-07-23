@@ -41,8 +41,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Lint (stub OK)
-        run: npm run lint
+      - name: Lint
+        run: npm run lint --prefix apps/mobile
 
       - name: Mobile tests
         run: npm test --prefix apps/mobile -- --ci --maxWorkers=2 --passWithNoTests

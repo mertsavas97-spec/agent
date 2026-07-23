@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { httpsCallable } from 'firebase/functions';
 
 import { ensureSignedIn } from '@/src/lib/auth';
@@ -17,15 +18,19 @@ export async function callSyncSubscription(input: {
   productId: string;
   purchaseToken?: string;
   sandboxActive?: boolean;
+  platform?: 'android' | 'ios';
 }): Promise<SyncSubscriptionClientResult> {
   await ensureSignedIn();
   const { functions } = getFirebase();
   const callable = httpsCallable(functions, 'syncSubscription');
+  const platform =
+    input.platform ?? (Platform.OS === 'ios' ? 'ios' : 'android');
   try {
     const result = await callable({
       productId: input.productId,
       purchaseToken: input.purchaseToken,
       sandboxActive: input.sandboxActive ?? false,
+      platform,
     });
     const data = result.data as {
       synced?: boolean;
@@ -53,6 +58,12 @@ export async function callSyncSubscription(input: {
       code === 'functions/failed-precondition'
     ) {
       return { ok: false, reason: 'credentials_missing' };
+    }
+    if (
+      /ios_not_implemented|henüz tamamlanmadı|unimplemented/i.test(message) ||
+      code === 'functions/unimplemented'
+    ) {
+      return { ok: false, reason: 'ios_not_implemented' };
     }
     return { ok: false, reason: code.replace(/^functions\//, '') || 'unknown' };
   }
