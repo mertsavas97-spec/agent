@@ -2,7 +2,7 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **4 + store agent closeout + AdMob scaffold**
+**Sprint:** **4 + store agent closeout + AdMob + owner preflight helpers**
 
 ## Store P0 (listing görselleri hariç)
 
@@ -32,10 +32,12 @@
 - [x] Analytics event wrapper
 - [x] In-app review (`expo-store-review`)
 - [x] StoreKit verify stub (`verifyAppStorePurchase` + platform=ios)
-- [x] ESLint (`eslint-config-expo`, lint app/src)
+- [x] ESLint (`eslint-config-expo`, lint app/src) — 0 warning
 - [x] `supportsTablet: false` (phone-first)
 - [x] AdMob SDK scaffold (`react-native-google-mobile-ads` + `adMobEngine`)
 - [x] Owner ops runbook (`docs/store/OWNER_OPS_STORE_READY.md`)
+- [x] Owner preflight + deploy helpers (`check-store-preflight`, `deploy-store-functions`, `deploy-hosting-legal`)
+- [x] Hosting `/terms` rewrite + root index linkleri
 - [ ] Owner: Functions deploy (grant + purge + sync ios path)
 - [ ] Owner: `eas init` (owner/projectId)
 - [ ] Owner: hosting deploy (privacy + terms)

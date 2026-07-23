@@ -31,7 +31,7 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
 
 5. **Hosting**
    - [ ] `firebase login --reauth`
-   - [ ] Deploy `hosting/public/privacy` + `terms`
+   - [ ] `bash scripts/deploy-hosting-legal.sh` (privacy + terms)
    - [ ] URL smoke: privacy + terms 200
 
 6. **Prod solve smoke (proxy yok)**
@@ -44,6 +44,19 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
    eas build --platform android --profile production
    eas submit --platform android --profile production --latest
    ```
+
+## Agent-side gate (credential yok)
+
+```bash
+bash scripts/check-store-preflight.sh
+```
+
+Store callables (login sonrası):
+
+```bash
+bash scripts/deploy-store-functions.sh
+# optional solve triggers: WITH_SOLVE=1 bash scripts/deploy-store-functions.sh
+```
 
 ## Sprint B — Production submit (+1 paket)
 
@@ -63,6 +76,7 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
 ## Doğrulama komutları
 
 ```bash
+bash scripts/check-store-preflight.sh
 npm run typecheck
 npm run lint --prefix apps/mobile
 npm test --prefix apps/mobile -- --ci
@@ -77,3 +91,5 @@ bash scripts/check-eas-project.sh   # eas init sonrası
 - `docs/store/iap-admob-readiness.md`
 - `docs/store/hosting-deploy-runbook.md`
 - `docs/audits/store-impl-backlog-2026-07-23.md`
+- `scripts/deploy-store-functions.sh`
+- `scripts/deploy-hosting-legal.sh`

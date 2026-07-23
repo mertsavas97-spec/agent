@@ -234,17 +234,11 @@ export default function SolveBatchScreen() {
     })();
 
     return () => {
-      // Only cancel if a newer run replaced us (Strict Mode remount bumps runId).
-      if (runIdRef.current === runId) {
-        // Soft cancel: do not flip cancelled for the same claim remount.
-        // Hard cancel only when screen truly leaves — handled below via runId bump.
-      }
+      // Soft cancel this effect's async work. A remount bumps runIdRef so the
+      // new effect ignores in-flight work that still holds the old `runId`.
       cancelledRef.current = true;
     };
   }, []);
-
-  // Soften Strict Mode: second mount bumps runId and retakes claimed batch.
-  // First mount's cleanup sets cancelled — second mount resets it at effect start.
 
   if (phase === 'error') {
     return (

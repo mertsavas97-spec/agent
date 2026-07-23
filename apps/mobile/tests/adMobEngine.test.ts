@@ -35,9 +35,8 @@ function mockCreateFakeFullscreenAd() {
 jest.mock('react-native-google-mobile-ads', () => ({
   __esModule: true,
   default: () => ({
-    setRequestConfiguration: (...args: unknown[]) =>
-      mockSetRequestConfiguration(...args),
-    initialize: (...args: unknown[]) => mockInitialize(...args),
+    setRequestConfiguration: mockSetRequestConfiguration,
+    initialize: mockInitialize,
   }),
   MaxAdContentRating: { G: 'G', PG: 'PG', T: 'T', MA: 'MA' },
   AdEventType: { LOADED: 'loaded', ERROR: 'error', CLOSED: 'closed' },

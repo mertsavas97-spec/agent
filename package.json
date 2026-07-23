@@ -9,7 +9,8 @@
     "test": "npm run test --prefix apps/mobile && npm run test --prefix functions && npm run test --prefix scripts/solve-proxy",
     "mobile": "npm run start --prefix apps/mobile",
     "functions:build": "npm run build --prefix functions",
-    "qa": "npm run typecheck && npm run lint && npm run test"
+    "qa": "npm run typecheck && npm run lint && npm run test",
+    "store:preflight": "bash scripts/check-store-preflight.sh"
   },
   "engines": {
     "node": ">=20"

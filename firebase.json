@@ -11,7 +11,9 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       { "source": "/privacy", "destination": "/privacy/index.html" },
-      { "source": "/privacy/", "destination": "/privacy/index.html" }
+      { "source": "/privacy/", "destination": "/privacy/index.html" },
+      { "source": "/terms", "destination": "/terms/index.html" },
+      { "source": "/terms/", "destination": "/terms/index.html" }
     ],
     "headers": [
       {

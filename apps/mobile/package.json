@@ -53,7 +53,7 @@
     "prebuild": "expo prebuild",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint app src --max-warnings 80",
+    "lint": "eslint app src --max-warnings 0",
     "test": "jest"
   },
   "private": true

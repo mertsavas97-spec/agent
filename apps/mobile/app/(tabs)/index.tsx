@@ -126,8 +126,8 @@ export default function HomeScreen() {
           if (!cachedExam) {
             if (isExamType(et)) {
               setExamType(et);
-            } else if (!examType) {
-              setExamType('lgs');
+            } else {
+              setExamType((prev) => prev ?? 'lgs');
             }
           }
         } catch {
