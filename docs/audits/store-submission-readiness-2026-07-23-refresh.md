@@ -49,5 +49,5 @@ Owner checklist: `docs/store/OWNER_OPS_STORE_READY.md`
 ## Sprint Agent Raporu
 
 **Koordinatör:** Auto  
-**QA Gate:** (bu turda koşulacak)  
+**QA Gate:** typecheck/lint/jest PASS (bkz. sprint report)  
 **Sonraki:** Owner Sprint A
