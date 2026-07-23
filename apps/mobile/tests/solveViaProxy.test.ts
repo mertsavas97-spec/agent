@@ -1,4 +1,7 @@
-import { callSolveQuestionViaProxy } from '@/src/features/solve/solveViaProxy';
+import {
+  callSolveQuestionViaProxy,
+  isSolveProxyConfigured,
+} from '@/src/features/solve/solveViaProxy';
 
 describe('callSolveQuestionViaProxy', () => {
   const originalUrl = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL;
@@ -13,6 +16,18 @@ describe('callSolveQuestionViaProxy', () => {
   afterAll(() => {
     process.env.EXPO_PUBLIC_SOLVE_PROXY_URL = originalUrl;
     process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN = originalToken;
+  });
+
+  it('is not configured without URL/token (production must use Functions path)', () => {
+    delete process.env.EXPO_PUBLIC_SOLVE_PROXY_URL;
+    delete process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN;
+    expect(isSolveProxyConfigured()).toBe(false);
+  });
+
+  it('requires __DEV__ even when URL and token are present', () => {
+    // Jest runs with __DEV__ === true; production release builds flip this off.
+    expect(__DEV__).toBe(true);
+    expect(isSolveProxyConfigured()).toBe(true);
   });
 
   it('omits a large inline image when a Storage URL is available', async () => {

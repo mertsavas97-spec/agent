@@ -59,3 +59,30 @@ export function hasProductionAdUnits(units: AdUnitSet = resolveAdUnits()): boole
       (units.rewardedAndroid || units.rewardedIos),
   );
 }
+
+/** Native AdMob module linked (optional peer). */
+export function isAdMobNativeLinked(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('react-native-google-mobile-ads');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Live store ads: real unit ids + native SDK, and stub flag off.
+ * Until then: hide banner placeholders; do not fake store ads.
+ */
+export function isLiveAdsDeliveryReady(
+  units: AdUnitSet = resolveAdUnits(),
+): boolean {
+  if (adsStubForced()) return false;
+  return hasProductionAdUnits(units) && isAdMobNativeLinked();
+}
+
+/** Dogfood QA may keep stub rewarded/interstitial paths. */
+export function isDogfoodAdsStub(): boolean {
+  return adsStubForced();
+}

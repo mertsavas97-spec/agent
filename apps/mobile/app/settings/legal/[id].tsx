@@ -2,7 +2,11 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { LEGAL_DOCS, type LegalDocId } from '@/src/features/legal/legalCopy';
-import { privacyPolicyUrl, supportEmail } from '@/src/features/legal/legalUrls';
+import {
+  privacyPolicyUrl,
+  supportEmail,
+  termsUrl,
+} from '@/src/features/legal/legalUrls';
 import { colors, radii, space, typography } from '@/src/theme';
 
 function isLegalId(v: string): v is LegalDocId {
@@ -13,7 +17,12 @@ export default function LegalDocScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = typeof params.id === 'string' && isLegalId(params.id) ? params.id : 'privacy';
   const doc = LEGAL_DOCS[id];
-  const publicUrl = id === 'privacy' || id === 'kvkk' ? privacyPolicyUrl() : null;
+  const publicUrl =
+    id === 'privacy' || id === 'kvkk'
+      ? privacyPolicyUrl()
+      : id === 'terms'
+        ? termsUrl()
+        : null;
 
   return (
     <ScrollView
@@ -47,6 +56,11 @@ export default function LegalDocScreen() {
         <Text style={styles.hint} testID="legal-url-missing-hint">
           Genel HTTPS gizlilik URL’si henüz bağlanmadı. Hosting sonrası
           EXPO_PUBLIC_PRIVACY_POLICY_URL ile yayınlanır (bkz. docs/legal/).
+        </Text>
+      ) : id === 'terms' ? (
+        <Text style={styles.hint} testID="legal-url-missing-hint">
+          Genel HTTPS kullanım koşulları URL’si henüz bağlanmadı. Hosting sonrası
+          EXPO_PUBLIC_TERMS_URL ile yayınlanır (bkz. hosting/public/terms/).
         </Text>
       ) : null}
     </ScrollView>

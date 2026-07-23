@@ -23,6 +23,12 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -47,6 +53,13 @@
         }
       ],
       "expo-iap",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ÇözBil, soru fotoğrafını galeriden seçmen için fotoğraflarına erişir.",
+          "cameraPermission": "ÇözBil, soru fotoğrafı çekmen için kamerana erişir."
+        }
+      ],
       [
         "expo-notifications",
         {

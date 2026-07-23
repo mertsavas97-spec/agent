@@ -1,7 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
-import { purchasePremiumPlan, restorePremiumPurchases } from '@/src/features/paywall/billing';
+import {
+  billingFailureMessage,
+  purchasePremiumPlan,
+  restorePremiumPurchases,
+} from '@/src/features/paywall/billing';
 import { PaywallScreen } from '@/src/features/paywall/PaywallScreen';
 import { hydrateEntitlement } from '@/src/features/paywall/entitlement';
 import type { PlanId } from '@/src/features/paywall/pricing';
@@ -30,12 +34,7 @@ export default function PremiumRoute() {
       return;
     }
     if (res.reason === 'user_cancelled') return;
-    Alert.alert(
-      'Satın alma tamamlanamadı',
-      res.reason === 'billing_not_configured' || res.reason === 'billing_unavailable'
-        ? 'Mağaza faturalaması bu derlemede yok. Prod’da Play ürünleri + syncSubscription gerekir; geliştirmede __DEV__ veya EXPO_PUBLIC_PREMIUM_SANDBOX=1 kullan.'
-        : 'Satın alma sunucuda doğrulanamadı. Play credential veya sandbox ayarını kontrol et.',
-    );
+    Alert.alert('Satın alma tamamlanamadı', billingFailureMessage(res.reason));
   }
 
   return (
@@ -56,12 +55,11 @@ export default function PremiumRoute() {
           void (async () => {
             const restored = await restorePremiumPurchases();
             const snap = await hydrateEntitlement();
-            Alert.alert(
-              restored.ok || snap.status === 'active' ? 'Premium bulundu' : 'Kayıt yok',
-              restored.ok || snap.status === 'active'
-                ? 'Aktif aboneliğin bu cihazda görünüyor.'
-                : 'Geri yüklenecek satın alma bulunamadı.',
-            );
+            if (restored.ok || snap.status === 'active') {
+              Alert.alert('Premium bulundu', 'Aktif aboneliğin bu cihazda görünüyor.');
+              return;
+            }
+            Alert.alert('Geri yükleme', billingFailureMessage(restored.reason ?? 'none'));
           })();
         }}
         onOpenLegal={(doc) =>

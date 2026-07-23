@@ -1,23 +1,26 @@
 /**
- * Ad engine port — Stub by default; AdMob when native SDK + unit ids are present.
+ * Ad engine port — unavailable by default in production until AdMob ships.
+ * Dogfood: EXPO_PUBLIC_ADS_STUB=1 keeps a stub that resolves rewarded/shown for QA.
  *
  * Do not statically import `react-native-google-mobile-ads` (breaks Expo Go).
- * Production: set EXPO_PUBLIC_ADS_STUB=0, install SDK via EAS prebuild, set unit ids.
  */
 
-import { adsStubForced, hasProductionAdUnits, resolveAdUnits } from './adUnits';
+import {
+  adsStubForced,
+  hasProductionAdUnits,
+  isAdMobNativeLinked,
+  isLiveAdsDeliveryReady,
+  resolveAdUnits,
+} from './adUnits';
 
 export type AdEngine = {
   ready: boolean;
-  mode?: 'stub' | 'admob';
+  mode?: 'stub' | 'admob' | 'unavailable';
   showInterstitial: () => Promise<'shown' | 'skipped' | 'unavailable'>;
   showRewarded: () => Promise<'rewarded' | 'dismissed' | 'unavailable'>;
 };
 
-/**
- * Dev/dogfood stub: no network ads. Interstitial resolves shown;
- * rewarded resolves rewarded so UI paths can be tested.
- */
+/** Dev/dogfood stub: no network ads; paths stay testable. */
 export function createStubAdEngine(): AdEngine {
   return {
     ready: true,
@@ -31,31 +34,34 @@ export function createStubAdEngine(): AdEngine {
   };
 }
 
-/**
- * Optional AdMob engine — only loads when SDK is linked and units configured.
- * Until then returns stub so dogfood builds keep working.
- */
+/** Production without SDK/units — never fake a reward. */
+export function createUnavailableAdEngine(): AdEngine {
+  return {
+    ready: false,
+    mode: 'unavailable',
+    async showInterstitial() {
+      return 'unavailable';
+    },
+    async showRewarded() {
+      return 'unavailable';
+    },
+  };
+}
+
 export function createAdEngine(): AdEngine {
   if (adsStubForced()) {
     return createStubAdEngine();
   }
   const units = resolveAdUnits();
-  if (!hasProductionAdUnits(units)) {
-    return createStubAdEngine();
+  if (!hasProductionAdUnits(units) || !isAdMobNativeLinked()) {
+    return createUnavailableAdEngine();
   }
-  try {
-    // Optional peer — absent until EAS + npm install react-native-google-mobile-ads.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('react-native-google-mobile-ads');
-    // Real AdMob wrappers land in adMobEngine.ts once the native module ships.
-    // Until then keep stub behavior but mark readiness gap in logs.
-    console.info(
-      'ads: AdMob package present + unit ids set — enable adMobEngine wiring after native rebuild',
-    );
-    return createStubAdEngine();
-  } catch {
-    return createStubAdEngine();
+  if (!isLiveAdsDeliveryReady(units)) {
+    return createUnavailableAdEngine();
   }
+  // Real AdMob wrappers land in adMobEngine.ts once wiring ships.
+  console.info('ads: AdMob ids + native module present — enable adMobEngine wiring');
+  return createUnavailableAdEngine();
 }
 
 let engine: AdEngine = createAdEngine();

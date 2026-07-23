@@ -2,35 +2,34 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { colors, typography } from '@/src/theme';
 
-import { adsStubForced, resolveAdUnits } from './adUnits';
+import { isLiveAdsDeliveryReady, resolveAdUnits } from './adUnits';
 import { shouldShowBanner } from './policy';
 import { isPremiumAudience } from './premiumGate';
 
 /**
  * Anchored banner for free tab shell.
- * Real AdMob <BannerAd> mounts after EAS + unit ids + SDK install.
+ * Hidden until live AdMob delivery is ready — no “hazırlık” placeholder in store builds.
  */
 export function BannerSlot() {
   if (!shouldShowBanner({ isPremium: isPremiumAudience() })) {
     return null;
   }
+  if (!isLiveAdsDeliveryReady()) {
+    return null;
+  }
 
   const units = resolveAdUnits();
-  const unitId =
-    Platform.OS === 'ios' ? units.bannerIos : units.bannerAndroid;
-  const stub = adsStubForced() || !unitId;
+  const unitId = Platform.OS === 'ios' ? units.bannerIos : units.bannerAndroid;
+  if (!unitId) return null;
 
+  // Real <BannerAd> mounts in a follow-up once adMobEngine wiring ships.
   return (
     <View
       style={styles.wrap}
       testID="ads-banner-slot"
-      accessibilityLabel={stub ? 'Reklam alanı yer tutucu' : 'Reklam alanı'}>
-      <Text style={styles.label}>{stub ? 'Reklam alanı · hazırlık' : 'Reklam'}</Text>
-      <Text style={styles.hint}>
-        {stub
-          ? 'Ücretsiz planda banner · Premium’da kapalı · AdMob unit id + SDK sonrası canlı'
-          : 'Ücretsiz plan · Premium’da kapalı'}
-      </Text>
+      accessibilityLabel="Reklam alanı">
+      <Text style={styles.label}>Reklam</Text>
+      <Text style={styles.hint}>Ücretsiz plan · Premium’da kapalı</Text>
     </View>
   );
 }

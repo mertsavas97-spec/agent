@@ -44,6 +44,7 @@
         "EXPO_PUBLIC_ADS_STUB": "0",
         "EXPO_PUBLIC_PREMIUM_SANDBOX": "0",
         "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://cozbil-dev-f9583.web.app/privacy",
+        "EXPO_PUBLIC_TERMS_URL": "https://cozbil-dev-f9583.web.app/terms",
         "EXPO_PUBLIC_SUPPORT_EMAIL": "destek@cozbil.app"
       }
     }

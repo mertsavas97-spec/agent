@@ -47,7 +47,14 @@ export async function callSyncSubscription(input: {
       err && typeof err === 'object' && 'code' in err
         ? String((err as { code?: string }).code)
         : 'unknown';
-    return { ok: false, reason: code };
+    const message = err instanceof Error ? err.message : String(err);
+    if (
+      /credentials_missing/i.test(message) ||
+      code === 'functions/failed-precondition'
+    ) {
+      return { ok: false, reason: 'credentials_missing' };
+    }
+    return { ok: false, reason: code.replace(/^functions\//, '') || 'unknown' };
   }
 }
 

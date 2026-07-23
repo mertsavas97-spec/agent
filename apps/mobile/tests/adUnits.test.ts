@@ -2,9 +2,15 @@ import {
   GOOGLE_TEST_UNITS,
   adsStubForced,
   hasProductionAdUnits,
+  isDogfoodAdsStub,
+  isLiveAdsDeliveryReady,
   resolveAdUnits,
 } from '@/src/features/ads/adUnits';
-import { createAdEngine, createStubAdEngine } from '@/src/features/ads/adEngine';
+import {
+  createAdEngine,
+  createStubAdEngine,
+  createUnavailableAdEngine,
+} from '@/src/features/ads/adEngine';
 
 describe('ad units + engine readiness', () => {
   const prev: Record<string, string | undefined> = {};
@@ -38,12 +44,27 @@ describe('ad units + engine readiness', () => {
   it('forces stub when EXPO_PUBLIC_ADS_STUB=1', () => {
     process.env.EXPO_PUBLIC_ADS_STUB = '1';
     expect(adsStubForced()).toBe(true);
+    expect(isDogfoodAdsStub()).toBe(true);
     expect(createAdEngine().mode).toBe('stub');
+    expect(isLiveAdsDeliveryReady()).toBe(false);
+  });
+
+  it('is not live-ready without stub, units, or native SDK', () => {
+    expect(adsStubForced()).toBe(false);
+    expect(isLiveAdsDeliveryReady()).toBe(false);
+    expect(createAdEngine().mode).toBe('unavailable');
   });
 
   it('stub engine rewards and shows interstitial for dogfood gates', async () => {
     const eng = createStubAdEngine();
     expect(await eng.showInterstitial()).toBe('shown');
     expect(await eng.showRewarded()).toBe('rewarded');
+  });
+
+  it('unavailable engine never fakes rewards', async () => {
+    const eng = createUnavailableAdEngine();
+    expect(eng.ready).toBe(false);
+    expect(await eng.showInterstitial()).toBe('unavailable');
+    expect(await eng.showRewarded()).toBe('unavailable');
   });
 });

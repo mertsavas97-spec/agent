@@ -23,9 +23,30 @@ export type PurchasePremiumResult = {
     | 'user_cancelled'
     | 'billing_unavailable'
     | 'sync_failed'
-    | 'billing_not_configured';
+    | 'billing_not_configured'
+    | 'credentials_missing';
   productId: string;
 };
+
+/** User-facing copy for failed purchase / restore (no overclaim). */
+export function billingFailureMessage(reason?: string | null): string {
+  switch (reason) {
+    case 'credentials_missing':
+    case 'failed-precondition':
+      return 'Satın alma doğrulaması sunucuda yapılandırılmamış. Play Billing credential eklenene kadar Premium yükseltmesi tamamlanamaz.';
+    case 'billing_not_configured':
+    case 'billing_unavailable':
+      return 'Mağaza faturalaması bu derlemede kullanılamıyor. Prod’da Play ürünleri + syncSubscription gerekir.';
+    case 'none':
+      return 'Geri yüklenecek satın alma bulunamadı.';
+    case 'user_cancelled':
+      return 'Satın alma iptal edildi.';
+    case 'sync_failed':
+      return 'Satın alma sunucuda doğrulanamadı. İnternet ve Play hesabını kontrol edip tekrar dene.';
+    default:
+      return 'İşlem tamamlanamadı. Biraz sonra tekrar dene.';
+  }
+}
 
 const SUB_SKUS = PLANS.map((p) => p.productId);
 
@@ -140,7 +161,13 @@ export async function purchasePremiumPlan(
       purchaseToken: purchase.purchaseToken,
     });
     if (!sync.ok) {
-      return { ok: false, reason: 'sync_failed', productId };
+      const reason =
+        sync.reason === 'credentials_missing' ||
+        sync.reason === 'failed-precondition' ||
+        /credentials_missing|failed-precondition/i.test(sync.reason ?? '')
+          ? 'credentials_missing'
+          : 'sync_failed';
+      return { ok: false, reason, productId };
     }
 
     try {
@@ -203,7 +230,15 @@ export async function restorePremiumPurchases(): Promise<{
       productId: match.productId,
       purchaseToken: match.purchaseToken,
     });
-    return { ok: sync.ok, reason: sync.ok ? 'restored' : sync.reason };
+    if (sync.ok) return { ok: true, reason: 'restored' };
+    if (
+      sync.reason === 'credentials_missing' ||
+      sync.reason === 'failed-precondition' ||
+      /credentials_missing|failed-precondition/i.test(sync.reason ?? '')
+    ) {
+      return { ok: false, reason: 'credentials_missing' };
+    }
+    return { ok: false, reason: sync.reason ?? 'sync_failed' };
   } catch {
     return { ok: false, reason: 'billing_unavailable' };
   } finally {
