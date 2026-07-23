@@ -2,7 +2,14 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **iOS store prep (StoreKit live verify) + Android owner ops parallel**
+**Sprint:** **Metro dogfood soft-load (ExpoStoreReview) + iOS/Android owner ops parallel**
+
+## Dogfood / Metro (bu tur)
+
+- [x] Soft-load `expo-store-review` via `requireOptionalNativeModule('ExpoStoreReview')`
+- [x] Soft-load push / haptics / image-picker same pattern
+- [ ] Owner: full app kill + Metro reload on phone
+- [ ] Owner (önerilen): yeni **development** profile build (native ↔ JS uyumu)
 
 ## Store P0–P2 (Android agent)
 
@@ -11,7 +18,7 @@
 - [ ] Owner: Play Console app + submit + SKU + billing secret
 - [ ] Owner: Org policy invoker (callables)
 
-## iOS prep (bu sprint)
+## iOS prep
 
 - [x] `verifyAppStorePurchase` → App Store Server API live client
 - [x] Client purchase proof: purchaseToken / transactionId / JWS

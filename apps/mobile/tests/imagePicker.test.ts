@@ -2,6 +2,10 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { pickFromCamera, pickFromLibrary } from '@/src/features/solve/image';
 
+jest.mock('@/src/lib/hasExpoNativeModule', () => ({
+  hasExpoNativeModule: jest.fn(() => true),
+}));
+
 jest.mock('expo-image-picker', () => ({
   getCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
   requestCameraPermissionsAsync: jest.fn(),

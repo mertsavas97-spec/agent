@@ -2,13 +2,14 @@
  * Gentle in-app review prompt — Android-first (Play In-App Review via Expo).
  * No shaming / overclaim copy; only system sheet when available.
  *
- * Dynamic require: old native builds without ExpoStoreReview must not crash
- * when Metro serves newer JS (dev-client without rebuild).
+ * Never `require('expo-store-review')` unless native ExpoStoreReview exists —
+ * otherwise Metro redboxes even inside try/catch on some Hermes builds.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnalyticsEvents, track } from '@/src/lib/analytics';
+import { hasExpoNativeModule } from '@/src/lib/hasExpoNativeModule';
 
 const PROMPTED_KEY = '@cozbil/store_review_prompted_v1';
 const SOLVE_COUNT_KEY = '@cozbil/store_review_solve_count_v1';
@@ -22,6 +23,7 @@ type StoreReviewModule = {
 };
 
 function loadStoreReview(): StoreReviewModule | null {
+  if (!hasExpoNativeModule('ExpoStoreReview')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-store-review') as StoreReviewModule;

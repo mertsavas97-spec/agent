@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 
+import { hasExpoNativeModule } from '@/src/lib/hasExpoNativeModule';
+
 type HapticsModule = {
   selectionAsync: () => Promise<void>;
   impactAsync: (style: unknown) => Promise<void>;
@@ -10,6 +12,7 @@ type HapticsModule = {
 
 function loadHaptics(): HapticsModule | null {
   if (Platform.OS === 'web') return null;
+  if (!hasExpoNativeModule('ExpoHaptics')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-haptics') as HapticsModule;

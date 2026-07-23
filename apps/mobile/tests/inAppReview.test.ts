@@ -11,6 +11,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+jest.mock('@/src/lib/hasExpoNativeModule', () => ({
+  hasExpoNativeModule: jest.fn(() => true),
+}));
+
 const mockRequestReview = jest.fn(async () => undefined);
 const mockIsAvailableAsync = jest.fn(async () => true);
 
@@ -45,17 +49,15 @@ describe('inAppReview', () => {
   });
 
   it('skips when native ExpoStoreReview module is missing', async () => {
-    jest.resetModules();
-    jest.doMock('expo-store-review', () => {
-      throw new Error("Cannot find native module 'ExpoStoreReview'");
-    });
-    // Re-import after mock throw
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('@/src/features/review/inAppReview') as typeof import('@/src/features/review/inAppReview');
-    await mod.__resetInAppReviewForTests();
-    for (let i = 0; i < mod.REVIEW_AFTER_SOLVES; i += 1) {
-      await mod.recordSuccessfulSolveForReview();
+    const { hasExpoNativeModule } = require('@/src/lib/hasExpoNativeModule') as {
+      hasExpoNativeModule: jest.Mock;
+    };
+    hasExpoNativeModule.mockReturnValue(false);
+    for (let i = 0; i < REVIEW_AFTER_SOLVES; i += 1) {
+      await recordSuccessfulSolveForReview();
     }
-    await expect(mod.maybeRequestInAppReview()).resolves.toBe('skipped_unavailable');
+    await expect(maybeRequestInAppReview()).resolves.toBe('skipped_unavailable');
+    expect(mockRequestReview).not.toHaveBeenCalled();
+    hasExpoNativeModule.mockReturnValue(true);
   });
 });

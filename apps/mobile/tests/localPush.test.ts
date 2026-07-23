@@ -28,6 +28,10 @@ jest.mock('expo-notifications', () => ({
   setNotificationChannelAsync: (...args: unknown[]) => mockSetNotificationChannelAsync(...args),
 }));
 
+jest.mock('@/src/lib/hasExpoNativeModule', () => ({
+  hasExpoNativeModule: jest.fn(() => true),
+}));
+
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn().mockResolvedValue(null),
   setItem: jest.fn().mockResolvedValue(undefined),
@@ -81,15 +85,14 @@ describe('localPush', () => {
   });
 
   it('returns ok:false when expo-notifications native module is missing', async () => {
-    jest.resetModules();
-    jest.doMock('expo-notifications', () => {
-      throw new Error("Cannot find native module 'ExpoPushTokenManager'");
-    });
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('@/src/features/push/localPush') as typeof import('@/src/features/push/localPush');
-    mod.__resetNotificationsCacheForTests();
-    const result = await mod.syncLocalPushSchedules(prefs());
+    const { hasExpoNativeModule } = require('@/src/lib/hasExpoNativeModule') as {
+      hasExpoNativeModule: jest.Mock;
+    };
+    hasExpoNativeModule.mockReturnValue(false);
+    __resetNotificationsCacheForTests();
+    const result = await syncLocalPushSchedules(prefs());
     expect(result.ok).toBe(false);
     expect(result.scheduled).toEqual([]);
+    hasExpoNativeModule.mockReturnValue(true);
   });
 });

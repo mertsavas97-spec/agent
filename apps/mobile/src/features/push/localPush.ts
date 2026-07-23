@@ -14,6 +14,7 @@ import {
   type PushCategoryId,
   type PushPrefs,
 } from './pushPrefs';
+import { hasExpoNativeModule } from '@/src/lib/hasExpoNativeModule';
 
 const LAST_INDEX_KEY = '@cozbil/push_last_index_v1';
 
@@ -68,6 +69,11 @@ let cachedNotifications: NotificationsModule | null | undefined;
 
 function loadNotifications(): NotificationsModule | null {
   if (cachedNotifications !== undefined) return cachedNotifications;
+  // expo-notifications index eagerly loads PushTokenManager — skip if absent.
+  if (!hasExpoNativeModule('ExpoPushTokenManager')) {
+    cachedNotifications = null;
+    return null;
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedNotifications = require('expo-notifications') as NotificationsModule;

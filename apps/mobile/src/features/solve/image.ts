@@ -6,6 +6,8 @@
  * crash when Metro serves newer JS.
  */
 
+import { hasExpoNativeModule } from '@/src/lib/hasExpoNativeModule';
+
 export { buildUploadPath } from './paths';
 
 export type PickedImage = {
@@ -46,6 +48,7 @@ type ImagePickerModule = {
 };
 
 function loadImagePicker(): ImagePickerModule | null {
+  if (!hasExpoNativeModule('ExponentImagePicker')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-image-picker') as ImagePickerModule;
