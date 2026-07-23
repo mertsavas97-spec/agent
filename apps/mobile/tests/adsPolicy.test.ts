@@ -67,12 +67,12 @@ describe('ads policy', () => {
     ).toBe(false);
   });
 
-  it('requires rewarded for every free multi-batch open', () => {
+  it('requires rewarded for every free multi-batch open with no daily unlock ceiling', () => {
     expect(
       requiresRewardedForMultiBatch({ isPremium: false, multiBatchUnlocksToday: 0 }),
     ).toBe(true);
     expect(
-      requiresRewardedForMultiBatch({ isPremium: false, multiBatchUnlocksToday: 2 }),
+      requiresRewardedForMultiBatch({ isPremium: false, multiBatchUnlocksToday: 99 }),
     ).toBe(true);
     expect(
       requiresRewardedForMultiBatch({ isPremium: true, multiBatchUnlocksToday: 0 }),
@@ -80,12 +80,12 @@ describe('ads policy', () => {
     expect(
       canClaimMultiBatchUnlock({
         isPremium: false,
-        multiBatchUnlocksToday: ADS_LIMITS.rewardedMultiBatchMaxPerIstanbulDay,
+        multiBatchUnlocksToday: 99,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it('offers rewarded only when free quota is exhausted', () => {
+  it('offers rewarded whenever free quota is exhausted (no daily max)', () => {
     expect(
       shouldOfferRewardedExtra({
         isPremium: false,
@@ -104,9 +104,9 @@ describe('ads policy', () => {
       shouldOfferRewardedExtra({
         isPremium: false,
         freeRemainingToday: 0,
-        rewardedClaimedToday: ADS_LIMITS.rewardedExtraMaxPerIstanbulDay,
+        rewardedClaimedToday: 99,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('forbids ads on solve and onboarding surfaces', () => {

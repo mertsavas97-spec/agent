@@ -162,20 +162,20 @@ export const purgeAccount = regional
     return result;
   });
 
-/** Rewarded ad → +1 free solve (Istanbul day, max 2). */
+/** Rewarded ad → +1 free solve (no product daily max; hourly abuse shield). */
 export const grantRewardedSolve = regional.https.onCall(async (_data, context) => {
   if (!context.auth?.uid) {
     throw new functions.https.HttpsError('unauthenticated', 'Giriş gerekli');
   }
   try {
     assertRateLimit(`rewarded:${context.auth.uid}`, {
-      maxCalls: 6,
-      windowMs: 24 * 60 * 60 * 1000,
+      maxCalls: 40,
+      windowMs: 60 * 60 * 1000,
     });
   } catch {
     throw new functions.https.HttpsError(
       'resource-exhausted',
-      'Ödüllü hak limiti aşıldı; yarın tekrar dene',
+      'Çok hızlı denedin; biraz bekleyip tekrar dene',
     );
   }
   return grantRewardedSolveForUser(context.auth.uid);

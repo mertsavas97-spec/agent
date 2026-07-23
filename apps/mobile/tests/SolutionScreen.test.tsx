@@ -5,6 +5,10 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
 }));
 
+jest.mock('@/src/features/review/inAppReview', () => ({
+  onSolveSuccessMaybeReview: jest.fn(async () => undefined),
+}));
+
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 
 describe('SolutionScreen', () => {

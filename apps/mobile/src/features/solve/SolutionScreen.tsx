@@ -24,12 +24,14 @@ import type {
   Subject,
 } from '@/src/lib/api/types';
 import { SAFETY_MESSAGES } from '@/src/lib/safetyMessages';
+import { AnalyticsEvents, track } from '@/src/lib/analytics';
 import { TR_EYEBROW, trUpper } from '@/src/lib/trCase';
 import { colors, radii, shadows, space, typography } from '@/src/theme';
 import { Button } from '@/src/ui/Button';
 import { CatalogBreadcrumb } from '@/src/ui/CatalogBreadcrumb';
 import { Eyebrow } from '@/src/ui/Eyebrow';
 import { SegmentedTabs } from '@/src/ui/SegmentedTabs';
+import { onSolveSuccessMaybeReview } from '@/src/features/review/inAppReview';
 
 import {
   buildShortSummary,
@@ -91,6 +93,16 @@ export function SolutionScreen({
     setFollowUp(null);
     setError(null);
   }, [solutionId, topicId, imageUri]);
+
+  useEffect(() => {
+    if (assisted) return;
+    track(AnalyticsEvents.solveCompleted, {
+      examType: examType ?? null,
+      subject: subject ?? null,
+      topicId: topicId ?? null,
+    });
+    void onSolveSuccessMaybeReview();
+  }, [assisted, examType, subject, topicId, solutionId]);
 
   const answer = useMemo(
     () => resolveSolutionAnswer(answerProp, steps),

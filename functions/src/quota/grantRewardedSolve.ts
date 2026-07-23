@@ -1,5 +1,6 @@
 /**
- * Grant +1 free solve after a completed rewarded ad (Istanbul day cap).
+ * Grant +1 free solve after a completed rewarded ad.
+ * No product daily max — abuse rate-limit is on the callable.
  */
 
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
@@ -11,12 +12,9 @@ import {
   type QuotaState,
 } from './dailyQuota';
 
-/** Keep aligned with mobile ADS_LIMITS.rewardedExtraMaxPerIstanbulDay */
-export const REWARDED_EXTRA_MAX_PER_DAY = 2;
-
 export type GrantRewardedResult = {
   granted: boolean;
-  reason: 'ok' | 'already_max' | 'premium';
+  reason: 'ok' | 'premium';
   remainingToday: number;
   rewardedBonusToday: number;
 };
@@ -32,7 +30,6 @@ export function rewardedBonusForDay(
 export function decideRewardedGrant(
   state: QuotaState,
   today = istanbulDate(),
-  maxPerDay = REWARDED_EXTRA_MAX_PER_DAY,
 ): { next: QuotaState; result: GrantRewardedResult } {
   if (state.subscriptionStatus === 'active' || state.subscriptionStatus === 'grace') {
     return {
@@ -46,20 +43,7 @@ export function decideRewardedGrant(
     };
   }
 
-  const currentBonus = rewardedBonusForDay(state, today);
-  if (currentBonus >= maxPerDay) {
-    return {
-      next: state,
-      result: {
-        granted: false,
-        reason: 'already_max',
-        remainingToday: remainingQuota(state, today),
-        rewardedBonusToday: currentBonus,
-      },
-    };
-  }
-
-  const nextBonus = currentBonus + 1;
+  const nextBonus = rewardedBonusForDay(state, today) + 1;
   const next: QuotaState = {
     ...state,
     rewardedBonusCount: nextBonus,

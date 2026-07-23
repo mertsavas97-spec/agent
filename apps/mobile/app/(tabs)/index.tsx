@@ -198,13 +198,6 @@ export default function HomeScreen() {
           void (async () => {
             const unlock = await runRewardedMultiBatchUnlock();
             if (!unlock.allowed) {
-              if (unlock.reason === 'daily_cap') {
-                Alert.alert(
-                  'Günlük limit',
-                  'Bugünkü çoklu soru açılış hakkın doldu. Yarın tekrar dene veya Premium’a geç.',
-                );
-                return;
-              }
               Alert.alert('Devam edilmedi', 'Reklam tamamlanmadan çoklu soru açılamaz.');
               return;
             }

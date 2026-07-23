@@ -24,8 +24,8 @@
 
 - Banner: tab’larda sürekli (Premium’da yok).
 - Interstitial: **≤5 / İstanbul günü**, yalnızca çözüm çıkışında (`atNaturalBreak`).
-- Rewarded ekstra hak: **≤2 / İstanbul günü** (Premium’u öldürmemek için).
-- Rewarded çoklu batch: **her açılışta 1** (günlük unlock tavanı ayrıca `rewardedMultiBatchMaxPerIstanbulDay`).
+- Rewarded ekstra hak (+1): **günlük ürün tavanı yok** — kota bitince her izlemede `grantRewardedSolve`; sunucuda saatlik abuse rate-limit var.
+- Rewarded çoklu batch: **her açılışta 1 reklam** (günlük unlock tavanı yok); başarılı reklam ayrıca +1 çözüm hakkı verir.
 
 ### Çözüm bitiminde tam ekran
 

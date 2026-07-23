@@ -311,11 +311,9 @@ export default function SolveFlowScreen() {
               }
               Alert.alert(
                 'Reklam tamam',
-                outcome.grantReason === 'already_max'
-                  ? 'Bugünkü ödüllü hak limitin doldu.'
-                  : outcome.grantReason === 'premium'
-                    ? 'Premium aktifken ekstra hak gerekmez.'
-                    : 'Ekstra hak sunucuda kaydedilemedi. Bağlantını kontrol edip tekrar dene.',
+                outcome.grantReason === 'premium'
+                  ? 'Premium aktifken ekstra hak gerekmez.'
+                  : 'Ekstra hak sunucuda kaydedilemedi. Bağlantını kontrol edip tekrar dene.',
               );
               return;
             }

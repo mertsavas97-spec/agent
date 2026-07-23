@@ -2,7 +2,7 @@
 
 **Aktif çalışma yeri:** Cloud agent  
 **Branch:** `cursor/solve-word-eq-proxy-6767`  
-**Sprint:** **4 + store P0/P1 impl** — grant/purge/hydrate/CI/privacy
+**Sprint:** **4 + store P0/P1 + rewarded uncapped + P2 analytics/review**
 
 ## Store P0 (listing görselleri hariç)
 
@@ -13,13 +13,24 @@
 - [x] EAS Firebase fail-fast + `check-eas-*.sh`
 - [x] Production solve proxy guard tests
 
-## Store P1 (bu tur)
+## Store P1
 
 - [x] `grantRewardedSolve` callable + client
 - [x] Account hard purge (`purgeAccount`)
 - [x] Entitlement hydrate from `users/{uid}`
 - [x] CI workflow (typecheck + jest)
 - [x] POST_NOTIFICATIONS + privacy/local-push copy hizası
+
+## Rewarded policy (bu tur)
+
+- [x] Günlük max kaldırıldı (+1 ve çoklu unlock)
+- [x] Her çoklu açılışta reklam → unlock + `grantRewardedSolve`
+- [x] Saatlik abuse rate-limit (40/saat)
+
+## Store P2 (kısmi)
+
+- [x] Analytics event wrapper
+- [x] In-app review (`expo-store-review`)
 - [ ] Owner: Functions deploy (grant + purge)
 - [ ] Owner: `eas init` (owner/projectId)
 - [ ] Owner: hosting deploy (privacy + terms)

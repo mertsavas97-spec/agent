@@ -23,7 +23,7 @@ describe('multi batch policy', () => {
     expect(requiresRewardedForMultiBatch({ isPremium: false, multiBatchUnlocksToday: 1 })).toBe(
       true,
     );
-    expect(requiresRewardedForMultiBatch({ isPremium: false, multiBatchUnlocksToday: 2 })).toBe(
+    expect(requiresRewardedForMultiBatch({ isPremium: false, multiBatchUnlocksToday: 20 })).toBe(
       true,
     );
     expect(requiresRewardedForMultiBatch({ isPremium: true, multiBatchUnlocksToday: 0 })).toBe(
@@ -31,13 +31,13 @@ describe('multi batch policy', () => {
     );
   });
 
-  it('enforces daily unlock cap for free', () => {
+  it('never blocks unlock by a daily free ceiling', () => {
     expect(
       canClaimMultiBatchUnlock({
         isPremium: false,
-        multiBatchUnlocksToday: ADS_LIMITS.rewardedMultiBatchMaxPerIstanbulDay,
+        multiBatchUnlocksToday: 100,
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canClaimMultiBatchUnlock({ isPremium: false, multiBatchUnlocksToday: 0 }),
     ).toBe(true);

@@ -1,6 +1,5 @@
 import {
   decideRewardedGrant,
-  REWARDED_EXTRA_MAX_PER_DAY,
 } from '../src/quota/grantRewardedSolve';
 import { remainingQuota, type QuotaState } from '../src/quota/dailyQuota';
 
@@ -23,17 +22,21 @@ describe('grantRewardedSolve', () => {
     expect(remainingQuota(next, today)).toBe(1);
   });
 
-  it('caps at REWARDED_EXTRA_MAX_PER_DAY', () => {
-    const state: QuotaState = {
+  it('allows many grants the same Istanbul day (no product daily max)', () => {
+    let state: QuotaState = {
       dailySolveCount: 5,
       dailySolveDate: today,
       subscriptionStatus: 'free',
-      rewardedBonusCount: REWARDED_EXTRA_MAX_PER_DAY,
-      rewardedBonusDate: today,
+      rewardedBonusCount: 0,
+      rewardedBonusDate: null,
     };
-    const { result } = decideRewardedGrant(state, today);
-    expect(result.granted).toBe(false);
-    expect(result.reason).toBe('already_max');
+    for (let i = 1; i <= 5; i += 1) {
+      const { next, result } = decideRewardedGrant(state, today);
+      expect(result.granted).toBe(true);
+      expect(result.rewardedBonusToday).toBe(i);
+      state = next;
+    }
+    expect(remainingQuota(state, today)).toBe(5);
   });
 
   it('skips grant for premium', () => {
