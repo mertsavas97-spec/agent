@@ -18,6 +18,7 @@ import {
   isPremiumAudience,
   runRewardedMultiBatchUnlock,
 } from '@/src/features/ads';
+import { greetingForTimeOfDay } from '@/src/features/home/timeOfDayGreeting';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { loadExamPreferenceCached } from '@/src/features/exam/examPreferenceCache';
@@ -68,6 +69,7 @@ export default function HomeScreen() {
   const [subjectHintBanner, setSubjectHintBanner] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [streakCount, setStreakCount] = useState(0);
+  const [greeting, setGreeting] = useState(() => greetingForTimeOfDay());
   const [streakWeekFilled, setStreakWeekFilled] = useState<boolean[]>(
     () => Array(7).fill(false),
   );
@@ -82,6 +84,10 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       let alive = true;
+      setGreeting(greetingForTimeOfDay());
+      const greetingTick = setInterval(() => {
+        if (alive) setGreeting(greetingForTimeOfDay());
+      }, 60_000);
       const pending = peekPendingSubjectHint();
       setSubjectHintBanner(pending ? subjectLabel(pending) : null);
 
@@ -140,6 +146,7 @@ export default function HomeScreen() {
       })();
       return () => {
         alive = false;
+        clearInterval(greetingTick);
       };
     }, []),
   );
@@ -254,7 +261,7 @@ export default function HomeScreen() {
             <View style={styles.brandBlock}>
               <Text style={styles.brand}>{brand.name}</Text>
               <Text style={styles.greeting} testID="home-greeting">
-                Merhaba
+                {greeting}
               </Text>
             </View>
             {streakCount >= 1 ? (

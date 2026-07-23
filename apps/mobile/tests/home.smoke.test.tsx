@@ -101,7 +101,9 @@ describe('HomeScreen', () => {
     expect(screen.getByTestId('home-screen')).toBeTruthy();
     expect(screen.getByTestId('home-brand-robot')).toBeTruthy();
     expect(screen.getByText('ÇözBil')).toBeTruthy();
-    expect(screen.getByTestId('home-greeting')).toHaveTextContent('Merhaba');
+    expect(screen.getByTestId('home-greeting')).toHaveTextContent(
+      /^(Günaydın|İyi günler|İyi akşamlar|İyi geceler)$/,
+    );
     expect(screen.getByTestId('home-streak-week')).toBeTruthy();
     expect(screen.getByTestId('home-streak-hint')).toBeTruthy();
     expect(screen.getByTestId('home-hero')).toBeTruthy();

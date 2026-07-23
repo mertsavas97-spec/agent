@@ -32,10 +32,11 @@ export type AnalyzingViewProps = {
 };
 
 const ICON_SIZE = 72;
-const ICON_RADIUS = Math.round(ICON_SIZE * 0.22);
-const RING_PAD = 14;
+/** Full circle — icon + rings share the same geometry. */
+const ICON_RADIUS = ICON_SIZE / 2;
+const RING_PAD = 12;
 const RING_SIZE = ICON_SIZE + RING_PAD * 2;
-const RING_RADIUS = Math.round(RING_SIZE * 0.28);
+const RING_RADIUS = RING_SIZE / 2;
 
 // Decode brand mark as soon as this module loads (home already warms it too).
 const brandUri = Image.resolveAssetSource(BRAND_MARK)?.uri;
@@ -295,26 +296,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: space.sm,
   },
-  /** Spinning accent arc — premium motion around the mark, not a filled plate. */
+  /** Spinning circular arc — matches the circular icon plate. */
   orbitRing: {
     position: 'absolute',
     width: RING_SIZE,
     height: RING_SIZE,
     borderRadius: RING_RADIUS,
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: 'transparent',
     borderTopColor: colors.orange,
-    borderRightColor: 'rgba(245, 158, 11, 0.35)',
+    borderRightColor: 'rgba(245, 158, 11, 0.4)',
+    borderBottomColor: 'rgba(245, 158, 11, 0.12)',
   },
-  /** Static hairline frame */
+  /** Static circular hairline */
   ringOuter: {
-    padding: 3,
-    borderRadius: ICON_RADIUS + 6,
+    width: ICON_SIZE + 8,
+    height: ICON_SIZE + 8,
+    borderRadius: (ICON_SIZE + 8) / 2,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.28)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     backgroundColor: colors.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  /** Navy well — never flash orange while the PNG decodes */
+  /** Circular navy well — clips appicon to a perfect circle */
   iconWell: {
     width: ICON_SIZE,
     height: ICON_SIZE,
