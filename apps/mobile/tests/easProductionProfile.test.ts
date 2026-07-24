@@ -29,9 +29,24 @@ describe('EAS production profile', () => {
   it('keeps iOS phone-first (no iPad tablet target)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const appJson = require('../app.json') as {
-      expo: { ios?: { supportsTablet?: boolean } };
+      expo: {
+        ios?: {
+          supportsTablet?: boolean;
+          infoPlist?: { ITSAppUsesNonExemptEncryption?: boolean };
+        };
+      };
     };
     expect(appJson.expo.ios?.supportsTablet).toBe(false);
+    expect(appJson.expo.ios?.infoPlist?.ITSAppUsesNonExemptEncryption).toBe(false);
+  });
+
+  it('sets Apple Team ID for EAS iOS submit', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const eas = require('../eas.json') as {
+      submit: { production: { ios: { appleTeamId?: string; ascAppId?: string } } };
+    };
+    expect(eas.submit.production.ios.appleTeamId).toBe('J46LLRJA44');
+    expect(eas.submit.production.ios.ascAppId).toMatch(/REPLACE_|^\d+$/);
   });
 
   it('blocks Play-restricted photo/video permissions (Photo Picker path)', () => {

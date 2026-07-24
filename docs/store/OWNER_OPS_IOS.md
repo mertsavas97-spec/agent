@@ -32,11 +32,15 @@ Agent kodu: `verifyAppStorePurchase` artık App Store Server API çağırır (cr
 
 3. **EAS iOS submit alanları**
    - `apps/mobile/eas.json` → `submit.production.ios`:
-     - `ascAppId`: App Store Connect numeric app id
-     - `appleTeamId`: Apple Team ID
-   - Commit veya lokal overwrite (repoya gerçek id koyabilirsin)
+     - `ascAppId`: App Store Connect numeric app id (**REPLACE_*** hâlâ — sen doldur)
+     - `appleTeamId`: `J46LLRJA44` (set)
+   - IPA build yolu: `docs/setup/GITHUB_ACTIONS_IOS_BUILD.md`
+     (Mac local script veya Actions **iOS production IPA**)
 
 4. **Build / TestFlight**
+   - Tercih: GitHub Actions → **iOS production IPA** (`main`) veya  
+     `bash scripts/build-ios-ipa-local.sh` (Mac)
+   - Alternatif cloud (kota varsa):
    ```bash
    cd apps/mobile
    eas build --platform ios --profile production

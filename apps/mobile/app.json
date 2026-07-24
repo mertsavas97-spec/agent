@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.cozbil.app",
       "infoPlist": {
         "NSCameraUsageDescription": "ÇözBil soru fotoğrafı çekmek için kameraya ihtiyaç duyar.",
-        "NSPhotoLibraryUsageDescription": "ÇözBil galeriden soru fotoğrafı seçmek için fotoğraflarına erişir."
+        "NSPhotoLibraryUsageDescription": "ÇözBil galeriden soru fotoğrafı seçmek için fotoğraflarına erişir.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

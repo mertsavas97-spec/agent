@@ -1,0 +1,96 @@
+# iOS production IPA via EAS local on GitHub Actions (macOS runner)
+#
+# Requires Xcode on the runner — ubuntu cannot produce IPA.
+# Owner: Actions → "iOS production IPA" → Run workflow (branch with this file on main)
+#
+# Secrets (same Firebase + Expo as Android AAB):
+#   EXPO_TOKEN
+#   EXPO_PUBLIC_FIREBASE_API_KEY
+#   EXPO_PUBLIC_FIREBASE_APP_ID
+# Optional Firebase public keys as in android-production-aab.yml
+#
+# Apple signing: uses EAS remote credentials (Expo project). Ensure
+# `eas credentials -p ios` has distribution cert + provisioning for com.cozbil.app.
+
+name: iOS production IPA
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-prod-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ipa:
+    name: eas build --local ios (production)
+    runs-on: macos-14
+    timeout-minutes: 150
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    env:
+      EAS_BUILD_PROFILE: production
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+      EXPO_PUBLIC_FIREBASE_APP_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_APP_ID }}
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      EAS_LOCAL_BUILD_WORKINGDIR: ${{ github.workspace }}/.eas-local-build
+      CI: 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        working-directory: .
+        run: |
+          missing=0
+          for key in EXPO_TOKEN EXPO_PUBLIC_FIREBASE_API_KEY EXPO_PUBLIC_FIREBASE_APP_ID; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing secret: $key"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer || \
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Install mobile deps
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: EAS local production IPA
+        run: |
+          mkdir -p "$EAS_LOCAL_BUILD_WORKINGDIR"
+          eas build \
+            --platform ios \
+            --profile production \
+            --local \
+            --non-interactive \
+            --output "$GITHUB_WORKSPACE/cozbil-production.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cozbil-ios-production-ipa
+          path: cozbil-production.ipa
+          if-no-files-found: error
+          retention-days: 14
