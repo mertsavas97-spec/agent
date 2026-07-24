@@ -24,10 +24,10 @@ Kaynak: `apps/mobile/src/features/paywall/pricing.ts` + `docs/product/pricing-po
 - [ ] App Store Connect API key env: `APPLE_BUNDLE_ID` / `APPLE_ISSUER_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY`
 - [x] Backend live client: `verifyAppStorePurchase.ts` (App Store Server API getTransactionInfo; Production→Sandbox fallback)
 - [x] Client: `syncSubscription(platform: 'ios')` + purchaseToken / transactionId / JWS proof
-- [ ] Owner: Functions secrets + ASC IAP + `eas.json` ascAppId/appleTeamId
+- [ ] Owner: Functions secrets + ASC IAP (`appleTeamId` + `ascAppId` already in `eas.json`)
 - Runbook: `docs/store/OWNER_OPS_IOS.md`
 - [x] Client product id SSoT hazır; `expo-iap` iOS’u da hedefler (`platform` gönderir)
-- [ ] Production EAS iOS submit profili (`eas.json` placeholder `REPLACE_*` → gerçek ASC id)
+- [x] Production EAS iOS submit profili (`ascAppId` = `6794124806`)
 - [x] `supportsTablet: false` (phone-first)
 - [x] AdMob native paket + config plugin + `adMobEngine` (test/prod unit id owner)
 
