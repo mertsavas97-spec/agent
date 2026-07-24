@@ -22,6 +22,9 @@ end
     expect(contents).toContain(MARKER);
     expect(contents).toContain("gsub('#if compiler(>=6.3)'");
     expect(contents).toContain("gsub('#if swift(>=6.3)'");
+    // Swift rejects `#if false # comment` — must be `//` trailing comment.
+    expect(contents).toContain(`'#if false // ${MARKER}'`);
+    expect(contents).not.toContain(`'#if false # ${MARKER}'`);
     expect(contents).toContain('react_native_post_install(installer)');
     expect(POST_INSTALL_SNIPPET).toContain(MARKER);
   });

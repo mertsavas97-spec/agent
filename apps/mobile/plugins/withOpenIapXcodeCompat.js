@@ -33,9 +33,10 @@ const POST_INSTALL_SNIPPET = `
   if Dir.exist?(openiap_pod)
     Dir.glob(File.join(openiap_pod, '**', '*.swift')).each do |swift_file|
       original = File.read(swift_file)
+      # Swift: trailing comment after #if must use // — a bare "#" starts another directive.
       patched = original
-        .gsub('#if compiler(>=6.3)', '#if false # ${MARKER}')
-        .gsub('#if swift(>=6.3)', '#if false # ${MARKER}')
+        .gsub('#if compiler(>=6.3)', '#if false // ${MARKER}')
+        .gsub('#if swift(>=6.3)', '#if false // ${MARKER}')
       if patched != original
         File.chmod(File.stat(swift_file).mode | 0o200, swift_file)
         File.write(swift_file, patched)
@@ -81,7 +82,7 @@ function withOpenIapXcodeCompat(config) {
 module.exports = createRunOncePlugin(
   withOpenIapXcodeCompat,
   'withOpenIapXcodeCompat',
-  '1.0.0',
+  '1.0.1',
 );
 module.exports.injectOpenIapCompatIntoPodfile = injectOpenIapCompatIntoPodfile;
 module.exports.POST_INSTALL_SNIPPET = POST_INSTALL_SNIPPET;
