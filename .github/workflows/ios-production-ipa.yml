@@ -101,12 +101,14 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           if [ "$status" -ne 0 ]; then
-            if rg -q "Credentials are not set up|Distribution Certificate is not validated|credentials are not configured" /tmp/eas-ios-build.log; then
-              echo "::error::iOS credentials missing for non-interactive CI. On a Mac: cd apps/mobile && rm -rf ios && eas credentials -p ios (All → sync Push) then re-run. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
-            elif rg -q "doesn't support the Push Notifications capability|aps-environment" /tmp/eas-ios-build.log; then
+            # Order matters: non-interactive builds always print
+            # "Distribution Certificate is not validated" even when credentials are ready.
+            if rg -q "ExpoModulesJSI|Could not resolve package dependencies" /tmp/eas-ios-build.log; then
+              echo "::error::Xcode archive failed building ExpoModulesJSI (SPM). Prefer Mac: rm -rf apps/mobile/ios && eas build -p ios --profile production --local. Or retry this workflow. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            elif rg -q "doesn't support the Push Notifications capability|doesn't include the aps-environment entitlement" /tmp/eas-ios-build.log; then
               echo "::error::Provisioning profile lacks Push/aps-environment. Enable Push on App ID (static ios.entitlements), regenerate App Store profile. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
-            elif rg -q "ExpoModulesJSI|Could not resolve package dependencies" /tmp/eas-ios-build.log; then
-              echo "::error::Xcode archive failed building ExpoModulesJSI (SPM). Retry this workflow, or on Mac: rm -rf ios && eas build -p ios --profile production --local. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            elif rg -q "Credentials are not set up|credentials are not configured" /tmp/eas-ios-build.log && ! rg -q "All credentials are ready" /tmp/eas-ios-build.log; then
+              echo "::error::iOS credentials missing for non-interactive CI. On a Mac: cd apps/mobile && rm -rf ios && eas credentials -p ios (All → sync Push) then re-run. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
             else
               echo "::error::EAS iOS local build failed (exit $status). Scroll up for [RUN_FASTLANE] / ARCHIVE FAILED. Mac fallback: docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
             fi

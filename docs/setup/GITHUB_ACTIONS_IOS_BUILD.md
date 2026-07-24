@@ -86,15 +86,17 @@ Not: macOS runner dakikası pahalıdır. CI hata mesajı credentials’a indirge
 
 Log: `Could not resolve package dependencies` + `Build ExpoModulesJSI xcframework`.
 
-Credentials tamamdır; Xcode/SPM tarafı. Önce **Actions retry**; olmazsa Mac:
+Credentials tamamdır (`All credentials are ready…`); Xcode/SPM tarafı. GHA’da tekrarlayan SPM hatası için **Mac local** tercih et:
 
 ```bash
 cd ~/agent/apps/mobile
 rm -rf ios
-# Firebase env zaten EAS production’da
 export EAS_LOCAL_BUILD_WORKINGDIR=$HOME/eas-local-build
+# Firebase: eas env:pull --environment production  (veya export EXPO_PUBLIC_FIREBASE_*)
 eas build --platform ios --profile production --local --output ~/Desktop/cozbil-production.ipa
 ```
+
+Not: Non-interactive log’taki `Distribution Certificate is not validated` uyarısı normaldir; credentials eksik demek değildir.
 
 ## B) Mac script (credentials sonrası)
 
