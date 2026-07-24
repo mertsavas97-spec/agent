@@ -50,5 +50,7 @@ jobs:
       - name: Functions tests
         run: npm test --prefix functions -- --ci --maxWorkers=2
 
+      # Plain node runners (not Jest) — do not append --ci / --maxWorkers
+      # (npm would put them after `done` and break the shell for-loop).
       - name: Solve-proxy tests
-        run: npm test --prefix scripts/solve-proxy -- --ci --maxWorkers=2
+        run: npm test --prefix scripts/solve-proxy
