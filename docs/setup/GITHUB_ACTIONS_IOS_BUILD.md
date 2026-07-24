@@ -21,11 +21,37 @@ eas login
 eas credentials -p ios
 # All → Set up / Build Credentials → Let Expo handle / Generate new
 # Apple ID ile giriş → Team J46LLRJA44 → com.cozbil.app App Store distribution
+# Push Notifications? → Yes (expo-notifications aps-environment ister)
+# Sonra provisioning profile’ı Yeniden oluştur (Push sonrası zorunlu)
 
 # İlk başarılı build (cloud kota varsa en kolayı):
 eas build --platform ios --profile production
 # Wizard bitene kadar onayla. Bitince credentials Expo’da kalır.
 ```
+
+### Push Notifications profile hatası (sık)
+
+Actions / local log:
+
+`Provisioning profile … doesn't support the Push Notifications capability`  
+`aps-environment … is not registered for profile`
+
+Sebep: App ID’de Push açık değil **veya** profil Push’tan **önce** üretilmiş.  
+`expo-notifications` prebuild’te `aps-environment` ekler; profilde Push şart.
+
+Mac’te düzelt:
+
+```bash
+cd ~/agent/apps/mobile
+eas credentials -p ios
+# production → Build Credentials
+# 1) Push Notifications / APNs key kurulu değilse kur (Yes)
+# 2) Provisioning Profile → Remove → Generate new (Push sonrası)
+# Exit
+```
+
+Apple Developer (gerekirse): Identifiers → `com.cozbil.app` → **Push Notifications** Enable → Save.  
+Sonra Actions **iOS production IPA**’yı yeniden çalıştır (veya Mac `--local`).
 
 Kotan yoksa Mac local (yine interaktif, `--non-interactive` **kullanma**):
 
@@ -65,7 +91,7 @@ bash scripts/build-ios-ipa-local.sh
 ## Checklist
 
 - [x] Bundle ID `com.cozbil.app`
-- [ ] Mac’te bir kez interaktif `eas credentials` / `eas build -p ios`
+- [ ] Mac’te Push açık + provisioning profile yenile → interaktif/CI IPA yeşil
 - [ ] ASC app + IAP
 - [ ] Actions IPA yeşil
 - [ ] `ascAppId` + TestFlight submit
