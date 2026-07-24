@@ -80,12 +80,19 @@ jobs:
       - name: EAS local production IPA
         run: |
           mkdir -p "$EAS_LOCAL_BUILD_WORKINGDIR"
+          set +e
           eas build \
             --platform ios \
             --profile production \
             --local \
             --non-interactive \
             --output "$GITHUB_WORKSPACE/cozbil-production.ipa"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "::error::iOS credentials missing for non-interactive CI. On a Mac run once: cd apps/mobile && eas credentials -p ios && eas build --platform ios --profile production (interactive). See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            exit "$status"
+          fi
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
