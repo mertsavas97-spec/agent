@@ -135,7 +135,7 @@ bash scripts/build-ios-ipa-local.sh
 | Alan | Değer |
 |------|--------|
 | `appleTeamId` | `J46LLRJA44` |
-| `ascAppId` | ASC App Information → Apple ID (sayı) — `REPLACE_*` ise submit öncesi doldur |
+| `ascAppId` | `6794124806` (ASC App Information → Apple ID) |
 
 ## Checklist
 

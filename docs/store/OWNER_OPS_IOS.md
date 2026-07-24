@@ -32,8 +32,8 @@ Agent kodu: `verifyAppStorePurchase` artık App Store Server API çağırır (cr
 
 3. **EAS iOS submit alanları**
    - `apps/mobile/eas.json` → `submit.production.ios`:
-     - `ascAppId`: App Store Connect numeric app id (**REPLACE_*** hâlâ — sen doldur)
-     - `appleTeamId`: `J46LLRJA44` (set)
+     - `ascAppId`: `6794124806` (ASC App Information → Apple ID)
+     - `appleTeamId`: `J46LLRJA44`
    - IPA build yolu: `docs/setup/GITHUB_ACTIONS_IOS_BUILD.md`
      (Mac local script veya Actions **iOS production IPA**)
    - Xcode **26.4** + `pricingTerms` / `billingPlanType` compile hatası →
