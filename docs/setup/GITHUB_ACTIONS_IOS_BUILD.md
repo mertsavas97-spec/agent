@@ -82,6 +82,32 @@ Bu **bir kez** başarılı olduktan sonra Actions tekrar çalışır.
 Workflow: `.github/workflows/ios-production-ipa.yml`  
 Not: macOS runner dakikası pahalıdır. CI hata mesajı credentials’a indirgemez — gerçek root cause’u yazar.
 
+### OpenIAP / StoreKit compile errors (Xcode 26.4)
+
+Log örnekleri:
+
+`Product.SubscriptionInfo has no member 'pricingTerms'`  
+`Transaction has no member 'billingPlanType'` / `commitmentInfo`  
+`RenewalInfo has no member 'renewalBillingPlanType'`
+
+**Kök neden:** `expo-iap` → CocoaPods `openiap` StoreKit “billing plan” API’lerini `#if compiler/swift(>=6.3)` arkasına koyuyor. Xcode **26.4** Swift 6.3 getirir ama bu semboller **Xcode 26.5+ SDK**’da (OpenIAP yorumu da bunu söylüyor).
+
+**Repoda fix:** `apps/mobile/plugins/withOpenIapXcodeCompat.js` — prebuild Podfile `post_install` içinde bu guard’ları kapatır. ÇözBil standart haftalık/aylık/yıllık abonelik kullanır; 12 aylık commitment billing plan lazım değil.
+
+Mac’te (credentials sonrası):
+
+```bash
+cd ~/agent && git checkout main && git pull
+cd apps/mobile
+rm -rf ios
+# Firebase env hazırsa:
+eas build --platform ios --profile production --local --output ~/Desktop/cozbil-production.ipa
+```
+
+Build log’ta şunu ara: `[cozbil] OpenIAP Xcode 26.4 StoreKit compat`.
+
+**Alternatif:** App Store’dan **Xcode 26.5+** kur → aynı hatayı upstream da çözmüş olur; plugin yine zararsız kalır.
+
 ### ExpoModulesJSI / SPM archive fail
 
 Log: `Could not resolve package dependencies` + `Build ExpoModulesJSI xcframework`.

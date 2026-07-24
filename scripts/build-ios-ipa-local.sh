@@ -31,7 +31,15 @@ export EAS_BUILD_PROFILE=production
 export EAS_LOCAL_BUILD_WORKINGDIR="${EAS_LOCAL_BUILD_WORKINGDIR:-$HOME/eas-local-build}"
 mkdir -p "$EAS_LOCAL_BUILD_WORKINGDIR"
 
+# Prefer Xcode 26.5+ when available (OpenIAP StoreKit billing-plan SDK).
+# Xcode 26.4 + expo-iap/openiap: repo plugin withOpenIapXcodeCompat patches pods.
+if command -v xcodebuild >/dev/null 2>&1; then
+  echo "Xcode: $(xcodebuild -version 2>/dev/null | tr '\n' ' ')"
+fi
+
 cd "$MOBILE"
+# Fresh native project so config plugins (aps + OpenIAP compat) re-apply.
+rm -rf ios
 npm ci
 npx eas-cli build \
   --platform ios \

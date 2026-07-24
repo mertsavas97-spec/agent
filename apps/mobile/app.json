@@ -60,6 +60,7 @@
         }
       ],
       "expo-iap",
+      "./plugins/withOpenIapXcodeCompat",
       [
         "expo-image-picker",
         {

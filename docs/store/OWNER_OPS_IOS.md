@@ -36,6 +36,9 @@ Agent kodu: `verifyAppStorePurchase` artık App Store Server API çağırır (cr
      - `appleTeamId`: `J46LLRJA44` (set)
    - IPA build yolu: `docs/setup/GITHUB_ACTIONS_IOS_BUILD.md`
      (Mac local script veya Actions **iOS production IPA**)
+   - Xcode **26.4** + `pricingTerms` / `billingPlanType` compile hatası →
+     `withOpenIapXcodeCompat` (main’de) veya Xcode **26.5+**;
+     `rm -rf ios` sonra local rebuild
 
 4. **Build / TestFlight**
    - Tercih: GitHub Actions → **iOS production IPA** (`main`) veya  
