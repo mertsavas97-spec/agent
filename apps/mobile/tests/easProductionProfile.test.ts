@@ -33,11 +33,14 @@ describe('EAS production profile', () => {
         ios?: {
           supportsTablet?: boolean;
           infoPlist?: { ITSAppUsesNonExemptEncryption?: boolean };
+          entitlements?: { 'aps-environment'?: string };
         };
       };
     };
     expect(appJson.expo.ios?.supportsTablet).toBe(false);
     expect(appJson.expo.ios?.infoPlist?.ITSAppUsesNonExemptEncryption).toBe(false);
+    // Static entitlements so EAS syncs Push capability (modifier-only is invisible to sync).
+    expect(appJson.expo.ios?.entitlements?.['aps-environment']).toBe('production');
   });
 
   it('sets Apple Team ID for EAS iOS submit', () => {

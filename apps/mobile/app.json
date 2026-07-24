@@ -14,6 +14,9 @@
         "NSCameraUsageDescription": "ÇözBil soru fotoğrafı çekmek için kameraya ihtiyaç duyar.",
         "NSPhotoLibraryUsageDescription": "ÇözBil galeriden soru fotoğrafı seçmek için fotoğraflarına erişir.",
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -69,7 +72,8 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#F59E0B",
-          "defaultChannel": "cozbil-reminders"
+          "defaultChannel": "cozbil-reminders",
+          "mode": "production"
         }
       ]
     ],
