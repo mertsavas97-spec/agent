@@ -23,4 +23,6 @@
 - errors: temiz
 - guardian: PASS (no product copy / exam scope change; IAP path only)
 
-**Sonraki önerilen adım:** Owner Mac: `git pull` → `rm -rf apps/mobile/ios` → `eas build --platform ios --profile production --local`
+**Follow-up (aynı gün):** `#if false # marker` Swift’te geçersizdi → `#if false // marker` (PR hotfix).
+
+**Sonraki önerilen adım:** Owner Mac: hotfix merge → `rm -rf apps/mobile/ios` → local IPA again
