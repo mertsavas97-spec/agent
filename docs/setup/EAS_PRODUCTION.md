@@ -62,7 +62,7 @@ Diğer Firebase domain / project / bucket / sender değerleri `.env.example` ile
 
 `eas.json` → `submit.production.ios`:
 
-- `ascAppId`: App Store Connect app id (owner doldurur)
+- `ascAppId`: `6794124806` (ASC Apple ID)
 - `appleTeamId`: Apple Developer Team id (owner doldurur)
 
 ```bash

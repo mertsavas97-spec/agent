@@ -49,7 +49,7 @@ describe('EAS production profile', () => {
       submit: { production: { ios: { appleTeamId?: string; ascAppId?: string } } };
     };
     expect(eas.submit.production.ios.appleTeamId).toBe('J46LLRJA44');
-    expect(eas.submit.production.ios.ascAppId).toMatch(/REPLACE_|^\d+$/);
+    expect(eas.submit.production.ios.ascAppId).toBe('6794124806');
   });
 
   it('blocks Play-restricted photo/video permissions (Photo Picker path)', () => {
