@@ -24,7 +24,7 @@ concurrency:
 jobs:
   build-ipa:
     name: eas build --local ios (production)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 150
     defaults:
       run:
@@ -67,15 +67,26 @@ jobs:
 
       - name: Select Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer || \
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          # Prefer newest available 16.x on the runner (SPM / ExpoModulesJSI).
+          for candidate in \
+            /Applications/Xcode_16.4.app \
+            /Applications/Xcode_16.3.app \
+            /Applications/Xcode_16.2.app \
+            /Applications/Xcode.app; do
+            if [ -d "$candidate" ]; then
+              sudo xcode-select -s "$candidate/Contents/Developer"
+              break
+            fi
+          done
           xcodebuild -version
 
       - name: Install mobile deps
         run: npm ci
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
+      - name: Install EAS CLI + ripgrep (error triage)
+        run: |
+          npm install -g eas-cli
+          brew list ripgrep >/dev/null 2>&1 || brew install ripgrep
 
       - name: EAS local production IPA
         run: |
@@ -86,11 +97,19 @@ jobs:
             --profile production \
             --local \
             --non-interactive \
-            --output "$GITHUB_WORKSPACE/cozbil-production.ipa"
-          status=$?
+            --output "$GITHUB_WORKSPACE/cozbil-production.ipa" 2>&1 | tee /tmp/eas-ios-build.log
+          status=${PIPESTATUS[0]}
           set -e
           if [ "$status" -ne 0 ]; then
-            echo "::error::iOS credentials missing for non-interactive CI. On a Mac run once: cd apps/mobile && eas credentials -p ios && eas build --platform ios --profile production (interactive). See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            if rg -q "Credentials are not set up|Distribution Certificate is not validated|credentials are not configured" /tmp/eas-ios-build.log; then
+              echo "::error::iOS credentials missing for non-interactive CI. On a Mac: cd apps/mobile && rm -rf ios && eas credentials -p ios (All → sync Push) then re-run. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            elif rg -q "doesn't support the Push Notifications capability|aps-environment" /tmp/eas-ios-build.log; then
+              echo "::error::Provisioning profile lacks Push/aps-environment. Enable Push on App ID (static ios.entitlements), regenerate App Store profile. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            elif rg -q "ExpoModulesJSI|Could not resolve package dependencies" /tmp/eas-ios-build.log; then
+              echo "::error::Xcode archive failed building ExpoModulesJSI (SPM). Retry this workflow, or on Mac: rm -rf ios && eas build -p ios --profile production --local. See docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            else
+              echo "::error::EAS iOS local build failed (exit $status). Scroll up for [RUN_FASTLANE] / ARCHIVE FAILED. Mac fallback: docs/setup/GITHUB_ACTIONS_IOS_BUILD.md"
+            fi
             exit "$status"
           fi
 

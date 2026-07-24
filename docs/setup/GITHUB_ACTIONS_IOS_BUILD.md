@@ -80,7 +80,21 @@ Bu **bir kez** başarılı olduktan sonra Actions tekrar çalışır.
 3. Artifact: `cozbil-ios-production-ipa`
 
 Workflow: `.github/workflows/ios-production-ipa.yml`  
-Not: macOS runner dakikası pahalıdır.
+Not: macOS runner dakikası pahalıdır. CI hata mesajı credentials’a indirgemez — gerçek root cause’u yazar.
+
+### ExpoModulesJSI / SPM archive fail
+
+Log: `Could not resolve package dependencies` + `Build ExpoModulesJSI xcframework`.
+
+Credentials tamamdır; Xcode/SPM tarafı. Önce **Actions retry**; olmazsa Mac:
+
+```bash
+cd ~/agent/apps/mobile
+rm -rf ios
+# Firebase env zaten EAS production’da
+export EAS_LOCAL_BUILD_WORKINGDIR=$HOME/eas-local-build
+eas build --platform ios --profile production --local --output ~/Desktop/cozbil-production.ipa
+```
 
 ## B) Mac script (credentials sonrası)
 
