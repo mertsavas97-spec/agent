@@ -36,22 +36,29 @@ Actions / local log:
 `Provisioning profile … doesn't support the Push Notifications capability`  
 `aps-environment … is not registered for profile`
 
-Sebep: App ID’de Push açık değil **veya** profil Push’tan **önce** üretilmiş.  
-`expo-notifications` prebuild’te `aps-environment` ekler; profilde Push şart.
+**Kök neden:** `expo-notifications` çoğu zaman `aps-environment`'i yalnızca prebuild **modifier** ile ekler. EAS capability sync **statik** `ios.entitlements` okur — yoksa `Synced capabilities: No updates` der, Apple App ID'ye Push eklenmez; profil yenilense bile Push yok kalır.
 
-Mac’te düzelt:
+Repoda `apps/mobile/app.json`:
 
-```bash
-cd ~/agent/apps/mobile
-eas credentials -p ios
-# production → Build Credentials
-# 1) Push Notifications / APNs key kurulu değilse kur (Yes)
-# 2) Provisioning Profile → Remove → Generate new (Push sonrası)
-# Exit
+```json
+"ios": { "entitlements": { "aps-environment": "production" } }
 ```
 
-Apple Developer (gerekirse): Identifiers → `com.cozbil.app` → **Push Notifications** Enable → Save.  
-Sonra Actions **iOS production IPA**’yı yeniden çalıştır (veya Mac `--local`).
+Bu değişiklik `main`'de olmalı. Sonra Mac:
+
+```bash
+cd ~/agent
+git checkout main && git pull
+cd apps/mobile
+eas credentials -p ios
+# All: Set up all the required credentials
+# Beklenen: Synced capabilities → Push eklendi (No updates DEĞİL)
+# Generate new Provisioning Profile → Y
+```
+
+Hâlâ No updates ise: [Apple Identifiers](https://developer.apple.com/account/resources/identifiers/list) → `com.cozbil.app` → **Push Notifications** Enable → Save → Confirm → profil sil/yenile.
+
+Sonra Actions **iOS production IPA** yeniden (veya Mac `--local`).
 
 Kotan yoksa Mac local (yine interaktif, `--non-interactive` **kullanma**):
 
@@ -91,7 +98,8 @@ bash scripts/build-ios-ipa-local.sh
 ## Checklist
 
 - [x] Bundle ID `com.cozbil.app`
-- [ ] Mac’te Push açık + provisioning profile yenile → interaktif/CI IPA yeşil
+- [x] Static `ios.entitlements.aps-environment` (EAS capability sync)
+- [ ] Mac’te credentials sync Push + profile yenile → CI IPA yeşil
 - [ ] ASC app + IAP
 - [ ] Actions IPA yeşil
 - [ ] `ascAppId` + TestFlight submit
