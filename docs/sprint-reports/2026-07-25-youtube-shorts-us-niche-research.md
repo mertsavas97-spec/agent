@@ -30,5 +30,6 @@
 **Follow-up (aynı gün):**
 1. Yayın temposu + US view/kazanç senaryoları (§10–11).
 2. Viral / TikTok real-time Shorts türleri (§12): news→niche, mythbust, AI reveal, topical listicle, rapid-fire, story-reveal.
+3. Reddit bazlı Shorts (§13): verdict/MC/TIFU/money-career hibrit; genel AITA+parkour yerine mikro-niche + paraphrase.
 
 **Sonraki önerilen adım:** Kullanıcı 1–2 Tier A niche seçsin → MoneyPrinterTurbo ile 14 günlük 20 Shorts A/B testi → Analytics US% + retention ile kazananı kilitle.
