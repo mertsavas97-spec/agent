@@ -421,3 +421,103 @@ Formül: `TikTok hızı + Shorts eğitim pay-off + US spesifik örnek + arama do
 4. Title = search + trend (“Fed rate cut — what it means for HYSA”).  
 5. Yorum yemi: tartışmalı ama doğru çerçeveli soru.  
 6. Aynı gün içinde yayın (trend penceresi kapanmadan).
+
+---
+
+## 13. Reddit bazlı Shorts (YouTube mantığı + US kitle)
+
+> Soru: Reddit’ten ne tür içerik? Shorts algoritması ve kitlesine ne uyar?
+
+### YouTube Shorts vs “klasik Reddit farm”
+
+| Klasik TikTok/YT farm (riskli) | Shorts’a uyan yaklaşım |
+|--------------------------------|-------------------------|
+| AITA’yı kelimesi kelimesine oku | **Paraphrase + 1 cümle yorum** |
+| Minecraft parkour + aynı AI ses | Markalı B-roll / temiz text-on-screen |
+| Genel “Reddit Stories” kanalı | **Tek alt-niche** (money / workplace / MC) |
+| 10/gün aynı template | 1–2/gün, her hikâyede farklı açı |
+| Sadece drama | Drama + **payoff / verdict / lesson** |
+
+Reddit hikâyeleri Shorts’ta iyi çünkü: önceden upvote ile validate, doğal **hook→gerilim→sonuç**, yorum yemi (YTA/NTA), faceless + MPT uyumlu.  
+Dezavantaj: aşırı doygun; Shorts RPM düşük (~$0.03–$0.07); YPP **inauthentic/reused** riski yüksek → **özgün edit şart**.
+
+### Shorts’a en uygun formatlar
+
+#### A) Verdict Short (AITA / “Was I wrong?”) — en güçlü Shorts motoru
+
+- **Yapı (45–60s):** Mid-conflict hook (2s) → 3 beat özet → cliffhanger “Am I the a**?” → soft CTA: comment YTA/NTA  
+- **Neden Shorts:** Yorum + tamamlanma; YouTube kitlesi tartışmayı sever  
+- **Mikro-niche (önerilen):** sadece **workplace** veya sadece **money/family** AITA — genel AITA’dan daha az klon
+
+#### B) Malicious Compliance / petty win (doyum yayını)
+
+- **Yapı:** “They made a stupid rule…” → compliance → satisfying twist  
+- **Neden:** Yüksek share; US işyeri kültürüyle örtüşür  
+- **Sub:** r/MaliciousCompliance, r/pettyrevenge (kısa olanlar)
+
+#### C) TIFU comedy bite
+
+- **Yapı:** En utanç verici cümle duple → kısa context → punchline  
+- **Neden:** Hafif, shareable; finance kanalına “palate cleanser” olabilir  
+- **Sub:** r/tifu (Top / Week, 1–3 paragraf olanlar)
+
+#### D) Money / career story (RPM köprüsü) ★ önerilen hibrit
+
+- **Yapı:** “I lost $X because…” / “Boss said…” → ne oldu → **1 actionable US takeaway**  
+- **Neden:** Shorts discovery + finance advertiser kitlesine yaklaşır (önceki Tier A ile uyum)  
+- **Sub:** r/personalfinance, r/antiwork, r/jobs, r/cscareerquestions, para içeren AITA  
+- **Uyarı:** Tavsiye değil; “story + general education”
+
+#### E) Relationship dilemma (yüksek volume, orta RPM)
+
+- **Yapı:** Tek net çatışma → iki taraf → “What would you do?”  
+- **Sub:** r/relationship_advice (kısa, net stakes)  
+- **Kitle:** Broad; US EN ile yine Tier-1 çekilebilir ama ads finance kadar ödemez
+
+#### F) “Legal-ish” drama (dikkatli)
+
+- **Yapı:** Durum → sonuç → “not legal advice, here’s the lesson”  
+- **Sub:** r/legaladvice (anonimleştir, teşhis/tavsiye yok)  
+- **Risk:** Sensitive topic + AI “uzman” yasak bölgesine girme
+
+### Subreddit → Shorts skor kartı (US + MPT)
+
+| Kaynak | Viral Shorts | US fit | RPM potansiyeli | MPT fit | Not |
+|--------|--------------|--------|-----------------|---------|-----|
+| r/MaliciousCompliance | ★★★★★ | ★★★★☆ | ★★★☆☆ | ★★★★★ | En temiz “kanal kimliği” |
+| AITA (money/work slice) | ★★★★★ | ★★★★☆ | ★★★☆☆ | ★★★★★ | Verdict CTA altın |
+| r/tifu | ★★★★☆ | ★★★★☆ | ★★☆☆☆ | ★★★★★ | Kısa comedy |
+| r/personalfinance stories | ★★★☆☆ | ★★★★★ | ★★★★☆ | ★★★★☆ | Hibrit finans kanalı |
+| r/antiwork / jobs | ★★★★☆ | ★★★★★ | ★★★☆☆ | ★★★★★ | US workplace |
+| r/relationship_advice | ★★★★☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★☆ | Volume, düşük ads |
+| Genel AITA + parkour | ★★★☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★★ | **Doygun + YPP risk** |
+
+### MoneyPrinterTurbo script şablonu (Reddit → Short)
+
+```
+[0-2s HOOK] "My boss banned water bottles. So I followed the rule perfectly."
+[2-15s] Setup — kim, kural, stakes (paraphrase, username yok)
+[15-40s] Escalation — 2–3 beat, detay budama
+[40-52s] Payoff / twist
+[52-58s] ORIGINAL LINE: "Here's the lesson…" veya "YTA or NTA? Comment."
+Title: searchable — "Boss banned water bottles — malicious compliance"
+```
+
+**Zorunlu dönüşüm (YPP):**  
+1) Kelimesi kelimesine okuma yok · 2) Username/PII sil · 3) Her videoda **senin cümlen** (lesson/verdict frame) · 4) Görsel kimlik tutarlı ama her hikâye farklı · 5) AI disclosure.
+
+### Kanal konumları (seç biri)
+
+1. **“US Workplace Reddit”** — MC + antiwork + work-AITA (büyüme)  
+2. **“Money Mistakes from Reddit”** — personalfinance + money-AITA (RPM hibrit) ★ önceki stratejiyle en uyumlu  
+3. **“Verdict in 60s”** — sadece AITA money/family (yorum motoru)
+
+Genel “all Reddit stories” kanalı 2026’da hem algoritma hem YPP için zayıf seçim.
+
+### Ne yapma
+
+- Minecraft/GTA parkour klonu + aynı ElevenLabs “deep male”  
+- nosleep/horror’u izinsiz uzun okuma  
+- 5+ aynı gün aynı template  
+- Finans/legal’de “AI uzman tavsiyesi”  
+- Watermark’lı başka kanalın Reddit Short’unu çalma
