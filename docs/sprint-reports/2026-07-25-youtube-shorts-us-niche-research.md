@@ -27,4 +27,6 @@
 - errors: temiz
 - guardian: SKIP (ÇözBil exam/child copy yok; YouTube finans/Medicare içerikte genel compliance uyarısı dokümanda)
 
+**Follow-up (aynı gün):** Yayın temposu + US view/kazanç senaryoları eklendi (`docs/research/...` §10–11). Tavsiye: steady **1 Short/gün**, max güvenli **2/gün**; 5+/gün spam/YPP riski. Temmuz 2026 inauthentic policy not edildi.
+
 **Sonraki önerilen adım:** Kullanıcı 1–2 Tier A niche seçsin → MoneyPrinterTurbo ile 14 günlük 20 Shorts A/B testi → Analytics US% + retention ile kazananı kilitle.
