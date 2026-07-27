@@ -29,7 +29,9 @@ source /home/ubuntu/MoneyPrinterTurbo/ops/vertex.env
 
 ## Still needed for full Shorts
 
-- **Pexels** API key in `config.toml` (`pexels_api_keys`)
+(Pexels done.)
+
+- ~~**Pexels** API key~~ — configured; full 9:16 render smoke PASS (~42s HYSA Short)
 - YouTube upload OAuth only when upload enabled
 - Rotate any AI Studio key previously pasted in chat
 
