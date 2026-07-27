@@ -5,56 +5,38 @@
 
 ## Goal
 
-Route Gemini calls through **Vertex AI** so **GFS Cloud Program Start** (~$2k on billing `01F6A9-B52CDE-B4D709`) is used — not AI Studio prepaid (already depleted).
+Route Gemini through **Vertex AI** so **GFS Cloud Program Start** (~$2k on billing `01F6A9-B52CDE-B4D709`) is used — not AI Studio prepaid (depleted).
 
-## Done on VM (no further human work except Google auth once)
+## Status: LIVE
 
 | Item | Status |
 |------|--------|
-| Clean MPT install (uv, Python 3.11, ffmpeg) | Done |
-| EN Shorts defaults (JennyNeural, 9:16) | Done |
-| `app/services/gemini_client.py` Vertex/ADC factory | Done |
-| `llm.py` + `voice.py` patched to use factory | Done |
-| `ops/auto_setup_vertex.sh` (project, APIs, config, smoke) | Done |
-| `ops/auth_once.sh` + ADC watcher | Done |
-| `ops/pipeline/` daily scaffold + kill switch | Done |
-| AI Studio prepaid as primary | Abandoned (429 depleted) |
+| ADC on Cloud VM (`hello@summify.app`) | Done |
+| Dedicated project `mpt-shorts-260727` | Created + billing linked |
+| `aiplatform.googleapis.com` | Enabled |
+| Vertex `generateContent` smoke | PASS (`OK`) |
+| MPT `--stop-at script` via Vertex | PASS (HYSA script generated) |
+| `gemini_use_vertex=true` in config | Done |
 
-## Blocked (cannot automate)
-
-Google OAuth / ADC on this Cloud VM requires **one browser approval** on the owner machine (`hello@summify.app`). Password/login in chat is refused.
-
-**Owner action:** run the `gcloud auth application-default login --remote-bootstrap=...` command printed by the agent for the active session, paste the Mac terminal output back into the Cloud chat. Everything after that is scripted.
-
-## After auth (automatic)
-
-1. Link/select GCP project under billing `01F6A9-B52CDE-B4D709`
-2. Enable `aiplatform.googleapis.com` (+ generative language)
-3. Set `gemini_use_vertex=true` + project/location in `config.toml`
-4. Write `ops/vertex.env`
-5. Vertex smoke + MPT `--stop-at script`
-
-## Still separate (not Google)
-
-- **Pexels** API key → full video materials
-- YouTube upload OAuth → only when upload enabled
-- Rotate any AI Studio key that was pasted in chat
-
-## Credits reminder
-
-| Credit | Use for MPT? |
-|--------|----------------|
-| GFS Cloud Program Start ~$2k | Yes — Vertex Gemini |
-| GenAI App Builder (TRY) | No — Agent Builder / Search SKUs only |
-| AI Studio prepaid | Exhausted |
-
-## Commands (VM)
+## How to run (VM)
 
 ```bash
-# After ADC exists:
-bash /home/ubuntu/MoneyPrinterTurbo/ops/auto_setup_vertex.sh
 source /home/ubuntu/MoneyPrinterTurbo/ops/vertex.env
 /home/ubuntu/MoneyPrinterTurbo/run.sh cli \
   --video-subject "HYSA tip" --video-language en-US \
   --video-aspect 9:16 --stop-at script
 ```
+
+## Still needed for full Shorts
+
+- **Pexels** API key in `config.toml` (`pexels_api_keys`)
+- YouTube upload OAuth only when upload enabled
+- Rotate any AI Studio key previously pasted in chat
+
+## Credits reminder
+
+| Credit | Use for MPT? |
+|--------|----------------|
+| GFS Cloud Program Start ~$2k | Yes — Vertex on `mpt-shorts-260727` |
+| GenAI App Builder (TRY) | No |
+| AI Studio prepaid | Exhausted — do not use |
