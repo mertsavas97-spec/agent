@@ -2,7 +2,8 @@
 
 **Tarih:** 2026-07-23  
 **Branch:** `cursor/solve-word-eq-proxy-6767` / PR #18  
-**Önkoşul:** Android AAB yolu açık; privacy/terms hosting canlı.
+**Önkoşul:** Android AAB yolu açık; privacy/terms/**app-ads.txt** hosting canlı  
+(`docs/store/app-ads-txt.md`).
 
 Agent kodu: `verifyAppStorePurchase` artık App Store Server API çağırır (credential yoksa elevate yok).
 
