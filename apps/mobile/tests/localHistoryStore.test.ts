@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   getLocalHistoryEntry,
+  hasLocalSolveActivity,
   listLocalHistory,
   recordLocalAttempt,
   toAttemptListItem,
@@ -13,6 +14,7 @@ describe('localHistoryStore', () => {
   });
 
   it('records and lists attempts newest first', async () => {
+    expect(await hasLocalSolveActivity()).toBe(false);
     await recordLocalAttempt({
       attemptId: 'a1',
       solutionId: 's1',
@@ -22,6 +24,7 @@ describe('localHistoryStore', () => {
       steps: [{ title: 'Cevap', body: 'Anlam ilgisi: Amaç-sonuç' }],
       answer: { text: 'Amaç-sonuç' },
     });
+    expect(await hasLocalSolveActivity()).toBe(true);
     await recordLocalAttempt({
       attemptId: 'a2',
       solutionId: 's2',
