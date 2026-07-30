@@ -97,3 +97,6 @@ WebUI: dropdown = packs where `monetize_ok=true`. Upload flow validates license.
 Ship **local muted packs + license.json + attribution field**.  
 Seed library with: (1) self-recorded Minecraft, (2) 1–2 purchased commercial packs, (3) optional stock “motion BG” pack as safe default.  
 Defer Subway/GTA-branded assets.
+
+
+See also: `2026-07-mpt-brainrot-free-bg.md` (Pexels satisfaction default).
