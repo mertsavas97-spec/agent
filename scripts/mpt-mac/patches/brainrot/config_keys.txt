@@ -1,0 +1,10 @@
+42:render_mode = "pexels"
+43:brainrot_bg_pack = "satisfaction"  # satisfaction | abstract | nature_motion | mechanica
+44:brainrot_bg_source = "pexels"
+45:brainrot_overlay_count = 5
+46:brainrot_overlay_max_width_pct = 0.64
+47:brainrot_overlay_max_height_pct = 0.42
+48:brainrot_overlay_max_coverage = 0.55
+49:brainrot_overlay_position = "center_upper"
+50:brainrot_overlay_margin_top_pct = 0.12
+51:brainrot_mute_bg = true

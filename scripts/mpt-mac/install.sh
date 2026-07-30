@@ -47,6 +47,16 @@ if [[ -f app/services/llm.py ]]; then
   echo "Applied Vertex patches (llm/voice/gemini_client)"
 fi
 
+# Brainrot mode (Pexels satisfaction BG + PiP)
+if [[ -f "$SCRIPT_DIR/patches/brainrot/brainrot.py" ]]; then
+  cp "$SCRIPT_DIR/patches/brainrot/brainrot.py" app/services/brainrot.py
+  cp "$SCRIPT_DIR/patches/brainrot/task.py" app/services/task.py
+  cp "$SCRIPT_DIR/patches/brainrot/schema.py" app/models/schema.py
+  cp "$SCRIPT_DIR/patches/brainrot/cli.py" cli.py
+  cp "$SCRIPT_DIR/patches/brainrot/Main.py" webui/Main.py
+  echo "Applied brainrot mode patches"
+fi
+
 # config.toml
 if [[ ! -f config.toml ]]; then
   cp config.example.toml config.toml
@@ -78,6 +88,13 @@ t = set_kv(t, "gemini_vertex_project", f'"{project}"')
 t = set_kv(t, "gemini_vertex_location", f'"{location}"')
 t = set_kv(t, "video_source", '"pexels"')
 t = set_kv(t, "subtitle_provider", '"edge"')
+t = set_kv(t, "render_mode", '"pexels"')
+t = set_kv(t, "brainrot_bg_pack", '"satisfaction"')
+t = set_kv(t, "brainrot_overlay_count", "5")
+t = set_kv(t, "brainrot_overlay_max_width_pct", "0.64")
+t = set_kv(t, "brainrot_overlay_max_height_pct", "0.42")
+t = set_kv(t, "brainrot_overlay_max_coverage", "0.55")
+t = set_kv(t, "brainrot_overlay_position", '"center_upper"')
 if pexels:
     t = set_kv(t, "pexels_api_keys", f'["{pexels}"]')
 # UI voice
