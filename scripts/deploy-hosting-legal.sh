@@ -14,7 +14,7 @@ mkdir -p "$npm_config_cache"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 cd "$ROOT"
 
-for path in hosting/public/privacy/index.html hosting/public/terms/index.html hosting/public/app-ads.txt; do
+for path in hosting/public/privacy/index.html hosting/public/terms/index.html hosting/public/app-ads.txt hosting/public/robots.txt; do
   if [[ ! -f "$path" ]]; then
     echo "Missing $path" >&2
     exit 1
@@ -68,8 +68,9 @@ echo "  curl -sI ${BASE}/privacy | head -5"
 echo "  curl -sI ${BASE}/terms | head -5"
 echo "  curl -sI ${BASE}/app-ads.txt | head -8"
 echo "  curl -s ${BASE}/app-ads.txt"
+echo "  curl -s ${BASE}/robots.txt"
 echo ""
 echo "AdMob: ASC/Play developer website = ${BASE} (kök alan)."
-echo "Sonra AdMob konsolunda app-ads.txt güncellemelerini kontrol et."
+echo "Sonra AdMob konsolunda app-ads.txt güncellemelerini kontrol et (24s bekleyin)."
 echo ""
 echo "Counsel imzası ayrıca gerekir — deploy ≠ hukuki onay."
