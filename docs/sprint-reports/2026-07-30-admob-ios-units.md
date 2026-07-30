@@ -15,4 +15,4 @@ AdMob iOS Banner / Geçiş / Ödüllü birim id’leri `eas.json` production’a
 
 ## Security follow-up (2026-07-30)
 
-PR #31 description accidentally exposed `EXPO_PUBLIC_FIREBASE_API_KEY`. Body sanitized to placeholders. Owner must **rotate/restrict** the leaked Firebase browser key in Google Cloud Console and use Cursor secrets / local env only — never paste keys into PR text.
+PR #31 description accidentally exposed `EXPO_PUBLIC_FIREBASE_API_KEY`. See `docs/sprint-reports/2026-07-30-secret-scrub-pr31.md`: contaminated PR closed; replacement PR opened. Owner must **rotate/restrict** the leaked Firebase browser key and dismiss the GitHub secret alert as Revoked.
