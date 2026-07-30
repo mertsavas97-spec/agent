@@ -1,17 +1,29 @@
 # Sprint State
 
-**Branch:** `cursor/admob-ios-units-2914`  
-**Sprint:** Wire live AdMob iOS units → Mac IPA
+**Branch:** `cursor/scrub-google-api-key-pr31-4710` (PR #32)  
+**Sprint:** AdMob iOS units + Firebase key scrub; owner rotate
 
-## AdMob iOS
+## Security (PR #31 leak)
 
-- [x] Banner `/1521648962`
-- [x] Interstitial `/3447425993`
-- [x] Rewarded `/8645460517`
-- [x] `eas.json` production + fail-fast App ID check
+- [x] PR #31 closed (body history contaminated)
+- [x] Clean PR #32 opened (placeholders only)
+- [x] Repo tree: no `AIza…`
+- [x] `.github/PULL_REQUEST_TEMPLATE.md` (no secrets in PR text)
+- [ ] Owner: **new** Browser key in GCP `cozbil-dev-f9583` → Cursor/EAS secrets → new IPA → **then** delete old key → GitHub alert **Revoked**
+
+## AdMob iOS (in PR #32)
+
 - [x] App ID `~6347757786`
-- [ ] Owner: Mac IPA (`bash scripts/mac-build-ipa-with-push.sh`)
+- [x] Banner / Interstitial / Rewarded unit ids in `eas.json`
+- [ ] Owner: Mac IPA from **this** branch after secrets updated
 
-## Push
+```bash
+git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
+# export EXPO_PUBLIC_FIREBASE_* from secrets (never paste into chat/PR)
+bash scripts/mac-build-ipa-with-push.sh
+```
 
-Included via branch base `cursor/inactive-push-weekly-2914` (PR #29).
+## Hosting / app-ads.txt
+
+- [x] Live: `https://cozbil-dev-f9583.web.app/app-ads.txt` (200)
+- [ ] Owner: AdMob “güncellemeleri kontrol et” / doğrulama
