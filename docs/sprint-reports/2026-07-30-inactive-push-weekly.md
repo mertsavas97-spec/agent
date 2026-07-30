@@ -17,9 +17,9 @@
 **Skill bypass:** Spec Kit (behavior tweak within existing push feature)
 
 **QA Gate:**
-- typecheck: (run)
-- lint: (run)
-- smoke: localPush + localHistoryStore tests
+- typecheck: PASS
+- lint: PASS
+- smoke: localPush + localHistoryStore tests PASS
 - guardian: PASS (inactive copy avoids eksik/zayıf)
 
 **Sonraki önerilen adım:** Merge → store build so installed users re-sync schedules on next open
