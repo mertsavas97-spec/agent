@@ -7,6 +7,7 @@ const appJson = require('./app.json');
 /** Google sample app ids — safe for dogfood / until owner sets real ids. */
 const GOOGLE_TEST_ANDROID_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
 const GOOGLE_TEST_IOS_APP_ID = 'ca-app-pub-3940256099942544~1458002511';
+const GOOGLE_TEST_PUBLISHER = '3940256099942544';
 
 function missingFirebasePublicKeys() {
   const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim();
@@ -15,6 +16,29 @@ function missingFirebasePublicKeys() {
   if (!apiKey) missing.push('EXPO_PUBLIC_FIREBASE_API_KEY');
   if (!appId) missing.push('EXPO_PUBLIC_FIREBASE_APP_ID');
   return missing;
+}
+
+function hasLiveIosAdUnits() {
+  return Boolean(
+    process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS?.trim() &&
+      process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS?.trim() &&
+      process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS?.trim(),
+  );
+}
+
+/** Real unit ids must pair with real AdMob App ID (~), not Google sample. */
+function missingProductionAdMobAppId() {
+  if (process.env.EXPO_PUBLIC_ADS_STUB === '1') return null;
+  if (process.env.EXPO_PUBLIC_ADS_USE_TEST_UNITS === '1') return null;
+  if (!hasLiveIosAdUnits()) return null;
+  const iosAppId = process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID?.trim() ?? '';
+  if (!iosAppId || iosAppId.includes(GOOGLE_TEST_PUBLISHER)) {
+    return 'EXPO_PUBLIC_ADMOB_IOS_APP_ID';
+  }
+  if (!iosAppId.includes('~')) {
+    return 'EXPO_PUBLIC_ADMOB_IOS_APP_ID (must be App ID with ~, not a unit / id)';
+  }
+  return null;
 }
 
 function withAdMobPlugin(plugins) {
@@ -54,6 +78,15 @@ module.exports = () => {
       throw new Error(
         `[EAS production] Missing Firebase public env: ${missing.join(', ')}. ` +
           'Set via `eas secret:create` / EAS Environment variables — see docs/setup/EAS_PRODUCTION.md.',
+      );
+    }
+
+    const admobAppId = missingProductionAdMobAppId();
+    if (admobAppId) {
+      throw new Error(
+        `[EAS production] Live iOS AdMob units are set but ${admobAppId} is missing/test. ` +
+          'AdMob → Apps → ÇözBil iOS → App settings → copy App ID (ca-app-pub-…~…). ' +
+          'See docs/store/admob-ios-units.md.',
       );
     }
   }

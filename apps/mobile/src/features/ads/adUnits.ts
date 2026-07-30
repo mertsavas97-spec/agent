@@ -1,5 +1,6 @@
 /**
- * AdMob / stub unit IDs — production secrets via EAS env, never commit real prod ids.
+ * AdMob / stub unit IDs — production values via EAS profile env (`eas.json`)
+ * or owner export; prefer not to commit secrets-like tokens in `.env` files.
  * Google test ids used when EXPO_PUBLIC_ADS_USE_TEST_UNITS=1.
  */
 

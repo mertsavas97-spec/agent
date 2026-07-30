@@ -1,31 +1,17 @@
 # Sprint State
 
-**Branch:** `cursor/inactive-push-weekly-2914`  
-**Sprint:** Inactive push fix → Mac local IPA (store)
+**Branch:** `cursor/admob-ios-units-2914`  
+**Sprint:** Wire live AdMob iOS units → Mac IPA
 
-## Push (PR #29)
+## AdMob iOS
 
-- [x] Never-solved: haftada en fazla 1 nazik davet (`inactiveWeekly`)
-- [x] İlk çözüm sonrası: full schedule (`refreshLocalPushAfterSolve`)
-- [x] QA: typecheck / lint / localPush + localHistoryStore PASS
-- [ ] Merge → `main` (owner veya merge sonrası)
+- [x] Banner `/1521648962`
+- [x] Interstitial `/3447425993`
+- [x] Rewarded `/8645460517`
+- [x] `eas.json` production + fail-fast App ID check
+- [ ] Owner: `EXPO_PUBLIC_ADMOB_IOS_APP_ID` (`…~…` Uygulama ayarları)
+- [ ] Owner: Mac IPA (`bash scripts/mac-build-ipa-with-push.sh`)
 
-## IPA (bu ortamda BLOK)
+## Push
 
-Cloud agent = **Linux**, Xcode yok → burada IPA **üretilmez**.  
-Owner Mac (önceki başarılı yol):
-
-```bash
-cd ~/agent   # repo
-export EXPO_PUBLIC_FIREBASE_API_KEY=...
-export EXPO_PUBLIC_FIREBASE_APP_ID=...
-bash scripts/mac-build-ipa-with-push.sh
-# → ~/Desktop/cozbil-production.ipa
-```
-
-Alternatif: Actions → **iOS production IPA** → branch `cursor/inactive-push-weekly-2914`.
-
-## AdMob / Hosting (paralel, PR #30)
-
-- [ ] Owner: `bash scripts/deploy-hosting-legal.sh`
-- [ ] ASC developer website = `https://cozbil-dev-f9583.web.app`
+Included via branch base `cursor/inactive-push-weekly-2914` (PR #29).
