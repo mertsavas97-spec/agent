@@ -1,29 +1,33 @@
 # Sprint State
 
 **Branch:** `cursor/scrub-google-api-key-pr31-4710` (PR #32)  
-**Sprint:** AdMob iOS units + Firebase key scrub; owner rotate
+**Hedef:** Local Mac IPA — Cursor/EAS secrets şart değil
 
-## Security (PR #31 leak)
+## Hazır (kod)
 
-- [x] PR #31 closed (body history contaminated)
-- [x] Clean PR #32 opened (placeholders only)
-- [x] Repo tree: no `AIza…`
-- [x] `.github/PULL_REQUEST_TEMPLATE.md` (no secrets in PR text)
-- [ ] Owner: **new** Browser key in GCP `cozbil-dev-f9583` → Cursor/EAS secrets → new IPA → **then** delete old key → GitHub alert **Revoked**
+- [x] AdMob App ID `~6347757786`
+- [x] Banner / Interstitial / Rewarded iOS unit ids (`eas.json` + script)
+- [x] Inactive-push fix (bu branch’te)
+- [x] app-ads.txt canlı (`cozbil-dev-f9583.web.app/app-ads.txt`)
+- [x] Yeni GCP API key oluşturuldu (owner Mac)
+- [x] Firebase key **repoda yok** (doğru) — Mac `.env.local` ile build’e girer
 
-## AdMob iOS (in PR #32)
-
-- [x] App ID `~6347757786`
-- [x] Banner / Interstitial / Rewarded unit ids in `eas.json`
-- [ ] Owner: Mac IPA from **this** branch after secrets updated
+## Owner Mac (Cursor yok)
 
 ```bash
+cd ~/agent
 git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
-# export EXPO_PUBLIC_FIREBASE_* from secrets (never paste into chat/PR)
+
+# bir kez: apps/mobile/.env.local  (commit etme)
+# EXPO_PUBLIC_FIREBASE_API_KEY=…   # get-key-string çıktısı
+# EXPO_PUBLIC_FIREBASE_APP_ID=1:717206185063:web:74256b15d50acb5c49a0c2
+
 bash scripts/mac-build-ipa-with-push.sh
+# → ~/Desktop/cozbil-production.ipa
 ```
 
-## Hosting / app-ads.txt
+## Sonra
 
-- [x] Live: `https://cozbil-dev-f9583.web.app/app-ads.txt` (200)
-- [ ] Owner: AdMob “güncellemeleri kontrol et” / doğrulama
+- [ ] Eski sızan Firebase key’i GCP’den sil
+- [ ] GitHub secret alert → Revoked
+- [ ] AdMob doğrulama yenile
