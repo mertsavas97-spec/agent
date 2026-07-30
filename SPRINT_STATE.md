@@ -9,7 +9,7 @@
 - [x] Interstitial `/3447425993`
 - [x] Rewarded `/8645460517`
 - [x] `eas.json` production + fail-fast App ID check
-- [ ] Owner: `EXPO_PUBLIC_ADMOB_IOS_APP_ID` (`…~…` Uygulama ayarları)
+- [x] App ID `~6347757786`
 - [ ] Owner: Mac IPA (`bash scripts/mac-build-ipa-with-push.sh`)
 
 ## Push

@@ -50,6 +50,7 @@
         "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://cozbil-dev-f9583.web.app/privacy",
         "EXPO_PUBLIC_TERMS_URL": "https://cozbil-dev-f9583.web.app/terms",
         "EXPO_PUBLIC_SUPPORT_EMAIL": "destek@cozbil.app",
+        "EXPO_PUBLIC_ADMOB_IOS_APP_ID": "ca-app-pub-4628962707131944~6347757786",
         "EXPO_PUBLIC_ADMOB_BANNER_IOS": "ca-app-pub-4628962707131944/1521648962",
         "EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS": "ca-app-pub-4628962707131944/3447425993",
         "EXPO_PUBLIC_ADMOB_REWARDED_IOS": "ca-app-pub-4628962707131944/8645460517"

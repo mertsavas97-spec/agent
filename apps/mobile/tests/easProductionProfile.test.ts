@@ -19,6 +19,9 @@ describe('EAS production profile', () => {
 
   it('wires live iOS AdMob unit ids (banner / interstitial / rewarded)', () => {
     expect(production.env.EXPO_PUBLIC_ADS_USE_TEST_UNITS).toBe('0');
+    expect(production.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID).toBe(
+      'ca-app-pub-4628962707131944~6347757786',
+    );
     expect(production.env.EXPO_PUBLIC_ADMOB_BANNER_IOS).toBe(
       'ca-app-pub-4628962707131944/1521648962',
     );

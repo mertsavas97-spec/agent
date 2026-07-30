@@ -3,7 +3,7 @@
 # Usage:
 #   export EXPO_PUBLIC_FIREBASE_API_KEY=...
 #   export EXPO_PUBLIC_FIREBASE_APP_ID=...
-#   export EXPO_PUBLIC_ADMOB_IOS_APP_ID='ca-app-pub-4628962707131944~XXXX'
+#   export EXPO_PUBLIC_ADMOB_IOS_APP_ID='ca-app-pub-4628962707131944~6347757786'
 #   bash scripts/mac-build-ipa-with-push.sh
 
 set -euo pipefail
@@ -17,16 +17,17 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-# Live iOS units (AdMob console) — also in eas.json production.env
+# Live iOS units + App ID (AdMob console) — also in eas.json production.env
 export EXPO_PUBLIC_ADS_STUB="${EXPO_PUBLIC_ADS_STUB:-0}"
 export EXPO_PUBLIC_ADS_USE_TEST_UNITS="${EXPO_PUBLIC_ADS_USE_TEST_UNITS:-0}"
+export EXPO_PUBLIC_ADMOB_IOS_APP_ID="${EXPO_PUBLIC_ADMOB_IOS_APP_ID:-ca-app-pub-4628962707131944~6347757786}"
 export EXPO_PUBLIC_ADMOB_BANNER_IOS="${EXPO_PUBLIC_ADMOB_BANNER_IOS:-ca-app-pub-4628962707131944/1521648962}"
 export EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS="${EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS:-ca-app-pub-4628962707131944/3447425993}"
 export EXPO_PUBLIC_ADMOB_REWARDED_IOS="${EXPO_PUBLIC_ADMOB_REWARDED_IOS:-ca-app-pub-4628962707131944/8645460517}"
 
 if [[ -z "${EXPO_PUBLIC_ADMOB_IOS_APP_ID:-}" || "${EXPO_PUBLIC_ADMOB_IOS_APP_ID}" == *3940256099942544* ]]; then
   echo "error: EXPO_PUBLIC_ADMOB_IOS_APP_ID gerekli (AdMob → Uygulama ayarları → Uygulama kimliği, …~…)." >&2
-  echo "Örnek: export EXPO_PUBLIC_ADMOB_IOS_APP_ID='ca-app-pub-4628962707131944~XXXXXXXX'" >&2
+  echo "Örnek: export EXPO_PUBLIC_ADMOB_IOS_APP_ID='ca-app-pub-4628962707131944~6347757786'" >&2
   exit 1
 fi
 if [[ "${EXPO_PUBLIC_ADMOB_IOS_APP_ID}" != *~* ]]; then
