@@ -15,12 +15,17 @@ if [[ ! -f "$FILE" ]]; then
   exit 1
 fi
 
-# No BOM; must contain exact AdMob line (comments allowed).
+# No BOM; ASCII-only preferred (AdMob crawler). Exact publisher line required.
 if command -v file >/dev/null 2>&1; then
   if file "$FILE" | grep -qi 'UTF-8 Unicode (with BOM)'; then
     echo "app-ads.txt must not have a UTF-8 BOM" >&2
     exit 1
   fi
+fi
+
+# Prefer single-line file matching AdMob snippet exactly (no fancy comments).
+if [[ "$(wc -l < "$FILE" | tr -d ' ')" -gt 2 ]]; then
+  echo "warn: prefer only the AdMob line (no multi-line comments) for crawler quirks" >&2
 fi
 
 if ! grep -qxF "$EXPECTED" "$FILE"; then
@@ -29,10 +34,10 @@ if ! grep -qxF "$EXPECTED" "$FILE"; then
   exit 1
 fi
 
-# Reject empty / only-whitespace after stripping comments
-if ! grep -vE '^\s*(#|$)' "$FILE" | grep -q .; then
-  echo "app-ads.txt has no non-comment records" >&2
-  exit 1
+# File must equal expected line (+ optional final newline) for max compatibility
+normalized="$(tr -d '\r' < "$FILE" | sed '/^$/d')"
+if [[ "$normalized" != "$EXPECTED" ]]; then
+  echo "warn: file has extra lines beyond AdMob snippet; crawlers usually OK with # comments, but AdMob may be picky" >&2
 fi
 
 echo "✓ local app-ads.txt OK ($FILE)"

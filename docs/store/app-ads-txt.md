@@ -1,63 +1,47 @@
-# app-ads.txt (AdMob uygulama doğrulama)
+# app-ads.txt — AdMob verification checklist
 
-**Sorun:** AdMob “app-ads.txt bilgileri hesabınızla eşleşmiyor” — canlı URL 404 idi.  
-**Kök neden:** Dosya `hosting/public` içinde yoktu / Hosting’e deploy edilmemişti.
+## Canlı (beklenen)
 
-## Yayınlanan satır (AdMob snippet)
+`https://cozbil-dev-f9583.web.app/app-ads.txt`
+
+İçerik **yalnızca** (yorum yok):
 
 ```
 google.com, pub-4628962707131944, DIRECT, f08c47fec0942fa0
 ```
 
-Kaynak dosya: `hosting/public/app-ads.txt`  
-Canlı URL: `https://cozbil-dev-f9583.web.app/app-ads.txt`
+## ASC (zorunlu eşleşme)
 
-## Owner adımları (zorunlu)
+App Store Connect → App Information:
 
-1. Repo’da dosya var (bu PR). Lokal doğrula:
-   ```bash
-   bash scripts/check-app-ads-txt.sh
-   ```
-2. Firebase Hosting deploy:
-   ```bash
-   npx firebase-tools login --reauth
-   bash scripts/deploy-hosting-legal.sh
-   ```
-3. Smoke:
-   ```bash
-   APP_ADS_LIVE=1 bash scripts/check-app-ads-txt.sh
-   curl -s https://cozbil-dev-f9583.web.app/app-ads.txt
-   ```
-   Beklenen: HTTP 200, `Content-Type: text/plain`, yukarıdaki satır.
-4. **App Store Connect** → App Information → **Marketing URL** / developer website:
-   `https://cozbil-dev-f9583.web.app`  
-   (kök alan; path ekleme — AdMob bu domain’den `/app-ads.txt` çeker)
-5. **Play Console** → Store listing → Developer website: aynı kök URL.
-6. AdMob → Apps → ÇözBil iOS → **app-ads.txt güncellemelerini kontrol et**.
+- **Marketing URL** = `https://cozbil-dev-f9583.web.app`  
+  (kök; path yok; `github.io/...` değil)
+- Support URL aynı domain olabilir
 
-## Reklam unit’leri (banner / interstitial / rewarded)
+AdMob crawler **mağaza listing’deki** developer website’e bakar.
 
-Kod yolu hazır (`BannerSlot`, `adMobEngine`, `runInterstitialIfNeeded`, rewarded grant).  
-Canlı store build için EAS **production** secret’ları:
+## Deploy (owner Mac)
 
-```
-EXPO_PUBLIC_ADS_STUB=0
-EXPO_PUBLIC_ADS_USE_TEST_UNITS=0
-EXPO_PUBLIC_ADMOB_ANDROID_APP_ID=ca-app-pub-4628962707131944~…
-EXPO_PUBLIC_ADMOB_IOS_APP_ID=ca-app-pub-4628962707131944~…
-EXPO_PUBLIC_ADMOB_BANNER_ANDROID=…
-EXPO_PUBLIC_ADMOB_BANNER_IOS=…
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=…
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS=…
-EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=…
-EXPO_PUBLIC_ADMOB_REWARDED_IOS=…
+```bash
+cd ~/agent
+git fetch origin && git checkout cursor/app-ads-txt-admob-2914 && git pull
+bash scripts/check-app-ads-txt.sh
+npx firebase-tools login --reauth   # gerekirse
+bash scripts/deploy-hosting-legal.sh
+APP_ADS_LIVE=1 bash scripts/check-app-ads-txt.sh
 ```
 
-- App id publisher segmenti `pub-4628962707131944` ile `app-ads.txt` satırı eşleşmeli.
-- Unit id’ler yokken banner/UI gizli kalır (`isLiveAdsDeliveryReady`); test App ID fallback sadece native plugin içindir.
-- Detay: `docs/store/iap-admob-readiness.md`
+## AdMob
 
-## Notlar
+1. Apps → ÇözBil iOS → app-ads.txt → **güncellemeleri kontrol et**
+2. Uygulama App Store’da listelenmiş olmalı (crawler store’dan URL alır)
+3. 24 saat bekleyin; hâlâ fail ise ASC URL’yi ekran görüntüsüyle doğrulayın
 
-- Cloud agent Firebase login yapamaz; deploy owner Mac/CI’da.
-- AdMob crawl gecikmeli olabilir; dosya 200 olduktan sonra “güncellemeleri kontrol et” yeterli.
+## Sık hata
+
+| Belirti | Neden |
+|---------|--------|
+| Eşleşmiyor | ASC hâlâ github.io / yanlış domain |
+| Eşleşmiyor | Unicode yorum satırları / yanlış pub-id |
+| Dosya yok | Hosting deploy edilmemiş |
+| Gecikme | Crawl 24s+ |
