@@ -56,3 +56,6 @@ CLI:
 ## Güvenlik
 
 Key’leri chat’e yapıştırmayın; Mac’te env / `config.toml` (gitignore) kullanın.
+
+
+**Güncel:** Remote yok — bkz. `2026-07-mpt-mac-chrome-local.md` + `scripts/mpt-mac/bootstrap-mac.sh`.

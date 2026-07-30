@@ -121,8 +121,25 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 # shellcheck disable=SC1091
 source "$ROOT/vertex.env"
+export MPT_WEBUI_HOST="${MPT_WEBUI_HOST:-127.0.0.1}"
+export MPT_WEBUI_PORT="${MPT_WEBUI_PORT:-8501}"
 case "${1:-webui}" in
-  webui) exec sh webui.sh ;;
+  webui)
+    if [[ "$(uname -s)" == "Darwin" ]] && [[ "${MPT_OPEN_BROWSER:-1}" == "1" ]]; then
+      (
+        for _ in $(seq 1 60); do
+          if curl -sf -o /dev/null "http://127.0.0.1:${MPT_WEBUI_PORT}/"; then
+            open -a "Google Chrome" "http://127.0.0.1:${MPT_WEBUI_PORT}/" 2>/dev/null \
+              || open "http://127.0.0.1:${MPT_WEBUI_PORT}/"
+            exit 0
+          fi
+          sleep 1
+        done
+      ) &
+    fi
+    echo "WebUI → http://127.0.0.1:${MPT_WEBUI_PORT}"
+    exec sh webui.sh
+    ;;
   api) exec uv run python main.py ;;
   cli) shift; exec uv run python cli.py "$@" ;;
   *) echo "Usage: $0 {webui|api|cli}"; exit 1 ;;
@@ -130,17 +147,27 @@ esac
 RUN
 chmod +x "$MPT_DIR/run-local.sh"
 
+# Convenience alias
+cat > "$MPT_DIR/open-chrome.sh" << 'OPEN'
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+exec ./run-local.sh webui
+OPEN
+chmod +x "$MPT_DIR/open-chrome.sh"
+
 echo
 echo "==> ADC check (Vertex)"
 if [[ -f "$HOME/.config/gcloud/application_default_credentials.json" ]]; then
   echo "ADC found OK"
 else
-  echo "Run once:"
+  echo "Run once (for Gemini scripts via Vertex):"
   echo "  gcloud auth application-default login"
   echo "  gcloud auth application-default set-quota-project $PROJECT"
 fi
 
 echo
-echo "DONE. Start WebUI:"
-echo "  cd $MPT_DIR && source vertex.env && ./run-local.sh webui"
-echo "  → http://127.0.0.1:8501"
+echo "DONE — LOCAL ONLY (no Remote Control)."
+echo "  cd $MPT_DIR && ./open-chrome.sh"
+echo "  Chrome → http://127.0.0.1:8501"
