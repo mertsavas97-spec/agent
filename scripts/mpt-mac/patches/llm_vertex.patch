@@ -1,0 +1,53 @@
+--- /tmp/llm.orig.py	2026-07-27 15:46:56.956236878 +0000
++++ app/services/llm.py	2026-07-27 15:14:40.473879676 +0000
+@@ -188,9 +188,19 @@
+         }
+ 
+         if provider.requires_api_key and not api_key:
+-            raise ValueError(
+-                f"{llm_provider}: api_key is not set, please set it in the config.toml file."
+-            )
++            # Vertex AI uses ADC / service account — no AI Studio API key required.
++            if adapter == "gemini":
++                from app.services.gemini_client import gemini_requires_api_key
++
++                if gemini_requires_api_key():
++                    raise ValueError(
++                        f"{llm_provider}: api_key is not set, please set it in the config.toml file "
++                        "or enable Vertex (GOOGLE_GENAI_USE_VERTEXAI=1)."
++                    )
++            else:
++                raise ValueError(
++                    f"{llm_provider}: api_key is not set, please set it in the config.toml file."
++                )
+         if provider.requires_model_name and not model_name:
+             raise ValueError(
+                 f"{llm_provider}: model_name is not set, please set it in the config.toml file."
+@@ -232,10 +242,10 @@
+                 raise Exception(f"[{llm_provider}] returned an empty response")
+ 
+         if adapter == "gemini":
+-            from google import genai
+             from google.genai import types
+ 
+-            http_options = types.HttpOptions(base_url=base_url) if base_url else None
++            from app.services.gemini_client import create_genai_client
++
+             generation_config = types.GenerateContentConfig(
+                 temperature=0.5,
+                 top_p=1,
+@@ -262,12 +272,8 @@
+             )
+ 
+             try:
+-                # 新版 google-genai 通过统一 Client 暴露模型服务。上下文管理器
+-                # 会在请求结束后关闭底层 HTTP 连接，避免频繁生成时积累连接资源。
+-                with genai.Client(
+-                    api_key=api_key,
+-                    http_options=http_options,
+-                ) as client:
++                # Vertex (Startup Cloud credits) or AI Studio api_key via factory.
++                with create_genai_client(api_key=api_key, base_url=base_url) as client:
+                     response = client.models.generate_content(
+                         model=model_name,
+                         contents=prompt,

@@ -1,0 +1,35 @@
+--- /tmp/voice.orig.py	2026-07-27 15:46:56.960236894 +0000
++++ app/services/voice.py	2026-07-27 15:14:40.473879676 +0000
+@@ -1072,14 +1072,16 @@
+     import base64
+     import io
+     from pydub import AudioSegment
+-    from google import genai
+     from google.genai import types
++
++    from app.services.gemini_client import create_genai_client, use_vertex_ai
++
+     _configure_pydub_ffmpeg(AudioSegment)
+     
+     try:
+-        api_key = config.app.get("gemini_api_key", "")
+-        if not api_key:
+-            logger.error("Gemini API key is not set")
++        api_key = str(config.app.get("gemini_api_key", "") or "").strip()
++        if not api_key and not use_vertex_ai():
++            logger.error("Gemini API key is not set and Vertex is not enabled")
+             return None
+ 
+         logger.info(f"start, voice name: {voice_name}, try: 1")
+@@ -1095,9 +1097,8 @@
+             ),
+         )
+ 
+-        # google-genai 使用统一 Client 调用文本和 TTS 模型。上下文管理器确保
+-        # 请求结束后释放 HTTP 连接，同时保留原有 PCM 转码和字幕时间轴逻辑。
+-        with genai.Client(api_key=api_key) as client:
++        # Vertex (Startup credits) or AI Studio api_key via factory.
++        with create_genai_client(api_key=api_key) as client:
+             response = client.models.generate_content(
+                 model="gemini-2.5-flash-preview-tts",
+                 contents=text,
