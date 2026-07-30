@@ -1,5 +1,1 @@
-# CozBil — IAB app-ads.txt (AdMob)
-# Publisher: pub-4628962707131944
-# Serve at: https://cozbil-dev-f9583.web.app/app-ads.txt
-# ASC/Play developer website must be this same root domain.
 google.com, pub-4628962707131944, DIRECT, f08c47fec0942fa0
