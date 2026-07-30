@@ -22,6 +22,8 @@ import {
   type LiveSolvePhase,
 } from '@/src/features/solve/liveSolveCopy';
 import { recordLocalAttempt } from '@/src/features/history/localHistoryStore';
+import { refreshLocalPushAfterSolve } from '@/src/features/push/localPush';
+import { loadPushPrefs } from '@/src/features/push/pushPrefs';
 import { ExamModeBlockScreen } from '@/src/features/solve/ExamModeBlockScreen';
 import { SolutionScreen } from '@/src/features/solve/SolutionScreen';
 import { callExplainAgain } from '@/src/features/solve/explainClient';
@@ -227,7 +229,9 @@ export default function SolveFlowScreen() {
       steps: result.steps,
       answer: result.answer ?? null,
       transparencyNote: result.transparencyNote,
-    }).catch((err) => console.warn('local history save failed', err));
+    })
+      .then(() => refreshLocalPushAfterSolve(loadPushPrefs))
+      .catch((err) => console.warn('local history save failed', err));
     void recordLocalSolveStreak().catch((err) =>
       console.warn('local streak bump failed', err),
     );

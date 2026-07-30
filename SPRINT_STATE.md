@@ -1,19 +1,15 @@
 # Sprint State
 
-**Branch:** `cursor/asc-app-id-2914`  
-**Sprint:** iOS production IPA → TestFlight submit
+**Branch:** `cursor/inactive-push-weekly-2914`  
+**Sprint:** Inactive install push cadence (weekly-only until first solve)
 
-## iOS IPA
+## Push
 
-- [x] `appleTeamId` = `J46LLRJA44`
-- [x] `ascAppId` = `6794124806`
-- [x] Static `aps-environment` + Push credential sync path
-- [x] OpenIAP Xcode 26.4 StoreKit compat
-- [x] Owner: local production IPA (`~/Desktop/cozbil-production.ipa`)
-- [ ] Owner: `eas submit` → TestFlight
-- [ ] Owner: ASC IAP + Apple API secrets (`APPLE_*`)
-- [ ] Agent note: Linux cloud host cannot produce IPA (no Xcode)
+- [x] Never-solved: cancel daily/streak/weakTopic → 1 weekly soft invite
+- [x] After first local solve: refresh to full category schedules
+- [ ] Owner: ship next store build (IPA/AAB) so devices pick up JS+native schedule logic
 
-## Android (önceki)
+## iOS / store (önceki)
 
-- [x] GHA AAB + Play SKUs owner path
+- [x] Local production IPA + `ascAppId`
+- [ ] ASC IAP + Apple API secrets as needed

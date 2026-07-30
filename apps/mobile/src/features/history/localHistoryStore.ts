@@ -40,6 +40,12 @@ export async function listLocalHistory(limit = 50): Promise<LocalHistoryEntry[]>
   return all.slice(0, limit);
 }
 
+/** True when the device has at least one recorded solve attempt. */
+export async function hasLocalSolveActivity(): Promise<boolean> {
+  const items = await listLocalHistory(1);
+  return items.length > 0;
+}
+
 export async function getLocalHistoryEntry(
   attemptId: string,
 ): Promise<LocalHistoryEntry | null> {
