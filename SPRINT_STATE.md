@@ -1,19 +1,23 @@
 # Sprint State
 
-**Branch:** `cursor/asc-app-id-2914`  
-**Sprint:** iOS production IPA → TestFlight submit
+**Branch:** `cursor/app-ads-txt-admob-2914`  
+**Sprint:** AdMob app-ads.txt doğrulama + reklam unit wiring kontrolü
 
-## iOS IPA
+## AdMob / Hosting
+
+- [x] `hosting/public/app-ads.txt` (`pub-4628962707131944`)
+- [x] `firebase.json` Content-Type `text/plain` for `/app-ads.txt`
+- [x] Deploy script + `scripts/check-app-ads-txt.sh`
+- [x] Banner / interstitial / rewarded kod yolu doğrulandı (EAS `EXPO_PUBLIC_ADMOB_*` owner)
+- [ ] Owner: `bash scripts/deploy-hosting-legal.sh` (Firebase login)
+- [ ] Owner: ASC/Play developer website = `https://cozbil-dev-f9583.web.app`
+- [ ] Owner: AdMob “güncellemeleri kontrol et”
+- [ ] Owner: EAS production secrets for real AdMob app/unit ids
+
+## iOS IPA (önceki)
 
 - [x] `appleTeamId` = `J46LLRJA44`
 - [x] `ascAppId` = `6794124806`
-- [x] Static `aps-environment` + Push credential sync path
-- [x] OpenIAP Xcode 26.4 StoreKit compat
-- [x] Owner: local production IPA (`~/Desktop/cozbil-production.ipa`)
+- [x] Owner: local production IPA
 - [ ] Owner: `eas submit` → TestFlight
 - [ ] Owner: ASC IAP + Apple API secrets (`APPLE_*`)
-- [ ] Agent note: Linux cloud host cannot produce IPA (no Xcode)
-
-## Android (önceki)
-
-- [x] GHA AAB + Play SKUs owner path

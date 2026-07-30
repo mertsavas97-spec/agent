@@ -62,6 +62,21 @@ npx expo install react-native-google-mobile-ads
 ```
 Sonra `app.config.js` plugin + EAS prebuild. Çocuk / LGS: AdMob child-directed ayarları konsolda.
 
+### app-ads.txt (mağaza doğrulama — zorunlu)
+
+Publisher: `pub-4628962707131944`
+
+```
+google.com, pub-4628962707131944, DIRECT, f08c47fec0942fa0
+```
+
+- Dosya: `hosting/public/app-ads.txt`
+- URL: `https://cozbil-dev-f9583.web.app/app-ads.txt`
+- Deploy: `bash scripts/deploy-hosting-legal.sh`
+- Check: `bash scripts/check-app-ads-txt.sh` (+ `APP_ADS_LIVE=1` canlı smoke)
+- ASC/Play **developer website** bu kök domaine eşit olmalı
+- Runbook: `docs/store/app-ads-txt.md`
+
 ## Guardrails
 - Solve / analyzing yüzeyinde reklam yok (`adsAllowedOnSurface`).
 - Rewarded +1 henüz sunucu grant değil — UI stub; Functions grant Sprint 4+ owner.

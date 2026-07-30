@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy Firebase Hosting legal pages (privacy + terms).
+# Deploy Firebase Hosting: privacy + terms + app-ads.txt (AdMob).
 # Requires: firebase login (owner).
 #
 #   bash scripts/deploy-hosting-legal.sh
@@ -14,15 +14,22 @@ mkdir -p "$npm_config_cache"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 cd "$ROOT"
 
-for path in hosting/public/privacy/index.html hosting/public/terms/index.html; do
+for path in hosting/public/privacy/index.html hosting/public/terms/index.html hosting/public/app-ads.txt; do
   if [[ ! -f "$path" ]]; then
     echo "Missing $path" >&2
     exit 1
   fi
 done
 
+bash "$ROOT/scripts/check-app-ads-txt.sh"
+
 if ! grep -q '"/terms"' firebase.json; then
   echo "firebase.json missing /terms rewrite" >&2
+  exit 1
+fi
+
+if ! grep -q '"/app-ads.txt"' firebase.json; then
+  echo "firebase.json missing /app-ads.txt Content-Type header" >&2
   exit 1
 fi
 
@@ -59,5 +66,10 @@ echo ""
 echo "✓ Hosting deploy bitti. Smoke:"
 echo "  curl -sI ${BASE}/privacy | head -5"
 echo "  curl -sI ${BASE}/terms | head -5"
+echo "  curl -sI ${BASE}/app-ads.txt | head -8"
+echo "  curl -s ${BASE}/app-ads.txt"
+echo ""
+echo "AdMob: ASC/Play developer website = ${BASE} (kök alan)."
+echo "Sonra AdMob konsolunda app-ads.txt güncellemelerini kontrol et."
 echo ""
 echo "Counsel imzası ayrıca gerekir — deploy ≠ hukuki onay."

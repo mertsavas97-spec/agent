@@ -16,7 +16,8 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
 2. **EAS secrets / env (production)**
    - [ ] `EXPO_PUBLIC_FIREBASE_API_KEY`
    - [ ] `EXPO_PUBLIC_FIREBASE_APP_ID`
-   - [ ] (opsiyonel canlı reklam) `EXPO_PUBLIC_ADMOB_*` unit + app ids  
+   - [ ] (canlı reklam) `EXPO_PUBLIC_ADMOB_*` app + banner/interstitial/rewarded unit ids  
+     Publisher `pub-4628962707131944` ile `app-ads.txt` eşleşmeli.  
      Yoksa native plugin Google **test app id** ile prebuild olur; üretimde unit yokken reklam UI gizli kalır.
 
 3. **Functions deploy**
@@ -30,10 +31,12 @@ Agent tarafı (P0–P2) kapandı. Aşağıdakiler **hesap / konsol / deploy** is
    - [ ] Internal testing track
    - [ ] **Fotoğraf/video izinleri:** `READ_MEDIA_*` kaldırma — bkz. `docs/store/PLAY_PHOTO_VIDEO_PERMISSIONS.md` (beyan doldurma, Photo Picker + yeni AAB)
 
-5. **Hosting**
+5. **Hosting + AdMob app-ads.txt**
    - [ ] `firebase login --reauth`
-   - [ ] `bash scripts/deploy-hosting-legal.sh` (privacy + terms)
-   - [ ] URL smoke: privacy + terms 200
+   - [ ] `bash scripts/deploy-hosting-legal.sh` (privacy + terms + app-ads.txt)
+   - [ ] URL smoke: privacy + terms + `/app-ads.txt` 200 (`docs/store/app-ads-txt.md`)
+   - [ ] ASC/Play developer website = `https://cozbil-dev-f9583.web.app`
+   - [ ] AdMob konsolunda “güncellemeleri kontrol et”
 
 6. **Prod solve smoke (proxy yok)**
    - [ ] Storage/Firestore trigger + Vertex path
