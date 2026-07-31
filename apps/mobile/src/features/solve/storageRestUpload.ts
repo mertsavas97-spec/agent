@@ -3,24 +3,9 @@
  * multipart assembly calls `new Blob([string, Uint8Array, string])` and Hermes
  * BlobManager throws "Creating blobs from 'ArrayBuffer'…".
  *
- * This helper uploads via Storage REST + XMLHttpRequest.send(ArrayBuffer).
+ * Workaround: Storage REST `uploadType=media` (raw bytes) + JSON metadata PATCH.
+ * Avoid multipart — RN XHR often mis-frames it as "Metadata part is too large".
  */
-
-function concatBytes(parts: Uint8Array[]): Uint8Array {
-  let total = 0;
-  for (const p of parts) total += p.byteLength;
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const p of parts) {
-    out.set(p, offset);
-    offset += p.byteLength;
-  }
-  return out;
-}
-
-function utf8(text: string): Uint8Array {
-  return new TextEncoder().encode(text);
-}
 
 function newDownloadToken(): string {
   const c = globalThis.crypto as { randomUUID?: () => string } | undefined;
@@ -35,53 +20,23 @@ function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   ) as ArrayBuffer;
 }
 
-export async function uploadBytesViaStorageRest(input: {
-  bucket: string;
-  path: string;
-  bytes: Uint8Array;
-  contentType: string;
-  idToken: string;
-  customMetadata?: Record<string, string>;
-  /** Override for tests. */
+function xhrRequest(input: {
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  body: string | ArrayBuffer;
   xhrFactory?: () => XMLHttpRequest;
-}): Promise<{ downloadToken: string }> {
-  const downloadToken = newDownloadToken();
-  const boundary = `cozbil${Date.now().toString(36)}`;
-  const metadata = {
-    name: input.path,
-    contentType: input.contentType,
-    metadata: {
-      ...(input.customMetadata ?? {}),
-      firebaseStorageDownloadTokens: downloadToken,
-    },
-  };
-
-  const preamble = utf8(
-    `--${boundary}\r\n` +
-      'Content-Type: application/json; charset=utf-8\r\n\r\n' +
-      `${JSON.stringify(metadata)}\r\n` +
-      `--${boundary}\r\n` +
-      `Content-Type: ${input.contentType}\r\n\r\n`,
-  );
-  const epilogue = utf8(`\r\n--${boundary}--`);
-  const body = concatBytes([preamble, input.bytes, epilogue]);
-
-  const url =
-    `https://firebasestorage.googleapis.com/v0/b/${input.bucket}/o` +
-    `?uploadType=multipart&name=${encodeURIComponent(input.path)}`;
-
-  await new Promise<void>((resolve, reject) => {
+}): Promise<string> {
+  return new Promise((resolve, reject) => {
     const xhr = input.xhrFactory ? input.xhrFactory() : new XMLHttpRequest();
-    xhr.open('POST', url);
+    xhr.open(input.method, input.url);
     xhr.responseType = 'text';
-    xhr.setRequestHeader('Authorization', `Bearer ${input.idToken}`);
-    xhr.setRequestHeader(
-      'Content-Type',
-      `multipart/related; boundary=${boundary}`,
-    );
+    for (const [k, v] of Object.entries(input.headers)) {
+      xhr.setRequestHeader(k, v);
+    }
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
+        resolve(String(xhr.responseText ?? ''));
         return;
       }
       const snippet = String(xhr.responseText ?? '').slice(0, 240);
@@ -98,7 +53,59 @@ export async function uploadBytesViaStorageRest(input: {
         }),
       );
     };
-    xhr.send(asArrayBuffer(body));
+    xhr.send(input.body);
+  });
+}
+
+export async function uploadBytesViaStorageRest(input: {
+  bucket: string;
+  path: string;
+  bytes: Uint8Array;
+  contentType: string;
+  idToken: string;
+  customMetadata?: Record<string, string>;
+  /** Override for tests. */
+  xhrFactory?: () => XMLHttpRequest;
+}): Promise<{ downloadToken: string }> {
+  const downloadToken = newDownloadToken();
+  const auth = `Bearer ${input.idToken}`;
+
+  // 1) Raw media upload — no multipart / no Blob
+  const mediaUrl =
+    `https://firebasestorage.googleapis.com/v0/b/${input.bucket}/o` +
+    `?name=${encodeURIComponent(input.path)}&uploadType=media`;
+
+  await xhrRequest({
+    method: 'POST',
+    url: mediaUrl,
+    headers: {
+      Authorization: auth,
+      'Content-Type': input.contentType,
+    },
+    body: asArrayBuffer(input.bytes),
+    xhrFactory: input.xhrFactory,
+  });
+
+  // 2) Attach download token + custom metadata (JSON only)
+  const metaUrl =
+    `https://firebasestorage.googleapis.com/v0/b/${input.bucket}/o/` +
+    `${encodeURIComponent(input.path)}`;
+
+  await xhrRequest({
+    method: 'PATCH',
+    url: metaUrl,
+    headers: {
+      Authorization: auth,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      contentType: input.contentType,
+      metadata: {
+        ...(input.customMetadata ?? {}),
+        firebaseStorageDownloadTokens: downloadToken,
+      },
+    }),
+    xhrFactory: input.xhrFactory,
   });
 
   return { downloadToken };

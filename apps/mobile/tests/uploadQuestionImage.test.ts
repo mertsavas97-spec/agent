@@ -124,12 +124,29 @@ describe('uploadQuestionImage (RN-safe REST)', () => {
 });
 
 describe('uploadBytesViaStorageRest xhr', () => {
-  it('POSTs multipart ArrayBuffer body', async () => {
-    // Use the mocked export only for call signature — load real via requireActual
+  it('POSTs media bytes then PATCHes metadata JSON', async () => {
     const real = jest.requireActual(
       '@/src/features/solve/storageRestUpload',
     ) as typeof import('@/src/features/solve/storageRestUpload');
-    const xhr = mockXhr(200);
+
+    const calls: Array<{ method?: string; url?: string; body?: unknown }> = [];
+    let callIdx = 0;
+    const xhrFactory = () => {
+      const xhr = mockXhr(200);
+      const open = xhr.open;
+      xhr.open = jest.fn((method: string, url: string) => {
+        calls[callIdx] = { ...(calls[callIdx] ?? {}), method, url };
+        return open(method, url);
+      });
+      const send = xhr.send;
+      xhr.send = jest.fn((body: unknown) => {
+        calls[callIdx] = { ...(calls[callIdx] ?? {}), body };
+        callIdx += 1;
+        return send.call(xhr, body);
+      });
+      return xhr as unknown as XMLHttpRequest;
+    };
+
     const result = await real.uploadBytesViaStorageRest({
       bucket: 'bucket.appspot.com',
       path: 'users/u1/uploads/1.jpg',
@@ -137,18 +154,20 @@ describe('uploadBytesViaStorageRest xhr', () => {
       contentType: 'image/jpeg',
       idToken: 'tok',
       customMetadata: { cozbilSolve: '1' },
-      xhrFactory: () => xhr as unknown as XMLHttpRequest,
+      xhrFactory,
     });
 
     expect(result.downloadToken).toBeTruthy();
-    expect(xhr.open).toHaveBeenCalledWith(
-      'POST',
-      expect.stringContaining('uploadType=multipart'),
-    );
-    expect(xhr.send).toHaveBeenCalledWith(expect.any(ArrayBuffer));
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.method).toBe('POST');
+    expect(calls[0]?.url).toContain('uploadType=media');
+    expect(calls[0]?.body).toBeInstanceOf(ArrayBuffer);
+    expect(calls[1]?.method).toBe('PATCH');
+    expect(String(calls[1]?.body)).toContain('firebaseStorageDownloadTokens');
+    expect(String(calls[1]?.body)).toContain('cozbilSolve');
   });
 
-  it('rejects on non-2xx', async () => {
+  it('rejects on non-2xx media upload', async () => {
     const real = jest.requireActual(
       '@/src/features/solve/storageRestUpload',
     ) as typeof import('@/src/features/solve/storageRestUpload');
