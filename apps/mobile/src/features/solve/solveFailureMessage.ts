@@ -41,7 +41,7 @@ export function solveFailureMessage(err: unknown): string {
   }
   if (
     code === 'functions/deadline-exceeded' ||
-    /SOLVE_TIMEOUT|SOLVE_TRIGGER_MISSING|onSolveUploadFinalized|solve UI settle/i.test(
+    /SOLVE_TIMEOUT|SOLVE_TRIGGER_MISSING|SOLVE_RUNNING_STUCK|onSolveUploadFinalized|solve UI settle/i.test(
       message,
     )
   ) {

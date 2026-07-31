@@ -17,18 +17,28 @@ bash scripts/write-mobile-env-local.sh
 
 Key ekrana yazılmaz; dosya gitignore’da — commit etme.
 
-## 1) Backend (solve için zorunlu)
+## 1) Hızlı çözüm (önerilen demo) — yerel proxy
 
-Canlı `ping` şu an **403** olabilir. Mac’te:
+Cloud Functions AI sıkça 40s+ sürüp timeout oluyor. Telefonda hızlı deneme:
 
 ```bash
-gcloud auth login
-gcloud config set project cozbil-dev-f9583
-bash scripts/phone-demo-mac.sh fix-backend
-# veya: bash scripts/fix-functions-invoker.sh
+# .env.local içinde GOOGLE_CLOUD_VISION_API_KEY=... olmalı
+bash scripts/phone-demo-proxy-mac.sh
+# Metro’yu yeniden başlat (env değişti):
+bash scripts/phone-dev-build.sh metro
 ```
 
-Beklenen: `ping` → HTTP **200**.
+Telefon Mac ile **aynı Wi‑Fi**. `__DEV__` + proxy → Cloud Functions beklemeden çözer.
+
+## 1b) Canlı backend (opsiyonel)
+
+Canlı `ping` **403** ise:
+
+```bash
+bash scripts/phone-demo-mac.sh fix-backend
+```
+
+Beklenen: `ping` → HTTP **200**. Trigger “running” kalıp bitmiyorsa yine proxy kullan.
 
 ## 2A) En hızlı — USB ile şahsi telefon (önerilen demo)
 
