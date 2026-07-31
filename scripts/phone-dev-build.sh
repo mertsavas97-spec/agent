@@ -95,6 +95,21 @@ fi
 
 start_metro() {
   echo ""
+  if [[ -z "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" || -z "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
+    # Try load from files so the warning is accurate
+    if [[ -f "$ENV_LOCAL" ]]; then
+      set -a
+      # shellcheck disable=SC1090
+      source "$ENV_LOCAL"
+      set +a
+    fi
+  fi
+  if [[ -n "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" && -n "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
+    echo "==> Metro — solve proxy: ${EXPO_PUBLIC_SOLVE_PROXY_URL}"
+  else
+    echo "==> Metro — UYARI: SOLVE_PROXY yok → logda 'proxy off' görürsün"
+    echo "    Düzelt: bash scripts/phone-demo-proxy-mac.sh && bu komutu tekrar çalıştır"
+  fi
   echo "==> Metro (dev-client) — telefonda ÇözBil uygulamasını aç"
   echo "    Aynı Wi‑Fi’de değilsen: bash scripts/phone-dev-build.sh metro --tunnel"
   echo ""

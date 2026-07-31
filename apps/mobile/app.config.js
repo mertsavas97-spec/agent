@@ -1,13 +1,50 @@
 /**
  * Dynamic Expo config — strips expo-dev-client from production EAS builds.
  * Injects AdMob config plugin with env app ids (Google test ids as safe fallback).
+ * Loads apps/mobile/.env + .env.local so EXPO_PUBLIC_* (incl. solve proxy) reach
+ * both Metro inlining and Constants.expoConfig.extra.
  */
+const fs = require('fs');
+const path = require('path');
+
 const appJson = require('./app.json');
 
 /** Google sample app ids — safe for dogfood / until owner sets real ids. */
 const GOOGLE_TEST_ANDROID_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
 const GOOGLE_TEST_IOS_APP_ID = 'ca-app-pub-3940256099942544~1458002511';
 const GOOGLE_TEST_PUBLISHER = '3940256099942544';
+
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const text = fs.readFileSync(filePath, 'utf8');
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    // Do not override already-exported shell env (CI / phone-dev-build).
+    if (process.env[key] === undefined || process.env[key] === '') {
+      process.env[key] = value;
+    }
+  }
+}
+
+function loadLocalEnv() {
+  const root = __dirname;
+  // Later files win for empty earlier values — .env.local overrides .env.
+  loadEnvFile(path.join(root, '.env'));
+  loadEnvFile(path.join(root, '.env.local'));
+}
+
+loadLocalEnv();
 
 function missingFirebasePublicKeys() {
   const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim();
@@ -62,10 +99,18 @@ function withAdMobPlugin(plugins) {
 
 /** @param {{ config?: { expo?: Record<string, unknown> } }} ctx */
 module.exports = () => {
+  // Re-load in case Expo evaluates config after cwd env changes.
+  loadLocalEnv();
+
   const expo = structuredClone(appJson.expo);
   const profile = process.env.EAS_BUILD_PROFILE ?? '';
 
   expo.plugins = withAdMobPlugin(expo.plugins ?? []);
+
+  const extra = { ...(expo.extra && typeof expo.extra === 'object' ? expo.extra : {}) };
+  extra.solveProxyUrl = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.trim() || '';
+  extra.solveProxyToken = process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN?.trim() || '';
+  expo.extra = extra;
 
   if (profile === 'production') {
     expo.plugins = (expo.plugins ?? []).filter((plugin) => {
@@ -89,6 +134,10 @@ module.exports = () => {
           'See docs/store/admob-ios-units.md.',
       );
     }
+
+    // Never ship dogfood proxy endpoints in production binaries.
+    expo.extra.solveProxyUrl = '';
+    expo.extra.solveProxyToken = '';
   }
 
   return { expo };

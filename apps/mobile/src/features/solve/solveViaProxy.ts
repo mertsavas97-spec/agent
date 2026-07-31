@@ -2,6 +2,8 @@
  * Call cloud dogfood solve proxy (Vision OCR + arithmetic) when Firebase
  * Functions are blocked by org policy.
  */
+import Constants from 'expo-constants';
+
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
 import { withHardTimeout } from './hardTimeout';
@@ -13,14 +15,29 @@ export const MAX_INLINE_IMAGE_BASE64_CHARS = 3_500_000;
 export const MAX_BINARY_IMAGE_BYTES = 10 * 1024 * 1024;
 export { PROXY_TIMEOUT_MS } from './solveTiming';
 
+type SolveProxyExtra = {
+  solveProxyUrl?: string;
+  solveProxyToken?: string;
+};
+
+function proxyExtra(): SolveProxyExtra {
+  const extra = Constants.expoConfig?.extra;
+  if (!extra || typeof extra !== 'object') return {};
+  return extra as SolveProxyExtra;
+}
+
 function proxyBaseUrl(): string | null {
-  const raw = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.trim();
+  const fromEnv = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.trim();
+  const fromExtra = proxyExtra().solveProxyUrl?.trim();
+  const raw = fromEnv || fromExtra || '';
   if (!raw) return null;
   return raw.replace(/\/$/, '');
 }
 
 function proxyToken(): string | null {
-  return process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN?.trim() || null;
+  const fromEnv = process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN?.trim();
+  const fromExtra = proxyExtra().solveProxyToken?.trim();
+  return fromEnv || fromExtra || null;
 }
 
 export function isSolveProxyConfigured(): boolean {
