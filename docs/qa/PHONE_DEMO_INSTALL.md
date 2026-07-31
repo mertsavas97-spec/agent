@@ -6,23 +6,16 @@
 
 Cloud agent (Linux) **IPA üretemez** ve telefona yükleyemez. Kurulum **Mac + USB** veya **Mac IPA → TestFlight**.
 
-## 0) Bir kez — Firebase key (chat’e yapıştırma)
+## 0) Bir kez — Firebase `.env.local` (otomatik)
 
 ```bash
 cd ~/agent
 git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
-
-cat > apps/mobile/.env.local <<'EOF'
-EXPO_PUBLIC_FIREBASE_API_KEY=AIza...   # yeni key (cozbil-firebase-client-*)
-EXPO_PUBLIC_FIREBASE_APP_ID=1:717206185063:web:74256b15d50acb5c49a0c2
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=cozbil-dev-f9583.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=cozbil-dev-f9583
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=cozbil-dev-f9583.firebasestorage.app
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=717206185063
-EOF
+gcloud auth login   # gerekirse bir kez
+bash scripts/write-mobile-env-local.sh
 ```
 
-`.env.local` gitignore’da — commit etme.
+Key ekrana yazılmaz; dosya gitignore’da — commit etme.
 
 ## 1) Backend (solve için zorunlu)
 

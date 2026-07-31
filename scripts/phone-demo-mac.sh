@@ -87,8 +87,15 @@ load_env() {
 }
 
 if ! load_env "$ENV_LOCAL"; then
+  if [[ -x "$ROOT/scripts/write-mobile-env-local.sh" ]] || [[ -f "$ROOT/scripts/write-mobile-env-local.sh" ]]; then
+    echo "==> .env.local yok — gcloud ile yazılıyor…"
+    bash "$ROOT/scripts/write-mobile-env-local.sh"
+    load_env "$ENV_LOCAL" || true
+  fi
+fi
+if ! load_env "$ENV_LOCAL"; then
   if ! load_env "$ENV_FILE"; then
-    fail "Firebase env yok" "apps/mobile/.env.local oluştur (önerilen) veya .env — docs/qa/PHONE_DEMO_INSTALL.md"
+    fail "Firebase env yok" "bash scripts/write-mobile-env-local.sh  (veya docs/qa/PHONE_DEMO_INSTALL.md)"
   fi
 fi
 
