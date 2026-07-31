@@ -4,10 +4,7 @@ import { getFirebase } from '@/src/lib/firebase';
 
 import { decodeBase64ToBytes, normalizeImageBase64, uriToBase64 } from './imageBase64';
 import { buildUploadPath } from './paths';
-import {
-  buildTokenDownloadUrl,
-  uploadBytesViaStorageRest,
-} from './storageRestUpload';
+import { buildGsUrl, uploadBytesViaStorageRest } from './storageRestUpload';
 
 /**
  * Upload a question image for the Firestore solve path.
@@ -66,7 +63,7 @@ export async function uploadQuestionImage(input: {
   const idToken = await user.getIdToken();
   const bytes = decodeBase64ToBytes(base64);
 
-  const { downloadToken } = await uploadBytesViaStorageRest({
+  await uploadBytesViaStorageRest({
     bucket,
     path: imagePath,
     bytes,
@@ -75,6 +72,7 @@ export async function uploadQuestionImage(input: {
     customMetadata,
   });
 
+  // Solve uses imagePath (Cloud Functions Admin download). Public token URL is optional.
   try {
     const storageRef = ref(storage, imagePath);
     const downloadUrl = await getDownloadURL(storageRef);
@@ -82,7 +80,7 @@ export async function uploadQuestionImage(input: {
   } catch {
     return {
       imagePath,
-      downloadUrl: buildTokenDownloadUrl(bucket, imagePath, downloadToken),
+      downloadUrl: buildGsUrl(bucket, imagePath),
     };
   }
 }

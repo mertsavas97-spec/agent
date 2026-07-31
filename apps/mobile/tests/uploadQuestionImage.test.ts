@@ -7,9 +7,7 @@ const mockGetIdToken = jest.fn(async () => 'id-token-test');
 const mockGetDownloadURL = jest.fn(
   async (_ref?: unknown) => 'https://cdn.example/from-sdk',
 );
-const mockRestUpload = jest.fn(async (_input?: unknown) => ({
-  downloadToken: 'tok-abc',
-}));
+const mockRestUpload = jest.fn(async (_input?: unknown) => ({ uploaded: true }));
 
 jest.mock('firebase/storage', () => ({
   ref: jest.fn((_storage: unknown, path: string) => ({ path })),
@@ -41,8 +39,7 @@ jest.mock('@/src/features/solve/imageBase64', () => ({
 
 jest.mock('@/src/features/solve/storageRestUpload', () => ({
   uploadBytesViaStorageRest: (input: unknown) => mockRestUpload(input),
-  buildTokenDownloadUrl: (bucket: string, path: string, token: string) =>
-    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(path)}?alt=media&token=${token}`,
+  buildGsUrl: (bucket: string, path: string) => `gs://${bucket}/${path}`,
 }));
 
 import { uploadBytes, uploadString } from 'firebase/storage';
@@ -79,7 +76,7 @@ describe('uploadQuestionImage (RN-safe REST)', () => {
     jest.clearAllMocks();
     mockGetDownloadURL.mockResolvedValue('https://cdn.example/from-sdk');
     mockGetIdToken.mockResolvedValue('id-token-test');
-    mockRestUpload.mockResolvedValue({ downloadToken: 'tok-abc' });
+    mockRestUpload.mockResolvedValue({ uploaded: true });
   });
 
   it('uploads via REST and does not call uploadBytes/uploadString', async () => {
@@ -108,9 +105,8 @@ describe('uploadQuestionImage (RN-safe REST)', () => {
     expect(result.imagePath).toContain('users/u1/uploads/');
   });
 
-  it('falls back to token download URL when getDownloadURL fails', async () => {
+  it('falls back to gs:// URL when getDownloadURL fails', async () => {
     mockGetDownloadURL.mockRejectedValueOnce(new Error('no url'));
-    mockRestUpload.mockResolvedValueOnce({ downloadToken: 'tok-fallback' });
 
     const result = await uploadQuestionImage({
       uid: 'u1',
@@ -118,53 +114,56 @@ describe('uploadQuestionImage (RN-safe REST)', () => {
       base64: 'YWJj',
     });
 
-    expect(result.downloadUrl).toContain('alt=media&token=tok-fallback');
-    expect(result.downloadUrl).toContain('firebasestorage.googleapis.com');
+    expect(result.downloadUrl).toBe(
+      'gs://cozbil-dev-f9583.firebasestorage.app/users/u1/uploads/local-2.jpg',
+    );
   });
 });
 
 describe('uploadBytesViaStorageRest xhr', () => {
-  it('POSTs media bytes then PATCHes metadata JSON', async () => {
+  it('POSTs media bytes then PATCHes custom metadata without download tokens', async () => {
     const real = jest.requireActual(
       '@/src/features/solve/storageRestUpload',
     ) as typeof import('@/src/features/solve/storageRestUpload');
 
-    const calls: Array<{ method?: string; url?: string; body?: unknown }> = [];
+    const bodies: unknown[] = [];
+    const methods: string[] = [];
+    const urls: string[] = [];
     let callIdx = 0;
     const xhrFactory = () => {
       const xhr = mockXhr(200);
-      const open = xhr.open;
       xhr.open = jest.fn((method: string, url: string) => {
-        calls[callIdx] = { ...(calls[callIdx] ?? {}), method, url };
-        return open(method, url);
+        methods[callIdx] = method;
+        urls[callIdx] = url;
       });
-      const send = xhr.send;
-      xhr.send = jest.fn((body: unknown) => {
-        calls[callIdx] = { ...(calls[callIdx] ?? {}), body };
+      xhr.send = jest.fn(function send(this: typeof xhr, body: unknown) {
+        bodies[callIdx] = body;
         callIdx += 1;
-        return send.call(xhr, body);
+        queueMicrotask(() => this.onload?.());
       });
       return xhr as unknown as XMLHttpRequest;
     };
 
-    const result = await real.uploadBytesViaStorageRest({
+    await real.uploadBytesViaStorageRest({
       bucket: 'bucket.appspot.com',
       path: 'users/u1/uploads/1.jpg',
       bytes: Uint8Array.from([1, 2, 3, 4]),
       contentType: 'image/jpeg',
       idToken: 'tok',
-      customMetadata: { cozbilSolve: '1' },
+      customMetadata: {
+        cozbilSolve: '1',
+        firebaseStorageDownloadTokens: 'must-be-stripped',
+      },
       xhrFactory,
     });
 
-    expect(result.downloadToken).toBeTruthy();
-    expect(calls).toHaveLength(2);
-    expect(calls[0]?.method).toBe('POST');
-    expect(calls[0]?.url).toContain('uploadType=media');
-    expect(calls[0]?.body).toBeInstanceOf(ArrayBuffer);
-    expect(calls[1]?.method).toBe('PATCH');
-    expect(String(calls[1]?.body)).toContain('firebaseStorageDownloadTokens');
-    expect(String(calls[1]?.body)).toContain('cozbilSolve');
+    expect(methods).toEqual(['POST', 'PATCH']);
+    expect(urls[0]).toContain('uploadType=media');
+    expect(bodies[0]).toBeInstanceOf(ArrayBuffer);
+    const patchBody = String(bodies[1]);
+    expect(patchBody).toContain('cozbilSolve');
+    expect(patchBody).not.toContain('firebaseStorageDownloadTokens');
+    expect(patchBody).not.toContain('must-be-stripped');
   });
 
   it('rejects on non-2xx media upload', async () => {
