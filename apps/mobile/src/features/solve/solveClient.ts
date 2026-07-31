@@ -10,7 +10,7 @@ import { withHardTimeout } from './hardTimeout';
 import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
-import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
+import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS, SOLVE_UI_SETTLE_MS } from './solveTiming';
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -102,8 +102,9 @@ export async function callSolveQuestion(
   }
 
   // Primary production path needs the full solve budget; after a proxy miss keep fallback snappy.
-  const firestoreWaitMs = proxyAttempted ? FIRESTORE_FALLBACK_MS : SOLVE_TIMEOUT_MS;
+  // Cap Firestore wait so upload + solve cannot exceed SOLVE_UI_SETTLE_MS (outer UI timer).
   const uploadWaitMs = FIRESTORE_FALLBACK_MS;
+  const startedAt = Date.now();
 
   let firestoreRequest: PreparedFirestoreRequest | undefined;
   try {
@@ -114,6 +115,14 @@ export async function callSolveQuestion(
       'Storage upload',
     );
     request.onStage?.('solving');
+    const elapsed = Date.now() - startedAt;
+    const firestoreBudget = proxyAttempted
+      ? FIRESTORE_FALLBACK_MS
+      : SOLVE_TIMEOUT_MS;
+    const firestoreWaitMs = Math.max(
+      5_000,
+      Math.min(firestoreBudget, SOLVE_UI_SETTLE_MS - elapsed - 2_000),
+    );
     const firestore = await withHardTimeout(
       callSolveQuestionViaFirestore(firestoreRequest),
       firestoreWaitMs,

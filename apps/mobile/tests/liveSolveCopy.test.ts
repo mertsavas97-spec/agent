@@ -36,10 +36,11 @@ describe('liveSolveCopy', () => {
     expect(advanceLiveCopy(solving, 'finishing').phase).toBe('finishing');
   });
 
-  it('crawls progress during OCR and solve waits', () => {
+  it('crawls progress during upload and solve waits', () => {
+    expect(shouldCrawlProgress('preparing')).toBe(true);
+    expect(shouldCrawlProgress('upload')).toBe(true);
     expect(shouldCrawlProgress('ocr')).toBe(true);
     expect(shouldCrawlProgress('solving')).toBe(true);
-    expect(shouldCrawlProgress('upload')).toBe(false);
   });
 
   it('surfaces OCR-specific status label', () => {

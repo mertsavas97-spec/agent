@@ -83,23 +83,29 @@ export function AnalyzingView({
 
   useEffect(() => {
     const target = Math.max(peakRef.current, baseTarget);
+    // Short ease to the phase floor — crawl effect owns the long wait.
     Animated.timing(anim, {
       toValue: target,
-      duration: motion.slow,
-      easing: Easing.out(Easing.cubic),
+      duration: motion.normal,
+      easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start();
   }, [anim, baseTarget]);
 
   useEffect(() => {
     if (!shouldCrawlProgress(copy.phase)) return;
-    // Resume crawl from the current peak so OCR/solve waits keep the bar moving.
+    // Resume crawl from the current peak so waits keep the bar moving linearly.
     const from = Math.max(peakRef.current, baseTarget);
     anim.setValue(from);
+    const remaining = Math.max(0.02, SOLVE_PROGRESS_CRAWL_TARGET - from);
+    const duration = Math.max(
+      8_000,
+      Math.round(SOLVE_PROGRESS_CRAWL_MS * (remaining / SOLVE_PROGRESS_CRAWL_TARGET)),
+    );
     const crawl = Animated.timing(anim, {
       toValue: SOLVE_PROGRESS_CRAWL_TARGET,
-      duration: SOLVE_PROGRESS_CRAWL_MS,
-      easing: Easing.out(Easing.cubic),
+      duration,
+      easing: Easing.linear,
       useNativeDriver: false,
     });
     crawl.start();
