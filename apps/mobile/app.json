@@ -14,7 +14,10 @@
       "infoPlist": {
         "NSCameraUsageDescription": "ÇözBil soru fotoğrafı çekmek için kameraya ihtiyaç duyar.",
         "NSPhotoLibraryUsageDescription": "ÇözBil galeriden soru fotoğrafı seçmek için fotoğraflarına erişir.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       },
       "entitlements": {
         "aps-environment": "production"

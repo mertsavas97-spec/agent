@@ -24,9 +24,13 @@ Cloud Functions AI sıkça 40s+ sürüp timeout oluyor. Telefonda hızlı deneme
 ```bash
 bash scripts/write-vision-api-key-local.sh   # bir kez (gcloud)
 bash scripts/phone-demo-proxy-mac.sh
-# Metro’yu yeniden başlat (env değişti):
+# iOS yerel HTTP için ATS (NSAllowsLocalNetworking) — native rebuild:
+bash scripts/phone-demo-mac.sh ios
+# Metro:
 bash scripts/phone-dev-build.sh metro
 ```
+
+Metro logunda `solve: bounded OCR proxy` görmelisin. `proxy off` ise env yüklenmemiş.
 
 Telefon Mac ile **aynı Wi‑Fi**. `__DEV__` + proxy → Cloud Functions beklemeden çözer.
 

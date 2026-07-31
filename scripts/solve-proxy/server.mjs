@@ -48,7 +48,8 @@ function send(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers':
+      'Content-Type, Authorization, X-Cozbil-Proxy-Token, X-Cozbil-Exam-Type, X-Cozbil-Subject-Hint, X-Cozbil-Request-Id, Bypass-Tunnel-Reminder',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   });
   res.end(json);

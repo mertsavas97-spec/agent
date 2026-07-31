@@ -53,13 +53,18 @@ export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
   let proxyAttempted = false;
+  if (!isSolveProxyConfigured()) {
+    console.info('solve: proxy off (__DEV__ + EXPO_PUBLIC_SOLVE_PROXY_URL/TOKEN gerekli)');
+  }
   if (
     isSolveProxyConfigured() &&
     (request.imageUri || request.imageUrl || request.imageBase64)
   ) {
     proxyAttempted = true;
     try {
-      console.info('solve: bounded OCR proxy');
+      console.info('solve: bounded OCR proxy', {
+        base: process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.replace(/\/$/, ''),
+      });
       request.onStage?.('ocr');
       const response = await callSolveQuestionViaProxy({
         imageUri: request.imageUri,

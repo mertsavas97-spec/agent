@@ -94,26 +94,42 @@ if ! curl -fsS -m 5 "http://127.0.0.1:${PORT}/health" | grep -q cozbil-solve-pro
   exit 1
 fi
 
-# Upsert proxy lines into .env.local (keep Firebase keys)
-touch "$ENV_LOCAL"
+# Upsert proxy lines into .env.local AND .env (Expo/Metro ikisini de okur)
+upsert_proxy_env() {
+  local file="$1"
+  touch "$file"
+  local tmp
+  tmp="$(mktemp)"
+  grep -vE '^EXPO_PUBLIC_SOLVE_PROXY_(URL|TOKEN)=' "$file" >"$tmp" || true
+  {
+    cat "$tmp"
+    echo "EXPO_PUBLIC_SOLVE_PROXY_URL=${PROXY_URL}"
+    echo "EXPO_PUBLIC_SOLVE_PROXY_TOKEN=${TOKEN}"
+  } >"$file"
+  rm -f "$tmp"
+}
+
 umask 077
-tmp="$(mktemp)"
-grep -vE '^EXPO_PUBLIC_SOLVE_PROXY_(URL|TOKEN)=' "$ENV_LOCAL" >"$tmp" || true
-{
-  cat "$tmp"
-  echo "EXPO_PUBLIC_SOLVE_PROXY_URL=${PROXY_URL}"
-  echo "EXPO_PUBLIC_SOLVE_PROXY_TOKEN=${TOKEN}"
-} >"$ENV_LOCAL"
-rm -f "$tmp"
+upsert_proxy_env "$ENV_LOCAL"
+upsert_proxy_env "$MOBILE/.env"
+
+# Smoke from LAN bind
+if ! curl -fsS -m 5 "${PROXY_URL}/health" | grep -q cozbil-solve-proxy; then
+  echo "UYARI: LAN health (${PROXY_URL}) başarısız — firewall / Wi‑Fi ayarını kontrol et." >&2
+  echo "       Localhost health OK ise Mac firewall 8787’yi engelliyor olabilir." >&2
+fi
 
 echo ""
 echo "✓ Proxy ayakta: $PROXY_URL"
-echo "✓ Yazıldı: $ENV_LOCAL (SOLVE_PROXY_*)"
+echo "✓ Yazıldı: .env.local + .env (SOLVE_PROXY_*)"
 echo ""
-echo "Şimdi (zorunlu — Expo env’i build-time okur):"
-echo "  1) Metro’yu durdur (Ctrl+C)"
-echo "  2) bash scripts/phone-dev-build.sh metro"
-echo "  3) Telefonda uygulamayı kapat/aç → Çöz"
+echo "Şimdi:"
+echo "  1) İlk kez / ATS güncellemesi sonrası NATIVE rebuild (Info.plist):"
+echo "       bash scripts/phone-demo-mac.sh ios"
+echo "     (sadece JS değiştiyse Metro restart yeter)"
+echo "  2) Metro’yu durdur (Ctrl+C) → bash scripts/phone-dev-build.sh metro"
+echo "  3) Logda ara:  solve: bounded OCR proxy"
+echo "     Görürsen proxy çalışıyor. 'proxy off' görürsen env yüklenmemiş."
 echo ""
-echo "Not: Telefon Mac ile AYNI Wi‑Fi’de olmalı. VPN kapalı."
+echo "Not: Telefon Mac ile AYNI Wi‑Fi. VPN kapalı."
 echo "Durdurmak: kill \$(cat /tmp/cozbil-phone-solve-proxy.pid)"
