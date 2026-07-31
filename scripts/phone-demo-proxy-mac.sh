@@ -38,8 +38,17 @@ if [[ -f "$ENV_LOCAL" ]]; then
 fi
 
 if [[ -z "${GOOGLE_CLOUD_VISION_API_KEY:-}" ]]; then
+  echo "==> Vision key yok — gcloud ile yazılıyor…"
+  bash "$ROOT/scripts/write-vision-api-key-local.sh"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_LOCAL"
+  set +a
+fi
+
+if [[ -z "${GOOGLE_CLOUD_VISION_API_KEY:-}" ]]; then
   echo "HATA: GOOGLE_CLOUD_VISION_API_KEY yok." >&2
-  echo "apps/mobile/.env.local içine ekle veya export et (Vision API key)." >&2
+  echo "bash scripts/write-vision-api-key-local.sh" >&2
   exit 1
 fi
 

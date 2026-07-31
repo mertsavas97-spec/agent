@@ -22,7 +22,7 @@ Key ekrana yazılmaz; dosya gitignore’da — commit etme.
 Cloud Functions AI sıkça 40s+ sürüp timeout oluyor. Telefonda hızlı deneme:
 
 ```bash
-# .env.local içinde GOOGLE_CLOUD_VISION_API_KEY=... olmalı
+bash scripts/write-vision-api-key-local.sh   # bir kez (gcloud)
 bash scripts/phone-demo-proxy-mac.sh
 # Metro’yu yeniden başlat (env değişti):
 bash scripts/phone-dev-build.sh metro
