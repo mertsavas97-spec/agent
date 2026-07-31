@@ -1,33 +1,35 @@
 # Sprint State
 
 **Branch:** `cursor/scrub-google-api-key-pr31-4710` (PR #32)  
-**Hedef:** Local Mac IPA — Cursor/EAS secrets şart değil
+**Hedef:** Şahsi telefona demo (Mac USB veya IPA → TestFlight)
 
-## Hazır (kod)
+## Hazır (kod / cloud)
 
-- [x] AdMob App ID `~6347757786`
-- [x] Banner / Interstitial / Rewarded iOS unit ids (`eas.json` + script)
-- [x] Inactive-push fix (bu branch’te)
-- [x] app-ads.txt canlı (`cozbil-dev-f9583.web.app/app-ads.txt`)
-- [x] Yeni GCP API key oluşturuldu (owner Mac)
-- [x] Firebase key **repoda yok** (doğru) — Mac `.env.local` ile build’e girer
+- [x] AdMob App ID + iOS unit ids
+- [x] app-ads.txt canlı
+- [x] Yeni Firebase client key (owner; repoda yok)
+- [x] Version `1.0.1` / buildNumber `2`
+- [x] `scripts/phone-demo-mac.sh` + `docs/qa/PHONE_DEMO_INSTALL.md`
+- [ ] Cloud Linux → telefona yükleme **mümkün değil** (Xcode yok)
 
-## Owner Mac (Cursor yok)
+## Owner Mac (şimdi)
 
 ```bash
 cd ~/agent
 git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
 
-# bir kez: apps/mobile/.env.local  (commit etme)
-# EXPO_PUBLIC_FIREBASE_API_KEY=…   # get-key-string çıktısı
-# EXPO_PUBLIC_FIREBASE_APP_ID=1:717206185063:web:74256b15d50acb5c49a0c2
+# bir kez: apps/mobile/.env.local  (yeni API key — chat'e yapıştırma)
 
-bash scripts/mac-build-ipa-with-push.sh
-# → ~/Desktop/cozbil-production.ipa
+bash scripts/phone-demo-mac.sh fix-backend   # ping 403 ise
+bash scripts/phone-demo-mac.sh ios           # USB demo (önerilen)
+# veya: bash scripts/phone-demo-mac.sh ios --ipa   # TestFlight
 ```
+
+**Kullanma:** App Store build 17 (ölü Firebase key).
 
 ## Sonra
 
-- [ ] Eski sızan Firebase key’i GCP’den sil
+- [ ] Telefonda smoke (LGS/YGS/KPSS/Ehliyet + fixture)
 - [ ] GitHub secret alert → Revoked
-- [ ] AdMob doğrulama yenile
+- [ ] AdMob app-ads doğrulama yenile
+- [ ] GH secret `EXPO_PUBLIC_FIREBASE_API_KEY` → yeni key (Actions için)
