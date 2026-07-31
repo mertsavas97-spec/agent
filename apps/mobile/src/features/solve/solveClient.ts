@@ -9,7 +9,11 @@ import { getFirebase } from '@/src/lib/firebase';
 import { withHardTimeout } from './hardTimeout';
 import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
-import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
+import {
+  callSolveQuestionViaProxy,
+  isSolveProxyConfigured,
+  solveProxyBaseUrlForLog,
+} from './solveViaProxy';
 import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS, SOLVE_UI_SETTLE_MS } from './solveTiming';
 
 function isInvokerBlocked(err: unknown): boolean {
@@ -54,7 +58,9 @@ export async function callSolveQuestion(
 ): Promise<SolveQuestionResponse> {
   let proxyAttempted = false;
   if (!isSolveProxyConfigured()) {
-    console.info('solve: proxy off (__DEV__ + EXPO_PUBLIC_SOLVE_PROXY_URL/TOKEN gerekli)');
+    console.info(
+      'solve: proxy off (__DEV__ + phone-demo-proxy-mac.sh → solveProxy.dev.local.ts / EXPO_PUBLIC_SOLVE_PROXY_*)',
+    );
   }
   if (
     isSolveProxyConfigured() &&
@@ -63,7 +69,7 @@ export async function callSolveQuestion(
     proxyAttempted = true;
     try {
       console.info('solve: bounded OCR proxy', {
-        base: process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.replace(/\/$/, ''),
+        base: solveProxyBaseUrlForLog(),
       });
       request.onStage?.('ocr');
       const response = await callSolveQuestionViaProxy({

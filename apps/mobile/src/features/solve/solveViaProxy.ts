@@ -4,6 +4,7 @@
  */
 import Constants from 'expo-constants';
 
+import { solveProxyDevLocal } from '@/src/config/solveProxy.dev.local';
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
 import { withHardTimeout } from './hardTimeout';
@@ -27,23 +28,33 @@ function proxyExtra(): SolveProxyExtra {
 }
 
 function proxyBaseUrl(): string | null {
+  // 1) File written by phone-demo-proxy-mac.sh (most reliable on device)
+  // 2) EXPO_PUBLIC_* env inlined by Metro
+  // 3) app.config.js → Constants.extra
+  const fromFile = solveProxyDevLocal.url?.trim();
   const fromEnv = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.trim();
   const fromExtra = proxyExtra().solveProxyUrl?.trim();
-  const raw = fromEnv || fromExtra || '';
+  const raw = fromFile || fromEnv || fromExtra || '';
   if (!raw) return null;
   return raw.replace(/\/$/, '');
 }
 
 function proxyToken(): string | null {
+  const fromFile = solveProxyDevLocal.token?.trim();
   const fromEnv = process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN?.trim();
   const fromExtra = proxyExtra().solveProxyToken?.trim();
-  return fromEnv || fromExtra || null;
+  return fromFile || fromEnv || fromExtra || null;
 }
 
 export function isSolveProxyConfigured(): boolean {
   // The proxy is an explicitly unmoderated dogfood aid. Production must use
   // Storage/Firestore Functions where SafeSearch, quota and auth are enforced.
   return __DEV__ && Boolean(proxyBaseUrl()) && Boolean(proxyToken());
+}
+
+/** Safe for logs — never includes the token. */
+export function solveProxyBaseUrlForLog(): string | null {
+  return proxyBaseUrl();
 }
 
 /** RN local file blobs often report type "" — never send empty Content-Type. */

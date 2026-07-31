@@ -16,7 +16,7 @@
 **Skill bypass:** hayır
 
 **QA Gate:**
-- typecheck: (run)
+- typecheck: PASS
 - lint: N/A
 - smoke: PASS (Jest upload)
 - errors: temiz

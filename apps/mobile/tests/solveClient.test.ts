@@ -9,6 +9,7 @@ jest.mock('@/src/features/solve/solveViaFirestore', () => ({
 
 jest.mock('@/src/features/solve/solveViaProxy', () => ({
   isSolveProxyConfigured: jest.fn(() => true),
+  solveProxyBaseUrlForLog: jest.fn(() => 'http://proxy.test'),
   callSolveQuestionViaProxy: jest.fn(),
 }));
 

@@ -12,18 +12,25 @@
 - [x] `scripts/phone-demo-mac.sh` + `docs/qa/PHONE_DEMO_INSTALL.md`
 - [ ] Cloud Linux → telefona yükleme **mümkün değil** (Xcode yok)
 
-## Owner Mac (şimdi)
+## Owner Mac (şimdi) — proxy off düzeltmesi
+
+Log `solve: proxy off` ise env telefona gitmemiş demektir. Pull + proxy script:
 
 ```bash
 cd ~/agent
 git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
 
-# bir kez: apps/mobile/.env.local  (yeni API key — chat'e yapıştırma)
+bash scripts/write-vision-api-key-local.sh   # bir kez
+bash scripts/phone-demo-proxy-mac.sh         # .env.local + solveProxy.dev.local.ts
+bash scripts/check-phone-demo-env.sh         # FAIL yoksa devam
 
-bash scripts/phone-demo-mac.sh fix-backend   # ping 403 ise
-bash scripts/phone-demo-mac.sh ios           # USB demo (önerilen)
-# veya: bash scripts/phone-demo-mac.sh ios --ipa   # TestFlight
+# Metro Ctrl+C → yeniden:
+bash scripts/phone-dev-build.sh metro
+# Beklenen log: solve: bounded OCR proxy { base: 'http://192.168.x.x:8787' }
 ```
+
+USB native (ATS / ilk kurulum): `bash scripts/phone-demo-mac.sh ios`  
+Canlı backend: `bash scripts/phone-demo-mac.sh fix-backend` (ping 200)
 
 **Kullanma:** App Store build 17 (ölü Firebase key).
 

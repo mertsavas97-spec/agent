@@ -30,9 +30,20 @@ bash scripts/phone-demo-mac.sh ios
 bash scripts/phone-dev-build.sh metro
 ```
 
-Metro logunda `solve: bounded OCR proxy` görmelisin. `proxy off` ise env yüklenmemiş.
+`phone-demo-proxy-mac.sh` hem `.env.local` hem `apps/mobile/src/config/solveProxy.dev.local.ts`
+yazar (Metro cihaz bundle’ında env bazen boş kalır; TS dosyası güvenilir yol).
+
+Metro logunda `solve: bounded OCR proxy` + LAN `base` görmelisin. `proxy off` ise:
+
+```bash
+bash scripts/check-phone-demo-env.sh   # solveProxy.dev.local.ts dolu mu?
+bash scripts/phone-demo-proxy-mac.sh
+# Metro’yu tamamen kapatıp:
+bash scripts/phone-dev-build.sh metro
+```
 
 Telefon Mac ile **aynı Wi‑Fi**. `__DEV__` + proxy → Cloud Functions beklemeden çözer.
+**Commit etme:** dolu `solveProxy.dev.local.ts` (LAN URL/token) — git’te stub boş kalmalı.
 
 ## 1b) Canlı backend (opsiyonel)
 
