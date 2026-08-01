@@ -34,12 +34,25 @@ FIREBASE_BIN="$(resolve_firebase)"
 echo "==> firebase: $FIREBASE_BIN"
 echo "==> project: $PROJECT"
 
-# Login check
-if ! "$FIREBASE_BIN" projects:list --project "$PROJECT" >/dev/null 2>&1; then
-  echo "Firebase login gerekli:"
-  echo "  $FIREBASE_BIN login"
+# Auth / project access check — do not swallow stderr (old check hid real errors
+# and falsely said "login required" when the user was already logged in).
+echo "==> Firebase oturum / proje kontrolü"
+if ! LIST_OUT="$("$FIREBASE_BIN" projects:list 2>&1)"; then
+  echo "$LIST_OUT" >&2
+  echo "" >&2
+  echo "Firebase CLI proje listesi alamadı. Dene:" >&2
+  echo "  $FIREBASE_BIN login --reauth" >&2
+  echo "  # veya: npx firebase-tools@latest login --reauth" >&2
   exit 1
 fi
+if ! printf '%s\n' "$LIST_OUT" | grep -q "$PROJECT"; then
+  echo "$LIST_OUT" >&2
+  echo "" >&2
+  echo "error: Hesapta proje yok: $PROJECT" >&2
+  echo "  firebase login --reauth   # hello@summify.app" >&2
+  exit 1
+fi
+echo "✓ oturum OK — $PROJECT listede"
 
 echo "==> Build functions"
 (cd "$ROOT/functions" && npm ci && npm run build)
@@ -56,5 +69,4 @@ echo ""
 echo "✓ Deploy bitti."
 echo "  Birincil: onSolveUploadFinalized (Storage)"
 echo "  Yedek:    onSolveRequestCreatedV2 (Firestore)"
-echo "  Telefonda: bash scripts/phone-dev-build.sh metro"
-echo "  Sonra soru fotoğrafı dene."
+echo "  Telefonda TestFlight’ta tekrar fotoğraf dene (yeni IPA gerekmez)."
