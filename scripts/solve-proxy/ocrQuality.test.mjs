@@ -5,6 +5,7 @@ import {
   repairEquationOcr,
   repairMathNotationOcr,
   repairPercentOcr,
+  repairSoftColonDivisionOcr,
 } from './visionOcr.mjs';
 
 assert.equal(isGarbageOcrText(''), true);
@@ -71,5 +72,18 @@ assert.match(
   /2\^x=4\^y[\s\S]*2\^\(x\+1\)[\s\S]*4\^\(y\+1\)/,
 );
 assert.equal(repairMathNotationOcr('soru (2020) bitti').includes('2020'), false);
+
+assert.match(
+  repairSoftColonDivisionOcr(
+    '8 3 333 (+2) 7 3 işleminin sonucu kaçtır?',
+  ),
+  /8\/3\s*:\s*\(3\/7\+2\/3\)/,
+);
+assert.match(
+  repairMathNotationOcr(
+    '8 3 333 (+2) 7 3 işleminin sonucu kaçtır? 10 A) 2. 7 B) 2 10 C) 3. 23 23 23 D) 3 E) 4 23 ) 4 7 Soruları Çöz 23',
+  ),
+  /A\)\s*2\s+10\/23/,
+);
 
 console.log('ocrQuality.test.mjs OK');

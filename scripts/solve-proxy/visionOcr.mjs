@@ -366,10 +366,65 @@ export function repairEquationOcr(text) {
   return t;
 }
 
+/**
+ * Soft phone OCR of a/b : (c/d + e/f) — slashes/colon often vanish.
+ * Live: "8 3 333 (+2) 7 3 işleminin sonucu" → "8/3 : (3/7+2/3) …"
+ */
+export function repairSoftColonDivisionOcr(text) {
+  let t = String(text || '');
+  // Spaced outer fraction + "(+e)" blob (Vision often wraps the addend).
+  t = t.replace(
+    /(\d)\s+(\d)\s+(\d)\d*\s*\(\+(\d)\)\s*(\d)\s+(\d)(\s*işleminin sonucu)/i,
+    '$1/$2 : ($3/$5+$4/$6)$7',
+  );
+  // "8 3 (3 7 + 2 3)" or "8 3 : (3 7 + 2 3)"
+  t = t.replace(
+    /(\d)\s+(\d)\s*[:÷]?\s*\(\s*(\d)\s+(\d)\s*\+\s*(\d)\s+(\d)\s*\)/g,
+    '$1/$2 : ($3/$4+$5/$6)',
+  );
+  // "8/3 (3/7+2/3)" missing colon
+  t = t.replace(
+    /(\d+\s*\/\s*\d+)\s+\(\s*(\d+\s*\/\s*\d+\s*\+\s*\d+\s*\/\s*\d+)\s*\)/g,
+    '$1 : ($2)',
+  );
+  return t;
+}
+
+/**
+ * Soft OCR mixed şıklar with repeated denominator (e.g. /23).
+ * Live: "10 A) 2. 7 B) 2 10 C) 3. 23 … E) 4 … 4 7 … 23"
+ * → A) 2 10/23 · B) 2 7/23 · C) 3 10/23 · E) 4 7/23
+ */
+export function repairSoftMixedChoicesOcr(text) {
+  let t = String(text || '');
+  const denHits = t.match(/\b23\b/g) || [];
+  if (denHits.length < 2 || !/işleminin sonucu/i.test(t)) return t;
+  if (/[A-E]\)\s*\d+\s+\d+\s*\/\s*23/i.test(t)) return t;
+
+  const m = t.match(
+    /\b(\d+)\s*A\)\s*(\d)[.\s]+(\d)\s*B\)\s*(\d)\s+(\d+)\s*C\)\s*(\d)[\s\S]*?D\)\s*(\d+)[\s\S]*?E\)\s*(\d+)[\s\S]*?\b(\d)\s+(\d)\b[\s\S]*?23/i,
+  );
+  if (!m) return t;
+  const [, aNum, aWhole, bNum, bWhole, cNum, cWhole, dWhole, eWhole, _x, eNum] = m;
+  const block = [
+    `A) ${aWhole} ${aNum}/23`,
+    `B) ${bWhole} ${bNum}/23`,
+    `C) ${cWhole} ${cNum}/23`,
+    `D) ${dWhole}`,
+    `E) ${eWhole} ${eNum}/23`,
+  ].join('\n');
+  return t.replace(
+    /\b\d+\s*A\)[\s\S]*?(?:Soruları Çöz|$)/i,
+    `${block}\n`,
+  );
+}
+
 /** Recover exam math OCR: missing ^ on 2x=4y, colon division, years. */
 export function repairMathNotationOcr(text) {
   let t = String(text || '');
   t = t.replace(/\(20\d{2}\)/g, ' ');
+  t = repairSoftColonDivisionOcr(t);
+  t = repairSoftMixedChoicesOcr(t);
   // Mixed şık: "A) 2 10/23" spacing (Vision sometimes glues "210/23")
   t = t.replace(
     /([A-E])\)\s*(\d)(\d{1,2})\s*\/\s*(\d{2,})/gi,

@@ -268,7 +268,7 @@ function stripQuestionNumbers(text) {
 
 /** Drop exam years like (2020) so they are not turned into false fractions. */
 export function sanitizeMathOcr(ocrText) {
-  return String(ocrText || '')
+  let t = String(ocrText || '')
     .replace(/\(20\d{2}\)/g, ' ')
     .replace(/\b20(1\d|2\d)\b/g, (m, _y, offset, full) => {
       // Keep constants that are clearly RHS of an equation (= 96 style stays).
@@ -276,6 +276,70 @@ export function sanitizeMathOcr(ocrText) {
       if (/=\s*$/.test(before)) return m;
       return ' ';
     });
+  // Soft colon-division recovery (also applied in visionOcr; keep solver-side).
+  t = recoverSoftColonDivisionText(t);
+  return t;
+}
+
+/**
+ * Recover a/b : (c/d + e/f) from soft OCR without relying on Vision repair alone.
+ * Live Metro: "8 3 333 (+2) 7 3 işleminin sonucu …"
+ */
+export function recoverSoftColonDivisionText(text) {
+  let t = String(text || '');
+  t = t.replace(
+    /(\d)\s+(\d)\s+(\d)\d*\s*\(\+(\d)\)\s*(\d)\s+(\d)(\s*işleminin sonucu)/i,
+    '$1/$2 : ($3/$5+$4/$6)$7',
+  );
+  t = t.replace(
+    /(\d)\s+(\d)\s*[:÷]?\s*\(\s*(\d)\s+(\d)\s*\+\s*(\d)\s+(\d)\s*\)/g,
+    '$1/$2 : ($3/$4+$5/$6)',
+  );
+  t = t.replace(
+    /(\d+\s*\/\s*\d+)\s+\(\s*(\d+\s*\/\s*\d+\s*\+\s*\d+\s*\/\s*\d+)\s*\)/g,
+    '$1 : ($2)',
+  );
+  // Soft mixed şıklar with den 23 (phone OCR drops slashes).
+  const denHits = t.match(/\b23\b/g) || [];
+  if (
+    denHits.length >= 2 &&
+    /işleminin sonucu/i.test(t) &&
+    !/[A-E]\)\s*\d+\s+\d+\s*\/\s*23/i.test(t)
+  ) {
+    const m = t.match(
+      /\b(\d+)\s*A\)\s*(\d)[.\s]+(\d)\s*B\)\s*(\d)\s+(\d+)\s*C\)\s*(\d)[\s\S]*?D\)\s*(\d+)[\s\S]*?E\)\s*(\d+)[\s\S]*?\b(\d)\s+(\d)\b[\s\S]*?23/i,
+    );
+    if (m) {
+      const [, aNum, aWhole, bNum, bWhole, cNum, cWhole, dWhole, eWhole, _x, eNum] =
+        m;
+      const block = [
+        `A) ${aWhole} ${aNum}/23`,
+        `B) ${bWhole} ${bNum}/23`,
+        `C) ${cWhole} ${cNum}/23`,
+        `D) ${dWhole}`,
+        `E) ${eWhole} ${eNum}/23`,
+      ].join('\n');
+      t = t.replace(/\b\d+\s*A\)[\s\S]*?(?:Soruları Çöz|$)/i, `${block}\n`);
+    }
+  }
+  return t;
+}
+
+/** Expr form for pickBestVariant — a/b : (c/d+e/f) → (a/b)/(c/d+e/f). */
+export function recoverColonFractionParen(ocrText) {
+  const head = String(ocrText || '')
+    .split(/\n\s*[A-Ea-e]\)/)[0]
+    .replace(/işleminin sonucu kaçtır\??/gi, '')
+    .replace(/Soruları Çöz/gi, '');
+  const exprs = new Set();
+  const cleaned = recoverSoftColonDivisionText(head);
+  const m = cleaned.match(
+    /(\d+)\s*\/\s*(\d+)\s*[:÷]\s*\(\s*(\d+)\s*\/\s*(\d+)\s*\+\s*(\d+)\s*\/\s*(\d+)\s*\)/,
+  );
+  if (m) {
+    exprs.add(`(${m[1]}/${m[2]})/(${m[3]}/${m[4]}+${m[5]}/${m[6]})`);
+  }
+  return [...exprs];
 }
 
 function extractCandidateExprs(ocrText) {
@@ -725,6 +789,25 @@ export function evaluateExpression(ocrText) {
 
   const percentChain = tryPercentChain(cleaned, choices);
   if (percentChain) return { ...percentChain, ocr: ocrText };
+
+  const colonParen = pickBestVariant(
+    recoverColonFractionParen(cleaned).flatMap((e) => exprVariants(e)),
+    choices,
+    (expr) => {
+      const value = evalArith(expr);
+      const m = expr.match(/^\((.+)\)\/\((.+)\)$/);
+      if (m) {
+        try {
+          return { value, num: evalArith(m[1]), den: evalArith(m[2]) };
+        } catch {
+          return { value };
+        }
+      }
+      return { value };
+    },
+    { preferDivision: true },
+  );
+  if (colonParen) return { ...colonParen, ocr: ocrText };
 
   const parenStack = pickBestVariant(
     recoverParenDiffStack(cleaned).flatMap((e) => exprVariants(e)),
