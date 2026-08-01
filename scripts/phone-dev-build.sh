@@ -95,6 +95,15 @@ fi
 
 start_metro() {
   echo ""
+  # Wrong branch / stale cache = old YGS labels, no exam-ad confirm, old icons.
+  local branch sha
+  branch="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+  sha="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo '?')"
+  echo "==> Git: $branch @ $sha"
+  if [[ "$branch" != "cursor/home-polish-yks-ads-ocr-2914" ]]; then
+    echo "UYARI: Bu branch’de YKS/ads/icon polish yok olabilir." >&2
+    echo "       git checkout cursor/home-polish-yks-ads-ocr-2914 && git pull" >&2
+  fi
   if [[ -z "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" || -z "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
     # Try load from files so the warning is accurate
     if [[ -f "$ENV_LOCAL" ]]; then
@@ -110,13 +119,15 @@ start_metro() {
     echo "==> Metro — UYARI: SOLVE_PROXY yok → logda 'proxy off' görürsün"
     echo "    Düzelt: bash scripts/phone-demo-proxy-mac.sh && bu komutu tekrar çalıştır"
   fi
-  echo "==> Metro (dev-client) — telefonda ÇözBil uygulamasını aç"
+  echo "==> Metro (dev-client, --clear) — telefonda uygulamayı kapat/aç"
   echo "    Aynı Wi‑Fi’de değilsen: bash scripts/phone-dev-build.sh metro --tunnel"
+  echo "    Ana ekran ikonu için ayrıca: bash scripts/phone-demo-mac.sh ios"
   echo ""
+  # Always clear transform cache — dogfood often sticks on an old bundle.
   if [[ "$USE_TUNNEL" -eq 1 ]]; then
-    exec npx expo start --dev-client --tunnel
+    exec npx expo start --dev-client --clear --tunnel
   else
-    exec npx expo start --dev-client
+    exec npx expo start --dev-client --clear
   fi
 }
 

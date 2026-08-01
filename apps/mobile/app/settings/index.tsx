@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { readExamPreference } from '@/src/features/exam/examPreference';
 import { isExamType } from '@/src/features/exam/examTypes';
