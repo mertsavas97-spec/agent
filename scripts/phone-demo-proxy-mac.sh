@@ -73,12 +73,23 @@ if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
 fi
 
 cd "$PROXY_DIR"
-if [[ ! -d node_modules ]]; then
-  echo "==> npm install (solve-proxy)"
-  npm install --silent
+# Stale node_modules (pre-sharp) used to skip install and crash on import.
+if [[ ! -d node_modules/sharp ]] || [[ ! -d node_modules/tesseract.js ]]; then
+  echo "==> npm install (solve-proxy — sharp/tesseract)"
+  npm install
+fi
+if ! node -e "import('sharp').then(()=>process.exit(0)).catch(()=>process.exit(1))"; then
+  echo "==> sharp resolve fail — npm install yeniden"
+  rm -rf node_modules
+  npm install
+fi
+if ! node -e "import('sharp').then(()=>process.exit(0)).catch(()=>process.exit(1))"; then
+  echo "HATA: sharp kurulamadı. Elle: cd scripts/solve-proxy && npm install" >&2
+  exit 1
 fi
 
 echo "==> solve-proxy başlıyor → $LOG"
+: >"$LOG"
 nohup env \
   COZBIL_PROXY_DOGFOOD=1 \
   COZBIL_PROXY_TOKEN="$TOKEN" \
@@ -87,11 +98,19 @@ nohup env \
   SOLVE_PROXY_PORT="$PORT" \
   node server.mjs >"$LOG" 2>&1 &
 echo $! >/tmp/cozbil-phone-solve-proxy.pid
-sleep 1
+# sharp/native load can take a beat on first start
+for _ in 1 2 3 4 5 6 7 8; do
+  if curl -fsS -m 2 "http://127.0.0.1:${PORT}/health" 2>/dev/null | grep -q cozbil-solve-proxy; then
+    break
+  fi
+  sleep 0.5
+done
 
 if ! curl -fsS -m 5 "http://127.0.0.1:${PORT}/health" | grep -q cozbil-solve-proxy; then
   echo "HATA: proxy health fail. Log:" >&2
   tail -40 "$LOG" >&2 || true
+  echo "" >&2
+  echo "Hızlı düzeltme: cd scripts/solve-proxy && rm -rf node_modules && npm install" >&2
   exit 1
 fi
 

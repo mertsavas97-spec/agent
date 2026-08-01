@@ -24,6 +24,8 @@ Cloud Functions AI sıkça 40s+ sürüp timeout oluyor. Telefonda hızlı deneme
 ```bash
 bash scripts/write-vision-api-key-local.sh   # bir kez (gcloud)
 bash scripts/phone-demo-proxy-mac.sh
+# İlk kurulumda sharp yoksa script npm install yapar.
+# Elle: cd scripts/solve-proxy && npm install
 # iOS yerel HTTP için ATS (NSAllowsLocalNetworking) — native rebuild:
 bash scripts/phone-demo-mac.sh ios
 # Metro:
