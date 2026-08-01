@@ -267,7 +267,7 @@ if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
       echo "✓ Gemini smoke OK (yeni key, model=${SMOKE_MODEL})"
     else
       echo "==> Yeni key smoke fail — mevcut key kısıt kaldırma denenecek" >&2
-      CREATED_KEY=""
+      # keep CREATED_KEY for models.list diagnostics below
     fi
   else
     CREATED_KEY=""
