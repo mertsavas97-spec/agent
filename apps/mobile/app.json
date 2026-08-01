@@ -25,7 +25,7 @@
     },
     "android": {
       "package": "com.cozbil.app",
-      "versionCode": 18,
+      "versionCode": 20,
       "adaptiveIcon": {
         "backgroundColor": "#1E1B4B",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
