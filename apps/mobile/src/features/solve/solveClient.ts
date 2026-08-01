@@ -11,6 +11,7 @@ import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
 import {
   callSolveQuestionViaProxy,
+  diagnoseSolveProxyConfig,
   isSolveProxyConfigured,
   solveProxyBaseUrlForLog,
 } from './solveViaProxy';
@@ -58,9 +59,14 @@ export async function callSolveQuestion(
 ): Promise<SolveQuestionResponse> {
   let proxyAttempted = false;
   if (!isSolveProxyConfigured()) {
-    console.info(
-      'solve: proxy off (__DEV__ + phone-demo-proxy-mac.sh → solveProxy.dev.local.ts / EXPO_PUBLIC_SOLVE_PROXY_*)',
-    );
+    const diag = diagnoseSolveProxyConfig();
+    console.info('solve: proxy off', {
+      __DEV__: diag.dev,
+      urlSource: diag.urlSource,
+      tokenSource: diag.tokenSource,
+      metroHost: diag.metroHost,
+      hint: 'Mac: bash scripts/phone-demo-proxy-mac.sh (proxy :8787) + Metro restart',
+    });
   }
   if (
     isSolveProxyConfigured() &&

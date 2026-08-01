@@ -12,26 +12,27 @@
 - [x] `scripts/phone-demo-mac.sh` + `docs/qa/PHONE_DEMO_INSTALL.md`
 - [ ] Cloud Linux → telefona yükleme **mümkün değil** (Xcode yok)
 
-## Owner Mac (şimdi) — proxy off düzeltmesi
+## Owner Mac (şimdi) — proxy off → Metro auto
 
-Log `solve: proxy off` ise env telefona gitmemiş demektir. Pull + proxy script:
+`__DEV__` + LAN Metro → uygulama Mac IP`:8787` + token `cozbil-phone-demo` kullanır.
+**Zorunlu:** Mac’te proxy process açık olsun.
 
 ```bash
 cd ~/agent
 git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
 
 bash scripts/write-vision-api-key-local.sh   # bir kez
-bash scripts/phone-demo-proxy-mac.sh         # .env.local + solveProxy.dev.local.ts
-bash scripts/check-phone-demo-env.sh         # FAIL yoksa devam
+bash scripts/phone-demo-proxy-mac.sh         # :8787 dinle + Vision
 
 # Metro Ctrl+C → yeniden:
 bash scripts/phone-dev-build.sh metro
-# Beklenen log: solve: bounded OCR proxy { base: 'http://192.168.x.x:8787' }
+# Beklenen: solve: bounded OCR proxy { base: 'http://192.168.x.x:8787' }
 ```
 
-USB native (ATS / ilk kurulum): `bash scripts/phone-demo-mac.sh ios`  
-Canlı backend: `bash scripts/phone-demo-mac.sh fix-backend` (ping 200)
+`proxy off` + `metroHost: null` → tunnel kullanıyorsan script’in yazdığı
+`solveProxy.dev.local.ts` gerekir (script zaten yazar; Metro restart).
 
+USB native (ATS): `bash scripts/phone-demo-mac.sh ios`  
 **Kullanma:** App Store build 17 (ölü Firebase key).
 
 ## Sonra

@@ -24,3 +24,14 @@ describe('solveProxy.dev.local stub', () => {
     delete process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN;
   });
 });
+
+// Keep Constants empty so Metro auto-fallback does not mask the stub/env tests.
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { extra: {} },
+    expoGoConfig: null,
+    linkingUri: null,
+    manifest: null,
+  },
+}));

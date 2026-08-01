@@ -38,12 +38,12 @@ fi
 
 if [[ -f "$PROXY_TS" ]]; then
   if grep -q "url: \"http" "$PROXY_TS" && ! grep -q 'token: ""' "$PROXY_TS"; then
-    pass "solveProxy.dev.local.ts dolu (Metro bundle’a girer)"
+    pass "solveProxy.dev.local.ts dolu (Metro bundle yedek)"
   else
-    hard "solveProxy.dev.local.ts boş — phone-demo-proxy-mac.sh çalıştır"
+    soft "solveProxy.dev.local.ts boş — LAN Metro hostUri ile auto (yine de phone-demo-proxy-mac.sh şart)"
   fi
 else
-  hard "solveProxy.dev.local.ts yok"
+  soft "solveProxy.dev.local.ts yok (scaffold eksik olabilir)"
 fi
 
 if has_key EXPO_PUBLIC_SOLVE_PROXY_URL && has_key EXPO_PUBLIC_SOLVE_PROXY_TOKEN; then

@@ -30,20 +30,21 @@ bash scripts/phone-demo-mac.sh ios
 bash scripts/phone-dev-build.sh metro
 ```
 
-`phone-demo-proxy-mac.sh` hem `.env.local` hem `apps/mobile/src/config/solveProxy.dev.local.ts`
-yazar (Metro cihaz bundle’ında env bazen boş kalır; TS dosyası güvenilir yol).
+`phone-demo-proxy-mac.sh` proxy’yi `:8787`’de açar. Uygulama `__DEV__` iken Metro
+packager IP’sinden `http://<mac-ip>:8787` + token `cozbil-phone-demo` türetir
+(env / `solveProxy.dev.local.ts` boş olsa bile).
 
-Metro logunda `solve: bounded OCR proxy` + LAN `base` görmelisin. `proxy off` ise:
+Metro logunda `solve: bounded OCR proxy` + LAN `base` görmelisin. `proxy off` ise
+`metroHost: null` demektir (tunnel/USB özel durum) — o zaman:
 
 ```bash
-bash scripts/check-phone-demo-env.sh   # solveProxy.dev.local.ts dolu mu?
-bash scripts/phone-demo-proxy-mac.sh
+bash scripts/phone-demo-proxy-mac.sh   # .env.local + solveProxy.dev.local.ts yazar
 # Metro’yu tamamen kapatıp:
 bash scripts/phone-dev-build.sh metro
 ```
 
-Telefon Mac ile **aynı Wi‑Fi**. `__DEV__` + proxy → Cloud Functions beklemeden çözer.
-**Commit etme:** dolu `solveProxy.dev.local.ts` (LAN URL/token) — git’te stub boş kalmalı.
+Telefon Mac ile **aynı Wi‑Fi**. Proxy process ayakta olmalı (`/health`).
+**Commit etme:** dolu `solveProxy.dev.local.ts` — git’te stub boş kalmalı.
 
 ## 1b) Canlı backend (opsiyonel)
 

@@ -19,7 +19,8 @@ MOBILE="$ROOT/apps/mobile"
 ENV_LOCAL="$MOBILE/.env.local"
 PROXY_DIR="$ROOT/scripts/solve-proxy"
 PORT="${SOLVE_PROXY_PORT:-8787}"
-TOKEN="${COZBIL_PROXY_TOKEN:-cozbil-phone-demo-$(date +%Y%m%d)}"
+# Stable default — must match apps/mobile SOLVE_PROXY_DOGFOOD_TOKEN (Metro auto-fallback).
+TOKEN="${COZBIL_PROXY_TOKEN:-cozbil-phone-demo}"
 LOG="${COZBIL_PROXY_LOG:-/tmp/cozbil-phone-solve-proxy.log}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
