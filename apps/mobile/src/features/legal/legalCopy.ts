@@ -37,7 +37,7 @@ export const LEGAL_DOCS = {
     sections: [
       {
         heading: 'Hizmet',
-        body: 'ÇözBil; LGS, YGS/YKS, KPSS ve Ehliyet paketlerinde fotoğraftan adım adım çözüm ve konu anlatımı sunar. Çözümler yardımcı niteliktedir; resmi sınav sonucu değildir.',
+        body: 'ÇözBil; LGS, YKS, KPSS ve Ehliyet paketlerinde fotoğraftan adım adım çözüm ve konu anlatımı sunar. Çözümler yardımcı niteliktedir; resmi sınav sonucu değildir.',
       },
       {
         heading: 'Hesap ve kota',

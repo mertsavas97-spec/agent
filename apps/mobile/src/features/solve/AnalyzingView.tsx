@@ -98,8 +98,9 @@ export function AnalyzingView({
     const from = Math.max(peakRef.current, baseTarget);
     anim.setValue(from);
     const remaining = Math.max(0.02, SOLVE_PROGRESS_CRAWL_TARGET - from);
+    // Snappy segment floors — long 8s mins felt frozen during short OCR waits.
     const duration = Math.max(
-      8_000,
+      3_500,
       Math.round(SOLVE_PROGRESS_CRAWL_MS * (remaining / SOLVE_PROGRESS_CRAWL_TARGET)),
     );
     const crawl = Animated.timing(anim, {

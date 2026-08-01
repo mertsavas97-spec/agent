@@ -28,6 +28,6 @@ export const SOLVE_TIMEOUT_MS = 40_000;
  */
 export const SOLVE_UI_SETTLE_MS = 55_000;
 /** Soft crawl across the wait so the bar does not jump then freeze. */
-export const SOLVE_PROGRESS_CRAWL_MS = 45_000;
+export const SOLVE_PROGRESS_CRAWL_MS = 38_000;
 /** Soft ceiling while waiting on the backend (never claim 100% early). */
 export const SOLVE_PROGRESS_CRAWL_TARGET = 0.97;

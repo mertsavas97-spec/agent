@@ -17,12 +17,12 @@ Onboarding’de **dört seçenek de aktif**:
 | Kod | Etiket | Anlam |
 |-----|--------|--------|
 | `lgs` | LGS | Lise giriş |
-| `ygs` | YGS | Yükseköğretime geçiş (owner etiketi; YKS ile aynı aile) |
+| `ygs` | YKS | Yükseköğretim (TYT/AYT); internal id `ygs` kalır |
 | `kpss` | KPSS | Kamu personeli seçme |
 | `trafik` | Ehliyet | Sürücü adayı (trafik / araç / ilk yardım) |
 
-> Not: Moodboard/metinlerde “YGS” kullanılır. Resmi güncel ad “YKS” olsa da
-> ürün MVP’sinde owner kararıyla **YGS** etiketi geçerlidir.
+> Not: Kullanıcıya görünen etiket **YKS**. Depo / topic id’leri geriye dönük
+> uyumluluk için `ygs` kalır.
 
 ## Marka işareti
 
@@ -45,7 +45,7 @@ Canonical UI/store mark: **navy zemin + beyaz robot** (`apps/mobile` brand pack 
 1. App icon — navy + robot mark  
 2. Onboarding 1 — fotoğrafla çöz  
 3. Onboarding 2 — adım adım anlatır  
-4. Onboarding 3 — sınav seçimi **LGS / YGS / KPSS / Ehliyet**  
+4. Onboarding 3 — sınav seçimi **LGS / YKS / KPSS / Ehliyet**  
 5. Ana ekran — streak + büyük turuncu kamera CTA (ikincil: galeri; fold altı: çoklu / konular / geçmiş özeti)  
 6. Kamera — **sistem kamera/galeri** → onay ekranı (crop guide)  
 7. Analiz / loading — robot maskot (“Sorun analiz ediliyor…”)  

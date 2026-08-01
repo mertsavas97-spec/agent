@@ -58,7 +58,8 @@ export function CozbilRobot({
 
   const bouncePx = Math.max(2, Math.round(size * 0.04));
   const pulseTo = size < 56 ? 1.02 : 1.04;
-  const radius = Math.round(size * 0.22);
+  /** Perfect circle — home / splash / analyzing share one brand plate. */
+  const radius = Math.round(size / 2);
 
   useEffect(() => {
     if (!animate) return;
@@ -146,6 +147,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: colors.navy,
+    borderRadius: 999,
     // Avoid a blank frame while PNG decode finishes on cold navigations.
   },
 });

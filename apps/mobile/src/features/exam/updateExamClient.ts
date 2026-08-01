@@ -9,7 +9,7 @@ import { writeExamPreference } from './examPreference';
 import { isExamType } from './examTypes';
 
 /**
- * Persist exam package (LGS / YGS / KPSS / Trafik).
+ * Persist exam package (LGS / YKS / KPSS / Trafik).
  * Always writes local preference first so UI stays on the selected package even when
  * Cloud Functions / Firestore rules lag behind the catalog (e.g. new Trafik package).
  */

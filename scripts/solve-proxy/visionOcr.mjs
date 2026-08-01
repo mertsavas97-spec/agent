@@ -77,10 +77,40 @@ export async function closeOcrWorker() {
   }
 }
 
+/** EXIF-correct + mild enhance before Vision (helps zoom softness / monitor glare). */
+async function preprocessForVision(cleaned) {
+  const raw = Buffer.from(cleaned, 'base64');
+  try {
+    const meta = await sharp(raw, SHARP_INPUT_OPTIONS).metadata();
+    const width = meta.width || 0;
+    // Digital zoom crops are often soft and under 1200px wide — upscale before OCR.
+    const targetWidth =
+      width > 0 && width < 1100
+        ? Math.min(1800, Math.round(width * 1.75))
+        : Math.min(2000, Math.max(1400, width || 1400));
+    const buf = await sharp(raw, SHARP_INPUT_OPTIONS)
+      .rotate()
+      .normalize()
+      .modulate({ brightness: 1.06 })
+      .sharpen({ sigma: 0.9 })
+      .resize({
+        width: targetWidth,
+        kernel: 'lanczos3',
+        withoutEnlargement: false,
+      })
+      .jpeg({ quality: 90, mozjpeg: true })
+      .toBuffer();
+    return buf.toString('base64');
+  } catch {
+    return cleaned;
+  }
+}
+
 async function ocrViaVision(cleaned) {
   const key = process.env.GOOGLE_CLOUD_VISION_API_KEY?.trim();
   if (!key) return null;
 
+  const content = await preprocessForVision(cleaned);
   const url = `https://vision.googleapis.com/v1/images:annotate?key=${key}`;
   const res = await fetchWithTimeout(url, {
     method: 'POST',
@@ -88,7 +118,7 @@ async function ocrViaVision(cleaned) {
     body: JSON.stringify({
       requests: [
         {
-          image: { content: cleaned },
+          image: { content },
           features: [
             { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 },
             { type: 'TEXT_DETECTION', maxResults: 1 },
@@ -106,7 +136,8 @@ async function ocrViaVision(cleaned) {
     data?.responses?.[0]?.fullTextAnnotation?.text ||
     data?.responses?.[0]?.textAnnotations?.[0]?.description ||
     '';
-  return String(full).trim() || null;
+  const text = repairOcrText(String(full).trim());
+  return text || null;
 }
 
 async function ocrViaGemini(cleaned, mimeType) {
@@ -156,13 +187,23 @@ async function ocrViaGemini(cleaned, mimeType) {
 }
 
 async function decodeImageBuffer(input) {
-  // Always re-encode so HEIC / progressive JPEG / RN odd blobs become PNG.
-  // Cap width for dogfood latency — phone JPEGs were blowing the 15–20s budget.
+  // Always re-encode so HEIC / progressive JPEG / RN odd blobs become usable JPEG.
+  // Small / zoomed crops are enlarged — withoutEnlargement was starving OCR.
   try {
+    const meta = await sharp(input, SHARP_INPUT_OPTIONS).metadata();
+    const width = meta.width || 0;
+    const targetWidth =
+      width > 0 && width < 1000
+        ? Math.min(1600, Math.round(width * 1.8))
+        : Math.min(1600, Math.max(1200, width || 1400));
     return await sharp(input, SHARP_INPUT_OPTIONS)
       .rotate()
-      .resize({ width: 1400, withoutEnlargement: true })
-      .jpeg({ quality: 82, mozjpeg: true })
+      .resize({
+        width: targetWidth,
+        kernel: 'lanczos3',
+        withoutEnlargement: false,
+      })
+      .jpeg({ quality: 85, mozjpeg: true })
       .toBuffer();
   } catch (err) {
     throw new Error(
@@ -171,20 +212,29 @@ async function decodeImageBuffer(input) {
   }
 }
 
-async function buildOcrVariant(input, { threshold, boost, screen } = {}) {
+async function buildOcrVariant(input, { threshold, boost, screen, zoom } = {}) {
   const meta = await sharp(input, SHARP_INPUT_OPTIONS).metadata();
   const sourceWidth = meta.width || 1200;
-  const targetWidth = Math.min(1600, Math.max(1100, sourceWidth));
+  let targetWidth = Math.min(1600, Math.max(1100, sourceWidth));
+  if (zoom) {
+    // Camera digital-zoom: soft pixels — upscale then unsharp.
+    targetWidth = Math.min(2200, Math.max(1600, Math.round(sourceWidth * 1.7)));
+  } else if (screen) {
+    targetWidth = Math.min(1800, Math.max(1300, sourceWidth));
+  }
   let pipeline = sharp(input, SHARP_INPUT_OPTIONS)
     .rotate()
     .grayscale()
     .normalize();
   if (screen) {
-    // PC-monitor photos: reduce moiré/glare, lift contrast, avoid harsh sharpen.
+    // PC-monitor photos: kill moiré/glare, lift contrast for dark UI themes.
     pipeline = pipeline
-      .median(1)
-      .modulate({ brightness: 1.15 })
-      .linear(1.35, -28);
+      .median(2)
+      .modulate({ brightness: 1.2 })
+      .linear(1.5, -36)
+      .gamma(1.15);
+  } else if (zoom) {
+    pipeline = pipeline.modulate({ brightness: 1.1 }).linear(1.3, -18);
   } else if (boost) {
     // Dark phone photos of worksheets — lift midtones before thresholding.
     pipeline = pipeline.modulate({ brightness: 1.2 }).linear(1.25, -20);
@@ -194,10 +244,12 @@ async function buildOcrVariant(input, { threshold, boost, screen } = {}) {
     kernel: 'lanczos3',
     withoutEnlargement: false,
   });
-  if (!screen) {
+  if (zoom) {
+    pipeline = pipeline.sharpen({ sigma: 1.5, m1: 1.2, m2: 0.7 });
+  } else if (!screen) {
     pipeline = pipeline.sharpen({ sigma: 1 });
   } else {
-    pipeline = pipeline.sharpen({ sigma: 0.6 });
+    pipeline = pipeline.sharpen({ sigma: 0.85 });
   }
   if (typeof threshold === 'number') {
     pipeline = pipeline.threshold(threshold);
@@ -336,14 +388,17 @@ async function ocrViaTesseract(cleaned, mimeType) {
 
     // Soft / boosted first — hard threshold blanks many phone-camera worksheets.
     // Screen pass targets glare/moiré from photographing a monitor.
+    // Zoom pass upscales soft digital-zoom crops before Tesseract.
     // Keep a hard AUTO pass for % signs (KPSS yüzde).
     const passPlan = [
-      { threshold: undefined, boost: false, screen: false, psm: PSM.AUTO },
-      { threshold: undefined, boost: true, screen: false, psm: PSM.AUTO },
-      { threshold: undefined, boost: false, screen: true, psm: PSM.AUTO },
-      { threshold: 170, boost: false, screen: true, psm: PSM.SPARSE_TEXT },
-      { threshold: 180, boost: false, screen: false, psm: PSM.AUTO },
-      { threshold: 180, boost: false, screen: false, psm: PSM.SPARSE_TEXT },
+      { threshold: undefined, boost: false, screen: false, zoom: false, psm: PSM.AUTO },
+      { threshold: undefined, boost: true, screen: false, zoom: false, psm: PSM.AUTO },
+      { threshold: undefined, boost: false, screen: true, zoom: false, psm: PSM.AUTO },
+      { threshold: undefined, boost: false, screen: false, zoom: true, psm: PSM.AUTO },
+      { threshold: 160, boost: false, screen: true, zoom: false, psm: PSM.SPARSE_TEXT },
+      { threshold: 170, boost: false, screen: false, zoom: true, psm: PSM.SPARSE_TEXT },
+      { threshold: 180, boost: false, screen: false, zoom: false, psm: PSM.AUTO },
+      { threshold: 180, boost: false, screen: false, zoom: false, psm: PSM.SPARSE_TEXT },
     ];
 
     const candidates = [];
@@ -352,7 +407,7 @@ async function ocrViaTesseract(cleaned, mimeType) {
     const variantCache = new Map();
 
     for (const pass of passPlan) {
-      const cacheKey = `${pass.threshold ?? 'soft'}:${pass.boost ? 'b' : 'n'}:${pass.screen ? 's' : 'p'}`;
+      const cacheKey = `${pass.threshold ?? 'soft'}:${pass.boost ? 'b' : 'n'}:${pass.screen ? 's' : 'p'}:${pass.zoom ? 'z' : 'n'}`;
       if (!variantCache.has(cacheKey)) {
         variantCache.set(
           cacheKey,
@@ -360,6 +415,7 @@ async function ocrViaTesseract(cleaned, mimeType) {
             threshold: pass.threshold,
             boost: pass.boost,
             screen: pass.screen,
+            zoom: pass.zoom,
           }),
         );
       }

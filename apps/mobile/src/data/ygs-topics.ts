@@ -2,7 +2,7 @@ import type { Topic } from './topics';
 import { topicId } from './topics';
 
 /**
- * YGS ürün etiketi = YKS TYT/AYT hattı (eski LYS alanları AYT ile eşlenir).
+ * YKS ürün etiketi = YKS TYT/AYT hattı (eski LYS alanları AYT ile eşlenir).
  * Telifli soru yok — konu başlıkları.
  */
 export const YGS_TOPICS: Topic[] = [

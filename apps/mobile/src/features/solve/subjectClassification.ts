@@ -12,7 +12,7 @@ export function shouldConfirmExamMismatch(
 ): boolean {
   if (!hint?.mismatchesProfile || !hint.suggested) return false;
   if (hint.suggested === profileExam) return false;
-  // Ehliyet booklet Q# alone used to false-trigger KPSS/YGS — ignore that reason client-side too
+  // Ehliyet booklet Q# alone used to false-trigger KPSS/YKS — ignore that reason client-side too
   if (
     profileExam === 'trafik' &&
     (hint.reason === 'question_number_vs_trafik' ||

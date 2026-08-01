@@ -36,7 +36,7 @@ const COPY: Record<LiveSolvePhase, Omit<LiveSolveCopy, 'phase'>> = {
     step: 'upload',
     headline: 'Hazırlanıyor…',
     detail: 'Sınav paketini ve oturumu kontrol ediyorum.',
-    tip: 'LGS, YGS, KPSS veya Ehliyet — seçili paket sabit kalır.',
+    tip: 'LGS, YKS, KPSS veya Ehliyet — seçili paket sabit kalır.',
   },
   upload: {
     step: 'upload',
@@ -128,21 +128,22 @@ export function checklistLabelFor(
  * AnalyzingView soft-crawls from this floor so the bar never freezes or jumps.
  */
 export function progressForLivePhase(phase: LiveSolvePhase): number {
+  // Floors track real pipeline beats so % does not sit low while OCR/solve run.
   switch (phase) {
     case 'preparing':
-      return 0.08;
+      return 0.1;
     case 'upload':
-      return 0.16;
+      return 0.22;
     case 'ocr':
-      return 0.32;
+      return 0.42;
     case 'moderate':
-      return 0.48;
+      return 0.58;
     case 'solving':
-      return 0.62;
+      return 0.72;
     case 'finishing':
-      return 0.9;
+      return 0.94;
     default:
-      return 0.08;
+      return 0.1;
   }
 }
 

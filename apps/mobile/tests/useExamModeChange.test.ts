@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { useExamModeChange } from '@/src/features/exam/useExamModeChange';
 import { callUpdateExamType } from '@/src/features/exam/updateExamClient';
 import { setExamPreferenceCache } from '@/src/features/exam/examPreferenceCache';
+import { runRewardedExamSwitch } from '@/src/features/ads/runRewardedExamSwitch';
 
 jest.mock('@/src/features/exam/updateExamClient', () => ({
   callUpdateExamType: jest.fn().mockResolvedValue('ygs'),
@@ -11,6 +12,13 @@ jest.mock('@/src/features/exam/updateExamClient', () => ({
 
 jest.mock('@/src/features/exam/examPreferenceCache', () => ({
   setExamPreferenceCache: jest.fn(),
+}));
+
+jest.mock('@/src/features/ads/runRewardedExamSwitch', () => ({
+  runRewardedExamSwitch: jest.fn(async () => ({
+    allowed: true,
+    reason: 'rewarded' as const,
+  })),
 }));
 
 jest.mock('@/src/ui/haptics', () => ({
@@ -21,9 +29,13 @@ describe('useExamModeChange', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (runRewardedExamSwitch as jest.Mock).mockResolvedValue({
+      allowed: true,
+      reason: 'rewarded',
+    });
   });
 
-  it('switches immediately without a rewarded-ad alert', async () => {
+  it('requires a rewarded ad when switching between exam packages', async () => {
     const onOptimistic = jest.fn();
     const { result } = renderHook(() =>
       useExamModeChange({
@@ -36,13 +48,31 @@ describe('useExamModeChange', () => {
       result.current.requestExamChange('lgs', 'ygs');
     });
 
+    expect(runRewardedExamSwitch).toHaveBeenCalled();
     expect(Alert.alert).not.toHaveBeenCalled();
     expect(setExamPreferenceCache).toHaveBeenCalledWith('ygs');
     expect(onOptimistic).toHaveBeenCalledWith('ygs');
     expect(callUpdateExamType).toHaveBeenCalledWith('ygs');
   });
 
-  it('allows first pick when current exam is still null', async () => {
+  it('blocks the switch when the rewarded ad is dismissed', async () => {
+    (runRewardedExamSwitch as jest.Mock).mockResolvedValue({
+      allowed: false,
+      reason: 'dismissed',
+    });
+    const onOptimistic = jest.fn();
+    const { result } = renderHook(() => useExamModeChange({ onOptimistic }));
+
+    await act(async () => {
+      result.current.requestExamChange('lgs', 'kpss');
+    });
+
+    expect(onOptimistic).not.toHaveBeenCalled();
+    expect(callUpdateExamType).not.toHaveBeenCalled();
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('allows first pick when current exam is still null without an ad', async () => {
     const onOptimistic = jest.fn();
     const { result } = renderHook(() =>
       useExamModeChange({ onOptimistic }),
@@ -52,6 +82,7 @@ describe('useExamModeChange', () => {
       result.current.requestExamChange(null, 'kpss');
     });
 
+    expect(runRewardedExamSwitch).not.toHaveBeenCalled();
     expect(onOptimistic).toHaveBeenCalledWith('kpss');
     expect(callUpdateExamType).toHaveBeenCalledWith('kpss');
   });

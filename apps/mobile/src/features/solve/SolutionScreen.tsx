@@ -59,7 +59,7 @@ export type SolutionScreenProps = {
 
 const EXAM_TITLE: Record<ExamType, string> = {
   lgs: 'LGS',
-  ygs: 'YGS',
+  ygs: 'YKS',
   kpss: 'KPSS',
   trafik: 'Ehliyet',
 };

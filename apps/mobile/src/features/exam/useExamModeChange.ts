@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 
+import { runRewardedExamSwitch } from '@/src/features/ads/runRewardedExamSwitch';
 import {
   hydrateEntitlement,
   type EntitlementSnapshot,
@@ -17,7 +18,7 @@ export type UseExamModeChangeOptions = {
 };
 
 /**
- * Shared exam switch — optimistic local preference, background sync.
+ * Shared exam switch — rewarded ad per free-user change, then optimistic sync.
  * Never disables the segmented control: awaiting network was making taps
  * feel “stuck”. In-flight duplicate for the *same* target is ignored; after
  * settle, the same package can be requested again (focus races / retries).
@@ -51,7 +52,23 @@ export function useExamModeChange(options: UseExamModeChangeOptions = {}) {
       if (next === current) return;
       // Only skip while this exact package change is already syncing.
       if (inFlightRef.current === next) return;
-      void applyExam(next);
+      void (async () => {
+        // First pick (null → exam) is free; every later switch needs a reward.
+        if (current != null) {
+          const gate = await runRewardedExamSwitch();
+          if (!gate.allowed) {
+            Alert.alert(
+              'Mod değişmedi',
+              gate.reason === 'unavailable'
+                ? 'Reklam şu an yüklenemedi. Biraz sonra tekrar dene.'
+                : 'Reklamı tamamlayınca sınav modunu değiştirebilirsin.',
+            );
+            return;
+          }
+        }
+        if (inFlightRef.current === next) return;
+        await applyExam(next);
+      })();
     },
     [applyExam],
   );

@@ -150,7 +150,7 @@ export default function HomeScreen() {
 
   async function openPicker(source: 'camera' | 'library') {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YKS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
       return;
     }
     const picked =
@@ -182,7 +182,7 @@ export default function HomeScreen() {
 
   async function openMultiBatch() {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YKS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
       return;
     }
     const copy = multiBatchUserCopy();

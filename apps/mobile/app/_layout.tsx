@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { warmAdMob } from '@/src/features/ads/warmAdMob';
 import { BootstrapGate } from '@/src/features/auth/BootstrapGate';
 import { colors, screenHeaderOptions } from '@/src/theme';
 import { BrandMarkCache } from '@/src/ui/BrandMarkCache';
@@ -51,6 +52,10 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+  useEffect(() => {
+    warmAdMob();
+  }, []);
+
   return (
     <ThemeProvider value={cozbilTheme}>
       <BrandMarkCache />

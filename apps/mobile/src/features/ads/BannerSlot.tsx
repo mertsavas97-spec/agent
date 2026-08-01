@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { colors } from '@/src/theme';
@@ -12,6 +13,8 @@ type BannerAdsModule = {
     unitId: string;
     size: string;
     requestOptions?: Record<string, unknown>;
+    onAdFailedToLoad?: (error: unknown) => void;
+    onAdLoaded?: () => void;
   }>;
   BannerAdSize: { ANCHORED_ADAPTIVE_BANNER: string; BANNER: string };
 };
@@ -30,10 +33,15 @@ function loadBannerModule(): BannerAdsModule | null {
  * Hidden until live AdMob delivery is ready — no “hazırlık” placeholder in store builds.
  */
 export function BannerSlot() {
+  const [failed, setFailed] = useState(false);
+
   if (!shouldShowBanner({ isPremium: isPremiumAudience() })) {
     return null;
   }
   if (!isLiveAdsDeliveryReady()) {
+    return null;
+  }
+  if (failed) {
     return null;
   }
 
@@ -56,6 +64,13 @@ export function BannerSlot() {
         unitId={unitId}
         size={size}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        onAdLoaded={() => {
+          if (__DEV__) console.info('ads: banner loaded', Platform.OS);
+        }}
+        onAdFailedToLoad={(error) => {
+          console.warn('ads: banner failed', error);
+          setFailed(true);
+        }}
       />
     </View>
   );

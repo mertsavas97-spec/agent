@@ -36,7 +36,7 @@ function examBrand(exam: ExamType): ExamBrand {
       };
     case 'ygs':
       return {
-        short: 'YGS/YKS',
+        short: 'YKS',
         voice: 'lise (TYT–AYT) seviyesinde',
         audience: 'YKS adayı',
       };
@@ -141,7 +141,7 @@ export function fullLessonCtaLabel(input: {
     input.examType === 'lgs'
       ? 'LGS'
       : input.examType === 'ygs'
-        ? 'YGS'
+        ? 'YKS'
         : input.examType === 'kpss'
           ? 'KPSS'
           : input.examType === 'trafik'

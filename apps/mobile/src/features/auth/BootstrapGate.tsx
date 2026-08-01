@@ -15,7 +15,7 @@ import { loadPushPrefs } from '@/src/features/push/pushPrefs';
 import { ensureSignedIn, subscribeAuth } from '@/src/lib/auth';
 import { isFirebaseConfigured } from '@/src/lib/firebase';
 import { colors, space } from '@/src/theme';
-import { CozbilRobot } from '@/src/ui/CozbilRobot';
+import { PremiumSplash } from '@/src/ui/PremiumSplash';
 
 type GateState =
   | { status: 'loading' }
@@ -178,30 +178,16 @@ export function BootstrapGate({ children }: { children: ReactNode }) {
       ) : null}
       {children}
       {blocking ? (
-        <View style={styles.blocker} testID="bootstrap-loading">
-          <CozbilRobot size={72} animate tone="onLight" testID="bootstrap-robot" />
-          <Text style={styles.hint}>Hazırlanıyor…</Text>
-        </View>
+        <PremiumSplash
+          testID="bootstrap-loading"
+          status={bootError ? null : 'Oturum açılıyor'}
+        />
       ) : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  blocker: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    gap: space.md,
-    zIndex: 100,
-    elevation: 100,
-  },
-  hint: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontFamily: 'Poppins',
-  },
   banner: {
     backgroundColor: colors.orangeSoft,
     paddingHorizontal: space.md,

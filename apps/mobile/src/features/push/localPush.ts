@@ -42,7 +42,7 @@ export const INACTIVE_WEEKLY_COPY: { title: string; body: string }[] = [
   },
   {
     title: 'ÇözBil seni bekliyor',
-    body: 'LGS, YGS, KPSS veya Ehliyet — ilk sorunu çekerek başla.',
+    body: 'LGS, YKS, KPSS veya Ehliyet — ilk sorunu çekerek başla.',
   },
 ];
 

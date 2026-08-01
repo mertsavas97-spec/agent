@@ -86,7 +86,7 @@ export const PUSH_COPY: Record<PushCategoryId, { title: string; body: string }[]
     },
     {
       title: 'Sınav neyse, bugün ona çalış',
-      body: 'LGS, YGS, KPSS, Ehliyet — bir soruyla başla.',
+      body: 'LGS, YKS, KPSS, Ehliyet — bir soruyla başla.',
     },
   ],
   weakTopic: [

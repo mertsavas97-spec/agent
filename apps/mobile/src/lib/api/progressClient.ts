@@ -154,7 +154,7 @@ export async function fetchProgressAttempts(): Promise<AttemptListItem[]> {
 
 /**
  * Progress for a single exam tab. Does NOT force profile exam —
- * Stats UI picks the tab; home YGS ≠ hide KPSS data.
+ * Stats UI picks the tab; home YKS ≠ hide KPSS data.
  */
 export function progressForExam(
   items: AttemptListItem[],
