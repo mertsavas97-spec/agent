@@ -95,7 +95,19 @@ export async function callSolveQuestion(
         (typeof response.status === 'string' &&
           response.status.startsWith('rejected'))
       ) {
-        console.info('solve: proxy terminal', response.status);
+        const meta = response as {
+          ocrPreview?: string;
+          detectedSubject?: string;
+          subject?: string;
+        };
+        const preview =
+          typeof meta.ocrPreview === 'string' ? meta.ocrPreview : undefined;
+        console.info('solve: proxy terminal', response.status, {
+          subject: meta.detectedSubject ?? meta.subject ?? null,
+          ocr:
+            preview?.slice(0, 500)?.replace(/\s+/g, ' ') ||
+            '(proxy OCR önizlemesi yok — Mac’te phone-demo-proxy-mac.sh açık mı?)',
+        });
         return normalizeTerminalProxyResponse(response, request.requestId);
       }
       if (isUsableResponse(response)) {
