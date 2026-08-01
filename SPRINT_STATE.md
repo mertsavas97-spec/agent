@@ -1,28 +1,29 @@
 # Sprint State
 
 **Branch:** `cursor/home-polish-yks-ads-ocr-2914`  
-**Hedef:** Phone dogfood Gemini = **Vertex AI** (GCP API key yolu kapalı)
+**Hedef:** Audit temiz + local IPA **1.0.1 (18)** (store canlı 17)
 
 ## Bu tur
 
-- [x] GCP API key → `API_KEY_INVALID` teşhisi
-- [x] Proxy: Vertex + gcloud ADC
-- [x] `write-vertex-solve-local.sh`
-- [x] `write-gemini-api-key-local.sh` → Vertex redirect
+- [x] AdMob / pipeline / OCR audit
+- [x] Vertex-first doğrulandı; OCR soft yedek
+- [x] Banner tab shell (home+history+stats+profile)
+- [x] AI-first analyzing copy
+- [x] buildNumber **18**
+- [ ] Owner Mac: `bash scripts/mac-build-ipa-with-push.sh`
 
-## Owner Mac
+## Owner Mac — IPA
 
 ```bash
 cd ~/agent && git pull
-bash scripts/write-vertex-solve-local.sh
-# Beklenen: ✓ Vertex smoke OK
-
-bash scripts/phone-demo-proxy-mac.sh
-# Beklenen: Gemini Vision solve: AÇIK — Vertex smoke OK
-# Log: solve-proxy gemini smoke OK
-
-bash scripts/phone-dev-build.sh metro
+bash scripts/mac-build-ipa-with-push.sh
+# Çıktı: ~/Desktop/cozbil-production.ipa  (veya IOS_IPA_OUT)
 ```
 
-Not: Cloud Console’da oluşturulan `AIza…` key’leri Generative Language’de
-çalışmaz. AI Studio key istersen ayrı; dogfood için Vertex yeterli.
+Dogfood (dev client) ayrı:
+
+```bash
+bash scripts/write-vertex-solve-local.sh
+bash scripts/phone-demo-proxy-mac.sh
+bash scripts/phone-dev-build.sh metro
+```
