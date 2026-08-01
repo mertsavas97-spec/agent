@@ -11,8 +11,9 @@
 #   bash scripts/phone-dev-build.sh metro
 #
 # Gerekli:
-#   GEMINI_API_KEY (birincil — yoksa Vision key ile dene)
-#   GOOGLE_CLOUD_VISION_API_KEY (OCR yedek; env veya apps/mobile/.env.local)
+#   Vertex AI (COZBIL_USE_VERTEX=1 + gcloud auth) — birincil Gemini yolu
+#   GOOGLE_CLOUD_VISION_API_KEY (OCR yedek)
+# Opsiyonel: AI Studio GEMINI_API_KEY (Cloud Console key çalışmaz)
 
 set -euo pipefail
 
@@ -55,20 +56,11 @@ if [[ -z "${GOOGLE_CLOUD_VISION_API_KEY:-}" ]]; then
   exit 1
 fi
 
-# Gemini is required for reliable photo solve (Vision-only keys cannot call Gemini).
-if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  if [[ -f "$ENV_LOCAL" ]] && grep -qE '^GEMINI_API_KEY=AIza' "$ENV_LOCAL" 2>/dev/null; then
-    set -a
-    # shellcheck disable=SC1090
-    source "$ENV_LOCAL"
-    set +a
-  fi
-fi
-if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  echo "==> GEMINI_API_KEY yok — yazılıyor (Generative Language)…"
-  # set -e does NOT abort on failure inside if — force exit
-  bash "$ROOT/scripts/write-gemini-api-key-local.sh" || {
-    echo "HATA: Gemini key yazılamadı — proxy başlatılmıyor." >&2
+# Prefer Vertex (Startup). GCP Console API keys → API_KEY_INVALID for Generative Language.
+if [[ "${COZBIL_USE_VERTEX:-}" != "1" ]]; then
+  echo "==> Vertex solve ayarı yok — yazılıyor…"
+  bash "$ROOT/scripts/write-vertex-solve-local.sh" || {
+    echo "HATA: Vertex kurulamadı — proxy başlatılmıyor." >&2
     exit 1
   }
   set -a
@@ -76,50 +68,42 @@ if [[ -z "${GEMINI_API_KEY:-}" ]]; then
   source "$ENV_LOCAL"
   set +a
 fi
-if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  echo "HATA: GEMINI_API_KEY yok. OCR-only moda düşme — solve kırılır." >&2
-  echo "bash scripts/write-gemini-api-key-local.sh" >&2
+if [[ "${COZBIL_USE_VERTEX:-}" != "1" ]]; then
+  echo "HATA: COZBIL_USE_VERTEX=1 gerekli." >&2
+  echo "bash scripts/write-vertex-solve-local.sh" >&2
   exit 1
 fi
 
-# Reject Vision-only / dead keys before starting proxy
-echo "==> Gemini key smoke…"
-PROXY_SMOKE_BODY="${TMPDIR:-/tmp}/cozbil-proxy-gemini-smoke.json"
-PROXY_SMOKE_OK=0
-PROXY_SMOKE_MODELS=(
-  "${GEMINI_SOLVE_MODEL:-}"
-  gemini-2.5-flash
-  gemini-2.0-flash
-  gemini-1.5-flash
-  gemini-1.5-flash-latest
-)
-for _m in "${PROXY_SMOKE_MODELS[@]}"; do
-  [[ -z "$_m" ]] && continue
-  echo "  → ${_m}…"
-  GEMINI_SMOKE_HTTP="$(
-    curl -sS -o "$PROXY_SMOKE_BODY" -w '%{http_code}' \
-      "https://generativelanguage.googleapis.com/v1beta/models/${_m}:generateContent?key=${GEMINI_API_KEY}" \
-      -H 'Content-Type: application/json' \
-      -d '{"contents":[{"parts":[{"text":"Reply with one word: ok"}]}]}' \
-      --max-time 45 || echo "000"
-  )"
-  if [[ "$GEMINI_SMOKE_HTTP" == "200" ]]; then
-    export GEMINI_SOLVE_MODEL="$_m"
-    export GEMINI_OCR_MODEL="$_m"
-    PROXY_SMOKE_OK=1
-    break
-  fi
-  echo "  smoke fail model=${_m} HTTP=${GEMINI_SMOKE_HTTP}" >&2
-  head -c 400 "$PROXY_SMOKE_BODY" 2>/dev/null >&2 || true
-  echo "" >&2
-done
-if [[ "$PROXY_SMOKE_OK" != "1" ]]; then
-  echo "HATA: .env.local GEMINI_API_KEY smoke geçmedi." >&2
-  echo "  FORCE_NEW_GEMINI_KEY=1 bash scripts/write-gemini-api-key-local.sh" >&2
-  echo "  veya AI Studio: https://aistudio.google.com/apikey" >&2
+PROJECT="${GCP_PROJECT_ID:-cozbil-dev-f9583}"
+LOCATION="${VERTEX_LOCATION:-us-central1}"
+MODEL="${VERTEX_MODEL:-gemini-2.5-flash}"
+echo "==> Vertex smoke (${LOCATION}/${MODEL})…"
+TOKEN="$(gcloud auth print-access-token 2>/dev/null || true)"
+if [[ -z "$TOKEN" ]]; then
+  echo "HATA: gcloud auth print-access-token boş — gcloud auth login" >&2
   exit 1
 fi
-echo "==> Gemini Vision solve: AÇIK — smoke OK (model=${GEMINI_SOLVE_MODEL})"
+VERTEX_SMOKE_BODY="${TMPDIR:-/tmp}/cozbil-proxy-vertex-smoke.json"
+VERTEX_SMOKE_HTTP="$(
+  curl -sS -o "$VERTEX_SMOKE_BODY" -w '%{http_code}' \
+    "https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H 'Content-Type: application/json' \
+    -d '{"contents":[{"role":"user","parts":[{"text":"Reply with one word: ok"}]}]}' \
+    --max-time 45 || echo "000"
+)"
+if [[ "$VERTEX_SMOKE_HTTP" != "200" ]]; then
+  echo "HATA: Vertex smoke HTTP $VERTEX_SMOKE_HTTP" >&2
+  head -c 400 "$VERTEX_SMOKE_BODY" 2>/dev/null >&2 || true
+  echo "" >&2
+  echo "bash scripts/write-vertex-solve-local.sh" >&2
+  exit 1
+fi
+export COZBIL_USE_VERTEX=1
+export GCP_PROJECT_ID="$PROJECT"
+export VERTEX_LOCATION="$LOCATION"
+export VERTEX_MODEL="$MODEL"
+echo "==> Gemini Vision solve: AÇIK — Vertex smoke OK (model=${MODEL})"
 
 LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
 if [[ -z "$LAN_IP" ]]; then
@@ -164,6 +148,12 @@ nohup env \
   COZBIL_PROXY_ALLOW_LOOPBACK_IMAGES=1 \
   GOOGLE_CLOUD_VISION_API_KEY="$GOOGLE_CLOUD_VISION_API_KEY" \
   GEMINI_API_KEY="${GEMINI_API_KEY:-}" \
+  COZBIL_USE_VERTEX="${COZBIL_USE_VERTEX:-1}" \
+  GCP_PROJECT_ID="${GCP_PROJECT_ID:-cozbil-dev-f9583}" \
+  GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT_ID:-cozbil-dev-f9583}}" \
+  VERTEX_LOCATION="${VERTEX_LOCATION:-us-central1}" \
+  VERTEX_MODEL="${VERTEX_MODEL:-gemini-2.5-flash}" \
+  PATH="$PATH" \
   COZBIL_PROXY_GEMINI_FIRST="${COZBIL_PROXY_GEMINI_FIRST:-1}" \
   SOLVE_PROXY_PORT="$PORT" \
   node server.mjs >"$LOG" 2>&1 &
@@ -224,7 +214,7 @@ fi
 
 echo ""
 echo "✓ Proxy ayakta: $PROXY_URL"
-echo "✓ Gemini Vision solve: ${GEMINI_API_KEY:+AÇIK}${GEMINI_API_KEY:-KAPALI}"
+echo "✓ Gemini Vision solve: Vertex (${VERTEX_MODEL:-gemini-2.5-flash})"
 echo "✓ Env: .env.local + .env"
 echo "✓ Bundle: src/config/solveProxy.dev.local.ts"
 echo ""

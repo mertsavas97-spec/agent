@@ -604,12 +604,12 @@ server.listen(PORT, '0.0.0.0', async () => {
       console.error(
         'solve-proxy gemini smoke FAIL:',
         smoke.error,
-        '— Vision-only key? Run: bash scripts/write-gemini-api-key-local.sh',
+        '— Run: bash scripts/write-vertex-solve-local.sh (or AI Studio GEMINI_API_KEY)',
       );
     }
   } else {
     console.warn(
-      'solve-proxy gemini-vision OFF at boot — OCR-only (weak). Set GEMINI_API_KEY.',
+      'solve-proxy gemini-vision OFF at boot — OCR-only (weak). Set COZBIL_USE_VERTEX=1.',
     );
   }
 });

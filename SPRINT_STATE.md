@@ -1,32 +1,28 @@
 # Sprint State
 
 **Branch:** `cursor/home-polish-yks-ads-ocr-2914`  
-**Hedef:** Gemini Vision first solve — Vision-only key tuzağını kapat
+**Hedef:** Phone dogfood Gemini = **Vertex AI** (GCP API key yolu kapalı)
 
 ## Bu tur
 
-- [x] Proxy: fotoğraf → Gemini birincil; OCR+yerel yedek
-- [x] Soft colon OCR repair
-- [x] Splash / exam confirm / banner / interstitial
-- [x] macOS `mapfile` → while-read
-- [x] Vision-only `cozbil*` key reject; smoke geçen Generative Language key yaz
-- [x] Proxy: Gemini smoke fail → başlamasın
+- [x] GCP API key → `API_KEY_INVALID` teşhisi
+- [x] Proxy: Vertex + gcloud ADC
+- [x] `write-vertex-solve-local.sh`
+- [x] `write-gemini-api-key-local.sh` → Vertex redirect
 
-## Owner Mac (zorunlu)
+## Owner Mac
 
 ```bash
-cd ~/agent
-git fetch && git checkout cursor/home-polish-yks-ads-ocr-2914 && git pull
-
-# Vision-only key varsa zorla yeni Generative Language key:
-FORCE_NEW_GEMINI_KEY=1 bash scripts/write-gemini-api-key-local.sh
-# Beklenen: ✓ Gemini smoke OK (yeni key)  +  ✓ Yazıldı
+cd ~/agent && git pull
+bash scripts/write-vertex-solve-local.sh
+# Beklenen: ✓ Vertex smoke OK
 
 bash scripts/phone-demo-proxy-mac.sh
-# Beklenen: Gemini Vision solve: AÇIK … smoke OK
+# Beklenen: Gemini Vision solve: AÇIK — Vertex smoke OK
+# Log: solve-proxy gemini smoke OK
 
-# Eski Metro 8081 varsa kapat; tek port:
 bash scripts/phone-dev-build.sh metro
 ```
 
-Başarı: proxy log `solve-proxy gemini-vision`; Metro’da `gemini.status` ≠ `off`/`error`.
+Not: Cloud Console’da oluşturulan `AIza…` key’leri Generative Language’de
+çalışmaz. AI Studio key istersen ayrı; dogfood için Vertex yeterli.

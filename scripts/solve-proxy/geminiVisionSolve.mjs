@@ -1,7 +1,14 @@
 /**
  * Image → Gemini multimodal solve (primary dogfood path).
  * Does not depend on brittle OCR→regex solvers for the answer.
+ *
+ * Transport (prefer Vertex — GCP Startup / org policy):
+ *   COZBIL_USE_VERTEX=1  → Vertex AI + gcloud ADC (or GOOGLE_ACCESS_TOKEN)
+ *   GEMINI_API_KEY       → Generative Language API key (AI Studio only;
+ *                          Cloud Console API keys often return API_KEY_INVALID)
  */
+
+import { execFileSync } from 'node:child_process';
 
 const SUBJECTS = new Set([
   'math',
@@ -176,9 +183,61 @@ export function parseGeminiSolveResponse(text) {
   }
 }
 
+export function useVertexForProxy() {
+  return process.env.COZBIL_USE_VERTEX === '1';
+}
+
 export function isGeminiVisionSolveEnabled() {
   if (process.env.COZBIL_PROXY_GEMINI_FIRST === '0') return false;
+  if (useVertexForProxy()) return true;
   return Boolean(process.env.GEMINI_API_KEY?.trim());
+}
+
+function vertexProjectId() {
+  return (
+    process.env.GCLOUD_PROJECT ||
+    process.env.GCP_PROJECT_ID ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    'cozbil-dev-f9583'
+  );
+}
+
+function vertexLocation() {
+  return process.env.VERTEX_LOCATION || 'us-central1';
+}
+
+function solveModel() {
+  return (
+    process.env.VERTEX_MODEL?.trim() ||
+    process.env.GEMINI_SOLVE_MODEL?.trim() ||
+    process.env.GEMINI_OCR_MODEL?.trim() ||
+    'gemini-2.5-flash'
+  );
+}
+
+let cachedToken = { value: '', exp: 0 };
+
+/** Bearer token for Vertex — env override or `gcloud auth print-access-token`. */
+export function vertexAccessToken() {
+  const fromEnv = process.env.GOOGLE_ACCESS_TOKEN?.trim();
+  if (fromEnv) return fromEnv;
+  const now = Date.now();
+  if (cachedToken.value && cachedToken.exp > now + 60_000) {
+    return cachedToken.value;
+  }
+  try {
+    const token = execFileSync('gcloud', ['auth', 'print-access-token'], {
+      encoding: 'utf8',
+      timeout: 15_000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+    if (!token) throw new Error('empty_token');
+    cachedToken = { value: token, exp: now + 45 * 60_000 };
+    return token;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Vertex token fail (gcloud auth login?): ${msg}`);
+  }
 }
 
 async function fetchWithTimeout(url, init, timeoutMs) {
@@ -191,6 +250,72 @@ async function fetchWithTimeout(url, init, timeoutMs) {
   }
 }
 
+function buildGenerateRequest(prompt, cleaned, mimeType, { jsonMime = true } = {}) {
+  const generationConfig = {
+    temperature: 0,
+    maxOutputTokens: 4096,
+  };
+  if (jsonMime) generationConfig.responseMimeType = 'application/json';
+  return {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mimeType || 'image/jpeg',
+              data: cleaned,
+            },
+          },
+        ],
+      },
+    ],
+    generationConfig,
+  };
+}
+
+async function postGenerateContent(body, timeoutMs) {
+  const model = solveModel();
+  if (useVertexForProxy()) {
+    const project = vertexProjectId();
+    const location = vertexLocation();
+    const url =
+      `https://${location}-aiplatform.googleapis.com/v1/projects/${project}` +
+      `/locations/${location}/publishers/google/models/${model}:generateContent`;
+    const token = vertexAccessToken();
+    const res = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      },
+      timeoutMs,
+    );
+    const data = await res.json();
+    return { res, data, transport: 'vertex' };
+  }
+
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) throw new Error('GEMINI_API_KEY missing');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    timeoutMs,
+  );
+  const data = await res.json();
+  return { res, data, transport: 'api_key' };
+}
+
 /**
  * Primary solve: send the photo to Gemini. Returns null if disabled / failed.
  */
@@ -201,50 +326,17 @@ export async function solveImageWithGemini({
   subjectHint = null,
 }) {
   if (!isGeminiVisionSolveEnabled()) return null;
-  const key = process.env.GEMINI_API_KEY.trim();
   const cleaned = String(imageBase64 || '').replace(/^data:[^;]+;base64,/, '');
   if (cleaned.length < 80) return null;
 
-  const model =
-    process.env.GEMINI_SOLVE_MODEL?.trim() ||
-    process.env.GEMINI_OCR_MODEL?.trim() ||
-    'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const prompt = geminiSolvePrompt(examType, subjectHint);
 
   const callOnce = async (extra, { jsonMime = true } = {}) => {
-    const generationConfig = {
-      temperature: 0,
-      maxOutputTokens: 4096,
-    };
-    // Some restricted keys reject responseMimeType — retry without it.
-    if (jsonMime) generationConfig.responseMimeType = 'application/json';
-    const res = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: extra ? `${prompt}\n\n${extra}` : prompt },
-                {
-                  inlineData: {
-                    mimeType: mimeType || 'image/jpeg',
-                    data: cleaned,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig,
-        }),
-      },
+    const fullPrompt = extra ? `${prompt}\n\n${extra}` : prompt;
+    const { res, data } = await postGenerateContent(
+      buildGenerateRequest(fullPrompt, cleaned, mimeType, { jsonMime }),
       45_000,
     );
-    const data = await res.json();
     if (!res.ok) {
       throw new Error(data?.error?.message || `Gemini solve HTTP ${res.status}`);
     }
@@ -276,7 +368,6 @@ export async function solveImageWithGemini({
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn('gemini vision solve failed', message);
-    // One more attempt without JSON mime if first path threw API restriction.
     if (/mime|JSON|INVALID_ARGUMENT|responseMimeType/i.test(message)) {
       try {
         const parsed = await callOnce(
@@ -302,38 +393,57 @@ export async function solveImageWithGemini({
   }
 }
 
-/** Startup smoke — proxy must not pretend Gemini is on when the key is Vision-only. */
+/** Startup smoke — Vertex ADC or AI Studio key (not Cloud Console API keys). */
 export async function smokeGeminiVisionSolve() {
   if (!isGeminiVisionSolveEnabled()) {
-    return { ok: false, error: 'GEMINI_API_KEY missing or COZBIL_PROXY_GEMINI_FIRST=0' };
+    return {
+      ok: false,
+      error: 'Set COZBIL_USE_VERTEX=1 (preferred) or GEMINI_API_KEY; COZBIL_PROXY_GEMINI_FIRST≠0',
+    };
   }
-  const key = process.env.GEMINI_API_KEY.trim();
-  const model =
-    process.env.GEMINI_SOLVE_MODEL?.trim() ||
-    process.env.GEMINI_OCR_MODEL?.trim() ||
-    'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   try {
+    const model = solveModel();
+    let url;
+    let headers = { 'Content-Type': 'application/json' };
+    if (useVertexForProxy()) {
+      const project = vertexProjectId();
+      const location = vertexLocation();
+      url =
+        `https://${location}-aiplatform.googleapis.com/v1/projects/${project}` +
+        `/locations/${location}/publishers/google/models/${model}:generateContent`;
+      headers = {
+        ...headers,
+        Authorization: `Bearer ${vertexAccessToken()}`,
+      };
+    } else {
+      const key = process.env.GEMINI_API_KEY.trim();
+      url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    }
     const res = await fetchWithTimeout(
       url,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: '{"ok":true}' }] }],
+          contents: [{ role: 'user', parts: [{ text: 'Reply with one word: ok' }] }],
         }),
       },
-      20_000,
+      25_000,
     );
     const data = await res.json();
     if (!res.ok) {
-      return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+      return {
+        ok: false,
+        error: data?.error?.message || `HTTP ${res.status}`,
+        transport: useVertexForProxy() ? 'vertex' : 'api_key',
+      };
     }
-    return { ok: true };
+    return { ok: true, transport: useVertexForProxy() ? 'vertex' : 'api_key', model };
   } catch (err) {
     return {
       ok: false,
       error: err instanceof Error ? err.message : 'smoke_failed',
+      transport: useVertexForProxy() ? 'vertex' : 'api_key',
     };
   }
 }
