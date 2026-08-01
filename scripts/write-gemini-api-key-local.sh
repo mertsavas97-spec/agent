@@ -14,6 +14,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/apps/mobile/.env.local"
 PROJECT="${GCP_PROJECT_ID:-cozbil-dev-f9583}"
 SMOKE_BODY="${TMPDIR:-/tmp}/cozbil-gemini-smoke.json"
+CREATE_ERR="${TMPDIR:-/tmp}/cozbil-gemini-key-create.err"
+CREATE_OUT="${TMPDIR:-/tmp}/cozbil-gemini-key-create.out"
 
 gemini_smoke() {
   local key="$1"
@@ -28,25 +30,101 @@ gemini_smoke() {
   [[ "$http" == "200" ]]
 }
 
+key_string_for_uid() {
+  local uid="$1"
+  local k
+  k="$(
+    gcloud services api-keys get-key-string "$uid" \
+      --project="$PROJECT" \
+      --format='value(keyString)' 2>/dev/null || true
+  )"
+  k="${k#keyString: }"
+  echo "$k" | tr -d '[:space:]'
+}
+
+# Create unrestricted key (Generative Language + Vision both work).
+# Dual --api-target often fails or blocks Gemini; dogfood wants unrestricted.
 create_gemini_key() {
   local name="cozbil-gemini-phone-$(date +%Y%m%d-%H%M%S)"
-  echo "==> Yeni API key: $name (Generative Language + Vision)" >&2
-  local created
-  created="$(
-    gcloud services api-keys create \
-      --display-name="$name" \
-      --api-target=service=generativelanguage.googleapis.com \
-      --api-target=service=vision.googleapis.com \
-      --project="$PROJECT" \
-      --format='value(keyString)' 2>/dev/null \
-    || gcloud services api-keys create \
-      --display-name="$name" \
-      --project="$PROJECT" \
-      --format='value(keyString)'
+  local key_line uid_line
+  echo "==> Yeni API key: $name (kısıtsız — Generative Language için)" >&2
+
+  # Prefer sync create; capture stderr for the owner.
+  if ! gcloud services api-keys create \
+    --display-name="$name" \
+    --project="$PROJECT" \
+    --format='value(keyString)' >"$CREATE_OUT" 2>"$CREATE_ERR"; then
+    echo "HATA: gcloud api-keys create başarısız:" >&2
+    cat "$CREATE_ERR" >&2 || true
+    return 1
+  fi
+
+  key_line="$(tr -d '[:space:]' <"$CREATE_OUT")"
+  key_line="${key_line#keyString: }"
+  if [[ -n "$key_line" && "$key_line" == AIza* ]]; then
+    echo "$key_line"
+    return 0
+  fi
+
+  # keyString not in create response — resolve by display name
+  sleep 2
+  uid_line="$(
+    gcloud services api-keys list --project="$PROJECT" \
+      --filter="displayName:$name" \
+      --format='value(uid)' 2>/dev/null | head -n 1 | tr -d '[:space:]'
   )"
-  created="${created#keyString: }"
-  created="$(echo "$created" | tr -d '[:space:]')"
-  echo "$created"
+  if [[ -n "$uid_line" ]]; then
+    echo "==> list→get-key-string: $uid_line" >&2
+    key_line="$(key_string_for_uid "$uid_line")"
+    if [[ -n "$key_line" && "$key_line" == AIza* ]]; then
+      echo "$key_line"
+      return 0
+    fi
+  fi
+
+  echo "HATA: key oluşturuldu ama keyString alınamadı." >&2
+  head -c 500 "$CREATE_OUT" >&2 || true
+  echo "" >&2
+  cat "$CREATE_ERR" >&2 || true
+  return 1
+}
+
+# Existing Vision-only dogfood key → clear restrictions so Gemini works too.
+lift_existing_key_restrictions() {
+  echo "==> Mevcut cozbil/vision key kısıtları kaldırılıyor (Gemini için)…" >&2
+  local uid name
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    uid="${row%%$'\t'*}"
+    uid="${uid%% *}"
+    name="${row#*$'\t'}"
+    [[ -z "$uid" ]] && continue
+    echo "==> update --clear-restrictions: $uid ($name)" >&2
+    if gcloud services api-keys update "$uid" \
+      --clear-restrictions \
+      --project="$PROJECT" >/dev/null 2>"$CREATE_ERR"; then
+      local k
+      k="$(key_string_for_uid "$uid")"
+      if [[ -n "$k" && "$k" == AIza* ]]; then
+        if gemini_smoke "$k"; then
+          echo "$k"
+          return 0
+        fi
+        echo "  (kısıt kalktı ama smoke fail — sonraki key)" >&2
+        head -c 200 "$SMOKE_BODY" 2>/dev/null >&2 || true
+        echo "" >&2
+      fi
+    else
+      echo "  (update fail)" >&2
+      head -c 240 "$CREATE_ERR" >&2 || true
+      echo "" >&2
+    fi
+  done < <(
+    gcloud services api-keys list --project="$PROJECT" \
+      --format='value(uid,displayName)' 2>/dev/null \
+      | grep -iE 'vision|gemini|generative|cozbil' || true
+  )
+  return 1
 }
 
 if ! command -v gcloud >/dev/null 2>&1; then
@@ -64,14 +142,20 @@ echo "==> project: $PROJECT"
 echo "==> account: $ACCOUNT"
 gcloud config set project "$PROJECT" >/dev/null
 
-echo "==> Generative Language API enable (idempotent)"
-gcloud services enable generativelanguage.googleapis.com --project="$PROJECT" >/dev/null || true
+echo "==> API enable (idempotent): Generative Language + API Keys"
+gcloud services enable \
+  generativelanguage.googleapis.com \
+  apikeys.googleapis.com \
+  --project="$PROJECT" >/dev/null || true
+
+# Quota project hint (ADC mismatch warning)
+gcloud auth application-default set-quota-project "$PROJECT" >/dev/null 2>&1 || true
 
 CANDIDATES=()
 
-# Optional: force brand-new key (skip reuse)
+# Optional: force brand-new / lift path (skip reuse of known-bad Vision key as-is)
 if [[ "${FORCE_NEW_GEMINI_KEY:-}" == "1" ]]; then
-  echo "==> FORCE_NEW_GEMINI_KEY=1 — mevcut key atlanıyor"
+  echo "==> FORCE_NEW_GEMINI_KEY=1 — mevcut key smoke atlanıyor; create/lift"
 else
   # 1) Secret Manager
   for SECRET_NAME in GEMINI_API_KEY GOOGLE_GENERATIVE_AI_API_KEY; do
@@ -89,8 +173,7 @@ else
     fi
   done
 
-  # 2) Existing keys — ONLY gemini/generative names (NOT bare "cozbil":
-  #    that matches Vision-only cozbil-vision-phone-* and fails smoke 400)
+  # 2) Existing keys — gemini/generative names only (not bare cozbil-vision)
   echo "==> Mevcut Gemini/generative API key listeleniyor…"
   while IFS= read -r row; do
     [[ -z "$row" ]] && continue
@@ -98,13 +181,7 @@ else
     uid="${uid%% *}"
     [[ -z "$uid" ]] && continue
     echo "==> get-key-string: $uid"
-    k="$(
-      gcloud services api-keys get-key-string "$uid" \
-        --project="$PROJECT" \
-        --format='value(keyString)' 2>/dev/null || true
-    )"
-    k="${k#keyString: }"
-    k="$(echo "$k" | tr -d '[:space:]')"
+    k="$(key_string_for_uid "$uid")"
     if [[ -n "$k" && "$k" == AIza* ]]; then
       CANDIDATES+=("$k")
     fi
@@ -116,7 +193,6 @@ else
 fi
 
 KEY=""
-# bash 3.2 + set -u: empty array for-loop is unsafe — guard length
 if ((${#CANDIDATES[@]} > 0)); then
   for candidate in "${CANDIDATES[@]}"; do
     [[ -z "$candidate" || "$candidate" != AIza* ]] && continue
@@ -126,28 +202,50 @@ if ((${#CANDIDATES[@]} > 0)); then
       echo "✓ Gemini smoke OK (mevcut key)"
       break
     fi
-    echo "  (aday fail — Vision-only / kısıtlı; sonraki aday veya yeni key)"
+    echo "  (aday fail — Vision-only / kısıtlı; sonraki aday)"
     head -c 240 "$SMOKE_BODY" 2>/dev/null >&2 || true
     echo "" >&2
   done
 fi
 
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-  KEY="$(create_gemini_key)"
-  if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-    echo "HATA: Gemini API key oluşturulamadı." >&2
-    echo "Konsol: APIs & Services → Credentials → Create API key (Generative Language)." >&2
-    exit 1
+  if KEY="$(create_gemini_key)"; then
+    :
+  else
+    KEY=""
   fi
-  echo "==> Gemini smoke (yeni key)…"
-  if ! gemini_smoke "$KEY"; then
-    echo "HATA: Yeni key smoke fail — Generative Language API / kota kontrol et." >&2
-    head -c 400 "$SMOKE_BODY" 2>/dev/null >&2 || true
-    echo "" >&2
-    exit 1
-  fi
-  echo "✓ Gemini smoke OK (yeni key)"
 fi
+
+if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
+  if KEY="$(lift_existing_key_restrictions)"; then
+    echo "✓ Gemini smoke OK (kısıt kaldırıldı)"
+  else
+    KEY=""
+  fi
+fi
+
+if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
+  echo "HATA: Gemini API key alınamadı." >&2
+  echo "" >&2
+  echo "Elle (AI Studio — en hızlı):" >&2
+  echo "  1) https://aistudio.google.com/apikey  → Create API key (project: $PROJECT)" >&2
+  echo "  2) apps/mobile/.env.local içine ekle:" >&2
+  echo "       GEMINI_API_KEY=AIza...." >&2
+  echo "  3) bash scripts/phone-demo-proxy-mac.sh" >&2
+  echo "" >&2
+  echo "Veya GCP Console → APIs & Services → Credentials → Create API key" >&2
+  echo "  (Application restrictions: None; API restrictions: Don't restrict / Generative Language)" >&2
+  exit 1
+fi
+
+echo "==> Gemini smoke (yazmadan önce)…"
+if ! gemini_smoke "$KEY"; then
+  echo "HATA: Key var ama smoke fail." >&2
+  head -c 400 "$SMOKE_BODY" 2>/dev/null >&2 || true
+  echo "" >&2
+  exit 1
+fi
+echo "✓ Gemini smoke OK"
 
 umask 077
 touch "$OUT"
