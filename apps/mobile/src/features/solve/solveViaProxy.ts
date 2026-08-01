@@ -287,7 +287,7 @@ export async function callSolveQuestionViaProxy(input: {
           signal: controller.signal,
         }),
         remaining,
-        'proxy OCR',
+        'proxy solve',
       );
       input.onStage?.('solving');
       return response;

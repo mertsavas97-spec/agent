@@ -42,7 +42,7 @@ export type SolveClientRequest = Omit<SolveQuestionRequest, 'imagePath'> & {
   imagePath?: string;
   mimeType?: string;
   requestId: string;
-  /** Bounded local bytes for the development-only OCR proxy. */
+  /** Bounded local bytes for the development-only solve proxy (Vertex/Gemini first). */
   imageBase64?: string;
   /** Local camera/gallery URI sent as raw binary to avoid base64 expansion. */
   imageUri?: string;
@@ -74,7 +74,7 @@ export async function callSolveQuestion(
   ) {
     proxyAttempted = true;
     try {
-      console.info('solve: bounded OCR proxy', {
+      console.info('solve: phone proxy (Vertex/Gemini first)', {
         base: solveProxyBaseUrlForLog(),
       });
       request.onStage?.('ocr');
@@ -88,7 +88,7 @@ export async function callSolveQuestion(
         requestId: request.requestId,
         onStage: request.onStage,
       });
-      // Terminal OCR outcomes must not fall into Storage upload — that path
+      // Terminal outcomes must not fall into Storage upload — that path
       // hangs forever on flaky networks and leaves the UI stuck at ~99%.
       if (
         response.status === 'unsupported_type' ||
@@ -106,13 +106,22 @@ export async function callSolveQuestion(
         console.info('solve: proxy terminal', response.status, {
           subject: meta.detectedSubject ?? meta.subject ?? null,
           gemini: meta.gemini ?? null,
-          ocr:
+          preview:
             preview?.slice(0, 500)?.replace(/\s+/g, ' ') ||
-            '(proxy OCR önizlemesi yok — Mac’te phone-demo-proxy-mac.sh açık mı?)',
+            '(önizleme yok — Mac’te phone-demo-proxy-mac.sh + Vertex açık mı?)',
         });
         return normalizeTerminalProxyResponse(response, request.requestId);
       }
       if (isUsableResponse(response)) {
+        const meta = response as {
+          gemini?: { status?: string; error?: string | null; enabled?: boolean };
+          subject?: string;
+        };
+        console.info('solve: proxy solved', {
+          status: response.status,
+          subject: meta.subject ?? null,
+          gemini: meta.gemini ?? null,
+        });
         return response;
       }
       // Solved-without-answer / assisted tip — try authoritative backend below.
