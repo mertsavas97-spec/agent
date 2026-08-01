@@ -88,6 +88,8 @@ cd "$MOBILE"
 # Fresh native project so config plugins re-apply.
 rm -rf android
 npm ci
+# Bypass intermittent Gradle Plugin Portal resolve of foojay-resolver-convention.
+node scripts/patch-rn-gradle-foojay.js
 npx eas-cli build \
   --platform android \
   --profile production \

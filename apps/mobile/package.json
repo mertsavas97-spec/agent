@@ -52,6 +52,8 @@
     "ios:sim": "expo run:ios",
     "prebuild": "expo prebuild",
     "web": "expo start --web",
+    "postinstall": "node scripts/patch-rn-gradle-foojay.js",
+    "eas-build-post-install": "node scripts/patch-rn-gradle-foojay.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint app src --max-warnings 0",
     "test": "jest"
