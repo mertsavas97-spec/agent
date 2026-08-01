@@ -19,7 +19,7 @@ export async function runRewardedMultiBatchUnlock(): Promise<{
   rewarded: boolean;
   granted?: boolean;
   remainingToday?: number;
-  reason?: 'premium' | 'rewarded' | 'dismissed' | 'ads_deferred';
+  reason?: 'premium' | 'rewarded' | 'dismissed' | 'unavailable' | 'ads_deferred';
 }> {
   const isPremium = isPremiumAudience();
   const day = getAdDayCounters();
@@ -42,7 +42,11 @@ export async function runRewardedMultiBatchUnlock(): Promise<{
 
   const result = await getAdEngine().showRewarded();
   if (result !== 'rewarded') {
-    return { allowed: false, rewarded: false, reason: 'dismissed' };
+    return {
+      allowed: false,
+      rewarded: false,
+      reason: result === 'unavailable' ? 'unavailable' : 'dismissed',
+    };
   }
 
   markMultiBatchUnlock();

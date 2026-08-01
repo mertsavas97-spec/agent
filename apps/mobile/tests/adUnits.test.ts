@@ -1,4 +1,5 @@
 import {
+  COZBIL_IOS_LIVE_UNITS,
   GOOGLE_TEST_UNITS,
   adsStubForced,
   hasProductionAdUnits,
@@ -39,6 +40,22 @@ describe('ad units + engine readiness', () => {
     process.env.EXPO_PUBLIC_ADS_USE_TEST_UNITS = '1';
     expect(resolveAdUnits()).toEqual(GOOGLE_TEST_UNITS);
     expect(hasProductionAdUnits()).toBe(true);
+  });
+
+  it('defaults iOS live units to AdMob dashboard ids (owner screenshot)', () => {
+    delete process.env.EXPO_PUBLIC_ADS_USE_TEST_UNITS;
+    delete process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID;
+    delete process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS;
+    delete process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS;
+    delete process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS;
+    const units = resolveAdUnits();
+    expect(units.iosAppId).toBe(COZBIL_IOS_LIVE_UNITS.iosAppId);
+    expect(units.bannerIos).toBe(COZBIL_IOS_LIVE_UNITS.bannerIos);
+    expect(units.interstitialIos).toBe(COZBIL_IOS_LIVE_UNITS.interstitialIos);
+    expect(units.rewardedIos).toBe(COZBIL_IOS_LIVE_UNITS.rewardedIos);
+    expect(units.iosAppId).toBe('ca-app-pub-4628962707131944~6347757786');
+    expect(units.rewardedIos).toBe('ca-app-pub-4628962707131944/8645460517');
+    expect(hasProductionAdUnits(units)).toBe(true);
   });
 
   it('forces stub when EXPO_PUBLIC_ADS_STUB=1', () => {

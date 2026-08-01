@@ -60,8 +60,8 @@ export function useExamModeChange(options: UseExamModeChangeOptions = {}) {
             Alert.alert(
               'Mod değişmedi',
               gate.reason === 'unavailable'
-                ? 'Reklam şu an yüklenemedi. Biraz sonra tekrar dene.'
-                : 'Reklamı tamamlayınca sınav modunu değiştirebilirsin.',
+                ? 'Ödüllü reklam yüklenemedi (ağ / AdMob doluluk). Biraz sonra tekrar dene.'
+                : 'Ödüllü reklamı sonuna kadar izleyince sınav modu değişir. Reklam açılmadıysa tekrar dene.',
             );
             return;
           }

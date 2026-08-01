@@ -25,3 +25,6 @@ bash scripts/phone-dev-build.sh metro
 
 Smoke: splash → home circle logo → YKS chip → mod değişince ödüllü reklam →
 çoklu soru reklam → banner → zoom/PC foto çöz.
+
+**OCR fix (2026-08-01):** colon kesir + üslü `x+y` + year sanitize — proxy’yi
+yeniden başlat (`phone-demo-proxy-mac.sh`) sonra aynı iki fotoğrafı dene.

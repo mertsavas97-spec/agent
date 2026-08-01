@@ -1,7 +1,8 @@
 # AdMob iOS — ÇözBil unit wiring
 
 **Publisher:** `pub-4628962707131944`  
-**Kaynak:** AdMob → ÇözBil iOS → Reklam birimleri (2026-07-30)
+**Kaynak:** AdMob → ÇözBil iOS → Reklam birimleri  
+**Owner teyit:** 2026-08-01 (App ID + Banner / Geçiş / Ödüllü ekran görüntüleri)
 
 ## Birimler (eas.json production)
 

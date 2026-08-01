@@ -27,6 +27,17 @@ export const GOOGLE_TEST_UNITS: AdUnitSet = {
   rewardedIos: 'ca-app-pub-3940256099942544/1712485313',
 };
 
+/**
+ * Canonical ÇözBil iOS live units (AdMob → Uygulama ayarları / Reklam birimleri).
+ * Confirmed 2026-08-01 against owner dashboard screenshots.
+ */
+export const COZBIL_IOS_LIVE_UNITS = {
+  iosAppId: 'ca-app-pub-4628962707131944~6347757786',
+  bannerIos: 'ca-app-pub-4628962707131944/1521648962',
+  interstitialIos: 'ca-app-pub-4628962707131944/3447425993',
+  rewardedIos: 'ca-app-pub-4628962707131944/8645460517',
+} as const;
+
 function env(key: string): string | null {
   const v = process.env[key]?.trim();
   return v && v.length > 0 ? v : null;
@@ -38,13 +49,36 @@ export function resolveAdUnits(): AdUnitSet {
   }
   return {
     androidAppId: env('EXPO_PUBLIC_ADMOB_ANDROID_APP_ID'),
-    iosAppId: env('EXPO_PUBLIC_ADMOB_IOS_APP_ID'),
+    // iOS defaults keep phone-demo Metro builds live-ready without empty env.
+    iosAppId: env('EXPO_PUBLIC_ADMOB_IOS_APP_ID') ?? COZBIL_IOS_LIVE_UNITS.iosAppId,
     bannerAndroid: env('EXPO_PUBLIC_ADMOB_BANNER_ANDROID'),
-    bannerIos: env('EXPO_PUBLIC_ADMOB_BANNER_IOS'),
+    bannerIos: env('EXPO_PUBLIC_ADMOB_BANNER_IOS') ?? COZBIL_IOS_LIVE_UNITS.bannerIos,
     interstitialAndroid: env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID'),
-    interstitialIos: env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS'),
+    interstitialIos:
+      env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS') ?? COZBIL_IOS_LIVE_UNITS.interstitialIos,
     rewardedAndroid: env('EXPO_PUBLIC_ADMOB_REWARDED_ANDROID'),
-    rewardedIos: env('EXPO_PUBLIC_ADMOB_REWARDED_IOS'),
+    rewardedIos:
+      env('EXPO_PUBLIC_ADMOB_REWARDED_IOS') ?? COZBIL_IOS_LIVE_UNITS.rewardedIos,
+  };
+}
+
+/** Safe for Metro logs — full unit ids (not secrets). */
+export function diagnoseAdsConfig(): {
+  stub: boolean;
+  liveReady: boolean;
+  nativeLinked: boolean;
+  iosAppId: string | null;
+  rewardedIos: string | null;
+  bannerIos: string | null;
+} {
+  const units = resolveAdUnits();
+  return {
+    stub: adsStubForced(),
+    liveReady: isLiveAdsDeliveryReady(units),
+    nativeLinked: isAdMobNativeLinked(),
+    iosAppId: units.iosAppId,
+    rewardedIos: units.rewardedIos,
+    bannerIos: units.bannerIos,
   };
 }
 

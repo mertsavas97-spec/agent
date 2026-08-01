@@ -24,11 +24,15 @@ function mockCreateFakeFullscreenAd() {
       mockLoad();
       queueMicrotask(() => {
         for (const cb of listeners.get('loaded') ?? []) cb();
+      });
+    },
+    async show() {
+      await mockShow();
+      queueMicrotask(() => {
         for (const cb of listeners.get('earned') ?? []) cb({ amount: 1 });
         for (const cb of listeners.get('closed') ?? []) cb();
       });
     },
-    show: mockShow,
   };
 }
 
@@ -66,9 +70,34 @@ describe('tryCreateAdMobEngine', () => {
     expect(mockInitialize).toHaveBeenCalled();
     expect(mockSetRequestConfiguration).toHaveBeenCalledWith(
       expect.objectContaining({
-        tagForUnderAgeOfConsent: true,
+        tagForUnderAgeOfConsent: false,
         maxAdContentRating: 'PG',
       }),
     );
+    expect(mockShow).toHaveBeenCalled();
+  });
+
+  it('maps load failures to unavailable (not dismissed)', async () => {
+    const failing = {
+      addAdEventListener(event: string, cb: (p?: unknown) => void) {
+        if (event === 'error') {
+          queueMicrotask(() => cb(new Error('no-fill')));
+        }
+        return () => undefined;
+      },
+      load() {
+        mockLoad();
+      },
+      show: mockShow,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ads = require('react-native-google-mobile-ads');
+    const spy = jest
+      .spyOn(ads.RewardedAd, 'createForAdRequest')
+      .mockReturnValue(failing);
+
+    const engine = tryCreateAdMobEngine(GOOGLE_TEST_UNITS);
+    await expect(engine!.showRewarded()).resolves.toBe('unavailable');
+    spy.mockRestore();
   });
 });
