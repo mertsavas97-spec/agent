@@ -1,55 +1,29 @@
-# AdMob iOS — ÇözBil unit wiring
+# AdMob iOS + Android — ÇözBil unit wiring
 
 **Publisher:** `pub-4628962707131944`  
-**Kaynak:** AdMob → ÇözBil iOS → Reklam birimleri  
 **Owner teyit:** 2026-08-01 (App ID + Banner / Geçiş / Ödüllü ekran görüntüleri)
 
-## Birimler (eas.json production)
+## iOS birimleri
 
-| Format | AdMob adı | Unit ID |
-|--------|-----------|---------|
-| Banner | Banner | `ca-app-pub-4628962707131944/1521648962` |
-| Interstitial | Geçiş | `ca-app-pub-4628962707131944/3447425993` |
-| Rewarded | Ödüllü | `ca-app-pub-4628962707131944/8645460517` |
+| Format | Unit ID |
+|--------|---------|
+| App ID | `ca-app-pub-4628962707131944~6347757786` |
+| Banner | `ca-app-pub-4628962707131944/1521648962` |
+| Interstitial | `ca-app-pub-4628962707131944/3447425993` |
+| Rewarded | `ca-app-pub-4628962707131944/8645460517` |
 
-Env keys: `EXPO_PUBLIC_ADMOB_BANNER_IOS` / `_INTERSTITIAL_IOS` / `_REWARDED_IOS`.
+## Android birimleri
 
-## Zorunlu: Uygulama kimliği (App ID)
+| Format | Unit ID |
+|--------|---------|
+| App ID | `ca-app-pub-4628962707131944~2989418548` |
+| Banner | `ca-app-pub-4628962707131944/6509861155` |
+| Interstitial | `ca-app-pub-4628962707131944/5332510855` |
+| Rewarded | `ca-app-pub-4628962707131944/7655421864` |
 
-```
-ca-app-pub-4628962707131944~6347757786
-```
+Kaynak: `eas.json` production env + `COZBIL_*_LIVE_UNITS` in `adUnits.ts` + Mac build scripts.
 
-`eas.json` production + Mac script varsayılanında gömülü.
-
-## Mac IPA (birimler + push branch)
-
-```bash
-cd ~/agent
-git fetch origin && git checkout cursor/admob-ios-units-2914 && git pull
-
-export EXPO_PUBLIC_FIREBASE_API_KEY='…'
-export EXPO_PUBLIC_FIREBASE_APP_ID='…'
-# AdMob App ID + units eas.json / script varsayılanından gelir
-
-bash scripts/mac-build-ipa-with-push.sh
-```
-
-## Android
-
-Henüz live birim yoksa AAB yine alınır; Android’de reklam UI kapalı kalır
-(`hasProductionAdUnits` platforma özel).
-
-AdMob’da Android app + Banner / Geçiş / Ödüllü oluşturunca `.env.local`:
-
-```
-EXPO_PUBLIC_ADMOB_ANDROID_APP_ID=ca-app-pub-…~…
-EXPO_PUBLIC_ADMOB_BANNER_ANDROID=…
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=…
-EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=…
-```
-
-Local AAB (1.0.2 / versionCode 18):
+## Local AAB (1.0.2 / versionCode 18)
 
 ```bash
 cd ~/agent && git pull
@@ -59,10 +33,6 @@ bash scripts/mac-build-aab-local.sh
 
 ## app-ads.txt
 
-Marketing / developer website’te `app-ads.txt` satırı:
-
 ```
 google.com, pub-4628962707131944, DIRECT, f08c47fec0942fa0
 ```
-
-Örn. `https://mertsavas97-spec.github.io/app-ads.txt` canlıysa ASC Marketing URL bu domain köküyle uyumlu olmalı.

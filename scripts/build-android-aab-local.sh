@@ -11,7 +11,7 @@
 #   export EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=…
 #   bash scripts/build-android-aab-local.sh
 #
-# Prefer: bash scripts/mac-build-aab-local.sh  (loads .env.local)
+# Prefer: bash scripts/mac-build-aab-local.sh  (loads .env.local + Android AdMob defaults)
 
 set -euo pipefail
 
@@ -42,14 +42,7 @@ mkdir -p "$EAS_LOCAL_BUILD_WORKINGDIR"
 
 echo "==> version: $(node -p "require('$MOBILE/app.json').expo.version") / versionCode $(node -p "require('$MOBILE/app.json').expo.android.versionCode")"
 echo "==> AAB out: $OUT"
-
-if [[ -z "${EXPO_PUBLIC_ADMOB_ANDROID_APP_ID:-}" || -z "${EXPO_PUBLIC_ADMOB_BANNER_ANDROID:-}" ]]; then
-  echo ""
-  echo "UYARI: Android AdMob birimleri yok — AAB alınır ama Android'de banner/ödüllü reklam görünmez."
-  echo "  AdMob'da Android uygulama + Banner/Geçiş/Ödüllü oluştur → .env.local'e yaz."
-  echo "  (iOS birimleri Android'de kullanılmaz.)"
-  echo ""
-fi
+echo "==> AdMob Android: ${EXPO_PUBLIC_ADMOB_ANDROID_APP_ID:-"(default from code/eas.json)"}"
 
 cd "$MOBILE"
 # Fresh native project so config plugins re-apply.

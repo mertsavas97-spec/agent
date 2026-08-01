@@ -40,6 +40,17 @@ export const COZBIL_IOS_LIVE_UNITS = {
   rewardedIos: 'ca-app-pub-4628962707131944/8645460517',
 } as const;
 
+/**
+ * Canonical ÇözBil Android live units (AdMob → Uygulama ayarları / Reklam birimleri).
+ * Confirmed 2026-08-01 against owner dashboard screenshots.
+ */
+export const COZBIL_ANDROID_LIVE_UNITS = {
+  androidAppId: 'ca-app-pub-4628962707131944~2989418548',
+  bannerAndroid: 'ca-app-pub-4628962707131944/6509861155',
+  interstitialAndroid: 'ca-app-pub-4628962707131944/5332510855',
+  rewardedAndroid: 'ca-app-pub-4628962707131944/7655421864',
+} as const;
+
 function env(key: string): string | null {
   const v = process.env[key]?.trim();
   return v && v.length > 0 ? v : null;
@@ -50,15 +61,19 @@ export function resolveAdUnits(): AdUnitSet {
     return GOOGLE_TEST_UNITS;
   }
   return {
-    androidAppId: env('EXPO_PUBLIC_ADMOB_ANDROID_APP_ID'),
-    // iOS defaults keep phone-demo Metro builds live-ready without empty env.
+    androidAppId:
+      env('EXPO_PUBLIC_ADMOB_ANDROID_APP_ID') ?? COZBIL_ANDROID_LIVE_UNITS.androidAppId,
     iosAppId: env('EXPO_PUBLIC_ADMOB_IOS_APP_ID') ?? COZBIL_IOS_LIVE_UNITS.iosAppId,
-    bannerAndroid: env('EXPO_PUBLIC_ADMOB_BANNER_ANDROID'),
+    bannerAndroid:
+      env('EXPO_PUBLIC_ADMOB_BANNER_ANDROID') ?? COZBIL_ANDROID_LIVE_UNITS.bannerAndroid,
     bannerIos: env('EXPO_PUBLIC_ADMOB_BANNER_IOS') ?? COZBIL_IOS_LIVE_UNITS.bannerIos,
-    interstitialAndroid: env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID'),
+    interstitialAndroid:
+      env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID') ??
+      COZBIL_ANDROID_LIVE_UNITS.interstitialAndroid,
     interstitialIos:
       env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS') ?? COZBIL_IOS_LIVE_UNITS.interstitialIos,
-    rewardedAndroid: env('EXPO_PUBLIC_ADMOB_REWARDED_ANDROID'),
+    rewardedAndroid:
+      env('EXPO_PUBLIC_ADMOB_REWARDED_ANDROID') ?? COZBIL_ANDROID_LIVE_UNITS.rewardedAndroid,
     rewardedIos:
       env('EXPO_PUBLIC_ADMOB_REWARDED_IOS') ?? COZBIL_IOS_LIVE_UNITS.rewardedIos,
   };

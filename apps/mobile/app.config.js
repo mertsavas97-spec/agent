@@ -63,18 +63,39 @@ function hasLiveIosAdUnits() {
   );
 }
 
+function hasLiveAndroidAdUnits() {
+  return Boolean(
+    process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID?.trim() &&
+      process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID?.trim() &&
+      process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID?.trim(),
+  );
+}
+
 /** Real unit ids must pair with real AdMob App ID (~), not Google sample. */
 function missingProductionAdMobAppId() {
   if (process.env.EXPO_PUBLIC_ADS_STUB === '1') return null;
   if (process.env.EXPO_PUBLIC_ADS_USE_TEST_UNITS === '1') return null;
-  if (!hasLiveIosAdUnits()) return null;
-  const iosAppId = process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID?.trim() ?? '';
-  if (!iosAppId || iosAppId.includes(GOOGLE_TEST_PUBLISHER)) {
-    return 'EXPO_PUBLIC_ADMOB_IOS_APP_ID';
+
+  if (hasLiveIosAdUnits()) {
+    const iosAppId = process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID?.trim() ?? '';
+    if (!iosAppId || iosAppId.includes(GOOGLE_TEST_PUBLISHER)) {
+      return 'EXPO_PUBLIC_ADMOB_IOS_APP_ID';
+    }
+    if (!iosAppId.includes('~')) {
+      return 'EXPO_PUBLIC_ADMOB_IOS_APP_ID (must be App ID with ~, not a unit / id)';
+    }
   }
-  if (!iosAppId.includes('~')) {
-    return 'EXPO_PUBLIC_ADMOB_IOS_APP_ID (must be App ID with ~, not a unit / id)';
+
+  if (hasLiveAndroidAdUnits()) {
+    const androidAppId = process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID?.trim() ?? '';
+    if (!androidAppId || androidAppId.includes(GOOGLE_TEST_PUBLISHER)) {
+      return 'EXPO_PUBLIC_ADMOB_ANDROID_APP_ID';
+    }
+    if (!androidAppId.includes('~')) {
+      return 'EXPO_PUBLIC_ADMOB_ANDROID_APP_ID (must be App ID with ~, not a unit / id)';
+    }
   }
+
   return null;
 }
 
@@ -129,8 +150,8 @@ module.exports = () => {
     const admobAppId = missingProductionAdMobAppId();
     if (admobAppId) {
       throw new Error(
-        `[EAS production] Live iOS AdMob units are set but ${admobAppId} is missing/test. ` +
-          'AdMob → Apps → ÇözBil iOS → App settings → copy App ID (ca-app-pub-…~…). ' +
+        `[EAS production] Live AdMob units are set but ${admobAppId} is missing/test. ` +
+          'AdMob → Apps → ÇözBil → App settings → copy App ID (ca-app-pub-…~…). ' +
           'See docs/store/admob-ios-units.md.',
       );
     }
