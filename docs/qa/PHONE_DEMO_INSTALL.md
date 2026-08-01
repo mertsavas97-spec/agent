@@ -21,8 +21,11 @@ Key ekrana yazılmaz; dosya gitignore’da — commit etme.
 
 Cloud Functions AI sıkça 40s+ sürüp timeout oluyor. Telefonda hızlı deneme:
 
+Proxy **önce fotoğrafı Gemini’ye** verir (kalıcı yol); OCR+yerel solver yedek.
+
 ```bash
 bash scripts/write-vision-api-key-local.sh   # bir kez (gcloud)
+# İsteğe bağlı: apps/mobile/.env.local içine GEMINI_API_KEY=... (yoksa Vision key kullanılır)
 bash scripts/phone-demo-proxy-mac.sh
 # İlk kurulumda sharp yoksa script npm install yapar.
 # Elle: cd scripts/solve-proxy && npm install
@@ -36,8 +39,8 @@ bash scripts/phone-dev-build.sh metro
 packager IP’sinden `http://<mac-ip>:8787` + token `cozbil-phone-demo` türetir
 (env / `solveProxy.dev.local.ts` boş olsa bile).
 
-Metro logunda `solve: bounded OCR proxy` + LAN `base` görmelisin. `proxy off` ise
-`metroHost: null` demektir (tunnel/USB özel durum) — o zaman:
+Metro: `solve: bounded OCR proxy`. Proxy log: `solve-proxy gemini-vision`.
+`proxy off` ise `metroHost: null` demektir (tunnel/USB özel durum) — o zaman:
 
 ```bash
 bash scripts/phone-demo-proxy-mac.sh   # .env.local + solveProxy.dev.local.ts yazar
