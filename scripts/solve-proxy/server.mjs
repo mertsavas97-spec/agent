@@ -599,7 +599,11 @@ server.listen(PORT, '0.0.0.0', async () => {
     const smoke = await smokeGeminiVisionSolve();
     geminiSmokeOk = smoke.ok;
     if (smoke.ok) {
-      console.info('solve-proxy gemini smoke OK');
+      console.info(
+        'solve-proxy gemini smoke OK',
+        smoke.transport || '',
+        smoke.model || '',
+      );
     } else {
       console.error(
         'solve-proxy gemini smoke FAIL:',
