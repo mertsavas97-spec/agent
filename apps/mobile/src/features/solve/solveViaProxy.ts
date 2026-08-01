@@ -180,6 +180,7 @@ async function postSolveOnce(input: {
     ocrPreview?: string;
     detectedSubject?: string;
     topicId?: string | null;
+    gemini?: { status?: string; error?: string | null; enabled?: boolean };
   };
   try {
     data = JSON.parse(text) as typeof data;
@@ -221,7 +222,11 @@ async function postSolveOnce(input: {
     return {
       ...rest,
       ...(ocrPreview ? { ocrPreview } : {}),
-    } as SolveQuestionResponse & { ocrPreview?: string };
+      ...(data.gemini ? { gemini: data.gemini } : {}),
+    } as SolveQuestionResponse & {
+      ocrPreview?: string;
+      gemini?: { status?: string; error?: string | null; enabled?: boolean };
+    };
   }
   throw Object.assign(new Error('proxy_invalid_response'), { code: 'functions/internal' });
 }

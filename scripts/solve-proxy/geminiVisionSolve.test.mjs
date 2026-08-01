@@ -65,4 +65,6 @@ try {
   else process.env.COZBIL_PROXY_GEMINI_FIRST = prevFlag;
 }
 
+assert.equal(typeof (await import('./geminiVisionSolve.mjs')).smokeGeminiVisionSolve, 'function');
+
 console.log('geminiVisionSolve.test.mjs OK');

@@ -168,6 +168,12 @@ check(
 );
 
 check(
+  'live soft OCR alt mangling 8 33 (32) 7 +',
+  `8 33 (32) 7 + işleminin sonucu kaçtır? A) 2 10/23 B) 2 7/23 C) 3 10/23 D) 3 E) 4 7/23`,
+  { approx: 56 / 23, choice: 'A' },
+);
+
+check(
   'colon division must not prefer multiply false positive',
   `8/3 : (3/7 + 2/3)
 A) 184/63

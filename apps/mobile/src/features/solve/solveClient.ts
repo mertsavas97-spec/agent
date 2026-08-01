@@ -99,11 +99,13 @@ export async function callSolveQuestion(
           ocrPreview?: string;
           detectedSubject?: string;
           subject?: string;
+          gemini?: { status?: string; error?: string | null; enabled?: boolean };
         };
         const preview =
           typeof meta.ocrPreview === 'string' ? meta.ocrPreview : undefined;
         console.info('solve: proxy terminal', response.status, {
           subject: meta.detectedSubject ?? meta.subject ?? null,
+          gemini: meta.gemini ?? null,
           ocr:
             preview?.slice(0, 500)?.replace(/\s+/g, ' ') ||
             '(proxy OCR önizlemesi yok — Mac’te phone-demo-proxy-mac.sh açık mı?)',

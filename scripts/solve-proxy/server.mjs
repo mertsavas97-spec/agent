@@ -19,6 +19,7 @@ import {
 } from './examPipeline.mjs';
 import {
   isGeminiVisionSolveEnabled,
+  smokeGeminiVisionSolve,
   solveImageWithGemini,
 } from './geminiVisionSolve.mjs';
 import { ocrImageBase64, isGarbageOcrText } from './visionOcr.mjs';
@@ -41,6 +42,8 @@ const MAX_CONCURRENT_SOLVES = 3;
 const MAX_SOLVES_PER_MINUTE = 30;
 let activeSolves = 0;
 let recentSolveStarts = [];
+/** Set after listen smoke — health reports this. */
+let geminiSmokeOk = false;
 
 function validProxyToken(req) {
   const provided = String(req.headers['x-cozbil-proxy-token'] || '');
@@ -148,6 +151,7 @@ const server = http.createServer(async (req, res) => {
       ok: true,
       service: 'cozbil-solve-proxy',
       geminiVisionSolve: isGeminiVisionSolveEnabled(),
+      geminiSmokeOk: geminiSmokeOk,
     });
     return;
   }
@@ -291,94 +295,113 @@ const server = http.createServer(async (req, res) => {
       typeof input.subjectHint === 'string' ? input.subjectHint : null;
 
     // ── Primary: photo → Gemini (all exams / subjects). OCR solvers = fallback.
+    let geminiTrace = {
+      enabled: isGeminiVisionSolveEnabled(),
+      smokeOk: geminiSmokeOk,
+      status: 'skipped',
+      error: null,
+    };
     if (!ocrTextOverride && imageBase64 && imageBase64.length >= 80) {
-      const gemini = await solveImageWithGemini({
-        imageBase64,
-        mimeType,
-        examType: solveExam,
-        subjectHint: subjectHintRaw,
-      });
-      if (gemini?.ok && gemini.isQuestion && !gemini.unsupported) {
-        const answer = gemini.answer;
-        if (answer?.text || answer?.label) {
-          let subject = gemini.subject || 'unknown';
-          if (!isSubjectAllowedForExam(subject, solveExam)) {
-            subject =
-              solveExam === 'trafik'
-                ? 'traffic'
-                : subjectHintRaw && isSubjectAllowedForExam(subjectHintRaw, solveExam)
-                  ? subjectHintRaw
-                  : 'math';
-          }
-          const topicKey =
-            gemini.topicKey ||
-            (subject === 'math' || subject === 'geometry' ? 'kesir' : 'temel');
-          const classification = {
-            subject,
-            topicKey,
-            confidence: 'high',
-            needsConfirm: false,
-            score: 14,
-            alternatives: [],
-          };
-          const resolvedTopicId = topicIdFor(solveExam, subject, topicKey);
-          const ocrPreview =
-            (gemini.ocrText && gemini.ocrText.trim()) ||
-            '(gemini-vision — OCR atlandı)';
-          const steps =
-            gemini.steps?.length > 0
-              ? gemini.steps
-              : [
-                  {
-                    title: 'Cevap',
-                    body: answer.label
-                      ? `Doğru şık: ${answer.label}) ${answer.text || ''}`.trim()
-                      : `Sonuç: ${answer.text}`,
-                  },
-                ];
-          const payload = solvedPayload({
-            requestId,
-            topicId: resolvedTopicId,
-            subject,
-            steps,
-            ocrText: ocrPreview,
-            note:
-              'Fotoğraftan yapay zekâ ile adım adım çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
-            classification,
-            answer: {
-              text: String(answer.text ?? answer.label ?? ''),
-              ...(answer.label ? { label: String(answer.label) } : {}),
-            },
-            examHint: null,
-          });
-          const iso = assertPipelineIsolation(payload, solveExam);
-          if (iso.ok) {
-            console.info(
-              'solve-proxy gemini-vision',
-              solveExam,
+      if (!geminiTrace.enabled) {
+        geminiTrace.status = 'off';
+        console.warn(
+          'solve-proxy gemini-vision OFF — run: bash scripts/write-gemini-api-key-local.sh',
+        );
+      } else {
+        const gemini = await solveImageWithGemini({
+          imageBase64,
+          mimeType,
+          examType: solveExam,
+          subjectHint: subjectHintRaw,
+        });
+        if (gemini?.ok && gemini.isQuestion && !gemini.unsupported) {
+          const answer = gemini.answer;
+          if (answer?.text || answer?.label) {
+            let subject = gemini.subject || 'unknown';
+            if (!isSubjectAllowedForExam(subject, solveExam)) {
+              subject =
+                solveExam === 'trafik'
+                  ? 'traffic'
+                  : subjectHintRaw && isSubjectAllowedForExam(subjectHintRaw, solveExam)
+                    ? subjectHintRaw
+                    : 'math';
+            }
+            const topicKey =
+              gemini.topicKey ||
+              (subject === 'math' || subject === 'geometry' ? 'kesir' : 'temel');
+            const classification = {
               subject,
-              answer.label || answer.text,
+              topicKey,
+              confidence: 'high',
+              needsConfirm: false,
+              score: 14,
+              alternatives: [],
+            };
+            const resolvedTopicId = topicIdFor(solveExam, subject, topicKey);
+            const ocrPreview =
+              (gemini.ocrText && gemini.ocrText.trim()) ||
+              '(gemini-vision — OCR atlandı)';
+            const steps =
+              gemini.steps?.length > 0
+                ? gemini.steps
+                : [
+                    {
+                      title: 'Cevap',
+                      body: answer.label
+                        ? `Doğru şık: ${answer.label}) ${answer.text || ''}`.trim()
+                        : `Sonuç: ${answer.text}`,
+                    },
+                  ];
+            const payload = solvedPayload({
+              requestId,
+              topicId: resolvedTopicId,
+              subject,
+              steps,
+              ocrText: ocrPreview,
+              note:
+                'Fotoğraftan yapay zekâ ile adım adım çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
+              classification,
+              answer: {
+                text: String(answer.text ?? answer.label ?? ''),
+                ...(answer.label ? { label: String(answer.label) } : {}),
+              },
+              examHint: null,
+            });
+            const iso = assertPipelineIsolation(payload, solveExam);
+            if (iso.ok) {
+              geminiTrace.status = 'solved';
+              console.info(
+                'solve-proxy gemini-vision',
+                solveExam,
+                subject,
+                answer.label || answer.text,
+              );
+              send(res, 200, payload);
+              return;
+            }
+            geminiTrace.status = 'isolation_reject';
+            geminiTrace.error = iso.issues?.join('; ') || 'isolation';
+            console.warn(
+              'solve-proxy gemini isolation reject',
+              solveExam,
+              iso.issues,
             );
-            send(res, 200, payload);
-            return;
+          } else {
+            geminiTrace.status = 'no_answer';
+            console.warn('solve-proxy gemini no answer field — OCR fallback');
           }
-          console.warn(
-            'solve-proxy gemini isolation reject',
-            solveExam,
-            iso.issues,
+        } else if (gemini && !gemini.ok) {
+          geminiTrace.status = 'error';
+          geminiTrace.error = gemini.error || 'unknown';
+          console.warn('solve-proxy gemini miss', gemini.error);
+        } else if (gemini?.ok && (!gemini.isQuestion || gemini.unsupported)) {
+          geminiTrace.status = 'unsupported';
+          geminiTrace.error = gemini.unsupportedReason || 'unsupported';
+          console.info(
+            'solve-proxy gemini unsupported/not-question — trying OCR solvers',
+            gemini.unsupportedReason || '',
           );
         }
-      } else if (gemini && !gemini.ok) {
-        console.warn('solve-proxy gemini miss', gemini.error);
-      } else if (gemini?.ok && (!gemini.isQuestion || gemini.unsupported)) {
-        console.info(
-          'solve-proxy gemini unsupported/not-question — trying OCR solvers',
-          gemini.unsupportedReason || '',
-        );
-      } else if (!isGeminiVisionSolveEnabled()) {
-        console.warn(
-          'solve-proxy gemini-vision OFF (set GEMINI_API_KEY) — OCR fallback',
-        );
       }
     }
 
@@ -511,21 +534,29 @@ const server = http.createServer(async (req, res) => {
       'solve-proxy unsupported_type',
       solveExam,
       classified.subject,
+      'gemini=',
+      JSON.stringify(geminiTrace),
       JSON.stringify(ocrText.slice(0, 400)),
     );
+    const geminiHint =
+      geminiTrace.status === 'off' || geminiTrace.status === 'error'
+        ? ' (Gemini çözümü çalışmadı — Mac’te: bash scripts/write-gemini-api-key-local.sh && phone-demo-proxy-mac.sh)'
+        : '';
     send(res, 200, {
       status: 'unsupported_type',
       attemptId: `proxy-${requestId}`,
       userMessage:
-        classified.subject === 'turkish'
+        (classified.subject === 'turkish'
           ? 'Bu Türkçe sorusu okundu ama otomatik cevap üretilemedi. Şıkları da net görünecek şekilde yeniden dene.'
-          : 'Bu görseldeki soru şu an otomatik çözülemedi. Soruyu ve şıkları daha net görünecek şekilde yeniden dene.',
+          : 'Bu görseldeki soru şu an otomatik çözülemedi. Soruyu ve şıkları daha net görünecek şekilde yeniden dene.') +
+        geminiHint,
       quota: { remainingToday: 5, unlimited: false },
       debugOcrPreview: ocrText.slice(0, 2048),
       detectedSubject: classified.subject,
       topicId,
       examHint: hintForClient,
       solvedExamType: solveExam,
+      gemini: geminiTrace,
       classification: {
         subject: classified.subject,
         topicKey: classified.topicKey,
@@ -562,6 +593,23 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`cozbil-solve-proxy listening on :${PORT}`);
+  if (isGeminiVisionSolveEnabled()) {
+    const smoke = await smokeGeminiVisionSolve();
+    geminiSmokeOk = smoke.ok;
+    if (smoke.ok) {
+      console.info('solve-proxy gemini smoke OK');
+    } else {
+      console.error(
+        'solve-proxy gemini smoke FAIL:',
+        smoke.error,
+        '— Vision-only key? Run: bash scripts/write-gemini-api-key-local.sh',
+      );
+    }
+  } else {
+    console.warn(
+      'solve-proxy gemini-vision OFF at boot — OCR-only (weak). Set GEMINI_API_KEY.',
+    );
+  }
 });

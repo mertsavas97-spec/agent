@@ -377,6 +377,11 @@ export function repairSoftColonDivisionOcr(text) {
     /(\d)\s+(\d)\s+(\d)\d*\s*\(\+(\d)\)\s*(\d)\s+(\d)(\s*işleminin sonucu)/i,
     '$1/$2 : ($3/$5+$4/$6)$7',
   );
+  // Live soft: "8 33 (32) 7 +" → 8/3 : (3/7+2/3)
+  t = t.replace(
+    /(\d)\s+(\d)(\d)\s+\((\d)(\d)\)\s+(\d)\s*\+\s*(işleminin sonucu)/i,
+    '$1/$2 : ($3/$6+$5/$4) $7',
+  );
   // "8 3 (3 7 + 2 3)" or "8 3 : (3 7 + 2 3)"
   t = t.replace(
     /(\d)\s+(\d)\s*[:÷]?\s*\(\s*(\d)\s+(\d)\s*\+\s*(\d)\s+(\d)\s*\)/g,

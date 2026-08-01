@@ -212,7 +212,13 @@ export async function solveImageWithGemini({
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const prompt = geminiSolvePrompt(examType, subjectHint);
 
-  const callOnce = async (extra) => {
+  const callOnce = async (extra, { jsonMime = true } = {}) => {
+    const generationConfig = {
+      temperature: 0,
+      maxOutputTokens: 4096,
+    };
+    // Some restricted keys reject responseMimeType — retry without it.
+    if (jsonMime) generationConfig.responseMimeType = 'application/json';
     const res = await fetchWithTimeout(
       url,
       {
@@ -233,11 +239,7 @@ export async function solveImageWithGemini({
               ],
             },
           ],
-          generationConfig: {
-            temperature: 0,
-            maxOutputTokens: 4096,
-            responseMimeType: 'application/json',
-          },
+          generationConfig,
         }),
       },
       45_000,
@@ -251,26 +253,87 @@ export async function solveImageWithGemini({
         ?.map((p) => p?.text || '')
         .join('')
         .trim() || '';
+    if (!text) {
+      const block = data?.candidates?.[0]?.finishReason || data?.promptFeedback?.blockReason;
+      throw new Error(block ? `gemini_empty (${block})` : 'gemini_empty');
+    }
     return parseGeminiSolveResponse(text);
   };
 
   try {
-    let parsed = await callOnce(null);
+    let parsed = await callOnce(null, { jsonMime: true });
     if (!parsed.ok) {
       parsed = await callOnce(
         'ÖNCEKİ YANIT GEÇERSİZ JSON İÇERİYORDU. YALNIZCA tek geçerli JSON nesnesi döndür.',
+        { jsonMime: true },
       );
+    }
+    if (!parsed.ok) {
+      parsed = await callOnce(null, { jsonMime: false });
     }
     if (!parsed.ok) return { ok: false, error: parsed.error || 'parse_fail' };
     return parsed;
   } catch (err) {
-    console.warn(
-      'gemini vision solve failed',
-      err instanceof Error ? err.message : err,
-    );
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn('gemini vision solve failed', message);
+    // One more attempt without JSON mime if first path threw API restriction.
+    if (/mime|JSON|INVALID_ARGUMENT|responseMimeType/i.test(message)) {
+      try {
+        const parsed = await callOnce(
+          'YALNIZCA tek geçerli JSON nesnesi döndür.',
+          { jsonMime: false },
+        );
+        if (parsed.ok) return parsed;
+      } catch (retryErr) {
+        console.warn(
+          'gemini vision retry failed',
+          retryErr instanceof Error ? retryErr.message : retryErr,
+        );
+        return {
+          ok: false,
+          error: retryErr instanceof Error ? retryErr.message : 'gemini_solve_error',
+        };
+      }
+    }
     return {
       ok: false,
-      error: err instanceof Error ? err.message : 'gemini_solve_error',
+      error: message || 'gemini_solve_error',
+    };
+  }
+}
+
+/** Startup smoke — proxy must not pretend Gemini is on when the key is Vision-only. */
+export async function smokeGeminiVisionSolve() {
+  if (!isGeminiVisionSolveEnabled()) {
+    return { ok: false, error: 'GEMINI_API_KEY missing or COZBIL_PROXY_GEMINI_FIRST=0' };
+  }
+  const key = process.env.GEMINI_API_KEY.trim();
+  const model =
+    process.env.GEMINI_SOLVE_MODEL?.trim() ||
+    process.env.GEMINI_OCR_MODEL?.trim() ||
+    'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  try {
+    const res = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: '{"ok":true}' }] }],
+        }),
+      },
+      20_000,
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'smoke_failed',
     };
   }
 }

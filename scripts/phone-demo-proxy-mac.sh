@@ -55,16 +55,29 @@ if [[ -z "${GOOGLE_CLOUD_VISION_API_KEY:-}" ]]; then
   exit 1
 fi
 
-# Gemini Vision solve — same Google API key often works if Generative Language API enabled.
+# Gemini is required for reliable photo solve (Vision-only keys cannot call Gemini).
 if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  GEMINI_API_KEY="${GOOGLE_CLOUD_VISION_API_KEY}"
-  echo "==> GEMINI_API_KEY yok — Vision key ile Gemini solve denenecek"
+  if [[ -f "$ENV_LOCAL" ]] && grep -qE '^GEMINI_API_KEY=AIza' "$ENV_LOCAL" 2>/dev/null; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$ENV_LOCAL"
+    set +a
+  fi
 fi
-if [[ -n "${GEMINI_API_KEY:-}" ]]; then
-  echo "==> Gemini Vision solve: AÇIK (birincil yol)"
-else
-  echo "UYARI: GEMINI_API_KEY yok — yalnız OCR+yerel solver (zayıf)." >&2
+if [[ -z "${GEMINI_API_KEY:-}" ]]; then
+  echo "==> GEMINI_API_KEY yok — yazılıyor (Generative Language)…"
+  bash "$ROOT/scripts/write-gemini-api-key-local.sh"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_LOCAL"
+  set +a
 fi
+if [[ -z "${GEMINI_API_KEY:-}" ]]; then
+  echo "HATA: GEMINI_API_KEY yok. OCR-only moda düşme — solve kırılır." >&2
+  echo "bash scripts/write-gemini-api-key-local.sh" >&2
+  exit 1
+fi
+echo "==> Gemini Vision solve: AÇIK (birincil yol)"
 
 LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
 if [[ -z "$LAN_IP" ]]; then
