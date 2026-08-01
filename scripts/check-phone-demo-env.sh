@@ -36,6 +36,14 @@ if has_key EXPO_PUBLIC_GOOGLE_CLOUD_VISION_API_KEY; then
   soft "Vision key .env.local'de (yalnız Mac proxy; telefona gerekmez)"
 fi
 
+if has_key GEMINI_API_KEY || has_key EXPO_PUBLIC_GEMINI_API_KEY; then
+  pass "GEMINI_API_KEY .env.local'de (proxy birincil Vision solve)"
+elif has_key GOOGLE_CLOUD_VISION_API_KEY; then
+  soft "GEMINI_API_KEY yok — proxy Vision key ile Gemini deneyecek (Generative Language API açık olmalı)"
+else
+  soft "GEMINI_API_KEY yok — soft OCR+yerel solver (zayıf)"
+fi
+
 if [[ -f "$PROXY_TS" ]]; then
   if grep -q "url: \"http" "$PROXY_TS" && ! grep -q 'token: ""' "$PROXY_TS"; then
     pass "solveProxy.dev.local.ts dolu (Metro bundle yedek)"

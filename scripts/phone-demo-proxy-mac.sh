@@ -3,14 +3,16 @@
 #
 # Neden: Canlı Firestore solve sıkça 40–60s+ sürüyor veya takılıyor; ping 403
 # olsa bile Storage trigger "running" kalıp client timeout yiyebiliyor.
-# __DEV__ + proxy → telefonda saniyeler içinde çözüm (Vision OCR + aritmetik).
+# __DEV__ + proxy → fotoğrafı Gemini ile çöz (birincil); OCR+yerel solver yedek.
 #
 # Kullanım:
 #   bash scripts/phone-demo-proxy-mac.sh
 #   # sonra Metro’yu yeniden başlat:
 #   bash scripts/phone-dev-build.sh metro
 #
-# Gerekli: GOOGLE_CLOUD_VISION_API_KEY (env veya apps/mobile/.env.local)
+# Gerekli:
+#   GEMINI_API_KEY (birincil — yoksa Vision key ile dene)
+#   GOOGLE_CLOUD_VISION_API_KEY (OCR yedek; env veya apps/mobile/.env.local)
 
 set -euo pipefail
 
@@ -51,6 +53,17 @@ if [[ -z "${GOOGLE_CLOUD_VISION_API_KEY:-}" ]]; then
   echo "HATA: GOOGLE_CLOUD_VISION_API_KEY yok." >&2
   echo "bash scripts/write-vision-api-key-local.sh" >&2
   exit 1
+fi
+
+# Gemini Vision solve — same Google API key often works if Generative Language API enabled.
+if [[ -z "${GEMINI_API_KEY:-}" ]]; then
+  GEMINI_API_KEY="${GOOGLE_CLOUD_VISION_API_KEY}"
+  echo "==> GEMINI_API_KEY yok — Vision key ile Gemini solve denenecek"
+fi
+if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+  echo "==> Gemini Vision solve: AÇIK (birincil yol)"
+else
+  echo "UYARI: GEMINI_API_KEY yok — yalnız OCR+yerel solver (zayıf)." >&2
 fi
 
 LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
@@ -95,6 +108,8 @@ nohup env \
   COZBIL_PROXY_TOKEN="$TOKEN" \
   COZBIL_PROXY_ALLOW_LOOPBACK_IMAGES=1 \
   GOOGLE_CLOUD_VISION_API_KEY="$GOOGLE_CLOUD_VISION_API_KEY" \
+  GEMINI_API_KEY="${GEMINI_API_KEY:-}" \
+  COZBIL_PROXY_GEMINI_FIRST="${COZBIL_PROXY_GEMINI_FIRST:-1}" \
   SOLVE_PROXY_PORT="$PORT" \
   node server.mjs >"$LOG" 2>&1 &
 echo $! >/tmp/cozbil-phone-solve-proxy.pid
@@ -154,6 +169,7 @@ fi
 
 echo ""
 echo "✓ Proxy ayakta: $PROXY_URL"
+echo "✓ Gemini Vision solve: ${GEMINI_API_KEY:+AÇIK}${GEMINI_API_KEY:-KAPALI}"
 echo "✓ Env: .env.local + .env"
 echo "✓ Bundle: src/config/solveProxy.dev.local.ts"
 echo ""
@@ -161,7 +177,8 @@ echo "ŞİMDİ (zorunlu):"
 echo "  1) Metro’yu Ctrl+C ile DURDUR"
 echo "  2) bash scripts/phone-dev-build.sh metro"
 echo "  3) Telefonda uygulamayı kapat/aç"
-echo "  4) Logda ara:  solve: bounded OCR proxy"
+echo "  4) Metro: solve: bounded OCR proxy"
+echo "  5) Proxy log: solve-proxy gemini-vision   (tail -f $LOG)"
 echo ""
 echo "Hâlâ 'proxy off' ise: bash scripts/check-phone-demo-env.sh"
 echo "Durdurmak: kill \$(cat /tmp/cozbil-phone-solve-proxy.pid)"

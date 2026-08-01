@@ -1,9 +1,9 @@
 /**
- * Dogfood solve proxy — Vision OCR + arithmetic / verbal steps.
+ * Dogfood solve proxy — Gemini Vision solve first, OCR+local solvers fallback.
  * Used when Firebase Functions triggers/callables are blocked (org policy).
  *
  * Start: node scripts/solve-proxy/server.mjs
- * Needs: GOOGLE_CLOUD_VISION_API_KEY
+ * Needs: GEMINI_API_KEY (primary) + GOOGLE_CLOUD_VISION_API_KEY (OCR fallback)
  */
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
@@ -12,10 +12,15 @@ import { classifyOcr, topicIdFor, applySubjectHint } from './classifyOcr.mjs';
 import { detectExamHint } from './examHint.mjs';
 import {
   assertPipelineIsolation,
+  isSubjectAllowedForExam,
   mayRunMathSolver,
   normalizeExamType,
   resolveSolveExam,
 } from './examPipeline.mjs';
+import {
+  isGeminiVisionSolveEnabled,
+  solveImageWithGemini,
+} from './geminiVisionSolve.mjs';
 import { ocrImageBase64, isGarbageOcrText } from './visionOcr.mjs';
 import { tryVerbalSolve } from './verbalSolve.mjs';
 import {
@@ -139,7 +144,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   if (req.method === 'GET' && (req.url === '/' || req.url === '/health')) {
-    send(res, 200, { ok: true, service: 'cozbil-solve-proxy' });
+    send(res, 200, {
+      ok: true,
+      service: 'cozbil-solve-proxy',
+      geminiVisionSolve: isGeminiVisionSolveEnabled(),
+    });
     return;
   }
   const isJsonSolve = req.method === 'POST' && req.url === '/solve';
@@ -276,6 +285,103 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    const profileExam = normalizeExamType(examType);
+    const solveExam = resolveSolveExam(profileExam);
+    const subjectHintRaw =
+      typeof input.subjectHint === 'string' ? input.subjectHint : null;
+
+    // ── Primary: photo → Gemini (all exams / subjects). OCR solvers = fallback.
+    if (!ocrTextOverride && imageBase64 && imageBase64.length >= 80) {
+      const gemini = await solveImageWithGemini({
+        imageBase64,
+        mimeType,
+        examType: solveExam,
+        subjectHint: subjectHintRaw,
+      });
+      if (gemini?.ok && gemini.isQuestion && !gemini.unsupported) {
+        const answer = gemini.answer;
+        if (answer?.text || answer?.label) {
+          let subject = gemini.subject || 'unknown';
+          if (!isSubjectAllowedForExam(subject, solveExam)) {
+            subject =
+              solveExam === 'trafik'
+                ? 'traffic'
+                : subjectHintRaw && isSubjectAllowedForExam(subjectHintRaw, solveExam)
+                  ? subjectHintRaw
+                  : 'math';
+          }
+          const topicKey =
+            gemini.topicKey ||
+            (subject === 'math' || subject === 'geometry' ? 'kesir' : 'temel');
+          const classification = {
+            subject,
+            topicKey,
+            confidence: 'high',
+            needsConfirm: false,
+            score: 14,
+            alternatives: [],
+          };
+          const resolvedTopicId = topicIdFor(solveExam, subject, topicKey);
+          const ocrPreview =
+            (gemini.ocrText && gemini.ocrText.trim()) ||
+            '(gemini-vision — OCR atlandı)';
+          const steps =
+            gemini.steps?.length > 0
+              ? gemini.steps
+              : [
+                  {
+                    title: 'Cevap',
+                    body: answer.label
+                      ? `Doğru şık: ${answer.label}) ${answer.text || ''}`.trim()
+                      : `Sonuç: ${answer.text}`,
+                  },
+                ];
+          const payload = solvedPayload({
+            requestId,
+            topicId: resolvedTopicId,
+            subject,
+            steps,
+            ocrText: ocrPreview,
+            note:
+              'Fotoğraftan yapay zekâ ile adım adım çözüldü. Sonucu şıklarınla kontrol etmeni öneririz.',
+            classification,
+            answer: {
+              text: String(answer.text ?? answer.label ?? ''),
+              ...(answer.label ? { label: String(answer.label) } : {}),
+            },
+            examHint: null,
+          });
+          const iso = assertPipelineIsolation(payload, solveExam);
+          if (iso.ok) {
+            console.info(
+              'solve-proxy gemini-vision',
+              solveExam,
+              subject,
+              answer.label || answer.text,
+            );
+            send(res, 200, payload);
+            return;
+          }
+          console.warn(
+            'solve-proxy gemini isolation reject',
+            solveExam,
+            iso.issues,
+          );
+        }
+      } else if (gemini && !gemini.ok) {
+        console.warn('solve-proxy gemini miss', gemini.error);
+      } else if (gemini?.ok && (!gemini.isQuestion || gemini.unsupported)) {
+        console.info(
+          'solve-proxy gemini unsupported/not-question — trying OCR solvers',
+          gemini.unsupportedReason || '',
+        );
+      } else if (!isGeminiVisionSolveEnabled()) {
+        console.warn(
+          'solve-proxy gemini-vision OFF (set GEMINI_API_KEY) — OCR fallback',
+        );
+      }
+    }
+
     const ocrText = ocrTextOverride || (await ocrImageBase64(imageBase64, mimeType));
     if (ocrTextOverride) {
       console.info('ocr: client-override');
@@ -295,10 +401,8 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
-    const profileExam = normalizeExamType(examType);
     // Hint is for the client mismatch sheet only — never switches the solve pipeline.
     const examHint = detectExamHint(ocrText, profileExam);
-    const solveExam = resolveSolveExam(profileExam);
     const hintForClient = examHint;
 
     let classified = applySubjectHint(
