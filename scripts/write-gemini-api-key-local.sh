@@ -50,13 +50,11 @@ for SECRET_NAME in GEMINI_API_KEY GOOGLE_GENERATIVE_AI_API_KEY; do
 done
 
 # 2) Existing API key with gemini / generative in display name
+# (macOS /bin/bash 3.2 has no mapfile — use while-read)
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
   echo "==> Mevcut API key listeleniyor…"
-  mapfile -t CANDIDATES < <(
-    gcloud services api-keys list --project="$PROJECT" \
-      --format='value(uid,displayName)' 2>/dev/null | grep -iE 'gemini|generative|ai-studio|cozbil' || true
-  )
-  for row in "${CANDIDATES[@]+"${CANDIDATES[@]}"}"; do
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
     uid="${row%%$'\t'*}"
     uid="${uid%% *}"
     [[ -z "$uid" ]] && continue
@@ -71,7 +69,10 @@ if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
     if [[ -n "$KEY" && "$KEY" == AIza* ]]; then
       break
     fi
-  done
+  done < <(
+    gcloud services api-keys list --project="$PROJECT" \
+      --format='value(uid,displayName)' 2>/dev/null | grep -iE 'gemini|generative|ai-studio|cozbil' || true
+  )
 fi
 
 # 3) Create key that can call Generative Language (+ Vision for OCR fallback)
