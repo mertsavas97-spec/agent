@@ -36,15 +36,15 @@ describe('AnalyzingView', () => {
         live={{
           phase: 'ocr',
           step: 'upload',
-          headline: 'Metin okunuyor…',
+          headline: 'Soruyu inceliyorum…',
           detail: 'Fotoğraftaki soru satırlarını ayıklıyorum.',
           tip: 'El yazısı veya bulanık ışık okumayı yavaşlatabilir.',
         }}
       />,
     );
-    expect(screen.getByTestId('analyzing-title')).toHaveTextContent(/Metin okunuyor/);
-    expect(screen.getByTestId('analyzing-step-label')).toHaveTextContent(/Metin okunuyor/);
-    expect(screen.getByTestId('analyzing-step-upload')).toHaveTextContent(/Metin okunuyor/);
+    expect(screen.getByTestId('analyzing-title')).toHaveTextContent(/Soruyu inceliyorum/);
+    expect(screen.getByTestId('analyzing-step-label')).toHaveTextContent(/Soruyu inceliyorum/);
+    expect(screen.getByTestId('analyzing-step-upload')).toHaveTextContent(/Soruyu inceliyorum/);
     expect(screen.getByTestId('analyzing-tip')).toHaveTextContent(/El yazısı/);
   });
 });

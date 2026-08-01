@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { filterAttempts } from '@/src/features/history/filterAttempts';
+import { BannerSlot } from '@/src/features/ads';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { useActiveExam } from '@/src/features/exam/useActiveExam';
 import { findTopic, subjectLabel, subjectsForExam } from '@/src/data';
@@ -213,6 +214,7 @@ export default function HistoryScreen() {
           />
         )}
       </View>
+      <BannerSlot />
     </View>
   );
 }

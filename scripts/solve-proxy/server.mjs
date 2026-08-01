@@ -106,6 +106,7 @@ function solvedPayload({
   classification,
   answer,
   examHint,
+  gemini,
 }) {
   const payload = {
     status: 'solved',
@@ -137,6 +138,9 @@ function solvedPayload({
   }
   if (examHint) {
     payload.examHint = examHint;
+  }
+  if (gemini) {
+    payload.gemini = gemini;
   }
   return payload;
 }
@@ -366,6 +370,7 @@ const server = http.createServer(async (req, res) => {
                 ...(answer.label ? { label: String(answer.label) } : {}),
               },
               examHint: null,
+              gemini: { ...geminiTrace, status: 'solved' },
             });
             const iso = assertPipelineIsolation(payload, solveExam);
             if (iso.ok) {
@@ -409,20 +414,37 @@ const server = http.createServer(async (req, res) => {
     if (ocrTextOverride) {
       console.info('ocr: client-override');
     }
+    // Soft garbage gate: if Gemini already tried, do not terminal-reject solely on OCR noise —
+    // continue to soft solvers / unsupported with gemini trace.
     if (!ocrTextOverride && isGarbageOcrText(ocrText)) {
-      console.warn(
-        'solve-proxy rejected_not_question garbage_ocr',
-        JSON.stringify(ocrText.slice(0, 200)),
-      );
-      send(res, 200, {
-        status: 'rejected_not_question',
-        attemptId: `proxy-${requestId}`,
-        userMessage:
-          'Görseldeki yazı net okunamadı. Soruyu düz, yakından ve iyi ışıkta yeniden çek; şıklar da kadrajda olsun.',
-        quota: { remainingToday: 5, unlimited: false },
-        debugOcrPreview: ocrText.slice(0, 2048),
-      });
-      return;
+      const geminiTried =
+        geminiTrace.status === 'error' ||
+        geminiTrace.status === 'unsupported' ||
+        geminiTrace.status === 'no_answer' ||
+        geminiTrace.status === 'isolation_reject' ||
+        geminiTrace.status === 'off';
+      if (geminiTried) {
+        console.warn(
+          'solve-proxy soft-skip garbage_ocr after gemini',
+          geminiTrace.status,
+          JSON.stringify(ocrText.slice(0, 160)),
+        );
+      } else {
+        console.warn(
+          'solve-proxy rejected_not_question garbage_ocr',
+          JSON.stringify(ocrText.slice(0, 200)),
+        );
+        send(res, 200, {
+          status: 'rejected_not_question',
+          attemptId: `proxy-${requestId}`,
+          userMessage:
+            'Görseldeki yazı net okunamadı. Soruyu düz, yakından ve iyi ışıkta yeniden çek; şıklar da kadrajda olsun.',
+          quota: { remainingToday: 5, unlimited: false },
+          debugOcrPreview: ocrText.slice(0, 2048),
+          gemini: geminiTrace,
+        });
+        return;
+      }
     }
     // Hint is for the client mismatch sheet only — never switches the solve pipeline.
     const examHint = detectExamHint(ocrText, profileExam);
@@ -469,6 +491,7 @@ const server = http.createServer(async (req, res) => {
               }
             : undefined,
           examHint: hintForClient,
+          gemini: geminiTrace,
         });
         const iso = assertPipelineIsolation(payload, solveExam);
         if (!iso.ok) {
@@ -519,6 +542,7 @@ const server = http.createServer(async (req, res) => {
           classification: mathClass,
           answer: mathAnswer,
           examHint: hintForClient,
+          gemini: geminiTrace,
         });
         const iso = assertPipelineIsolation(payload, solveExam);
         if (!iso.ok) {
@@ -540,7 +564,7 @@ const server = http.createServer(async (req, res) => {
     );
     const geminiHint =
       geminiTrace.status === 'off' || geminiTrace.status === 'error'
-        ? ' (Gemini çözümü çalışmadı — Mac’te: bash scripts/write-gemini-api-key-local.sh && phone-demo-proxy-mac.sh)'
+        ? ' (AI çözümü çalışmadı — Mac’te: bash scripts/write-vertex-solve-local.sh && phone-demo-proxy-mac.sh)'
         : '';
     send(res, 200, {
       status: 'unsupported_type',

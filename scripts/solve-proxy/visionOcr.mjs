@@ -16,16 +16,19 @@ const SHARP_INPUT_OPTIONS = {
 /**
  * Reject only clearly empty / blank-frame OCR.
  * Soft phone & PC-screen photos must still proceed (ChatGPT-like tolerance).
+ * Prefer solvers / AI over hard reject — length/ratio are loose; blank-frame rules stay.
  */
 export function isGarbageOcrText(text) {
   const raw = String(text || '').trim();
-  if (raw.length < 8) return true;
+  if (raw.length < 4) return true;
   const compact = raw.replace(/\s+/g, '');
-  if (compact.length < 6) return true;
+  if (compact.length < 3) return true;
 
-  const hasChoices = /A\s*\)/i.test(raw) && /B\s*\)/i.test(raw);
+  const hasChoices =
+    (/A\s*[\)\.\:]/i.test(raw) && /B\s*[\)\.\:]/i.test(raw)) ||
+    (/A\s*[\)\.\:]/i.test(raw) && /\b[1-9]\s*[\)\.\:]/.test(raw));
   const hasQuestionCue =
-    /kaçtır|hangisidir|denklem|yüzde|sağlayan|aşağıdakilerden|işlemin|toplamı|sonucu|gerçel|kesir/i.test(
+    /kaçtır|hangisidir|denklem|yüzde|sağlayan|aşağıdakilerden|işlemin|toplamı|sonucu|gerçel|kesir|nedir|olur|bulunuz|çözünüz|\?\s*$/i.test(
       raw,
     );
   // Any MCQ / exam cue ⇒ keep; solvers decide if they can answer.
@@ -35,7 +38,8 @@ export function isGarbageOcrText(text) {
 
   const letters = (raw.match(/[A-Za-zÇĞİÖŞÜçğıöşü0-9]/g) || []).length;
   const ratio = letters / Math.max(compact.length, 1);
-  if (ratio < 0.16) return true;
+  // Softened from 0.16 — noisy phone crops still proceed when they have real text.
+  if (ratio < 0.12) return true;
   const pipes = (raw.match(/\|/g) || []).length;
   const words = (raw.match(/[A-Za-zÇĞİÖŞÜçğıöşü]{3,}/g) || []).length;
   // Blank-frame / ruler noise: many pipes, almost no real words.

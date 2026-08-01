@@ -8,7 +8,7 @@ import {
 
 describe('liveSolveCopy', () => {
   it('returns pipeline-aware headlines for each phase', () => {
-    expect(liveCopyFor('ocr').headline).toMatch(/Metin okunuyor/i);
+    expect(liveCopyFor('ocr').headline).toMatch(/Soruyu inceliyorum/i);
     expect(liveCopyFor('solving').step).toBe('solve');
     expect(liveCopyFor('finishing').headline).toMatch(/Son dokunuş/i);
   });
@@ -43,7 +43,7 @@ describe('liveSolveCopy', () => {
     expect(shouldCrawlProgress('solving')).toBe(true);
   });
 
-  it('surfaces OCR-specific status label', () => {
-    expect(statusLabelForPhase('ocr')).toMatch(/Metin okunuyor/i);
+  it('surfaces photo-analysis status label (AI-first, not OCR-only)', () => {
+    expect(statusLabelForPhase('ocr')).toMatch(/Soruyu inceliyorum/i);
   });
 });

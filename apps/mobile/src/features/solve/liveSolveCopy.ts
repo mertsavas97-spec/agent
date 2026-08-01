@@ -46,9 +46,9 @@ const COPY: Record<LiveSolvePhase, Omit<LiveSolveCopy, 'phase'>> = {
   },
   ocr: {
     step: 'upload',
-    headline: 'Metin okunuyor…',
-    detail: 'Fotoğraftaki soru satırlarını ayıklıyorum.',
-    tip: 'El yazısı veya bulanık ışık okumayı yavaşlatabilir.',
+    headline: 'Soruyu inceliyorum…',
+    detail: 'Fotoğraf yapay zekâya iletiliyor; metin dökümü şart değil.',
+    tip: 'Net kadraj ve görünür şıklar sonucu hızlandırır.',
   },
   moderate: {
     step: 'moderate',
@@ -97,7 +97,7 @@ export function statusLabelForPhase(phase: LiveSolvePhase): string {
     case 'upload':
       return 'Fotoğraf yolda';
     case 'ocr':
-      return 'Metin okunuyor';
+      return 'Soruyu inceliyorum';
     case 'moderate':
       return 'Güvenli mi bakıyorum';
     case 'solving':
@@ -117,7 +117,7 @@ export function checklistLabelFor(
 ): string {
   if (completed && stepId === 'upload') return 'Fotoğraf yüklendi';
   if (completed && stepId === 'moderate') return 'Güvenlik tamam';
-  if (!completed && stepId === 'upload' && phase === 'ocr') return 'Metin okunuyor';
+  if (!completed && stepId === 'upload' && phase === 'ocr') return 'Soruyu inceliyorum';
   if (stepId === 'upload') return 'Fotoğraf yolda';
   if (stepId === 'moderate') return 'Güvenli mi bakıyorum';
   return 'Adım adım çözüyorum';

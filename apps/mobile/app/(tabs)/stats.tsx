@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { BannerSlot } from '@/src/features/ads';
 import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { useActiveExam } from '@/src/features/exam/useActiveExam';
 import {
@@ -108,6 +109,7 @@ export default function StatsScreen() {
   const hasData = summaryHasData(summary);
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.soft }} testID="stats-screen-root">
     <ScrollView
       style={[styles.container, { backgroundColor: theme.soft }]}
       contentContainerStyle={styles.content}
@@ -316,6 +318,8 @@ export default function StatsScreen() {
         </>
       )}
     </ScrollView>
+    <BannerSlot />
+    </View>
   );
 }
 

@@ -1,5 +1,6 @@
 /**
- * Call cloud dogfood solve proxy (Vision OCR + arithmetic) when Firebase
+ * Call cloud dogfood solve proxy (Vertex/Gemini first; OCR solvers fallback)
+ * when Firebase Functions are slow or blocked by org policy.
  * Functions are blocked by org policy.
  */
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
