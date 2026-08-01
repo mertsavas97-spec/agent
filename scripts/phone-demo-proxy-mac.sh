@@ -66,7 +66,11 @@ if [[ -z "${GEMINI_API_KEY:-}" ]]; then
 fi
 if [[ -z "${GEMINI_API_KEY:-}" ]]; then
   echo "==> GEMINI_API_KEY yok — yazılıyor (Generative Language)…"
-  bash "$ROOT/scripts/write-gemini-api-key-local.sh"
+  # set -e does NOT abort on failure inside if — force exit
+  bash "$ROOT/scripts/write-gemini-api-key-local.sh" || {
+    echo "HATA: Gemini key yazılamadı — proxy başlatılmıyor." >&2
+    exit 1
+  }
   set -a
   # shellcheck disable=SC1090
   source "$ENV_LOCAL"
@@ -77,7 +81,25 @@ if [[ -z "${GEMINI_API_KEY:-}" ]]; then
   echo "bash scripts/write-gemini-api-key-local.sh" >&2
   exit 1
 fi
-echo "==> Gemini Vision solve: AÇIK (birincil yol)"
+
+# Reject Vision-only / dead keys before starting proxy
+echo "==> Gemini key smoke…"
+GEMINI_SMOKE_HTTP="$(
+  curl -sS -o /tmp/cozbil-proxy-gemini-smoke.json -w '%{http_code}' \
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
+    -H 'Content-Type: application/json' \
+    -d '{"contents":[{"parts":[{"text":"Reply with JSON only: {\"ok\":true}"}]}]}' \
+    --max-time 30 || echo "000"
+)"
+if [[ "$GEMINI_SMOKE_HTTP" != "200" ]]; then
+  echo "HATA: .env.local GEMINI_API_KEY smoke HTTP $GEMINI_SMOKE_HTTP" >&2
+  head -c 300 /tmp/cozbil-proxy-gemini-smoke.json 2>/dev/null >&2 || true
+  echo "" >&2
+  echo "Vision-only key olabilir. Şunu çalıştır:" >&2
+  echo "  FORCE_NEW_GEMINI_KEY=1 bash scripts/write-gemini-api-key-local.sh" >&2
+  exit 1
+fi
+echo "==> Gemini Vision solve: AÇIK (birincil yol) — smoke OK"
 
 LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
 if [[ -z "$LAN_IP" ]]; then

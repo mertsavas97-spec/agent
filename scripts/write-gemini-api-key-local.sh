@@ -2,16 +2,52 @@
 # Mac: GEMINI_API_KEY → apps/mobile/.env.local (chat/PR/commit yok)
 #
 # Vision-only API key Generative Language’i engeller → Gemini solve fail → OCR.
-# Bu script Generative Language API’yi açar ve uygun key yazar.
+# Bu script Generative Language API’yi açar, smoke geçen key yazar.
 #
 #   gcloud auth login   # bir kez
 #   bash scripts/write-gemini-api-key-local.sh
+#   FORCE_NEW_GEMINI_KEY=1 bash scripts/write-gemini-api-key-local.sh
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/apps/mobile/.env.local"
 PROJECT="${GCP_PROJECT_ID:-cozbil-dev-f9583}"
+SMOKE_BODY="${TMPDIR:-/tmp}/cozbil-gemini-smoke.json"
+
+gemini_smoke() {
+  local key="$1"
+  local http
+  http="$(
+    curl -sS -o "$SMOKE_BODY" -w '%{http_code}' \
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}" \
+      -H 'Content-Type: application/json' \
+      -d '{"contents":[{"parts":[{"text":"Reply with JSON only: {\"ok\":true}"}]}]}' \
+      --max-time 30 || echo "000"
+  )"
+  [[ "$http" == "200" ]]
+}
+
+create_gemini_key() {
+  local name="cozbil-gemini-phone-$(date +%Y%m%d-%H%M%S)"
+  echo "==> Yeni API key: $name (Generative Language + Vision)" >&2
+  local created
+  created="$(
+    gcloud services api-keys create \
+      --display-name="$name" \
+      --api-target=service=generativelanguage.googleapis.com \
+      --api-target=service=vision.googleapis.com \
+      --project="$PROJECT" \
+      --format='value(keyString)' 2>/dev/null \
+    || gcloud services api-keys create \
+      --display-name="$name" \
+      --project="$PROJECT" \
+      --format='value(keyString)'
+  )"
+  created="${created#keyString: }"
+  created="$(echo "$created" | tr -d '[:space:]')"
+  echo "$created"
+}
 
 if ! command -v gcloud >/dev/null 2>&1; then
   echo "HATA: gcloud yok. Kur: brew install --cask google-cloud-sdk" >&2
@@ -31,93 +67,87 @@ gcloud config set project "$PROJECT" >/dev/null
 echo "==> Generative Language API enable (idempotent)"
 gcloud services enable generativelanguage.googleapis.com --project="$PROJECT" >/dev/null || true
 
-KEY=""
+CANDIDATES=()
 
-# 1) Prefer existing GEMINI / unrestricted key from Secret Manager
-for SECRET_NAME in GEMINI_API_KEY GOOGLE_GENERATIVE_AI_API_KEY; do
-  if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT" >/dev/null 2>&1; then
-    echo "==> Secret Manager: $SECRET_NAME"
-    KEY="$(
-      gcloud secrets versions access latest \
-        --secret="$SECRET_NAME" \
-        --project="$PROJECT" 2>/dev/null || true
-    )"
-    KEY="$(echo "$KEY" | tr -d '[:space:]')"
-    if [[ -n "$KEY" && "$KEY" == AIza* ]]; then
-      break
+# Optional: force brand-new key (skip reuse)
+if [[ "${FORCE_NEW_GEMINI_KEY:-}" == "1" ]]; then
+  echo "==> FORCE_NEW_GEMINI_KEY=1 — mevcut key atlanıyor"
+else
+  # 1) Secret Manager
+  for SECRET_NAME in GEMINI_API_KEY GOOGLE_GENERATIVE_AI_API_KEY; do
+    if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT" >/dev/null 2>&1; then
+      echo "==> Secret Manager: $SECRET_NAME"
+      secret_key="$(
+        gcloud secrets versions access latest \
+          --secret="$SECRET_NAME" \
+          --project="$PROJECT" 2>/dev/null || true
+      )"
+      secret_key="$(echo "$secret_key" | tr -d '[:space:]')"
+      if [[ -n "$secret_key" && "$secret_key" == AIza* ]]; then
+        CANDIDATES+=("$secret_key")
+      fi
     fi
-  fi
-done
+  done
 
-# 2) Existing API key with gemini / generative in display name
-# (macOS /bin/bash 3.2 has no mapfile — use while-read)
-if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-  echo "==> Mevcut API key listeleniyor…"
+  # 2) Existing keys — ONLY gemini/generative names (NOT bare "cozbil":
+  #    that matches Vision-only cozbil-vision-phone-* and fails smoke 400)
+  echo "==> Mevcut Gemini/generative API key listeleniyor…"
   while IFS= read -r row; do
     [[ -z "$row" ]] && continue
     uid="${row%%$'\t'*}"
     uid="${uid%% *}"
     [[ -z "$uid" ]] && continue
     echo "==> get-key-string: $uid"
-    KEY="$(
+    k="$(
       gcloud services api-keys get-key-string "$uid" \
         --project="$PROJECT" \
         --format='value(keyString)' 2>/dev/null || true
     )"
-    KEY="${KEY#keyString: }"
-    KEY="$(echo "$KEY" | tr -d '[:space:]')"
-    if [[ -n "$KEY" && "$KEY" == AIza* ]]; then
-      break
+    k="${k#keyString: }"
+    k="$(echo "$k" | tr -d '[:space:]')"
+    if [[ -n "$k" && "$k" == AIza* ]]; then
+      CANDIDATES+=("$k")
     fi
   done < <(
     gcloud services api-keys list --project="$PROJECT" \
-      --format='value(uid,displayName)' 2>/dev/null | grep -iE 'gemini|generative|ai-studio|cozbil' || true
+      --format='value(uid,displayName)' 2>/dev/null \
+      | grep -iE 'gemini|generative|ai-studio' || true
   )
 fi
 
-# 3) Create key that can call Generative Language (+ Vision for OCR fallback)
-if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-  NAME="cozbil-gemini-phone-$(date +%Y%m%d)"
-  echo "==> Yeni API key: $NAME (Generative Language + Vision)"
-  KEY="$(
-    gcloud services api-keys create \
-      --display-name="$NAME" \
-      --api-target=service=generativelanguage.googleapis.com \
-      --api-target=service=vision.googleapis.com \
-      --project="$PROJECT" \
-      --format='value(keyString)' 2>/dev/null \
-    || gcloud services api-keys create \
-      --display-name="$NAME" \
-      --project="$PROJECT" \
-      --format='value(keyString)'
-  )"
-  KEY="${KEY#keyString: }"
-  KEY="$(echo "$KEY" | tr -d '[:space:]')"
+KEY=""
+# bash 3.2 + set -u: empty array for-loop is unsafe — guard length
+if ((${#CANDIDATES[@]} > 0)); then
+  for candidate in "${CANDIDATES[@]}"; do
+    [[ -z "$candidate" || "$candidate" != AIza* ]] && continue
+    echo "==> Gemini smoke (aday)…"
+    if gemini_smoke "$candidate"; then
+      KEY="$candidate"
+      echo "✓ Gemini smoke OK (mevcut key)"
+      break
+    fi
+    echo "  (aday fail — Vision-only / kısıtlı; sonraki aday veya yeni key)"
+    head -c 240 "$SMOKE_BODY" 2>/dev/null >&2 || true
+    echo "" >&2
+  done
 fi
 
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-  echo "HATA: Gemini API key alınamadı." >&2
-  echo "Konsol: APIs & Services → Credentials → Create API key (Generative Language)." >&2
-  exit 1
+  KEY="$(create_gemini_key)"
+  if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
+    echo "HATA: Gemini API key oluşturulamadı." >&2
+    echo "Konsol: APIs & Services → Credentials → Create API key (Generative Language)." >&2
+    exit 1
+  fi
+  echo "==> Gemini smoke (yeni key)…"
+  if ! gemini_smoke "$KEY"; then
+    echo "HATA: Yeni key smoke fail — Generative Language API / kota kontrol et." >&2
+    head -c 400 "$SMOKE_BODY" 2>/dev/null >&2 || true
+    echo "" >&2
+    exit 1
+  fi
+  echo "✓ Gemini smoke OK (yeni key)"
 fi
-
-# Smoke: key must actually call Gemini
-echo "==> Gemini smoke…"
-SMOKE_HTTP="$(
-  curl -sS -o /tmp/cozbil-gemini-smoke.json -w '%{http_code}' \
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${KEY}" \
-    -H 'Content-Type: application/json' \
-    -d '{"contents":[{"parts":[{"text":"Reply with JSON only: {\"ok\":true}"}]}]}' \
-    --max-time 30 || echo "000"
-)"
-if [[ "$SMOKE_HTTP" != "200" ]]; then
-  echo "HATA: Gemini smoke HTTP $SMOKE_HTTP" >&2
-  head -c 400 /tmp/cozbil-gemini-smoke.json 2>/dev/null >&2 || true
-  echo "" >&2
-  echo "Vision-only kısıtlı key olabilir. Yeni key oluştur veya Generative Language’i key’e ekle." >&2
-  exit 1
-fi
-echo "✓ Gemini smoke OK"
 
 umask 077
 touch "$OUT"
