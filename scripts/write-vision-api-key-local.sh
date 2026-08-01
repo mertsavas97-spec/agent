@@ -45,13 +45,11 @@ if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT" >/dev/null 2>&1; 
 fi
 
 # 2) Existing API key with "vision" in display name
+# (macOS /bin/bash 3.2 has no mapfile — use while-read)
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
   echo "==> Mevcut API key listeleniyor…"
-  mapfile -t CANDIDATES < <(
-    gcloud services api-keys list --project="$PROJECT" \
-      --format='value(uid,displayName)' 2>/dev/null | grep -i vision || true
-  )
-  for row in "${CANDIDATES[@]+"${CANDIDATES[@]}"}"; do
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
     uid="${row%%$'\t'*}"
     uid="${uid%% *}"
     [[ -z "$uid" ]] && continue
@@ -66,7 +64,10 @@ if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
     if [[ -n "$KEY" && "$KEY" == AIza* ]]; then
       break
     fi
-  done
+  done < <(
+    gcloud services api-keys list --project="$PROJECT" \
+      --format='value(uid,displayName)' 2>/dev/null | grep -i vision || true
+  )
 fi
 
 # 3) Create new key
