@@ -1,4 +1,6 @@
 import {
+  INACTIVE_WEEKLY_COPY,
+  INACTIVE_WEEKLY_NOTIF_ID,
   LOCAL_PUSH_STATUS_COPY,
   __resetNotificationsCacheForTests,
   syncLocalPushSchedules,
@@ -11,6 +13,7 @@ const mockGetPermissionsAsync = jest.fn().mockResolvedValue({ granted: true });
 const mockRequestPermissionsAsync = jest.fn().mockResolvedValue({ granted: true });
 const mockSetNotificationHandler = jest.fn();
 const mockSetNotificationChannelAsync = jest.fn();
+const mockHasLocalSolveActivity = jest.fn().mockResolvedValue(true);
 
 jest.mock('expo-notifications', () => ({
   SchedulableTriggerInputTypes: {
@@ -30,6 +33,10 @@ jest.mock('expo-notifications', () => ({
 
 jest.mock('@/src/lib/hasExpoNativeModule', () => ({
   hasExpoNativeModule: jest.fn(() => true),
+}));
+
+jest.mock('@/src/features/history/localHistoryStore', () => ({
+  hasLocalSolveActivity: (...args: unknown[]) => mockHasLocalSolveActivity(...args),
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -54,17 +61,20 @@ describe('localPush', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     __resetNotificationsCacheForTests();
+    mockHasLocalSolveActivity.mockResolvedValue(true);
   });
 
   it('ships honest device-local status copy', () => {
     expect(LOCAL_PUSH_STATUS_COPY.title).toMatch(/Cihaz içi/i);
     expect(LOCAL_PUSH_STATUS_COPY.body).toMatch(/Sunucu yok/i);
+    expect(LOCAL_PUSH_STATUS_COPY.body).toMatch(/haftada en fazla bir/i);
     expect(LOCAL_PUSH_STATUS_COPY.body.length).toBeGreaterThan(40);
   });
 
-  it('schedules enabled categories with PUSH_COPY titles', async () => {
+  it('schedules enabled categories with PUSH_COPY titles when user has solves', async () => {
     const result = await syncLocalPushSchedules(prefs());
     expect(result.ok).toBe(true);
+    expect(result.inactiveMode).toBe(false);
     expect(result.scheduled).toEqual(expect.arrayContaining(['dailyReminder', 'streak']));
     expect(mockScheduleNotificationAsync).toHaveBeenCalled();
     const titles = mockScheduleNotificationAsync.mock.calls.map(
@@ -94,5 +104,34 @@ describe('localPush', () => {
     expect(result.ok).toBe(false);
     expect(result.scheduled).toEqual([]);
     hasExpoNativeModule.mockReturnValue(true);
+  });
+
+  it('schedules only one weekly nudge when user never solved', async () => {
+    mockHasLocalSolveActivity.mockResolvedValue(false);
+    const result = await syncLocalPushSchedules(
+      prefs({ weakTopic: true, productUpdate: true, streak: true }),
+    );
+    expect(result.ok).toBe(true);
+    expect(result.inactiveMode).toBe(true);
+    expect(result.scheduled).toEqual(['inactiveWeekly']);
+    expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    const scheduled = mockScheduleNotificationAsync.mock.calls[0]![0] as {
+      identifier: string;
+      content: { title: string; body: string };
+      trigger: { type: string };
+    };
+    expect(scheduled.identifier).toBe(INACTIVE_WEEKLY_NOTIF_ID);
+    expect(scheduled.trigger.type).toBe('weekly');
+    const inactiveTitles = new Set(INACTIVE_WEEKLY_COPY.map((c) => c.title));
+    expect(inactiveTitles.has(scheduled.content.title)).toBe(true);
+    expect(scheduled.content.body).not.toMatch(/eksik|zayıf/i);
+    // Category plans cancelled (streak/daily/weak/…) plus may cancel inactive before reschedule
+    expect(mockCancelScheduledNotificationAsync.mock.calls.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('inactive weekly copy never uses weak-topic / gap language', () => {
+    for (const row of INACTIVE_WEEKLY_COPY) {
+      expect(`${row.title} ${row.body}`).not.toMatch(/eksik|zayıf konu|istatistik/i);
+    }
   });
 });

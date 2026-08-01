@@ -124,31 +124,33 @@ export function checklistLabelFor(
 }
 
 /**
- * Progress target 0–1 for live phase (monotonic).
- * OCR sits mid-bar; AnalyzingView soft-crawls while waiting so we never freeze.
+ * Progress target 0–1 for live phase (monotonic, gentle steps).
+ * AnalyzingView soft-crawls from this floor so the bar never freezes or jumps.
  */
 export function progressForLivePhase(phase: LiveSolvePhase): number {
   switch (phase) {
     case 'preparing':
-      return 0.12;
+      return 0.08;
     case 'upload':
-      return 0.24;
+      return 0.16;
     case 'ocr':
-      return 0.42;
+      return 0.32;
     case 'moderate':
-      return 0.58;
+      return 0.48;
     case 'solving':
-      return 0.74;
+      return 0.62;
     case 'finishing':
-      return 0.96;
+      return 0.9;
     default:
-      return 0.12;
+      return 0.08;
   }
 }
 
-/** Soft crawl while a network/OCR beat is in flight. */
+/** Soft crawl for every in-flight beat (including upload). */
 export function shouldCrawlProgress(phase: LiveSolvePhase): boolean {
   return (
+    phase === 'preparing' ||
+    phase === 'upload' ||
     phase === 'ocr' ||
     phase === 'moderate' ||
     phase === 'solving' ||

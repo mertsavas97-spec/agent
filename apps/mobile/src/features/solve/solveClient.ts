@@ -9,8 +9,13 @@ import { getFirebase } from '@/src/lib/firebase';
 import { withHardTimeout } from './hardTimeout';
 import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
-import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
-import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
+import {
+  callSolveQuestionViaProxy,
+  diagnoseSolveProxyConfig,
+  isSolveProxyConfigured,
+  solveProxyBaseUrlForLog,
+} from './solveViaProxy';
+import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS, SOLVE_UI_SETTLE_MS } from './solveTiming';
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -53,13 +58,25 @@ export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
   let proxyAttempted = false;
+  if (!isSolveProxyConfigured()) {
+    const diag = diagnoseSolveProxyConfig();
+    console.info('solve: proxy off', {
+      __DEV__: diag.dev,
+      urlSource: diag.urlSource,
+      tokenSource: diag.tokenSource,
+      metroHost: diag.metroHost,
+      hint: 'Mac: bash scripts/phone-demo-proxy-mac.sh (proxy :8787) + Metro restart',
+    });
+  }
   if (
     isSolveProxyConfigured() &&
     (request.imageUri || request.imageUrl || request.imageBase64)
   ) {
     proxyAttempted = true;
     try {
-      console.info('solve: bounded OCR proxy');
+      console.info('solve: bounded OCR proxy', {
+        base: solveProxyBaseUrlForLog(),
+      });
       request.onStage?.('ocr');
       const response = await callSolveQuestionViaProxy({
         imageUri: request.imageUri,
@@ -102,8 +119,9 @@ export async function callSolveQuestion(
   }
 
   // Primary production path needs the full solve budget; after a proxy miss keep fallback snappy.
-  const firestoreWaitMs = proxyAttempted ? FIRESTORE_FALLBACK_MS : SOLVE_TIMEOUT_MS;
+  // Cap Firestore wait so upload + solve cannot exceed SOLVE_UI_SETTLE_MS (outer UI timer).
   const uploadWaitMs = FIRESTORE_FALLBACK_MS;
+  const startedAt = Date.now();
 
   let firestoreRequest: PreparedFirestoreRequest | undefined;
   try {
@@ -114,6 +132,14 @@ export async function callSolveQuestion(
       'Storage upload',
     );
     request.onStage?.('solving');
+    const elapsed = Date.now() - startedAt;
+    const firestoreBudget = proxyAttempted
+      ? FIRESTORE_FALLBACK_MS
+      : SOLVE_TIMEOUT_MS;
+    const firestoreWaitMs = Math.max(
+      5_000,
+      Math.min(firestoreBudget, SOLVE_UI_SETTLE_MS - elapsed - 2_000),
+    );
     const firestore = await withHardTimeout(
       callSolveQuestionViaFirestore(firestoreRequest),
       firestoreWaitMs,

@@ -11,13 +11,13 @@ import type { SolveQuestionRequest, SolveQuestionResponse } from '@/src/lib/api/
 import { ensureSignedIn } from '@/src/lib/auth';
 import { getFirebase } from '@/src/lib/firebase';
 
-import { PENDING_STUCK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
+import { PENDING_STUCK_MS, RUNNING_STUCK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
 
 /**
  * Live Vertex + Gen2 cold start often exceeds 30s (Vision + Gemini + retry).
  * Keep under Functions timeout (120s); surface error before silent hang.
  */
-export { PENDING_STUCK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
+export { PENDING_STUCK_MS, RUNNING_STUCK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
 /** Grace for Eventarc/Storage lag before declaring trigger missing. */
 
 type SolveRequestDoc = {
@@ -82,15 +82,19 @@ export async function callSolveQuestionViaFirestore(
     let lastStatus: string | undefined = existing.exists()
       ? (existing.data() as SolveRequestDoc).status
       : 'pending';
+    let hardTimer: ReturnType<typeof setTimeout> | undefined;
+    let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+    let runningTimer: ReturnType<typeof setTimeout> | undefined;
 
     const fail = (err: Error) => {
-      clearTimeout(hardTimer);
-      clearTimeout(pendingTimer);
+      if (hardTimer !== undefined) clearTimeout(hardTimer);
+      if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+      if (runningTimer !== undefined) clearTimeout(runningTimer);
       unsub?.();
       reject(err);
     };
 
-    const hardTimer = setTimeout(() => {
+    hardTimer = setTimeout(() => {
       fail(
         Object.assign(
           new Error(
@@ -101,18 +105,31 @@ export async function callSolveQuestionViaFirestore(
       );
     }, SOLVE_TIMEOUT_MS);
 
-    const pendingTimer = setTimeout(() => {
+    pendingTimer = setTimeout(() => {
       if (lastStatus === 'pending') {
         fail(
           Object.assign(
             new Error(
-              'SOLVE_TRIGGER_MISSING — istek pending kaldı; Functions deploy edilmemiş olabilir.',
+              'SOLVE_TRIGGER_MISSING — istek pending kaldı; Functions deploy / invoker kontrol et.',
             ),
             { code: 'functions/unavailable' },
           ),
         );
       }
     }, PENDING_STUCK_MS);
+
+    runningTimer = setTimeout(() => {
+      if (lastStatus === 'running') {
+        fail(
+          Object.assign(
+            new Error(
+              'SOLVE_RUNNING_STUCK — sunucu çözümü bitiremedi (Vision/AI). Yerel proxy veya tekrar dene.',
+            ),
+            { code: 'functions/deadline-exceeded' },
+          ),
+        );
+      }
+    }, RUNNING_STUCK_MS);
 
     unsub = onSnapshot(
       ref,
@@ -121,18 +138,20 @@ export async function callSolveQuestionViaFirestore(
         if (!data) return;
         lastStatus = data.status;
         if (data.status === 'running') {
-          clearTimeout(pendingTimer);
+          if (pendingTimer !== undefined) clearTimeout(pendingTimer);
         }
         if (data.status === 'done' && data.response) {
-          clearTimeout(hardTimer);
-          clearTimeout(pendingTimer);
+          if (hardTimer !== undefined) clearTimeout(hardTimer);
+          if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+          if (runningTimer !== undefined) clearTimeout(runningTimer);
           unsub?.();
           resolve(data.response);
           return;
         }
         if (data.status === 'error') {
-          clearTimeout(hardTimer);
-          clearTimeout(pendingTimer);
+          if (hardTimer !== undefined) clearTimeout(hardTimer);
+          if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+          if (runningTimer !== undefined) clearTimeout(runningTimer);
           unsub?.();
           reject(mapSolveDocError(data));
         }

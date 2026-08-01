@@ -35,23 +35,22 @@ Kaynak: `apps/mobile/src/features/paywall/pricing.ts` + `docs/product/pricing-po
 
 | Format | Free | Premium | Kod | Canlı AdMob |
 |--------|------|---------|-----|-------------|
-| Banner | Tab shell | Kapalı | `BannerSlot` + AdMob BannerAd | Unit id (SDK scaffold hazır) |
-| Interstitial | Çözüm çıkışı (≤5/gün, her billed leave) | Kapalı | `adMobEngine` / stub | Unit id |
-| Rewarded | Kota bitince +1; her çoklu açılış | Kapalı | `adMobEngine` + grant | Unit id |
+| Banner | Tab shell | Kapalı | `BannerSlot` + AdMob BannerAd | iOS: `…/1521648962` |
+| Interstitial | Çözüm çıkışı (≤5/gün, her billed leave) | Kapalı | `adMobEngine` / stub | iOS: `…/3447425993` |
+| Rewarded | Kota bitince +1; her çoklu açılış | Kapalı | `adMobEngine` + grant | iOS: `…/8645460517` |
 
-### Env (EAS secrets)
+SSoT: `docs/store/admob-ios-units.md` + `eas.json` production env.
+
+### Env (EAS production / Mac export)
 
 ```
 EXPO_PUBLIC_ADS_STUB=0
 EXPO_PUBLIC_ADS_USE_TEST_UNITS=0
-EXPO_PUBLIC_ADMOB_ANDROID_APP_ID=ca-app-pub-…
-EXPO_PUBLIC_ADMOB_IOS_APP_ID=ca-app-pub-…
-EXPO_PUBLIC_ADMOB_BANNER_ANDROID=…
-EXPO_PUBLIC_ADMOB_BANNER_IOS=…
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=…
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS=…
-EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=…
-EXPO_PUBLIC_ADMOB_REWARDED_IOS=…
+EXPO_PUBLIC_ADMOB_IOS_APP_ID=ca-app-pub-4628962707131944~6347757786
+EXPO_PUBLIC_ADMOB_BANNER_IOS=ca-app-pub-4628962707131944/1521648962
+EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS=ca-app-pub-4628962707131944/3447425993
+EXPO_PUBLIC_ADMOB_REWARDED_IOS=ca-app-pub-4628962707131944/8645460517
+# Android birimler sonra
 ```
 
 Dogfood: `EXPO_PUBLIC_ADS_STUB=1` veya test unit (`EXPO_PUBLIC_ADS_USE_TEST_UNITS=1`).

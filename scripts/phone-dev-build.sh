@@ -46,13 +46,38 @@ EOF
 command -v node >/dev/null || fail "Node yok" "brew install node@22"
 command -v npm >/dev/null || fail "npm yok" "Node kurulumunu kontrol et"
 
-if [[ ! -f "$MOBILE/.env" ]]; then
-  fail "apps/mobile/.env yok" "cp apps/mobile/.env.example apps/mobile/.env ve Firebase key’leri doldur"
+# Prefer .env.local (gitignore) then .env — same pattern as mac-build-ipa-with-push.sh
+ENV_LOCAL="$MOBILE/.env.local"
+ENV_FILE="$MOBILE/.env"
+if [[ -f "$ENV_LOCAL" ]]; then
+  echo "==> loading $ENV_LOCAL"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_LOCAL"
+  set +a
+elif [[ -f "$ENV_FILE" ]]; then
+  echo "==> loading $ENV_FILE"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+else
+  fail "Firebase env yok" "apps/mobile/.env.local veya .env oluştur — docs/qa/PHONE_DEMO_INSTALL.md"
 fi
 
-if grep -qE 'EXPO_PUBLIC_FIREBASE_API_KEY=\s*$' "$MOBILE/.env" 2>/dev/null; then
+if [[ -z "${EXPO_PUBLIC_FIREBASE_API_KEY:-}" ]]; then
   echo "UYARI: EXPO_PUBLIC_FIREBASE_API_KEY boş — solve/auth canlı çalışmayabilir."
 fi
+
+# Demo defaults: live Firebase + live AdMob iOS units (override via env)
+export EXPO_PUBLIC_USE_EMULATORS="${EXPO_PUBLIC_USE_EMULATORS:-0}"
+export EXPO_PUBLIC_SCREENSHOT_MODE="${EXPO_PUBLIC_SCREENSHOT_MODE:-0}"
+export EXPO_PUBLIC_ADS_STUB="${EXPO_PUBLIC_ADS_STUB:-0}"
+export EXPO_PUBLIC_ADS_USE_TEST_UNITS="${EXPO_PUBLIC_ADS_USE_TEST_UNITS:-0}"
+export EXPO_PUBLIC_ADMOB_IOS_APP_ID="${EXPO_PUBLIC_ADMOB_IOS_APP_ID:-ca-app-pub-4628962707131944~6347757786}"
+export EXPO_PUBLIC_ADMOB_BANNER_IOS="${EXPO_PUBLIC_ADMOB_BANNER_IOS:-ca-app-pub-4628962707131944/1521648962}"
+export EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS="${EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS:-ca-app-pub-4628962707131944/3447425993}"
+export EXPO_PUBLIC_ADMOB_REWARDED_IOS="${EXPO_PUBLIC_ADMOB_REWARDED_IOS:-ca-app-pub-4628962707131944/8645460517}"
 
 cd "$MOBILE"
 
@@ -70,6 +95,21 @@ fi
 
 start_metro() {
   echo ""
+  if [[ -z "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" || -z "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
+    # Try load from files so the warning is accurate
+    if [[ -f "$ENV_LOCAL" ]]; then
+      set -a
+      # shellcheck disable=SC1090
+      source "$ENV_LOCAL"
+      set +a
+    fi
+  fi
+  if [[ -n "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" && -n "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
+    echo "==> Metro — solve proxy: ${EXPO_PUBLIC_SOLVE_PROXY_URL}"
+  else
+    echo "==> Metro — UYARI: SOLVE_PROXY yok → logda 'proxy off' görürsün"
+    echo "    Düzelt: bash scripts/phone-demo-proxy-mac.sh && bu komutu tekrar çalıştır"
+  fi
   echo "==> Metro (dev-client) — telefonda ÇözBil uygulamasını aç"
   echo "    Aynı Wi‑Fi’de değilsen: bash scripts/phone-dev-build.sh metro --tunnel"
   echo ""
