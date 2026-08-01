@@ -38,11 +38,12 @@ const RING_PAD = 12;
 const RING_SIZE = ICON_SIZE + RING_PAD * 2;
 const RING_RADIUS = RING_SIZE / 2;
 
-// Decode brand mark as soon as this module loads (home already warms it too).
+// Decode brand mark as soon as this module loads (root BrandMarkCache also warms).
 const brandUri = Image.resolveAssetSource(BRAND_MARK)?.uri;
 if (brandUri) {
   void Image.prefetch(brandUri);
 }
+void BRAND_MARK;
 
 /**
  * Moodboard loading: solid navy, official app icon, animated premium rings.

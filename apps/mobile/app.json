@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cozbil.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "ÇözBil soru fotoğrafı çekmek için kameraya ihtiyaç duyar.",
         "NSPhotoLibraryUsageDescription": "ÇözBil galeriden soru fotoğrafı seçmek için fotoğraflarına erişir.",
