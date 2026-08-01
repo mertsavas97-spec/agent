@@ -7,7 +7,7 @@
 #
 # Kullanım:
 #   cd ~/agent
-#   git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
+#   git checkout cursor/home-polish-yks-ads-ocr-2914 && git pull
 #
 #   # bir kez: apps/mobile/.env.local (gitignore — chat'e key yapıştırma)
 #   # EXPO_PUBLIC_FIREBASE_API_KEY=…   # yeni key (cozbil-firebase-client-*)
@@ -18,12 +18,14 @@
 #   bash scripts/phone-demo-mac.sh ios --ipa    # production IPA → Desktop
 #   bash scripts/phone-demo-mac.sh ios --fix-backend  # sadece invoker düzelt
 #
+# Branch: varsayılan = şu anki checkout (eski scrub dalına zorla geçmez).
+# İstersen: PHONE_DEMO_BRANCH=cursor/... bash scripts/phone-demo-mac.sh ios
+#
 # Doküman: docs/qa/PHONE_DEMO_INSTALL.md
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BRANCH="${PHONE_DEMO_BRANCH:-cursor/scrub-google-api-key-pr31-4710}"
 MOBILE="$ROOT/apps/mobile"
 ENV_LOCAL="$MOBILE/.env.local"
 ENV_FILE="$MOBILE/.env"
@@ -70,10 +72,27 @@ for a in "${SHIFT_ARGS[@]+"${SHIFT_ARGS[@]}"}"; do
 done
 
 cd "$ROOT"
-echo "==> branch: $BRANCH"
-git fetch origin >/dev/null 2>&1 || true
-git checkout "$BRANCH" 2>/dev/null || true
-git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+# Stay on the branch the owner already checked out — do NOT force an old demo branch.
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)"
+if [[ -n "${PHONE_DEMO_BRANCH:-}" ]]; then
+  BRANCH="$PHONE_DEMO_BRANCH"
+  echo "==> branch (PHONE_DEMO_BRANCH): $BRANCH"
+  git fetch origin >/dev/null 2>&1 || true
+  git checkout "$BRANCH" 2>/dev/null || true
+  git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+else
+  BRANCH="$CURRENT_BRANCH"
+  echo "==> branch (current): $BRANCH @ $(git rev-parse --short HEAD 2>/dev/null || echo '?')"
+  git fetch origin >/dev/null 2>&1 || true
+  if [[ "$BRANCH" != "HEAD" ]]; then
+    git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+  fi
+fi
+if [[ "$BRANCH" == "cursor/scrub-google-api-key-pr31-4710" ]]; then
+  echo "UYARI: Eski scrub demo dalındasın — YKS/ads/icon polish bu dalda yok." >&2
+  echo "       git checkout cursor/home-polish-yks-ads-ocr-2914 && git pull" >&2
+  echo "       sonra tekrar: bash scripts/phone-demo-mac.sh ios" >&2
+fi
 
 load_env() {
   local f="$1"

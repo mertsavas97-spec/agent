@@ -306,7 +306,9 @@ export default function SettingsScreen() {
       ) : null}
 
       <Text style={styles.version} testID="settings-version">
-        ÇözBil · sürüm 1.0.0 (MVP)
+        {__DEV__
+          ? `ÇözBil · dogfood · paket ${EXAM_LABEL.ygs}`
+          : 'ÇözBil · sürüm 1.0.0 (MVP)'}
       </Text>
     </ScrollView>
   );
