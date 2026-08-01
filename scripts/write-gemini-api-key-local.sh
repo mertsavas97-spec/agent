@@ -16,18 +16,68 @@ PROJECT="${GCP_PROJECT_ID:-cozbil-dev-f9583}"
 SMOKE_BODY="${TMPDIR:-/tmp}/cozbil-gemini-smoke.json"
 CREATE_ERR="${TMPDIR:-/tmp}/cozbil-gemini-key-create.err"
 CREATE_OUT="${TMPDIR:-/tmp}/cozbil-gemini-key-create.out"
+# Set by successful smoke — written to .env.local for proxy
+SMOKE_MODEL=""
+SMOKE_HTTP=""
 
+# Models to try (API enable / regional availability varies)
+SMOKE_MODELS=(
+  gemini-2.5-flash
+  gemini-2.0-flash
+  gemini-2.0-flash-001
+  gemini-1.5-flash
+  gemini-1.5-flash-latest
+)
+
+gemini_smoke_once() {
+  local key="$1"
+  local model="$2"
+  SMOKE_HTTP="$(
+    curl -sS -o "$SMOKE_BODY" -w '%{http_code}' \
+      "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}" \
+      -H 'Content-Type: application/json' \
+      -d '{"contents":[{"parts":[{"text":"Reply with one word: ok"}]}]}' \
+      --max-time 45 || echo "000"
+  )"
+  [[ "$SMOKE_HTTP" == "200" ]]
+}
+
+# Print last smoke failure details (never print the API key)
+print_smoke_fail() {
+  local model="${1:-?}"
+  echo "  smoke fail model=${model} HTTP=${SMOKE_HTTP:-?}" >&2
+  if [[ -s "$SMOKE_BODY" ]]; then
+    head -c 600 "$SMOKE_BODY" >&2 || true
+    echo "" >&2
+  else
+    echo "  (boş yanıt gövdesi)" >&2
+  fi
+}
+
+# Try models; optional retries with sleep (new key / newly-enabled API)
 gemini_smoke() {
   local key="$1"
-  local http
-  http="$(
-    curl -sS -o "$SMOKE_BODY" -w '%{http_code}' \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}" \
-      -H 'Content-Type: application/json' \
-      -d '{"contents":[{"parts":[{"text":"Reply with JSON only: {\"ok\":true}"}]}]}' \
-      --max-time 30 || echo "000"
-  )"
-  [[ "$http" == "200" ]]
+  local retries="${2:-1}"
+  local attempt model
+  attempt=1
+  while ((attempt <= retries)); do
+    if ((attempt > 1)); then
+      echo "==> smoke retry ${attempt}/${retries} (API/key propagation)…" >&2
+      sleep $((attempt * 8))
+    fi
+    for model in "${SMOKE_MODELS[@]}"; do
+      echo "  → ${model}…" >&2
+      if gemini_smoke_once "$key" "$model"; then
+        SMOKE_MODEL="$model"
+        return 0
+      fi
+      print_smoke_fail "$model"
+      # 400 INVALID_ARGUMENT / model not found → try next model
+      # 403/429 on all models → still try others once
+    done
+    attempt=$((attempt + 1))
+  done
+  return 1
 }
 
 key_string_for_uid() {
@@ -208,52 +258,78 @@ if ((${#CANDIDATES[@]} > 0)); then
   done
 fi
 
+CREATED_KEY=""
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-  if KEY="$(create_gemini_key)"; then
-    :
+  if CREATED_KEY="$(create_gemini_key)"; then
+    echo "==> Gemini smoke (yeni key — propagation retry)…"
+    if gemini_smoke "$CREATED_KEY" 4; then
+      KEY="$CREATED_KEY"
+      echo "✓ Gemini smoke OK (yeni key, model=${SMOKE_MODEL})"
+    else
+      echo "==> Yeni key smoke fail — mevcut key kısıt kaldırma denenecek" >&2
+      CREATED_KEY=""
+    fi
   else
-    KEY=""
+    CREATED_KEY=""
   fi
 fi
 
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
   if KEY="$(lift_existing_key_restrictions)"; then
-    echo "✓ Gemini smoke OK (kısıt kaldırıldı)"
+    # lift already smoked once inside; re-smoke to set SMOKE_MODEL
+    if gemini_smoke "$KEY" 2; then
+      echo "✓ Gemini smoke OK (kısıt kaldırıldı, model=${SMOKE_MODEL})"
+    else
+      KEY=""
+    fi
   else
     KEY=""
   fi
 fi
 
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
-  echo "HATA: Gemini API key alınamadı." >&2
+  echo "HATA: Gemini API key alınamadı / smoke geçmedi." >&2
   echo "" >&2
-  echo "Elle (AI Studio — en hızlı):" >&2
-  echo "  1) https://aistudio.google.com/apikey  → Create API key (project: $PROJECT)" >&2
-  echo "  2) apps/mobile/.env.local içine ekle:" >&2
+  echo "Son smoke HTTP=${SMOKE_HTTP:-?} model listesi denendi." >&2
+  if [[ -s "$SMOKE_BODY" ]]; then
+    echo "Son yanıt:" >&2
+    head -c 800 "$SMOKE_BODY" >&2 || true
+    echo "" >&2
+  fi
+  echo "" >&2
+  echo "Elle (AI Studio — en güvenilir):" >&2
+  echo "  1) https://aistudio.google.com/apikey  → Create API key" >&2
+  echo "     (Google AI Studio key; mümkünse project: $PROJECT)" >&2
+  echo "  2) apps/mobile/.env.local:" >&2
   echo "       GEMINI_API_KEY=AIza...." >&2
   echo "  3) bash scripts/phone-demo-proxy-mac.sh" >&2
   echo "" >&2
-  echo "Veya GCP Console → APIs & Services → Credentials → Create API key" >&2
-  echo "  (Application restrictions: None; API restrictions: Don't restrict / Generative Language)" >&2
+  echo "GCP billing / Generative Language API açık mı kontrol et:" >&2
+  echo "  https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com?project=$PROJECT" >&2
   exit 1
 fi
 
-echo "==> Gemini smoke (yazmadan önce)…"
-if ! gemini_smoke "$KEY"; then
-  echo "HATA: Key var ama smoke fail." >&2
-  head -c 400 "$SMOKE_BODY" 2>/dev/null >&2 || true
-  echo "" >&2
-  exit 1
+# Candidate path may have set KEY without SMOKE_MODEL
+if [[ -z "$SMOKE_MODEL" ]]; then
+  echo "==> Gemini smoke (yazmadan önce)…"
+  if ! gemini_smoke "$KEY" 2; then
+    echo "HATA: Key var ama smoke fail. HTTP=${SMOKE_HTTP:-?}" >&2
+    head -c 600 "$SMOKE_BODY" 2>/dev/null >&2 || true
+    echo "" >&2
+    exit 1
+  fi
 fi
-echo "✓ Gemini smoke OK"
+echo "✓ Gemini smoke OK (model=${SMOKE_MODEL})"
 
 umask 077
 touch "$OUT"
 tmp="$(mktemp)"
-grep -vE '^GEMINI_API_KEY=' "$OUT" >"$tmp" || true
+grep -vE '^(GEMINI_API_KEY|GEMINI_SOLVE_MODEL|GEMINI_OCR_MODEL)=' "$OUT" >"$tmp" || true
 {
   cat "$tmp"
   echo "GEMINI_API_KEY=${KEY}"
+  echo "GEMINI_SOLVE_MODEL=${SMOKE_MODEL}"
+  echo "GEMINI_OCR_MODEL=${SMOKE_MODEL}"
 } >"$OUT"
 rm -f "$tmp"
 

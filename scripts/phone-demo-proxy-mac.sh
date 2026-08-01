@@ -84,22 +84,42 @@ fi
 
 # Reject Vision-only / dead keys before starting proxy
 echo "==> Gemini key smoke…"
-GEMINI_SMOKE_HTTP="$(
-  curl -sS -o /tmp/cozbil-proxy-gemini-smoke.json -w '%{http_code}' \
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
-    -H 'Content-Type: application/json' \
-    -d '{"contents":[{"parts":[{"text":"Reply with JSON only: {\"ok\":true}"}]}]}' \
-    --max-time 30 || echo "000"
-)"
-if [[ "$GEMINI_SMOKE_HTTP" != "200" ]]; then
-  echo "HATA: .env.local GEMINI_API_KEY smoke HTTP $GEMINI_SMOKE_HTTP" >&2
-  head -c 300 /tmp/cozbil-proxy-gemini-smoke.json 2>/dev/null >&2 || true
+PROXY_SMOKE_BODY="${TMPDIR:-/tmp}/cozbil-proxy-gemini-smoke.json"
+PROXY_SMOKE_OK=0
+PROXY_SMOKE_MODELS=(
+  "${GEMINI_SOLVE_MODEL:-}"
+  gemini-2.5-flash
+  gemini-2.0-flash
+  gemini-1.5-flash
+  gemini-1.5-flash-latest
+)
+for _m in "${PROXY_SMOKE_MODELS[@]}"; do
+  [[ -z "$_m" ]] && continue
+  echo "  → ${_m}…"
+  GEMINI_SMOKE_HTTP="$(
+    curl -sS -o "$PROXY_SMOKE_BODY" -w '%{http_code}' \
+      "https://generativelanguage.googleapis.com/v1beta/models/${_m}:generateContent?key=${GEMINI_API_KEY}" \
+      -H 'Content-Type: application/json' \
+      -d '{"contents":[{"parts":[{"text":"Reply with one word: ok"}]}]}' \
+      --max-time 45 || echo "000"
+  )"
+  if [[ "$GEMINI_SMOKE_HTTP" == "200" ]]; then
+    export GEMINI_SOLVE_MODEL="$_m"
+    export GEMINI_OCR_MODEL="$_m"
+    PROXY_SMOKE_OK=1
+    break
+  fi
+  echo "  smoke fail model=${_m} HTTP=${GEMINI_SMOKE_HTTP}" >&2
+  head -c 400 "$PROXY_SMOKE_BODY" 2>/dev/null >&2 || true
   echo "" >&2
-  echo "Vision-only key olabilir. Şunu çalıştır:" >&2
+done
+if [[ "$PROXY_SMOKE_OK" != "1" ]]; then
+  echo "HATA: .env.local GEMINI_API_KEY smoke geçmedi." >&2
   echo "  FORCE_NEW_GEMINI_KEY=1 bash scripts/write-gemini-api-key-local.sh" >&2
+  echo "  veya AI Studio: https://aistudio.google.com/apikey" >&2
   exit 1
 fi
-echo "==> Gemini Vision solve: AÇIK (birincil yol) — smoke OK"
+echo "==> Gemini Vision solve: AÇIK — smoke OK (model=${GEMINI_SOLVE_MODEL})"
 
 LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
 if [[ -z "$LAN_IP" ]]; then
