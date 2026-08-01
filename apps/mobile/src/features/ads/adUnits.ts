@@ -4,6 +4,8 @@
  * Google test ids used when EXPO_PUBLIC_ADS_USE_TEST_UNITS=1.
  */
 
+import { Platform } from 'react-native';
+
 export type AdUnitSet = {
   androidAppId: string | null;
   iosAppId: string | null;
@@ -86,13 +88,19 @@ export function adsStubForced(): boolean {
   return process.env.EXPO_PUBLIC_ADS_STUB === '1';
 }
 
-/** True when enough ids exist to attempt a real SDK path later. */
+/** True when enough ids exist for the current platform (iOS≠Android units). */
 export function hasProductionAdUnits(units: AdUnitSet = resolveAdUnits()): boolean {
-  return Boolean(
-    (units.bannerAndroid || units.bannerIos) &&
-      (units.interstitialAndroid || units.interstitialIos) &&
-      (units.rewardedAndroid || units.rewardedIos),
-  );
+  const os = Platform.OS;
+  if (os === 'ios') {
+    return Boolean(units.bannerIos && units.interstitialIos && units.rewardedIos);
+  }
+  if (os === 'android') {
+    return Boolean(
+      units.bannerAndroid && units.interstitialAndroid && units.rewardedAndroid,
+    );
+  }
+  // web / unknown — treat as not ready
+  return false;
 }
 
 /** Native AdMob module linked (optional peer). */
@@ -107,7 +115,7 @@ export function isAdMobNativeLinked(): boolean {
 }
 
 /**
- * Live store ads: real unit ids + native SDK, and stub flag off.
+ * Live store ads: real unit ids for this OS + native SDK, and stub flag off.
  * Until then: hide banner placeholders; do not fake store ads.
  */
 export function isLiveAdsDeliveryReady(

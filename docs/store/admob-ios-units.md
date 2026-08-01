@@ -37,7 +37,25 @@ bash scripts/mac-build-ipa-with-push.sh
 
 ## Android
 
-Henüz birim yok. Ayrı Android app + 3 birim sonra `EXPO_PUBLIC_ADMOB_*_ANDROID` eklenir.
+Henüz live birim yoksa AAB yine alınır; Android’de reklam UI kapalı kalır
+(`hasProductionAdUnits` platforma özel).
+
+AdMob’da Android app + Banner / Geçiş / Ödüllü oluşturunca `.env.local`:
+
+```
+EXPO_PUBLIC_ADMOB_ANDROID_APP_ID=ca-app-pub-…~…
+EXPO_PUBLIC_ADMOB_BANNER_ANDROID=…
+EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=…
+EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=…
+```
+
+Local AAB (1.0.2 / versionCode 18):
+
+```bash
+cd ~/agent && git pull
+bash scripts/mac-build-aab-local.sh
+# → ~/Desktop/cozbil-production.aab
+```
 
 ## app-ads.txt
 

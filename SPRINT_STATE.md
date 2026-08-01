@@ -1,29 +1,20 @@
 # Sprint State
 
 **Branch:** `cursor/home-polish-yks-ads-ocr-2914`  
-**Hedef:** Audit temiz + local IPA **1.0.1 (18)** (store canlı 17)
+**iOS:** 1.0.2 (18) — TestFlight  
+**Android:** 1.0.2 / versionCode **18** — kapalı test AAB
 
-## Bu tur
-
-- [x] AdMob / pipeline / OCR audit
-- [x] Vertex-first doğrulandı; OCR soft yedek
-- [x] Banner tab shell (home+history+stats+profile)
-- [x] AI-first analyzing copy
-- [x] buildNumber **18**
-- [ ] Owner Mac: `bash scripts/mac-build-ipa-with-push.sh`
-
-## Owner Mac — IPA
+## Owner Mac — Android AAB
 
 ```bash
 cd ~/agent && git pull
-bash scripts/mac-build-ipa-with-push.sh
-# Çıktı: ~/Desktop/cozbil-production.ipa  (veya IOS_IPA_OUT)
+bash scripts/mac-build-aab-local.sh
+# Çıktı: ~/Desktop/cozbil-production.aab
+# Play → Kapalı test (alpha) → Yeni sürüm
 ```
 
-Dogfood (dev client) ayrı:
+## Owner Mac — iOS IPA (hatırlatma)
 
 ```bash
-bash scripts/write-vertex-solve-local.sh
-bash scripts/phone-demo-proxy-mac.sh
-bash scripts/phone-dev-build.sh metro
+bash scripts/mac-build-ipa-with-push.sh
 ```
