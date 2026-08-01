@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isGarbageOcrText,
   repairEquationOcr,
+  repairMathNotationOcr,
   repairPercentOcr,
 } from './visionOcr.mjs';
 
@@ -59,5 +60,13 @@ assert.equal(
   ),
   false,
 );
+
+assert.match(
+  repairMathNotationOcr(
+    'x ve y gerçel sayıları için\n2x = 4y\n2x+1 + 4y+1 = 96 (2020)',
+  ),
+  /2\^x=4\^y[\s\S]*2\^\(x\+1\)[\s\S]*4\^\(y\+1\)/,
+);
+assert.equal(repairMathNotationOcr('soru (2020) bitti').includes('2020'), false);
 
 console.log('ocrQuality.test.mjs OK');

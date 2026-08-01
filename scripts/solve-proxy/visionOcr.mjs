@@ -346,8 +346,32 @@ export function repairEquationOcr(text) {
   return t;
 }
 
+/** Recover exam math OCR: missing ^ on 2x=4y, colon division, years. */
+export function repairMathNotationOcr(text) {
+  let t = String(text || '');
+  t = t.replace(/\(20\d{2}\)/g, ' ');
+  // Mixed şık: "A) 2 10/23" spacing (Vision sometimes glues "210/23")
+  t = t.replace(
+    /([A-E])\)\s*(\d)(\d{1,2})\s*\/\s*(\d{2,})/gi,
+    (full, lab, whole, num, den) => {
+      // Only split when it looks like mixed number (num < den)
+      if (Number(num) < Number(den) && Number(whole) <= 20) {
+        return `${lab}) ${whole} ${num}/${den}`;
+      }
+      return full;
+    },
+  );
+  if (/gerçel|üslü|olduğuna göre/i.test(t)) {
+    t = t.replace(/\b(\d)\s*([xyXY])\s*\+\s*(\d)\b/g, '$1^($2+$3)');
+    t = t.replace(/\b(\d)\s*([xyXY])\s*=\s*(\d)\s*([xyXY])\b/g, '$1^$2=$3^$4');
+  }
+  // Ensure colon between fraction groups stays as division cue for the solver
+  t = t.replace(/(\d)\s*\/\s*(\d)\s*:\s*\(/g, '$1/$2 : (');
+  return t;
+}
+
 function repairOcrText(text) {
-  return repairEquationOcr(repairPercentOcr(text));
+  return repairMathNotationOcr(repairEquationOcr(repairPercentOcr(text)));
 }
 
 function extractChoicesBlock(text) {
