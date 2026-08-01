@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 # Mac-only: production IPA (push fix + live AdMob + Firebase from local env).
 #
+# Branch: varsayılan = şu anki checkout (eski scrub dalına zorla geçmez).
+#   IPA_PUSH_BRANCH=cursor/home-polish-yks-ads-ocr-2914 bash scripts/mac-build-ipa-with-push.sh
+#
 # Bir kez (key'i chat'e yapistirmayin):
 #   cd ~/agent
-#   git checkout cursor/scrub-google-api-key-pr31-4710 && git pull
-#   cat > apps/mobile/.env.local <<'EOF'
-#   EXPO_PUBLIC_FIREBASE_API_KEY=AIza...   # gcloud get-key-string ciktiniz
-#   EXPO_PUBLIC_FIREBASE_APP_ID=1:717206185063:web:74256b15d50acb5c49a0c2
-#   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=cozbil-dev-f9583.firebaseapp.com
-#   EXPO_PUBLIC_FIREBASE_PROJECT_ID=cozbil-dev-f9583
-#   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=cozbil-dev-f9583.firebasestorage.app
-#   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=717206185063
-#   EOF
+#   git checkout cursor/home-polish-yks-ads-ocr-2914 && git pull
+#   # apps/mobile/.env.local içinde Firebase public keys (gitignore)
 #
 # Sonra her IPA:
 #   bash scripts/mac-build-ipa-with-push.sh
@@ -20,7 +16,6 @@
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BRANCH="${IPA_PUSH_BRANCH:-cursor/scrub-google-api-key-pr31-4710}"
 OUT="${IOS_IPA_OUT:-$HOME/Desktop/cozbil-production.ipa}"
 ENV_FILE="$ROOT/apps/mobile/.env.local"
 
@@ -30,9 +25,19 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 
 cd "$ROOT"
-git fetch origin
-git checkout "$BRANCH"
-git pull --ff-only origin "$BRANCH" || true
+git fetch origin >/dev/null 2>&1 || true
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)"
+if [[ -n "${IPA_PUSH_BRANCH:-}" ]]; then
+  BRANCH="$IPA_PUSH_BRANCH"
+  echo "==> branch (IPA_PUSH_BRANCH): $BRANCH"
+  git checkout "$BRANCH"
+  git pull --ff-only origin "$BRANCH" || true
+else
+  BRANCH="$CURRENT_BRANCH"
+  echo "==> branch (current): $BRANCH"
+  git pull --ff-only origin "$BRANCH" 2>/dev/null || git pull --ff-only || true
+fi
+echo "==> tip: $(git rev-parse --short HEAD) — app.json buildNumber kontrol et (beklenen: 18)"
 
 # Load local secrets (never committed)
 if [[ -f "$ENV_FILE" ]]; then
