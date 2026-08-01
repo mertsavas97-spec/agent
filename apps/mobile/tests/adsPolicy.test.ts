@@ -32,7 +32,7 @@ describe('ads policy', () => {
     expect(shouldShowBanner({ isPremium: false })).toBe(true);
   });
 
-  it('allows interstitial after first billed solve at natural break (free leave)', () => {
+  it('allows interstitial on first free leave at natural break', () => {
     expect(
       shouldShowInterstitial({
         isPremium: false,
@@ -40,7 +40,7 @@ describe('ads policy', () => {
         interstitialShownToday: 0,
         atNaturalBreak: true,
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldShowInterstitial({
         isPremium: false,

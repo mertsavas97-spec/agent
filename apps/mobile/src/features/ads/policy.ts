@@ -9,8 +9,11 @@ export const ADS_LIMITS = {
    * (aligned with daily free solve budget). Premium: never.
    */
   interstitialMaxPerIstanbulDay: 5,
-  /** Show interstitial after this many billed free solves today (1 = every leave). */
-  interstitialAfterBilledSolves: 1,
+  /**
+   * Show interstitial when leaving a solution after this many billed solves.
+   * 0 = first leave of the day onwards (every natural break, free only).
+   */
+  interstitialAfterBilledSolves: 0,
   freeDailySolves: 5,
   /** Max photos in one multi-question batch (abuse cap; also Premium) */
   multiBatchMax: 5,

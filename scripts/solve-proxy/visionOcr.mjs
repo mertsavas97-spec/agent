@@ -13,35 +13,52 @@ const SHARP_INPUT_OPTIONS = {
   failOn: 'none',
 };
 
-/** Phone photos of worksheets often produce pipe/noise OCR — reject before solve. */
+/**
+ * Reject only clearly empty / blank-frame OCR.
+ * Soft phone & PC-screen photos must still proceed (ChatGPT-like tolerance).
+ */
 export function isGarbageOcrText(text) {
   const raw = String(text || '').trim();
-  if (raw.length < 12) return true;
+  if (raw.length < 8) return true;
   const compact = raw.replace(/\s+/g, '');
-  if (compact.length < 10) return true;
+  if (compact.length < 6) return true;
 
-  // Recoverable MCQ worksheets: keep even if Tesseract sprinkled pipes.
-  const hasChoices =
-    /A\s*\)\s*\S+/i.test(raw) &&
-    /B\s*\)\s*\S+/i.test(raw) &&
-    /[CDE]\s*\)\s*\S+/i.test(raw);
+  const hasChoices = /A\s*\)/i.test(raw) && /B\s*\)/i.test(raw);
   const hasQuestionCue =
-    /kaçtır|hangisidir|denklem|yüzde|sağlayan|aşağıdakilerden|işlemin/i.test(raw);
-  if (hasChoices && (hasQuestionCue || raw.length >= 60)) {
+    /kaçtır|hangisidir|denklem|yüzde|sağlayan|aşağıdakilerden|işlemin|toplamı|sonucu|gerçel|kesir/i.test(
+      raw,
+    );
+  // Any MCQ / exam cue ⇒ keep; solvers decide if they can answer.
+  if (hasChoices || hasQuestionCue) {
     return false;
   }
 
   const letters = (raw.match(/[A-Za-zÇĞİÖŞÜçğıöşü0-9]/g) || []).length;
   const ratio = letters / Math.max(compact.length, 1);
-  if (ratio < 0.28) return true;
+  if (ratio < 0.16) return true;
   const pipes = (raw.match(/\|/g) || []).length;
-  if (pipes >= 6 && pipes / Math.max(compact.length, 1) > 0.25) return true;
-  // Phone OCR of blank frames: many short pipe/I lines, almost no words.
   const words = (raw.match(/[A-Za-zÇĞİÖŞÜçğıöşü]{3,}/g) || []).length;
-  if (words < 3 && pipes + (raw.match(/[Il1\[\]]/g) || []).length >= 10) {
+  // Blank-frame / ruler noise: many pipes, almost no real words.
+  if (pipes >= 8 && pipes / Math.max(compact.length, 1) > 0.32 && words < 2) {
+    return true;
+  }
+  if (words < 2 && pipes + (raw.match(/[Il1\[\]]/g) || []).length >= 12) {
     return true;
   }
   return false;
+}
+
+/** Weak but possibly recoverable — try Gemini/Tesseract before accepting. */
+export function isWeakOcrText(text) {
+  if (isGarbageOcrText(text)) return true;
+  const raw = String(text || '').trim();
+  const hasChoices =
+    /A\s*\)\s*\S+/i.test(raw) && /B\s*\)\s*\S+/i.test(raw);
+  if (hasChoices && raw.length >= 36) return false;
+  if (/[0-9].*[+\-−*/÷:=^xX]|[+\-−*/÷:=^].*[0-9]/.test(raw) && raw.length >= 24) {
+    return false;
+  }
+  return raw.length < 48;
 }
 
 async function fetchWithTimeout(url, init, timeoutMs) {
@@ -88,17 +105,19 @@ async function preprocessForVision(cleaned) {
       width > 0 && width < 1100
         ? Math.min(1800, Math.round(width * 1.75))
         : Math.min(2000, Math.max(1400, width || 1400));
+    // Soft / slightly blurry phone & monitor shots: lift, gentle denoise, unsharp.
     const buf = await sharp(raw, SHARP_INPUT_OPTIONS)
       .rotate()
       .normalize()
-      .modulate({ brightness: 1.06 })
-      .sharpen({ sigma: 0.9 })
+      .modulate({ brightness: 1.1 })
+      .median(1)
+      .sharpen({ sigma: 1.2, m1: 1.1, m2: 0.6 })
       .resize({
         width: targetWidth,
         kernel: 'lanczos3',
         withoutEnlargement: false,
       })
-      .jpeg({ quality: 90, mozjpeg: true })
+      .jpeg({ quality: 92, mozjpeg: true })
       .toBuffer();
     return buf.toString('base64');
   } catch {
@@ -289,12 +308,13 @@ function looksLikeBrokenEquation(text) {
 }
 
 function isGoodEnoughOcr(text, score) {
-  if (score < 400) return false;
+  if (score < 220) return false;
   if (looksLikeBrokenEquation(text)) return false;
   const hasChoices = /A\s*\)\s*\S+/i.test(text) && /B\s*\)\s*\S+/i.test(text);
   const pctCount = (text.match(/%\s*\d{1,3}/g) || []).length;
-  if (hasChoices && (pctCount >= 1 || text.length >= 80)) return true;
-  if (hasChoices && score >= 900) return true;
+  if (hasChoices && (pctCount >= 1 || text.length >= 48)) return true;
+  if (hasChoices && score >= 500) return true;
+  if (!isWeakOcrText(text) && score >= 350) return true;
   return false;
 }
 
@@ -610,24 +630,48 @@ async function recognizeFractionDigit({ input, worker, left, top, width, height 
   return /^\d{1,2}$/.test(digits) ? digits : null;
 }
 
-/** Vision → Gemini → local Tesseract. */
+/**
+ * Vision → Gemini (multimodal, soft photos) → Tesseract.
+ * Accept soft OCR; only hard-reject blank frames.
+ */
 export async function ocrImageBase64(imageBase64, mimeType = 'image/jpeg') {
   const cleaned = String(imageBase64 || '').replace(/^data:[^;]+;base64,/, '');
   if (!cleaned) throw new Error('empty image');
 
   const errors = [];
+  /** @type {string[]} */
+  const softCandidates = [];
 
   try {
     const viaVision = await ocrViaVision(cleaned);
-    if (viaVision) {
+    if (viaVision && !isWeakOcrText(viaVision)) {
       console.info('ocr: vision');
       return viaVision;
+    }
+    if (viaVision) {
+      softCandidates.push(viaVision);
+      errors.push('vision: weak_ocr');
     }
   } catch (err) {
     errors.push(`vision: ${err instanceof Error ? err.message : err}`);
   }
 
-  // Local first for dogfood — Gemini/Vision billing must not block solves
+  // Gemini next — better on soft / PC-screen photos than brittle Tesseract.
+  try {
+    const viaGemini = await ocrViaGemini(cleaned, mimeType);
+    if (viaGemini && !isGarbageOcrText(viaGemini)) {
+      console.info('ocr: gemini');
+      return repairOcrText(viaGemini);
+    }
+    if (viaGemini) {
+      softCandidates.push(viaGemini);
+      errors.push('gemini: garbage_ocr');
+    }
+  } catch (err) {
+    errors.push(`gemini: ${err instanceof Error ? err.message : err}`);
+    console.warn('gemini OCR failed', err instanceof Error ? err.message : err);
+  }
+
   try {
     const viaTess = await ocrViaTesseract(cleaned, mimeType);
     if (viaTess && !isGarbageOcrText(viaTess)) {
@@ -635,6 +679,7 @@ export async function ocrImageBase64(imageBase64, mimeType = 'image/jpeg') {
       return viaTess;
     }
     if (viaTess) {
+      softCandidates.push(viaTess);
       errors.push('tesseract: garbage_ocr');
       console.warn('tesseract OCR garbage', viaTess.slice(0, 120).replace(/\s+/g, ' '));
     } else {
@@ -645,15 +690,11 @@ export async function ocrImageBase64(imageBase64, mimeType = 'image/jpeg') {
     console.warn('tesseract OCR failed', err instanceof Error ? err.message : err);
   }
 
-  try {
-    const viaGemini = await ocrViaGemini(cleaned, mimeType);
-    if (viaGemini) {
-      console.info('ocr: gemini');
-      return viaGemini;
-    }
-  } catch (err) {
-    errors.push(`gemini: ${err instanceof Error ? err.message : err}`);
-    console.warn('gemini OCR failed', err instanceof Error ? err.message : err);
+  // Last resort: longest soft candidate (still better than hard fail on soft photos).
+  if (softCandidates.length > 0) {
+    const best = softCandidates.reduce((a, b) => (b.length > a.length ? b : a));
+    console.warn('ocr: soft-accept', best.slice(0, 120).replace(/\s+/g, ' '));
+    return repairOcrText(best);
   }
 
   throw new Error(

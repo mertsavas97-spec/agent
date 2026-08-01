@@ -10,81 +10,95 @@ type PremiumSplashProps = {
   testID?: string;
 };
 
+const EXAM_STRIP = ['LGS', 'YKS', 'KPSS', 'Ehliyet'] as const;
+
 /**
- * Full-bleed navy brand splash — same visual language as store icon + analyzing.
- * Used while bootstrap settles so the cold start never looks like a gray stub.
+ * Full-bleed product splash — brand wordmark is the hero, mark supports it.
+ * Not an icon-only plate; reads as a finished ÇözBil open, not a stub.
  */
 export function PremiumSplash({
   status = null,
   testID = 'premium-splash',
 }: PremiumSplashProps) {
   const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(10)).current;
-  const ring = useRef(new Animated.Value(0)).current;
+  const rise = useRef(new Animated.Value(16)).current;
+  const bar = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, {
         toValue: 1,
-        duration: 480,
+        duration: 560,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(rise, {
         toValue: 0,
-        duration: 520,
+        duration: 620,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-    ]).start();
-    const spin = Animated.loop(
-      Animated.timing(ring, {
+      Animated.timing(bar, {
         toValue: 1,
-        duration: 10_000,
-        easing: Easing.linear,
-        useNativeDriver: true,
+        duration: 900,
+        delay: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
       }),
-    );
-    spin.start();
-    return () => spin.stop();
-  }, [fade, rise, ring]);
+    ]).start();
+  }, [bar, fade, rise]);
 
-  const rotate = ring.interpolate({
+  const barWidth = bar.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+    outputRange: ['12%', '56%'],
   });
 
   return (
     <View style={styles.root} testID={testID} accessibilityRole="image">
-      <View style={styles.glowA} />
-      <View style={styles.glowB} />
+      <View style={styles.washTop} />
+      <View style={styles.washBottom} />
+      <View style={styles.gridHint} />
+
       <Animated.View
         style={[
           styles.hero,
           { opacity: fade, transform: [{ translateY: rise }] },
         ]}>
-        <Animated.View
-          style={[styles.orbit, { transform: [{ rotate }] }]}
-          testID="premium-splash-orbit"
-        />
-        <View style={styles.markWell}>
+        <View style={styles.markRow}>
           <CozbilRobot
-            size={96}
+            size={56}
             animate
             tone="onDark"
             testID="premium-splash-robot"
           />
         </View>
+
         <Text style={styles.wordmark} accessibilityRole="header">
           ÇözBil
         </Text>
-        <Text style={styles.tagline}>Adım adım sınav çözümü</Text>
+        <Text style={styles.tagline}>Fotoğraftan adım adım sınav çözümü</Text>
+
+        <Animated.View style={[styles.accentBar, { width: barWidth }]} />
+
+        <View style={styles.examStrip} testID="premium-splash-exams">
+          {EXAM_STRIP.map((label, i) => (
+            <View key={label} style={styles.examItem}>
+              {i > 0 ? <Text style={styles.examDot}>·</Text> : null}
+              <Text style={styles.examLabel}>{label}</Text>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
+
+      <View style={styles.footer}>
         {status ? (
           <Text style={styles.status} testID="premium-splash-status">
             {status}
           </Text>
-        ) : null}
-      </Animated.View>
+        ) : (
+          <Text style={styles.footerQuiet}>Hazırlanıyor</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -92,74 +106,107 @@ export function PremiumSplash({
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: colors.navy,
+    backgroundColor: colors.navyDeep,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     zIndex: 100,
     elevation: 100,
   },
-  glowA: {
+  washTop: {
     position: 'absolute',
+    top: -80,
+    left: -40,
+    width: '120%',
+    height: '55%',
+    backgroundColor: colors.navy,
+    transform: [{ rotate: '-8deg' }],
+  },
+  washBottom: {
+    position: 'absolute',
+    bottom: -100,
+    right: -60,
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    top: '18%',
-    left: '-10%',
+    backgroundColor: 'rgba(245, 158, 11, 0.14)',
   },
-  glowB: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(99, 102, 241, 0.14)',
-    bottom: '8%',
-    right: '-16%',
+  gridHint: {
+    ...StyleSheet.absoluteFill,
+    opacity: 0.04,
   },
   hero: {
     alignItems: 'center',
     paddingHorizontal: space.xl,
-    gap: space.sm,
+    maxWidth: 360,
   },
-  orbit: {
-    position: 'absolute',
-    top: -18,
-    width: 132,
-    height: 132,
-    borderRadius: 66,
-    borderWidth: 1.5,
-    borderColor: 'rgba(245, 158, 11, 0.35)',
-    borderStyle: 'dashed',
-  },
-  markWell: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.navyDeep,
-    borderWidth: 2,
-    borderColor: 'rgba(245, 158, 11, 0.55)',
+  markRow: {
     marginBottom: space.md,
   },
   wordmark: {
     fontFamily: typography.fontFamilyBold,
-    fontSize: typography.size.display,
+    fontSize: 44,
+    lineHeight: 50,
     color: colors.textOnDark,
-    letterSpacing: 0.4,
-  },
-  tagline: {
-    fontFamily: typography.fontFamilyMedium,
-    fontSize: typography.size.md,
-    color: colors.textOnDarkMuted,
+    letterSpacing: 0.6,
     textAlign: 'center',
   },
+  tagline: {
+    marginTop: space.sm,
+    fontFamily: typography.fontFamilyMedium,
+    fontSize: typography.size.md,
+    lineHeight: 22,
+    color: colors.textOnDarkMuted,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  accentBar: {
+    marginTop: space.lg,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.orange,
+  },
+  examStrip: {
+    marginTop: space.lg,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 2,
+  },
+  examItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  examDot: {
+    color: 'rgba(245, 158, 11, 0.7)',
+    marginHorizontal: 8,
+    fontSize: 16,
+    fontFamily: typography.fontFamilyBold,
+  },
+  examLabel: {
+    fontFamily: typography.fontFamilySemiBold,
+    fontSize: typography.size.sm,
+    color: colors.textOnDark,
+    letterSpacing: 0.8,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 48,
+    left: space.lg,
+    right: space.lg,
+    alignItems: 'center',
+  },
   status: {
-    marginTop: space.md,
+    fontFamily: typography.fontFamilyMedium,
+    fontSize: typography.size.sm,
+    color: colors.orange,
+    textAlign: 'center',
+  },
+  footerQuiet: {
     fontFamily: typography.fontFamily,
     fontSize: typography.size.sm,
-    color: 'rgba(245, 158, 11, 0.9)',
+    color: 'rgba(226, 232, 240, 0.45)',
     textAlign: 'center',
   },
 });

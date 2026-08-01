@@ -1,17 +1,16 @@
 # Sprint State
 
 **Branch:** `cursor/home-polish-yks-ads-ocr-2914`  
-**Hedef:** Premium splash + YKS etiketi + ads gate + OCR zoom/PC + loading
+**Hedef:** Splash redesign + exam confirm + OCR tolerance + banner/interstitial
 
 ## Bu tur (hazır)
 
-- [x] PremiumSplash (BootstrapGate)
-- [x] Home logo circle
-- [x] YGS → YKS (user-facing; id `ygs`)
-- [x] Exam switch rewarded ad
-- [x] Multi-batch rewarded (mevcut) + AdMob warm + banner fail-safe
-- [x] Analyzing progress floors / crawl snappier
-- [x] OCR zoom + PC screen preprocess (solve-proxy)
+- [x] PremiumSplash — wordmark hero (icon-only değil) + exam strip
+- [x] Exam switch — onay Alert → “Reklam izle ve geç” → rewarded
+- [x] OCR — soft-accept (Vision→Gemini→Tesseract); yalnız aşırı junk reject
+- [x] Banner — live + `__DEV__` Google test fallback
+- [x] Interstitial — çözüm bitince ana sayfaya geçişte 1 geçiş reklamı
+- [x] Home logo circle / YKS etiketi / loading floors (önceki tur)
 
 ## Owner Mac (doğrulama)
 
@@ -23,8 +22,7 @@ bash scripts/phone-demo-proxy-mac.sh
 bash scripts/phone-dev-build.sh metro
 ```
 
-Smoke: splash → home circle logo → YKS chip → mod değişince ödüllü reklam →
-çoklu soru reklam → banner → zoom/PC foto çöz.
+Smoke: splash (ÇözBil + LGS·YKS·KPSS·Ehliyet) → mod değişince onay → reklam →
+banner altta → soft/zoom foto çöz → çözümden çıkınca geçiş reklamı.
 
-**OCR fix (2026-08-01):** colon kesir + üslü `x+y` + year sanitize — proxy’yi
-yeniden başlat (`phone-demo-proxy-mac.sh`) sonra aynı iki fotoğrafı dene.
+**Not:** Proxy’yi OCR değişiklikleri sonrası yeniden başlat.

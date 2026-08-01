@@ -183,9 +183,8 @@ export function tryCreateAdMobEngine(units: AdUnitSet): AdEngine | null {
     mode: 'admob',
     async showInterstitial() {
       if (!interstitialId) return 'unavailable';
-      try {
-        await ensureInitialized(ads);
-        const ad = ads.InterstitialAd.createForAdRequest(interstitialId, REQUEST);
+      const tryShow = async (unitId: string): Promise<'shown' | 'skipped'> => {
+        const ad = ads.InterstitialAd.createForAdRequest(unitId, REQUEST);
         await withTimeout(
           new Promise<void>((resolve, reject) => {
             const unsubLoad = ad.addAdEventListener(ads.AdEventType.LOADED, () => {
@@ -204,8 +203,26 @@ export function tryCreateAdMobEngine(units: AdUnitSet): AdEngine | null {
         );
         await ad.show();
         return 'shown';
+      };
+      try {
+        await ensureInitialized(ads);
+        return await tryShow(interstitialId);
       } catch (err) {
         console.warn('ads: interstitial failed', errorMessage(err));
+        if (__DEV__) {
+          const testId =
+            Platform.OS === 'ios'
+              ? GOOGLE_TEST_UNITS.interstitialIos
+              : GOOGLE_TEST_UNITS.interstitialAndroid;
+          if (testId && testId !== interstitialId) {
+            try {
+              console.info('ads: interstitial no-fill — retry Google test unit');
+              return await tryShow(testId);
+            } catch (retryErr) {
+              console.warn('ads: interstitial test retry failed', errorMessage(retryErr));
+            }
+          }
+        }
         return 'skipped';
       }
     },

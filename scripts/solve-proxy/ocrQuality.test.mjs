@@ -60,6 +60,9 @@ assert.equal(
   ),
   false,
 );
+// Soft / short MCQ fragment — keep (ChatGPT-like), reject only blank pipes.
+assert.equal(isGarbageOcrText('A) 2\nB) 3\nC) 4'), false);
+assert.equal(isGarbageOcrText('kaçtır?\nA) 1\nB) 2'), false);
 
 assert.match(
   repairMathNotationOcr(
