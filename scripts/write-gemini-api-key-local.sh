@@ -290,11 +290,21 @@ fi
 if [[ -z "$KEY" || "$KEY" != AIza* ]]; then
   echo "HATA: Gemini API key alınamadı / smoke geçmedi." >&2
   echo "" >&2
-  echo "Son smoke HTTP=${SMOKE_HTTP:-?} model listesi denendi." >&2
+  echo "Son smoke HTTP=${SMOKE_HTTP:-?} — model listesi denendi." >&2
   if [[ -s "$SMOKE_BODY" ]]; then
     echo "Son yanıt:" >&2
     head -c 800 "$SMOKE_BODY" >&2 || true
     echo "" >&2
+  fi
+  # models.list often reveals API_KEY_INVALID / permission clearer than generateContent
+  if [[ -n "${CREATED_KEY:-}" || -n "${KEY:-}" ]]; then
+    _diag_key="${KEY:-$CREATED_KEY}"
+    if [[ -n "$_diag_key" && "$_diag_key" == AIza* ]]; then
+      echo "==> Tanı: models.list" >&2
+      curl -sS "https://generativelanguage.googleapis.com/v1beta/models?key=${_diag_key}&pageSize=5" \
+        --max-time 20 2>/dev/null | head -c 500 >&2 || true
+      echo "" >&2
+    fi
   fi
   echo "" >&2
   echo "Elle (AI Studio — en güvenilir):" >&2
