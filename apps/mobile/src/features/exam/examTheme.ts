@@ -32,7 +32,7 @@ export const EXAM_THEME: Record<ExamType, ExamTheme> = {
     solid: '#B45309',
     soft: '#FEF3C7',
     accent: '#F59E0B',
-    modeChip: 'MOD: YGS',
+    modeChip: 'MOD: YKS',
   },
   kpss: {
     id: 'kpss',

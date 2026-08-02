@@ -151,16 +151,17 @@ for sa in \
   "${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   "firebase-adminsdk-fbsvc@${PROJECT}.iam.gserviceaccount.com"; do
   if "$GCLOUD" iam service-accounts describe "$sa" --project="$PROJECT" >/dev/null 2>&1; then
-    echo "  roles/aiplatform.user → $sa"
-    "$GCLOUD" projects add-iam-policy-binding "$PROJECT" \
-      --member="serviceAccount:$sa" \
-      --role="roles/aiplatform.user" \
-      --quiet >/dev/null 2>&1 || true
-    echo "  roles/visionai.user → $sa"
-    "$GCLOUD" projects add-iam-policy-binding "$PROJECT" \
-      --member="serviceAccount:$sa" \
-      --role="roles/visionai.user" \
-      --quiet >/dev/null 2>&1 || true
+    for role in \
+      roles/datastore.user \
+      roles/storage.objectAdmin \
+      roles/aiplatform.user \
+      roles/visionai.user; do
+      echo "  $role → $sa"
+      "$GCLOUD" projects add-iam-policy-binding "$PROJECT" \
+        --member="serviceAccount:$sa" \
+        --role="$role" \
+        --quiet >/dev/null 2>&1 || true
+    done
   fi
 done
 

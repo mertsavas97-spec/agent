@@ -1,8 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, View } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
+import { BannerSlot } from '@/src/features/ads';
 import { topicsForExam } from '@/src/data';
 import { readExamPreference } from '@/src/features/exam/examPreference';
 import { isExamType } from '@/src/features/exam/examTypes';
@@ -181,19 +182,22 @@ export default function ProfileScreen() {
       : 'Premium aktif';
 
   return (
-    <ProfilePanel
-      examType={examType}
-      quotaLabel={quotaLabel}
-      consentLabel={consentText}
-      catalogCount={catalogCount}
-      deleteRequested={deleteRequested}
-      isPremium={premium}
-      planLabel={planLabel}
-      onSignOut={onSignOut}
-      onRequestDelete={onRequestDelete}
-      onPurgeAccount={onPurgeAccount}
-      onOpenPremium={() => router.push('/premium')}
-      onOpenSettings={() => router.push('/settings')}
-    />
+    <View style={{ flex: 1 }} testID="profile-screen-root">
+      <ProfilePanel
+        examType={examType}
+        quotaLabel={quotaLabel}
+        consentLabel={consentText}
+        catalogCount={catalogCount}
+        deleteRequested={deleteRequested}
+        isPremium={premium}
+        planLabel={planLabel}
+        onSignOut={onSignOut}
+        onRequestDelete={onRequestDelete}
+        onPurgeAccount={onPurgeAccount}
+        onOpenPremium={() => router.push('/premium')}
+        onOpenSettings={() => router.push('/settings')}
+      />
+      <BannerSlot />
+    </View>
   );
 }

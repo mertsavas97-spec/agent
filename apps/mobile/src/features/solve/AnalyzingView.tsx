@@ -38,11 +38,12 @@ const RING_PAD = 12;
 const RING_SIZE = ICON_SIZE + RING_PAD * 2;
 const RING_RADIUS = RING_SIZE / 2;
 
-// Decode brand mark as soon as this module loads (home already warms it too).
+// Decode brand mark as soon as this module loads (root BrandMarkCache also warms).
 const brandUri = Image.resolveAssetSource(BRAND_MARK)?.uri;
 if (brandUri) {
   void Image.prefetch(brandUri);
 }
+void BRAND_MARK;
 
 /**
  * Moodboard loading: solid navy, official app icon, animated premium rings.
@@ -83,23 +84,30 @@ export function AnalyzingView({
 
   useEffect(() => {
     const target = Math.max(peakRef.current, baseTarget);
+    // Short ease to the phase floor — crawl effect owns the long wait.
     Animated.timing(anim, {
       toValue: target,
-      duration: motion.slow,
-      easing: Easing.out(Easing.cubic),
+      duration: motion.normal,
+      easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start();
   }, [anim, baseTarget]);
 
   useEffect(() => {
     if (!shouldCrawlProgress(copy.phase)) return;
-    // Resume crawl from the current peak so OCR/solve waits keep the bar moving.
+    // Resume crawl from the current peak so waits keep the bar moving linearly.
     const from = Math.max(peakRef.current, baseTarget);
     anim.setValue(from);
+    const remaining = Math.max(0.02, SOLVE_PROGRESS_CRAWL_TARGET - from);
+    // Snappy segment floors — long 8s mins felt frozen during short OCR waits.
+    const duration = Math.max(
+      3_500,
+      Math.round(SOLVE_PROGRESS_CRAWL_MS * (remaining / SOLVE_PROGRESS_CRAWL_TARGET)),
+    );
     const crawl = Animated.timing(anim, {
       toValue: SOLVE_PROGRESS_CRAWL_TARGET,
-      duration: SOLVE_PROGRESS_CRAWL_MS,
-      easing: Easing.out(Easing.cubic),
+      duration,
+      easing: Easing.linear,
       useNativeDriver: false,
     });
     crawl.start();

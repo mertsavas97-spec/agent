@@ -84,12 +84,26 @@ jobs:
       - name: Install mobile deps
         run: npm ci
 
+      # postinstall should already strip foojay; re-run so EAS archive is safe
+      # even if npm skipped scripts or node_modules was restored from cache.
+      - name: Patch RN foojay (Plugin Portal bypass)
+        run: node scripts/patch-rn-gradle-foojay.js
+
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
       - name: EAS local production AAB
+        env:
+          # Prefer setup-java JDK; do not auto-download toolchains via Foojay.
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
+          GRADLE_OPTS: >-
+            -Dorg.gradle.java.installations.auto-download=false
+            -Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
         run: |
           mkdir -p "$EAS_LOCAL_BUILD_WORKINGDIR"
+          # Defense in depth: EAS copies node_modules into the local build dir;
+          # ensure the patch is present on the workspace copy before pack.
+          node scripts/patch-rn-gradle-foojay.js
           eas build \
             --platform android \
             --profile production \

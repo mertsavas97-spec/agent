@@ -328,7 +328,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
     tip: 'Konuşmacıları A/B diye etiketle.',
   },
 
-  // ─── YGS Türkçe / Edebiyat ──────────────────────────────────
+  // ─── YKS Türkçe / Edebiyat ──────────────────────────────────
   'ygs-turkish-paragraf': {
     summary: 'TYT paragraf: ana fikir, anlatım biçimi, çıkarım temposu.',
     bullets: [
@@ -337,7 +337,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Çıkarımda metnin sınırını aşma.',
       'Uzun paragrafta gereksiz detaya takılma.',
     ],
-    examCue: 'YGS/TYT: “anlatım biçimi” ile “düşünceyi geliştirme” karışmasın.',
+    examCue: 'YKS/TYT: “anlatım biçimi” ile “düşünceyi geliştirme” karışmasın.',
     checkPrompt: 'Kök ne istiyor: ana fikir mi, biçim mi?',
     tip: 'Şıkları elemek çoğu zaman bulmaktan hızlıdır.',
   },
@@ -349,7 +349,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Uzun cümlede önce fiili, sonra bağı ayır.',
       'Mecaz / deyim sorusunda bağlam şart.',
     ],
-    examCue: 'YGS: “için” görürsen amaç mı sebep mi diye sesli oku.',
+    examCue: 'YKS: “için” görürsen amaç mı sebep mi diye sesli oku.',
     checkPrompt: 'Bağlacı değiştirince anlam bozuluyor mu?',
     tip: 'Önce bağı dairele, sonra şık.',
   },
@@ -361,7 +361,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Cümle türlerini yükleme göre bul.',
       'Anlamsız kural ezberi yerine “görev” sor.',
     ],
-    examCue: 'YGS: birleşik sözcük yazımı sık çeldirici.',
+    examCue: 'YKS: birleşik sözcük yazımı sık çeldirici.',
     checkPrompt: 'Bu sözcük cümlede hangi görevde?',
     tip: 'Şüphede yüklemden geriye çöz.',
   },
@@ -373,7 +373,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Sanatları (teşbih, istiare…) örnekle tanı.',
       'Dönem + şair eşlemesini kur.',
     ],
-    examCue: 'YGS/AYT: sanat adını ezberlemeden dizedeki ilişkiyi gör.',
+    examCue: 'YKS/AYT: sanat adını ezberlemeden dizedeki ilişkiyi gör.',
     checkPrompt: 'Benzetilen / benzeyen net mi?',
     tip: 'Önce dizeyi modern Türkçeye çevir.',
   },
@@ -390,7 +390,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
     tip: 'Dönem → özellik → örnek üçlüsü kur.',
   },
 
-  // ─── YGS Matematik ──────────────────────────────────────────
+  // ─── YKS Matematik ──────────────────────────────────────────
   'ygs-math-temel-kavramlar': {
     summary: 'Temel kavramlar: sayı kümeleri, işlem önceliği, mutlak değer.',
     bullets: [
@@ -399,7 +399,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Mutlak değer uzaklık demektir: |a| ≥ 0.',
       'Çözüm kümesi dilini (∈, ⊆) doğru oku.',
     ],
-    examCue: 'YGS: işaret hatalarının çoğu öncelik unutulmasından gelir.',
+    examCue: 'YKS: işaret hatalarının çoğu öncelik unutulmasından gelir.',
     checkPrompt: 'İşlem sırasını baştan uyguladım mı?',
     tip: 'Parantezleri renklendirerek çöz.',
   },
@@ -411,7 +411,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Tek/çift ve pozitif/negatif durumlarını ayrı yaz.',
       'Modüler düşünce (kalan) hız kazandırır.',
     ],
-    examCue: 'YGS: EBOB ile EKOK formülünü ters kullanma.',
+    examCue: 'YKS: EBOB ile EKOK formülünü ters kullanma.',
     checkPrompt: 'Asal çarpanları doğru yazdım mı?',
     tip: 'Küçük örnekle kuralı doğrula.',
   },
@@ -423,7 +423,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Ortak bölünenlerde EBOB mantığını kullan.',
       'Şık varsa yerine koyma geçerli taktiktir.',
     ],
-    examCue: 'YGS: 4’e bölünmede son iki basamak; 3’te rakamlar toplamı.',
+    examCue: 'YKS: 4’e bölünmede son iki basamak; 3’te rakamlar toplamı.',
     checkPrompt: 'Hangi basamağa bakmam gerekiyor?',
     tip: 'Kuralı bir örnekle test et, sonra soruya dön.',
   },
@@ -435,19 +435,19 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Denklemde her iki tarafı aynı faktöriyelle yaz.',
       'n büyükse şıklardan eleme yap.',
     ],
-    examCue: 'YGS: (n+1)! = (n+1)·n! kimliğini unutma.',
+    examCue: 'YKS: (n+1)! = (n+1)·n! kimliğini unutma.',
     checkPrompt: 'Sadeleştirmeden sonra ne kaldı?',
     tip: 'Küçük n ile dene, sonra genelle.',
   },
   'ygs-math-denklemler': {
-    summary: 'Denklemler (YGS/YKS): doğrusal, köklü, üslü.',
+    summary: 'Denklemler (YKS/YKS): doğrusal, köklü, üslü.',
     bullets: [
       'Doğrusal: ax+b=c → x yalnız kalır.',
       'İki tarafı sadeleştir; ortak çarpan varsa böl.',
       'Köklü/üslü denklemlerde tanım kümesini yaz.',
       'Şık varsa yerine koyma hız taktiğidir.',
     ],
-    examCue: 'YGS: köklü denklemde dışarıda kalan çözümleri ele.',
+    examCue: 'YKS: köklü denklemde dışarıda kalan çözümleri ele.',
     checkPrompt: 'Bulduğum kök tanım kümesinde mi?',
     tip: 'Önce tanım, sonra çözüm, sonra kontrol.',
   },
@@ -459,7 +459,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Mutlak değerli eşitsizlikte kritik noktaları bul.',
       'Kesişim / birleşim dilini doğru oku.',
     ],
-    examCue: 'YGS: negatif sayı ile çarpınca yön döner.',
+    examCue: 'YKS: negatif sayı ile çarpınca yön döner.',
     checkPrompt: 'Sınır noktaları dahil mi (≤ / <)?',
     tip: 'Sayı doğrusu çizmeden işaretleme.',
   },
@@ -471,7 +471,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       '(f∘g)(x) = f(g(x)) — içten dışa.',
       'Tanım kümesi dışındaki x’leri ele.',
     ],
-    examCue: 'YGS: bileşkede sırayı ters çevirmek klasik hata.',
+    examCue: 'YKS: bileşkede sırayı ters çevirmek klasik hata.',
     checkPrompt: 'İç fonksiyonu önce mi hesapladım?',
     tip: 'Adım adım yerine koy, tek satırda sıkıştırma.',
   },
@@ -483,7 +483,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Temel özdeşlik: sin²+cos²=1.',
       'Derece / radyan birimini karıştırma.',
     ],
-    examCue: 'YGS: ikinci bölgede sin pozitif, cos negatiftir.',
+    examCue: 'YKS: ikinci bölgede sin pozitif, cos negatiftir.',
     checkPrompt: 'Açı hangi bölgede?',
     tip: 'Birim çember taslağı çiz.',
   },
@@ -512,7 +512,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
     tip: 'Türev ile doğrula.',
   },
 
-  // ─── YGS Fen ────────────────────────────────────────────────
+  // ─── YKS Fen ────────────────────────────────────────────────
   'ygs-physics-hareket': {
     summary: 'Hareket: konum, hız, ivme ve grafikler.',
     bullets: [
@@ -521,7 +521,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Düzgün doğrusal / düzgün hızlanan ayrımını yap.',
       'Birimleri SI’de tut.',
     ],
-    examCue: 'YGS: grafik eğimi ile alanın anlamını karıştırma.',
+    examCue: 'YKS: grafik eğimi ile alanın anlamını karıştırma.',
     checkPrompt: 'Grafikte eğim mi alan mı isteniyor?',
     tip: 'Eksenleri yüksek sesle oku.',
   },
@@ -533,7 +533,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Mekanik enerji korunumu sürtünmesiz idealde.',
       'Sürtünme yönü harekete zıttır.',
     ],
-    examCue: 'YGS: “etki–tepki aynı cisimde” yanlıştır.',
+    examCue: 'YKS: “etki–tepki aynı cisimde” yanlıştır.',
     checkPrompt: 'Net kuvveti doğru yönde çizdim mi?',
     tip: 'Serbest cisim diyagramı çiz.',
   },
@@ -545,7 +545,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Seri/paralel eşdeğer direnç kurallarını bil.',
       'Güç P = V·I ilişkilerini kullan.',
     ],
-    examCue: 'YGS: paralel brançta gerilim aynıdır.',
+    examCue: 'YKS: paralel brançta gerilim aynıdır.',
     checkPrompt: 'Elemanlar seri mi paralel mi?',
     tip: 'Devreyi sadeleştirerek çöz.',
   },
@@ -557,7 +557,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Grup / periyot eğilimlerini (yarıçap, iyonlaşma) bil.',
       'İzotop: aynı p, farklı n.',
     ],
-    examCue: 'YGS: atom no ile kütle no karıştırması klasik.',
+    examCue: 'YKS: atom no ile kütle no karıştırması klasik.',
     checkPrompt: 'Elektron sayısı nötr atomda protona eşit mi?',
     tip: 'Önce p–n–e tablosu yaz.',
   },
@@ -569,7 +569,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Mol = m/M; oranları katsayılardan oku.',
       'Sınırlayıcı bileşeni unutma.',
     ],
-    examCue: 'YGS: katsayıyı indise yazmak hata.',
+    examCue: 'YKS: katsayıyı indise yazmak hata.',
     checkPrompt: 'Her element iki tarafta eşit mi?',
     tip: 'Önce en karmaşık formülü denkleştir.',
   },
@@ -581,7 +581,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Nötrleşmede tuz + su oluşur.',
       'Gösterge rengini ezberle değil tabloyla oku.',
     ],
-    examCue: 'YGS: kuvvetli/zayıf asidi derişimle karıştırma.',
+    examCue: 'YKS: kuvvetli/zayıf asidi derişimle karıştırma.',
     checkPrompt: 'pH arttı mı azaldı mı?',
     tip: 'Nötrleşme denklemini yaz.',
   },
@@ -593,7 +593,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Zar seçici geçirgendir.',
       'DNA konumu (çekirdek) ökaryotta.',
     ],
-    examCue: 'YGS: ribozom iki tip hücrede de vardır.',
+    examCue: 'YKS: ribozom iki tip hücrede de vardır.',
     checkPrompt: 'Bu organel hangi hücrede bulunur?',
     tip: 'Karşılaştırma tablosu çiz.',
   },
@@ -605,7 +605,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Hormon–sinir koordinasyonunu karıştırma.',
       'Hastalık / bozukluk sorusunda önce normali yaz.',
     ],
-    examCue: 'YGS: organı yanlış sisteme bağlama tuzağı.',
+    examCue: 'YKS: organı yanlış sisteme bağlama tuzağı.',
     checkPrompt: 'Bu organ hangi sistemde?',
     tip: 'Önce sistem adı, sonra organ, sonra görev.',
   },
@@ -617,12 +617,12 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Simbiyoz türlerini ayır.',
       'Madde döngüsü (C, N, su) ezberini örnekle bağla.',
     ],
-    examCue: 'YGS: madde döngüsü kapanır, enerji akışı tek yönlüdür.',
+    examCue: 'YKS: madde döngüsü kapanır, enerji akışı tek yönlüdür.',
     checkPrompt: 'Bu canlı üretici mi tüketici mi?',
     tip: 'Besin zincirini okla çiz.',
   },
 
-  // ─── YGS Sosyal ─────────────────────────────────────────────
+  // ─── YKS Sosyal ─────────────────────────────────────────────
   'ygs-history-osmanli': {
     summary: 'Osmanlı: kuruluş, yükselme, kurumlar, gerileme.',
     bullets: [
@@ -631,7 +631,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Savaş–antlaşma sonuçlarını bil.',
       'Kronoloji sorusunda önce–sonra kur.',
     ],
-    examCue: 'YGS: kurum adını yanlış yüzyıla yerleştirme.',
+    examCue: 'YKS: kurum adını yanlış yüzyıla yerleştirme.',
     checkPrompt: 'Bu olay hangi dönemde?',
     tip: 'Yüzyıl + padişah + olay üçlüsü yaz.',
   },
@@ -643,7 +643,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'İlkelerin günlük politikaya yansımasını oku.',
       'Antlaşma adlarını karıştırma.',
     ],
-    examCue: 'YGS: Mudanya ateşkes, Lozan barış antlaşmasıdır.',
+    examCue: 'YKS: Mudanya ateşkes, Lozan barış antlaşmasıdır.',
     checkPrompt: 'Bu adım askerî mi siyasî mi?',
     tip: 'Zaman şeridi çiz.',
   },
@@ -655,7 +655,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Türkiye’nin çok partili hayata geçişini bil.',
       'Küresel olay–Türkiye yansıması sorularına hazır ol.',
     ],
-    examCue: 'YGS: tarih ile güncel siyaset yorumunu karıştırma.',
+    examCue: 'YKS: tarih ile güncel siyaset yorumunu karıştırma.',
     checkPrompt: 'Olayın yılı / dönemi net mi?',
     tip: 'Önce dünya, sonra Türkiye etkisini yaz.',
   },
@@ -667,7 +667,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Haritada yükselti ve enlem etkisini oku.',
       'Bitki örtüsü–iklim eşlemesi yap.',
     ],
-    examCue: 'YGS: enlem ile yükseltinin sıcaklığa etkisini karıştırma.',
+    examCue: 'YKS: enlem ile yükseltinin sıcaklığa etkisini karıştırma.',
     checkPrompt: 'Soru iklim mi yerşekli mi soruyor?',
     tip: 'Harita varsa önce onu oku.',
   },
@@ -679,7 +679,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Göç neden–sonuç zinciri kur.',
       'Grafik/tabloda birimi oku.',
     ],
-    examCue: 'YGS: yoğunluk = nüfus / alan; artışı hızla karıştırma.',
+    examCue: 'YKS: yoğunluk = nüfus / alan; artışı hızla karıştırma.',
     checkPrompt: 'Tablo hangi birimi kullanıyor?',
     tip: 'Önce grafik başlığını oku.',
   },
@@ -691,7 +691,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Akarsu / göl / dağ isimlerini bölgeyle eşleştir.',
       'Ulaşım ve liman sorularında haritayı kullan.',
     ],
-    examCue: 'YGS: bölge–ürün eşlemesi sık sorulur.',
+    examCue: 'YKS: bölge–ürün eşlemesi sık sorulur.',
     checkPrompt: 'Bu özellik hangi bölgeye uyuyor?',
     tip: 'Türkiye haritasını zihninde bölgelere böl.',
   },
@@ -703,7 +703,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Düşünürü dönemi ve sorusuyla bağla.',
       'Uç genellemeleri ele.',
     ],
-    examCue: 'YGS: felsefe sorusunda “günlük kanaat” şıkkı genelde zayıf.',
+    examCue: 'YKS: felsefe sorusunda “günlük kanaat” şıkkı genelde zayıf.',
     checkPrompt: 'Bu soru hangi felsefe alanına ait?',
     tip: 'Önce alan, sonra kavram, sonra düşünür.',
   },
@@ -715,7 +715,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Değil, ve, veya bağlaçlarını doğru uygula.',
       'Çıkarımda öncülleri yaz.',
     ],
-    examCue: 'YGS: günlük dil ile mantık bağlacını karıştırma.',
+    examCue: 'YKS: günlük dil ile mantık bağlacını karıştırma.',
     checkPrompt: 'Öncüller doğruysa sonuç zorunlu mu?',
     tip: 'Sembolle yaz, sonra Türkçeye dön.',
   },
@@ -727,7 +727,7 @@ export const LESSON_BANK: Record<string, LessonParts> = {
       'Ezber madde yerine “amaç” sor.',
       'Diğer dinî kavramlarla karıştırma.',
     ],
-    examCue: 'YGS: kök “inanç” ise uygulama şıkkını ele.',
+    examCue: 'YKS: kök “inanç” ise uygulama şıkkını ele.',
     checkPrompt: 'Soru bilgi mi tutum mu istiyor?',
     tip: 'Tanımı bir örnek davranışla bağla.',
   },
@@ -1205,7 +1205,7 @@ export function fallbackLessonParts(topic: Topic): LessonParts {
     exam === 'lgs'
       ? 'LGS / 8. sınıf'
       : exam === 'ygs'
-        ? 'YGS–YKS'
+        ? 'YKS–YKS'
         : exam === 'kpss'
           ? 'KPSS GY–GK'
           : 'Ehliyet / MTS';

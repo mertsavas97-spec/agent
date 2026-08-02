@@ -1,19 +1,40 @@
 # Sprint State
 
-**Branch:** `cursor/asc-app-id-2914`  
-**Sprint:** iOS production IPA → TestFlight submit
+**Branch:** `cursor/home-polish-yks-ads-ocr-2914`  
+**iOS:** 1.0.2 (18) — TestFlight  
+**Android:** 1.0.2 / versionCode **20** — kapalı test AAB (AdMob wired)
 
-## iOS IPA
+## Android AAB — GHA (önerilen)
 
-- [x] `appleTeamId` = `J46LLRJA44`
-- [x] `ascAppId` = `6794124806`
-- [x] Static `aps-environment` + Push credential sync path
-- [x] OpenIAP Xcode 26.4 StoreKit compat
-- [x] Owner: local production IPA (`~/Desktop/cozbil-production.ipa`)
-- [ ] Owner: `eas submit` → TestFlight
-- [ ] Owner: ASC IAP + Apple API secrets (`APPLE_*`)
-- [ ] Agent note: Linux cloud host cannot produce IPA (no Xcode)
+Mac disk yetmezse veya Gradle Plugin Portal flaky ise:
 
-## Android (önceki)
+1. https://github.com/mertsavas97-spec/agent/actions/workflows/android-production-aab.yml  
+2. **Run workflow** → branch: `cursor/home-polish-yks-ads-ocr-2914`  
+3. Bitince artifact: `cozbil-android-production-aab` indir  
+4. Play → Kapalı test (alpha) → Yeni sürüm → AAB yükle  
 
-- [x] GHA AAB + Play SKUs owner path
+**2026-08-01 fix:** RN `foojay-resolver-convention` strip (`eas-build-post-install`)
+— GHA’da “Plugin was not found” hatasını önler. JDK 17 zaten workflow’da.
+
+(Secrets: `EXPO_TOKEN`, Firebase public keys — daha önce kurulduysa tekrar gerekmez.)
+
+## Android AAB — Mac yer açtıysan (~15+ GiB boş)
+
+```bash
+# temizlik
+rm -rf ~/eas-local-build ~/.gradle/caches
+rm -rf ~/Library/Developer/Xcode/DerivedData
+df -h /System/Volumes/Data   # Avail ≥ 15G olmalı
+
+cd ~/agent && git pull
+bash scripts/mac-build-aab-local.sh
+# → ~/Desktop/cozbil-production.aab
+```
+
+Script: disk gate + `eas-local-build` temizliği + yalnız **arm64** + foojay patch.
+
+## iOS IPA (hatırlatma)
+
+```bash
+bash scripts/mac-build-ipa-with-push.sh
+```

@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   isGarbageOcrText,
   repairEquationOcr,
+  repairMathNotationOcr,
   repairPercentOcr,
+  repairSoftColonDivisionOcr,
 } from './visionOcr.mjs';
 
 assert.equal(isGarbageOcrText(''), true);
@@ -58,6 +60,30 @@ assert.equal(
     '| |\nbi\nHH\n3(x-2)+4=2x+7 denklemini sağlayan\nx değeri hangisidir?\nA) 1\nB) 3\nC) 5\nD) 7\nE) 9',
   ),
   false,
+);
+// Soft / short MCQ fragment — keep (ChatGPT-like), reject only blank pipes.
+assert.equal(isGarbageOcrText('A) 2\nB) 3\nC) 4'), false);
+assert.equal(isGarbageOcrText('kaçtır?\nA) 1\nB) 2'), false);
+
+assert.match(
+  repairMathNotationOcr(
+    'x ve y gerçel sayıları için\n2x = 4y\n2x+1 + 4y+1 = 96 (2020)',
+  ),
+  /2\^x=4\^y[\s\S]*2\^\(x\+1\)[\s\S]*4\^\(y\+1\)/,
+);
+assert.equal(repairMathNotationOcr('soru (2020) bitti').includes('2020'), false);
+
+assert.match(
+  repairSoftColonDivisionOcr(
+    '8 3 333 (+2) 7 3 işleminin sonucu kaçtır?',
+  ),
+  /8\/3\s*:\s*\(3\/7\+2\/3\)/,
+);
+assert.match(
+  repairMathNotationOcr(
+    '8 3 333 (+2) 7 3 işleminin sonucu kaçtır? 10 A) 2. 7 B) 2 10 C) 3. 23 23 23 D) 3 E) 4 23 ) 4 7 Soruları Çöz 23',
+  ),
+  /A\)\s*2\s+10\/23/,
 );
 
 console.log('ocrQuality.test.mjs OK');

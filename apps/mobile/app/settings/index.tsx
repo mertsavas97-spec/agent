@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 
+import { EXAM_LABEL } from '@/src/features/exam/examLabels';
 import { ExamModeSwitcher } from '@/src/features/exam/ExamModeSwitcher';
 import { readExamPreference } from '@/src/features/exam/examPreference';
 import { isExamType } from '@/src/features/exam/examTypes';
@@ -305,7 +306,9 @@ export default function SettingsScreen() {
       ) : null}
 
       <Text style={styles.version} testID="settings-version">
-        ÇözBil · sürüm 1.0.0 (MVP)
+        {__DEV__
+          ? `ÇözBil · dogfood · paket ${EXAM_LABEL.ygs}`
+          : 'ÇözBil · sürüm 1.0.0 (MVP)'}
       </Text>
     </ScrollView>
   );

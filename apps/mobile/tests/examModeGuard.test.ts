@@ -24,7 +24,7 @@ function solved(over: Partial<SolveQuestionSuccess> = {}): SolveQuestionSuccess 
 
 describe('examModeMismatchMessage', () => {
   it('names active vs detected packages in Turkish', () => {
-    expect(examModeMismatchMessage('ygs', 'trafik')).toMatch(/YGS/i);
+    expect(examModeMismatchMessage('ygs', 'trafik')).toMatch(/YKS/i);
     expect(examModeMismatchMessage('ygs', 'trafik')).toMatch(/Ehliyet/i);
     expect(examModeMismatchMessage('kpss', 'trafik')).toMatch(/modu değiştir/i);
   });
@@ -161,7 +161,7 @@ describe('shouldRejectBatchSlotForExamMode', () => {
     expect(out.reject).toBe(true);
     if (out.reject) {
       expect(out.detected).toBe('trafik');
-      expect(out.message).toMatch(/YGS/i);
+      expect(out.message).toMatch(/YKS/i);
       expect(out.message).toMatch(/Ehliyet/i);
       expect(out.headline).toMatch(/Ehliyet/i);
     }

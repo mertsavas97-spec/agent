@@ -1,4 +1,6 @@
 import {
+  COZBIL_ANDROID_LIVE_UNITS,
+  COZBIL_IOS_LIVE_UNITS,
   GOOGLE_TEST_UNITS,
   adsStubForced,
   hasProductionAdUnits,
@@ -19,9 +21,14 @@ describe('ad units + engine readiness', () => {
     for (const k of [
       'EXPO_PUBLIC_ADS_STUB',
       'EXPO_PUBLIC_ADS_USE_TEST_UNITS',
+      'EXPO_PUBLIC_ADMOB_ANDROID_APP_ID',
       'EXPO_PUBLIC_ADMOB_BANNER_ANDROID',
       'EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID',
       'EXPO_PUBLIC_ADMOB_REWARDED_ANDROID',
+      'EXPO_PUBLIC_ADMOB_IOS_APP_ID',
+      'EXPO_PUBLIC_ADMOB_BANNER_IOS',
+      'EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS',
+      'EXPO_PUBLIC_ADMOB_REWARDED_IOS',
     ]) {
       prev[k] = process.env[k];
       delete process.env[k];
@@ -39,6 +46,29 @@ describe('ad units + engine readiness', () => {
     process.env.EXPO_PUBLIC_ADS_USE_TEST_UNITS = '1';
     expect(resolveAdUnits()).toEqual(GOOGLE_TEST_UNITS);
     expect(hasProductionAdUnits()).toBe(true);
+  });
+
+  it('defaults iOS live units to AdMob dashboard ids (owner screenshot)', () => {
+    const units = resolveAdUnits();
+    expect(units.iosAppId).toBe(COZBIL_IOS_LIVE_UNITS.iosAppId);
+    expect(units.bannerIos).toBe(COZBIL_IOS_LIVE_UNITS.bannerIos);
+    expect(units.interstitialIos).toBe(COZBIL_IOS_LIVE_UNITS.interstitialIos);
+    expect(units.rewardedIos).toBe(COZBIL_IOS_LIVE_UNITS.rewardedIos);
+    expect(units.iosAppId).toBe('ca-app-pub-4628962707131944~6347757786');
+    expect(units.rewardedIos).toBe('ca-app-pub-4628962707131944/8645460517');
+    expect(hasProductionAdUnits(units)).toBe(true);
+  });
+
+  it('defaults Android live units to AdMob dashboard ids (owner screenshot)', () => {
+    const units = resolveAdUnits();
+    expect(units.androidAppId).toBe(COZBIL_ANDROID_LIVE_UNITS.androidAppId);
+    expect(units.bannerAndroid).toBe(COZBIL_ANDROID_LIVE_UNITS.bannerAndroid);
+    expect(units.interstitialAndroid).toBe(
+      COZBIL_ANDROID_LIVE_UNITS.interstitialAndroid,
+    );
+    expect(units.rewardedAndroid).toBe(COZBIL_ANDROID_LIVE_UNITS.rewardedAndroid);
+    expect(units.androidAppId).toBe('ca-app-pub-4628962707131944~2989418548');
+    expect(units.rewardedAndroid).toBe('ca-app-pub-4628962707131944/7655421864');
   });
 
   it('forces stub when EXPO_PUBLIC_ADS_STUB=1', () => {

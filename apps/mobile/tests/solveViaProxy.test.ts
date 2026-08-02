@@ -3,6 +3,16 @@ import {
   isSolveProxyConfigured,
 } from '@/src/features/solve/solveViaProxy';
 
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { extra: {} },
+    expoGoConfig: null,
+    linkingUri: null,
+    manifest: null,
+  },
+}));
+
 describe('callSolveQuestionViaProxy', () => {
   const originalUrl = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL;
   const originalToken = process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN;
@@ -18,7 +28,7 @@ describe('callSolveQuestionViaProxy', () => {
     process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN = originalToken;
   });
 
-  it('is not configured without URL/token (production must use Functions path)', () => {
+  it('is not configured without URL when Metro host is also absent', () => {
     delete process.env.EXPO_PUBLIC_SOLVE_PROXY_URL;
     delete process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN;
     expect(isSolveProxyConfigured()).toBe(false);

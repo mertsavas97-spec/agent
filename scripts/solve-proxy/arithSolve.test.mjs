@@ -120,6 +120,17 @@ E) 9`,
 );
 
 check(
+  'YGS OCR ) 44 glued plus → 9',
+  `3(X-2) 44 = 2x + 7 denklemini sağlayan x değeri hangisidir?
+A) 1
+B) 3
+C) 5
+D) 7
+E) 9`,
+  { approx: 9, choice: 'E' },
+);
+
+check(
   'KPSS OCR percent sign read as 94 → 90',
   `Bir ürünün fiyatı önce %20 artırılıp sonra
 9425 azaltılıyor. Son fiyat başlangıcın yüzde kaçıdır?
@@ -136,6 +147,72 @@ assert.equal(
   evaluateExpression(`24.3/8.1/3\nA) 2\nB) 3\nC) 4`),
   null,
   'reject glued false positive without matching choice',
+);
+
+check(
+  'colon division with mixed şıklar → 56/23',
+  `8/3 : (3/7 + 2/3)
+işleminin sonucu kaçtır?
+A) 2 10/23
+B) 2 7/23
+C) 3 10/23
+D) 3 5/23
+E) 4 7/23`,
+  { approx: 56 / 23, choice: 'A' },
+);
+
+check(
+  'live soft OCR colon division (Metro preview)',
+  `8 3 333 (+2) 7 3 işleminin sonucu kaçtır? 10 A) 2. 7 B) 2 10 C) 3. 23 23 23 D) 3 E) 4 23 ) 4 7 Soruları Çöz 23`,
+  { approx: 56 / 23, choice: 'A' },
+);
+
+check(
+  'live soft OCR alt mangling 8 33 (32) 7 +',
+  `8 33 (32) 7 + işleminin sonucu kaçtır? A) 2 10/23 B) 2 7/23 C) 3 10/23 D) 3 E) 4 7/23`,
+  { approx: 56 / 23, choice: 'A' },
+);
+
+check(
+  'colon division must not prefer multiply false positive',
+  `8/3 : (3/7 + 2/3)
+A) 184/63
+B) 56/23
+C) 1
+D) 2
+E) 3`,
+  { approx: 56 / 23, choice: 'B' },
+);
+
+check(
+  'exponential system x+y with year noise → 6',
+  `10. x ve y gerçel sayıları için
+2^x = 4^y
+2^(x+1) + 4^(y+1) = 96
+olduğuna göre, x + y toplamı kaçtır? (2020)
+A) 3
+B) 4
+C) 6
+D) 9
+E) 12`,
+  { approx: 6, choice: 'C' },
+);
+
+check(
+  'exponential OCR without carets → 6',
+  `x ve y gerçel sayıları için
+2x = 4y
+2x+1 + 4y+1 = 96
+olduğuna göre x + y toplamı kaçtır?
+A) 3 B) 4 C) 6 D) 9 E) 12`,
+  { approx: 6, choice: 'C' },
+);
+
+// Year fragment alone must not become 202/2020 = 1/10
+assert.equal(
+  evaluateExpression(`10.\n(2020)\nA) 1/10\nB) 3\nC) 6\nD) 9\nE) 12`),
+  null,
+  'reject year-only false fraction',
 );
 
 console.log('all arithSolve tests passed');

@@ -150,7 +150,7 @@ export default function HomeScreen() {
 
   async function openPicker(source: 'camera' | 'library') {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YKS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
       return;
     }
     const picked =
@@ -182,7 +182,7 @@ export default function HomeScreen() {
 
   async function openMultiBatch() {
     if (!examType) {
-      Alert.alert('Önce sınav seç', 'LGS, YGS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
+      Alert.alert('Önce sınav seç', 'LGS, YKS, KPSS veya Ehliyet seçmeden soru gönderilemez.');
       return;
     }
     const copy = multiBatchUserCopy();
@@ -195,7 +195,12 @@ export default function HomeScreen() {
           void (async () => {
             const unlock = await runRewardedMultiBatchUnlock();
             if (!unlock.allowed) {
-              Alert.alert('Devam edilmedi', 'Reklam tamamlanmadan çoklu soru açılamaz.');
+              Alert.alert(
+                'Devam edilmedi',
+                unlock.reason === 'unavailable'
+                  ? 'Ödüllü reklam yüklenemedi (ağ / AdMob doluluk). Biraz sonra tekrar dene.'
+                  : 'Ödüllü reklamı sonuna kadar izleyince çoklu soru açılır. Reklam açılmadıysa tekrar dene.',
+              );
               return;
             }
             const picked = await pickMultipleFromLibrary(MULTI_BATCH_MAX);

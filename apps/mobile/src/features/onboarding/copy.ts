@@ -16,14 +16,14 @@ export const ONBOARDING_STEPS = [
   {
     eyebrow: 'Mod seçimi',
     title: 'Hangi sınava hazırlanıyorsun?',
-    body: 'LGS, YGS, KPSS ve Ehliyet aktif. Seçimin renk temasını, müfredatı ve çözüm dilini belirler.',
+    body: 'LGS, YKS, KPSS ve Ehliyet aktif. Seçimin renk temasını, müfredatı ve çözüm dilini belirler.',
     icon: 'graduationcap.fill' as const,
   },
 ] as const;
 
 export const EXAM_OPTIONS: { id: ExamType; label: string; hint: string }[] = [
   { id: 'lgs', label: 'LGS', hint: 'Lise giriş · 8. sınıf' },
-  { id: 'ygs', label: 'YGS', hint: 'Üniversite · TYT–AYT' },
+  { id: 'ygs', label: 'YKS', hint: 'Üniversite · TYT–AYT' },
   { id: 'kpss', label: 'KPSS', hint: 'Kamu personeli' },
   { id: 'trafik', label: 'Ehliyet', hint: 'Ehliyet / MTS' },
 ];

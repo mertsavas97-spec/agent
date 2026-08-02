@@ -6,7 +6,7 @@
 import { Platform } from 'react-native';
 
 import type { AdEngine } from './adEngine';
-import type { AdUnitSet } from './adUnits';
+import { GOOGLE_TEST_UNITS, type AdUnitSet } from './adUnits';
 
 type AdsModule = {
   default: () => {
@@ -52,11 +52,12 @@ function loadAdsModule(): AdsModule | null {
 async function ensureInitialized(ads: AdsModule): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
-      // Education / LGS minors — conservative content + non-personalized bias.
+      // PG rating for education; under-age flag left off so new units can fill.
+      // Age-band targeting can tighten later from onboarding consent.
       await ads.default().setRequestConfiguration({
         maxAdContentRating: ads.MaxAdContentRating.PG,
         tagForChildDirectedTreatment: false,
-        tagForUnderAgeOfConsent: true,
+        tagForUnderAgeOfConsent: false,
       });
       await ads.default().initialize();
     })().catch((err) => {
@@ -96,6 +97,76 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
+async function loadAndShowRewarded(
+  ads: AdsModule,
+  unitId: string,
+): Promise<'rewarded' | 'dismissed' | 'unavailable'> {
+  const ad = ads.RewardedAd.createForAdRequest(unitId, REQUEST);
+  let earned = false;
+  try {
+    // 1) Load until LOADED (do not show inside the load listener — clearer errors).
+    await withTimeout(
+      new Promise<void>((resolve, reject) => {
+        const unsubLoad = ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
+          unsubLoad();
+          unsubErr();
+          resolve();
+        });
+        const unsubErr = ad.addAdEventListener(ads.AdEventType.ERROR, (e) => {
+          unsubLoad();
+          unsubErr();
+          reject(e ?? new Error('rewarded_load_error'));
+        });
+        ad.load();
+      }),
+      LOAD_TIMEOUT_MS,
+    );
+
+    // 2) Present, then wait for close / reward.
+    const closed = withTimeout(
+      new Promise<void>((resolve, reject) => {
+        const unsubs: (() => void)[] = [];
+        const cleanup = () => unsubs.forEach((u) => u());
+        unsubs.push(
+          ad.addAdEventListener(ads.RewardedAdEventType.EARNED_REWARD, () => {
+            earned = true;
+          }),
+        );
+        unsubs.push(
+          ad.addAdEventListener(ads.AdEventType.CLOSED, () => {
+            cleanup();
+            resolve();
+          }),
+        );
+        unsubs.push(
+          ad.addAdEventListener(ads.AdEventType.ERROR, (e) => {
+            cleanup();
+            reject(e ?? new Error('rewarded_show_error'));
+          }),
+        );
+      }),
+      LOAD_TIMEOUT_MS,
+    );
+
+    await ad.show();
+    await closed;
+    return earned ? 'rewarded' : 'dismissed';
+  } catch (err) {
+    console.warn('ads: rewarded failed', { unitId, err: errorMessage(err) });
+    return 'unavailable';
+  }
+}
+
 /**
  * Build a live AdMob engine, or null if the native module cannot initialize.
  */
@@ -112,9 +183,8 @@ export function tryCreateAdMobEngine(units: AdUnitSet): AdEngine | null {
     mode: 'admob',
     async showInterstitial() {
       if (!interstitialId) return 'unavailable';
-      try {
-        await ensureInitialized(ads);
-        const ad = ads.InterstitialAd.createForAdRequest(interstitialId, REQUEST);
+      const tryShow = async (unitId: string): Promise<'shown' | 'skipped'> => {
+        const ad = ads.InterstitialAd.createForAdRequest(unitId, REQUEST);
         await withTimeout(
           new Promise<void>((resolve, reject) => {
             const unsubLoad = ad.addAdEventListener(ads.AdEventType.LOADED, () => {
@@ -133,7 +203,26 @@ export function tryCreateAdMobEngine(units: AdUnitSet): AdEngine | null {
         );
         await ad.show();
         return 'shown';
-      } catch {
+      };
+      try {
+        await ensureInitialized(ads);
+        return await tryShow(interstitialId);
+      } catch (err) {
+        console.warn('ads: interstitial failed', errorMessage(err));
+        if (__DEV__) {
+          const testId =
+            Platform.OS === 'ios'
+              ? GOOGLE_TEST_UNITS.interstitialIos
+              : GOOGLE_TEST_UNITS.interstitialAndroid;
+          if (testId && testId !== interstitialId) {
+            try {
+              console.info('ads: interstitial no-fill — retry Google test unit');
+              return await tryShow(testId);
+            } catch (retryErr) {
+              console.warn('ads: interstitial test retry failed', errorMessage(retryErr));
+            }
+          }
+        }
         return 'skipped';
       }
     },
@@ -141,41 +230,28 @@ export function tryCreateAdMobEngine(units: AdUnitSet): AdEngine | null {
       if (!rewardedId) return 'unavailable';
       try {
         await ensureInitialized(ads);
-        const ad = ads.RewardedAd.createForAdRequest(rewardedId, REQUEST);
-        let earned = false;
-        await withTimeout(
-          new Promise<void>((resolve, reject) => {
-            const unsubs: (() => void)[] = [];
-            unsubs.push(
-              ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
-                void ad.show().catch(reject);
-              }),
-            );
-            unsubs.push(
-              ad.addAdEventListener(ads.RewardedAdEventType.EARNED_REWARD, () => {
-                earned = true;
-              }),
-            );
-            unsubs.push(
-              ad.addAdEventListener(ads.AdEventType.CLOSED, () => {
-                unsubs.forEach((u) => u());
-                resolve();
-              }),
-            );
-            unsubs.push(
-              ad.addAdEventListener(ads.AdEventType.ERROR, (e) => {
-                unsubs.forEach((u) => u());
-                reject(e ?? new Error('rewarded_error'));
-              }),
-            );
-            ad.load();
-          }),
-          LOAD_TIMEOUT_MS,
-        );
-        return earned ? 'rewarded' : 'dismissed';
-      } catch {
-        return 'dismissed';
+      } catch (err) {
+        console.warn('ads: AdMob init failed', errorMessage(err));
+        return 'unavailable';
       }
+
+      const primary = await loadAndShowRewarded(ads, rewardedId);
+      if (primary === 'rewarded' || primary === 'dismissed') {
+        return primary;
+      }
+
+      // New live units often return no-fill; dogfood must still exercise the gate.
+      if (__DEV__) {
+        const testId =
+          Platform.OS === 'ios'
+            ? GOOGLE_TEST_UNITS.rewardedIos
+            : GOOGLE_TEST_UNITS.rewardedAndroid;
+        if (testId && testId !== rewardedId) {
+          console.info('ads: rewarded no-fill — retry Google test unit');
+          return loadAndShowRewarded(ads, testId);
+        }
+      }
+      return 'unavailable';
     },
   };
 }

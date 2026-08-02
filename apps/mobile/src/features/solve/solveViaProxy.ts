@@ -1,32 +1,38 @@
 /**
- * Call cloud dogfood solve proxy (Vision OCR + arithmetic) when Firebase
+ * Call cloud dogfood solve proxy (Vertex/Gemini first; OCR solvers fallback)
+ * when Firebase Functions are slow or blocked by org policy.
  * Functions are blocked by org policy.
  */
 import type { ExamType, SolveQuestionResponse, Subject } from '@/src/lib/api/types';
 
 import { withHardTimeout } from './hardTimeout';
 import { decodeBase64ToBytes } from './imageBase64';
+import { resolveSolveProxyBaseUrl, resolveSolveProxyToken } from './solveProxyConfig';
 import { PROXY_TIMEOUT_MS } from './solveTiming';
 
 /** Keep JSON safely below the proxy's 6 MiB body limit. Base64 expands bytes by ~33%. */
 export const MAX_INLINE_IMAGE_BASE64_CHARS = 3_500_000;
 export const MAX_BINARY_IMAGE_BYTES = 10 * 1024 * 1024;
 export { PROXY_TIMEOUT_MS } from './solveTiming';
+export { diagnoseSolveProxyConfig } from './solveProxyConfig';
 
 function proxyBaseUrl(): string | null {
-  const raw = process.env.EXPO_PUBLIC_SOLVE_PROXY_URL?.trim();
-  if (!raw) return null;
-  return raw.replace(/\/$/, '');
+  return resolveSolveProxyBaseUrl();
 }
 
 function proxyToken(): string | null {
-  return process.env.EXPO_PUBLIC_SOLVE_PROXY_TOKEN?.trim() || null;
+  return resolveSolveProxyToken();
 }
 
 export function isSolveProxyConfigured(): boolean {
   // The proxy is an explicitly unmoderated dogfood aid. Production must use
   // Storage/Firestore Functions where SafeSearch, quota and auth are enforced.
   return __DEV__ && Boolean(proxyBaseUrl()) && Boolean(proxyToken());
+}
+
+/** Safe for logs — never includes the token. */
+export function solveProxyBaseUrlForLog(): string | null {
+  return proxyBaseUrl();
 }
 
 /** RN local file blobs often report type "" — never send empty Content-Type. */
@@ -175,6 +181,7 @@ async function postSolveOnce(input: {
     ocrPreview?: string;
     detectedSubject?: string;
     topicId?: string | null;
+    gemini?: { status?: string; error?: string | null; enabled?: boolean };
   };
   try {
     data = JSON.parse(text) as typeof data;
@@ -216,7 +223,11 @@ async function postSolveOnce(input: {
     return {
       ...rest,
       ...(ocrPreview ? { ocrPreview } : {}),
-    } as SolveQuestionResponse & { ocrPreview?: string };
+      ...(data.gemini ? { gemini: data.gemini } : {}),
+    } as SolveQuestionResponse & {
+      ocrPreview?: string;
+      gemini?: { status?: string; error?: string | null; enabled?: boolean };
+    };
   }
   throw Object.assign(new Error('proxy_invalid_response'), { code: 'functions/internal' });
 }
@@ -277,7 +288,7 @@ export async function callSolveQuestionViaProxy(input: {
           signal: controller.signal,
         }),
         remaining,
-        'proxy OCR',
+        'proxy solve',
       );
       input.onStage?.('solving');
       return response;

@@ -6,14 +6,15 @@ export const EXAM_OPTIONS: {
   short: string;
 }[] = [
   { id: 'lgs', label: 'LGS', short: 'Lise' },
-  { id: 'ygs', label: 'YGS', short: 'Üniversite' },
+  // Internal id stays `ygs` (topics / Firestore); user-facing label is YKS.
+  { id: 'ygs', label: 'YKS', short: 'Üniversite' },
   { id: 'kpss', label: 'KPSS', short: 'Kamu' },
   { id: 'trafik', label: 'Ehliyet', short: 'Sürücü' },
 ];
 
 export const EXAM_LABEL: Record<ExamType, string> = {
   lgs: 'LGS',
-  ygs: 'YGS',
+  ygs: 'YKS',
   kpss: 'KPSS',
   trafik: 'Ehliyet',
 };

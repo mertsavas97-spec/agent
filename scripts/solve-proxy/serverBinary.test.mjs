@@ -10,6 +10,9 @@ const child = spawn(process.execPath, ['server.mjs'], {
     SOLVE_PROXY_PORT: String(port),
     COZBIL_PROXY_DOGFOOD: '1',
     COZBIL_PROXY_TOKEN: 'binary-e2e-token',
+    // Deterministic OCR+arith path for fixture — do not call live Gemini.
+    COZBIL_PROXY_GEMINI_FIRST: '0',
+    GEMINI_API_KEY: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });

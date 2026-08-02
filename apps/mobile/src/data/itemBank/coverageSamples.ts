@@ -14,7 +14,7 @@ function examTag(exam: ExamType): string {
     case 'lgs':
       return 'LGS';
     case 'ygs':
-      return 'YGS/YKS';
+      return 'YKS/YKS';
     case 'kpss':
       return 'KPSS';
     case 'trafik':

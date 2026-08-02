@@ -63,7 +63,7 @@ export function enforceExamPipeline(
     };
   }
 
-  // LGS / YGS / KPSS: never keep trafik branş / topic / answers
+  // LGS / YKS / KPSS: never keep trafik branş / topic / answers
   const leakedTrafik =
     result.subject === 'traffic' ||
     result.subject === 'vehicle' ||

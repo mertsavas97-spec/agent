@@ -17,7 +17,7 @@ export type CozbilRobotProps = {
   animate?: boolean;
   size?: number;
   /**
-   * Kept for API compat. Brand mark is the official app icon (navy + white robot).
+   * Kept for API compat. Brand mark is the official app icon (navy + owl).
    * onDark / onLight no longer recolor geometry — same asset everywhere.
    */
   tone?: CozbilRobotTone;
@@ -27,16 +27,17 @@ export type CozbilRobotProps = {
   style?: StyleProp<ImageStyle>;
 };
 
-/** Official ÇözBil app icon (robot mark) — 180px UI asset for instant decode. */
+/** Official ÇözBil app icon (owl mark) — 180px UI asset for instant decode. */
 export const BRAND_MARK = require('../../assets/brand/app-icon/iOS/icon_180x180.png');
 /** Full-res mark when a larger asset is needed (splash / marketing). */
 export const BRAND_MARK_FULL = require('../../assets/images/brand-mark.png');
 
-// Warm the image cache as soon as this module loads.
+// Warm both packs at module load so home / analyzing / splash never flash empty.
 void BRAND_MARK;
-const brandUri = Image.resolveAssetSource(BRAND_MARK)?.uri;
-if (brandUri) {
-  void Image.prefetch(brandUri);
+void BRAND_MARK_FULL;
+for (const src of [BRAND_MARK, BRAND_MARK_FULL]) {
+  const uri = Image.resolveAssetSource(src)?.uri;
+  if (uri) void Image.prefetch(uri);
 }
 
 /**
@@ -58,7 +59,8 @@ export function CozbilRobot({
 
   const bouncePx = Math.max(2, Math.round(size * 0.04));
   const pulseTo = size < 56 ? 1.02 : 1.04;
-  const radius = Math.round(size * 0.22);
+  /** Perfect circle — home / splash / analyzing share one brand plate. */
+  const radius = Math.round(size / 2);
 
   useEffect(() => {
     if (!animate) return;
@@ -146,6 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: colors.navy,
+    borderRadius: 999,
     // Avoid a blank frame while PNG decode finishes on cold navigations.
   },
 });

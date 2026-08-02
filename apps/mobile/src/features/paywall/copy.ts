@@ -41,6 +41,6 @@ export const PAYWALL_COPY = {
       icon: { ios: 'square.stack.3d.up.fill', android: 'layers', web: 'layers' },
     },
   ] as const,
-  socialProof: 'LGS · YGS · KPSS · Ehliyet — fotoğraftan adım adım çözüm.',
+  socialProof: 'LGS · YKS · KPSS · Ehliyet — fotoğraftan adım adım çözüm.',
   guarantee: 'Beğenmezsen iptal et — Play aboneliğinden yönetilir.',
 } as const;

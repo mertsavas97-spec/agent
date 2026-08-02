@@ -1,7 +1,10 @@
 /**
- * AdMob / stub unit IDs — production secrets via EAS env, never commit real prod ids.
+ * AdMob / stub unit IDs — production values via EAS profile env (`eas.json`)
+ * or owner export; prefer not to commit secrets-like tokens in `.env` files.
  * Google test ids used when EXPO_PUBLIC_ADS_USE_TEST_UNITS=1.
  */
+
+import { Platform } from 'react-native';
 
 export type AdUnitSet = {
   androidAppId: string | null;
@@ -26,6 +29,28 @@ export const GOOGLE_TEST_UNITS: AdUnitSet = {
   rewardedIos: 'ca-app-pub-3940256099942544/1712485313',
 };
 
+/**
+ * Canonical ÇözBil iOS live units (AdMob → Uygulama ayarları / Reklam birimleri).
+ * Confirmed 2026-08-01 against owner dashboard screenshots.
+ */
+export const COZBIL_IOS_LIVE_UNITS = {
+  iosAppId: 'ca-app-pub-4628962707131944~6347757786',
+  bannerIos: 'ca-app-pub-4628962707131944/1521648962',
+  interstitialIos: 'ca-app-pub-4628962707131944/3447425993',
+  rewardedIos: 'ca-app-pub-4628962707131944/8645460517',
+} as const;
+
+/**
+ * Canonical ÇözBil Android live units (AdMob → Uygulama ayarları / Reklam birimleri).
+ * Confirmed 2026-08-01 against owner dashboard screenshots.
+ */
+export const COZBIL_ANDROID_LIVE_UNITS = {
+  androidAppId: 'ca-app-pub-4628962707131944~2989418548',
+  bannerAndroid: 'ca-app-pub-4628962707131944/6509861155',
+  interstitialAndroid: 'ca-app-pub-4628962707131944/5332510855',
+  rewardedAndroid: 'ca-app-pub-4628962707131944/7655421864',
+} as const;
+
 function env(key: string): string | null {
   const v = process.env[key]?.trim();
   return v && v.length > 0 ? v : null;
@@ -36,14 +61,41 @@ export function resolveAdUnits(): AdUnitSet {
     return GOOGLE_TEST_UNITS;
   }
   return {
-    androidAppId: env('EXPO_PUBLIC_ADMOB_ANDROID_APP_ID'),
-    iosAppId: env('EXPO_PUBLIC_ADMOB_IOS_APP_ID'),
-    bannerAndroid: env('EXPO_PUBLIC_ADMOB_BANNER_ANDROID'),
-    bannerIos: env('EXPO_PUBLIC_ADMOB_BANNER_IOS'),
-    interstitialAndroid: env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID'),
-    interstitialIos: env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS'),
-    rewardedAndroid: env('EXPO_PUBLIC_ADMOB_REWARDED_ANDROID'),
-    rewardedIos: env('EXPO_PUBLIC_ADMOB_REWARDED_IOS'),
+    androidAppId:
+      env('EXPO_PUBLIC_ADMOB_ANDROID_APP_ID') ?? COZBIL_ANDROID_LIVE_UNITS.androidAppId,
+    iosAppId: env('EXPO_PUBLIC_ADMOB_IOS_APP_ID') ?? COZBIL_IOS_LIVE_UNITS.iosAppId,
+    bannerAndroid:
+      env('EXPO_PUBLIC_ADMOB_BANNER_ANDROID') ?? COZBIL_ANDROID_LIVE_UNITS.bannerAndroid,
+    bannerIos: env('EXPO_PUBLIC_ADMOB_BANNER_IOS') ?? COZBIL_IOS_LIVE_UNITS.bannerIos,
+    interstitialAndroid:
+      env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID') ??
+      COZBIL_ANDROID_LIVE_UNITS.interstitialAndroid,
+    interstitialIos:
+      env('EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS') ?? COZBIL_IOS_LIVE_UNITS.interstitialIos,
+    rewardedAndroid:
+      env('EXPO_PUBLIC_ADMOB_REWARDED_ANDROID') ?? COZBIL_ANDROID_LIVE_UNITS.rewardedAndroid,
+    rewardedIos:
+      env('EXPO_PUBLIC_ADMOB_REWARDED_IOS') ?? COZBIL_IOS_LIVE_UNITS.rewardedIos,
+  };
+}
+
+/** Safe for Metro logs — full unit ids (not secrets). */
+export function diagnoseAdsConfig(): {
+  stub: boolean;
+  liveReady: boolean;
+  nativeLinked: boolean;
+  iosAppId: string | null;
+  rewardedIos: string | null;
+  bannerIos: string | null;
+} {
+  const units = resolveAdUnits();
+  return {
+    stub: adsStubForced(),
+    liveReady: isLiveAdsDeliveryReady(units),
+    nativeLinked: isAdMobNativeLinked(),
+    iosAppId: units.iosAppId,
+    rewardedIos: units.rewardedIos,
+    bannerIos: units.bannerIos,
   };
 }
 
@@ -51,13 +103,19 @@ export function adsStubForced(): boolean {
   return process.env.EXPO_PUBLIC_ADS_STUB === '1';
 }
 
-/** True when enough ids exist to attempt a real SDK path later. */
+/** True when enough ids exist for the current platform (iOS≠Android units). */
 export function hasProductionAdUnits(units: AdUnitSet = resolveAdUnits()): boolean {
-  return Boolean(
-    (units.bannerAndroid || units.bannerIos) &&
-      (units.interstitialAndroid || units.interstitialIos) &&
-      (units.rewardedAndroid || units.rewardedIos),
-  );
+  const os = Platform.OS;
+  if (os === 'ios') {
+    return Boolean(units.bannerIos && units.interstitialIos && units.rewardedIos);
+  }
+  if (os === 'android') {
+    return Boolean(
+      units.bannerAndroid && units.interstitialAndroid && units.rewardedAndroid,
+    );
+  }
+  // web / unknown — treat as not ready
+  return false;
 }
 
 /** Native AdMob module linked (optional peer). */
@@ -72,7 +130,7 @@ export function isAdMobNativeLinked(): boolean {
 }
 
 /**
- * Live store ads: real unit ids + native SDK, and stub flag off.
+ * Live store ads: real unit ids for this OS + native SDK, and stub flag off.
  * Until then: hide banner placeholders; do not fake store ads.
  */
 export function isLiveAdsDeliveryReady(

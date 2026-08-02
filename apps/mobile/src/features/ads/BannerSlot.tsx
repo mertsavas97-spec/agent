@@ -1,9 +1,10 @@
 import type { ComponentType } from 'react';
+import { useMemo, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { colors } from '@/src/theme';
 
-import { isLiveAdsDeliveryReady, resolveAdUnits } from './adUnits';
+import { GOOGLE_TEST_UNITS, isLiveAdsDeliveryReady, resolveAdUnits } from './adUnits';
 import { shouldShowBanner } from './policy';
 import { isPremiumAudience } from './premiumGate';
 
@@ -12,6 +13,8 @@ type BannerAdsModule = {
     unitId: string;
     size: string;
     requestOptions?: Record<string, unknown>;
+    onAdFailedToLoad?: (error: unknown) => void;
+    onAdLoaded?: () => void;
   }>;
   BannerAdSize: { ANCHORED_ADAPTIVE_BANNER: string; BANNER: string };
 };
@@ -27,19 +30,29 @@ function loadBannerModule(): BannerAdsModule | null {
 
 /**
  * Anchored banner for free tab shell.
- * Hidden until live AdMob delivery is ready — no “hazırlık” placeholder in store builds.
+ * Live unit first; __DEV__ no-fill falls back to Google sample banner.
  */
 export function BannerSlot() {
+  const [useTestFallback, setUseTestFallback] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const units = resolveAdUnits();
+  const liveUnitId = Platform.OS === 'ios' ? units.bannerIos : units.bannerAndroid;
+  const testUnitId =
+    Platform.OS === 'ios' ? GOOGLE_TEST_UNITS.bannerIos : GOOGLE_TEST_UNITS.bannerAndroid;
+
+  const unitId = useMemo(() => {
+    if (useTestFallback && __DEV__) return testUnitId;
+    return liveUnitId;
+  }, [liveUnitId, testUnitId, useTestFallback]);
+
   if (!shouldShowBanner({ isPremium: isPremiumAudience() })) {
     return null;
   }
   if (!isLiveAdsDeliveryReady()) {
     return null;
   }
-
-  const units = resolveAdUnits();
-  const unitId = Platform.OS === 'ios' ? units.bannerIos : units.bannerAndroid;
-  if (!unitId) return null;
+  if (failed || !unitId) return null;
 
   const ads = loadBannerModule();
   if (!ads?.BannerAd) return null;
@@ -53,9 +66,24 @@ export function BannerSlot() {
       testID="ads-banner-slot"
       accessibilityLabel="Reklam alanı">
       <ads.BannerAd
+        key={unitId}
         unitId={unitId}
         size={size}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        onAdLoaded={() => {
+          if (__DEV__) {
+            console.info('ads: banner loaded', Platform.OS, useTestFallback ? 'test' : 'live');
+          }
+        }}
+        onAdFailedToLoad={(error) => {
+          console.warn('ads: banner failed', error);
+          if (__DEV__ && !useTestFallback && testUnitId && testUnitId !== unitId) {
+            console.info('ads: banner no-fill — retry Google test unit');
+            setUseTestFallback(true);
+            return;
+          }
+          setFailed(true);
+        }}
       />
     </View>
   );

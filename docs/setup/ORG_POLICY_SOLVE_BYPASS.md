@@ -65,9 +65,13 @@ Hâlâ `SOLVE_TIMEOUT` → Functions log: Eventarc / Storage trigger.
 History / explainAgain hâlâ callable ise 403 olabilir; ana solve B ile çalışır.  
 Canlı AI için Functions env: `COZBIL_USE_VERTEX=1` + Vision key.
 
-## SOLVE_TIMEOUT ise
+## SOLVE_TIMEOUT / “servise ulaşılamadı” ise
 
 1. `git pull` + `bash scripts/deploy-firestore-solve.sh`  
-2. Metro yeniden: `bash scripts/phone-dev-build.sh metro`  
+2. Logda `PERMISSION_DENIED` (Firestore) görürsen — Gen2 compute SA yetkisi eksik:
+   ```bash
+   bash scripts/fix-solve-runtime-iam.sh
+   ```
+   (`roles/datastore.user` + Storage + Eventarc invoker)
 3. Console’da `onSolveUploadFinalized` logunda `executeSolvePipeline aiBackend demo|vertex`  
 4. Firestore `users/{uid}/solveRequests/{id}` — `pending` takılıysa trigger çalışmıyor; `error` ise mesaja bak.

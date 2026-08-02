@@ -46,13 +46,38 @@ EOF
 command -v node >/dev/null || fail "Node yok" "brew install node@22"
 command -v npm >/dev/null || fail "npm yok" "Node kurulumunu kontrol et"
 
-if [[ ! -f "$MOBILE/.env" ]]; then
-  fail "apps/mobile/.env yok" "cp apps/mobile/.env.example apps/mobile/.env ve Firebase key’leri doldur"
+# Prefer .env.local (gitignore) then .env — same pattern as mac-build-ipa-with-push.sh
+ENV_LOCAL="$MOBILE/.env.local"
+ENV_FILE="$MOBILE/.env"
+if [[ -f "$ENV_LOCAL" ]]; then
+  echo "==> loading $ENV_LOCAL"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_LOCAL"
+  set +a
+elif [[ -f "$ENV_FILE" ]]; then
+  echo "==> loading $ENV_FILE"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+else
+  fail "Firebase env yok" "apps/mobile/.env.local veya .env oluştur — docs/qa/PHONE_DEMO_INSTALL.md"
 fi
 
-if grep -qE 'EXPO_PUBLIC_FIREBASE_API_KEY=\s*$' "$MOBILE/.env" 2>/dev/null; then
+if [[ -z "${EXPO_PUBLIC_FIREBASE_API_KEY:-}" ]]; then
   echo "UYARI: EXPO_PUBLIC_FIREBASE_API_KEY boş — solve/auth canlı çalışmayabilir."
 fi
+
+# Demo defaults: live Firebase + live AdMob iOS units (override via env)
+export EXPO_PUBLIC_USE_EMULATORS="${EXPO_PUBLIC_USE_EMULATORS:-0}"
+export EXPO_PUBLIC_SCREENSHOT_MODE="${EXPO_PUBLIC_SCREENSHOT_MODE:-0}"
+export EXPO_PUBLIC_ADS_STUB="${EXPO_PUBLIC_ADS_STUB:-0}"
+export EXPO_PUBLIC_ADS_USE_TEST_UNITS="${EXPO_PUBLIC_ADS_USE_TEST_UNITS:-0}"
+export EXPO_PUBLIC_ADMOB_IOS_APP_ID="${EXPO_PUBLIC_ADMOB_IOS_APP_ID:-ca-app-pub-4628962707131944~6347757786}"
+export EXPO_PUBLIC_ADMOB_BANNER_IOS="${EXPO_PUBLIC_ADMOB_BANNER_IOS:-ca-app-pub-4628962707131944/1521648962}"
+export EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS="${EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS:-ca-app-pub-4628962707131944/3447425993}"
+export EXPO_PUBLIC_ADMOB_REWARDED_IOS="${EXPO_PUBLIC_ADMOB_REWARDED_IOS:-ca-app-pub-4628962707131944/8645460517}"
 
 cd "$MOBILE"
 
@@ -70,13 +95,39 @@ fi
 
 start_metro() {
   echo ""
-  echo "==> Metro (dev-client) — telefonda ÇözBil uygulamasını aç"
-  echo "    Aynı Wi‑Fi’de değilsen: bash scripts/phone-dev-build.sh metro --tunnel"
-  echo ""
-  if [[ "$USE_TUNNEL" -eq 1 ]]; then
-    exec npx expo start --dev-client --tunnel
+  # Wrong branch / stale cache = old YGS labels, no exam-ad confirm, old icons.
+  local branch sha
+  branch="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+  sha="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo '?')"
+  echo "==> Git: $branch @ $sha"
+  if [[ "$branch" != "cursor/home-polish-yks-ads-ocr-2914" ]]; then
+    echo "UYARI: Bu branch’de YKS/ads/icon polish yok olabilir." >&2
+    echo "       git checkout cursor/home-polish-yks-ads-ocr-2914 && git pull" >&2
+  fi
+  if [[ -z "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" || -z "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
+    # Try load from files so the warning is accurate
+    if [[ -f "$ENV_LOCAL" ]]; then
+      set -a
+      # shellcheck disable=SC1090
+      source "$ENV_LOCAL"
+      set +a
+    fi
+  fi
+  if [[ -n "${EXPO_PUBLIC_SOLVE_PROXY_URL:-}" && -n "${EXPO_PUBLIC_SOLVE_PROXY_TOKEN:-}" ]]; then
+    echo "==> Metro — solve proxy: ${EXPO_PUBLIC_SOLVE_PROXY_URL}"
   else
-    exec npx expo start --dev-client
+    echo "==> Metro — UYARI: SOLVE_PROXY yok → logda 'proxy off' görürsün"
+    echo "    Düzelt: bash scripts/phone-demo-proxy-mac.sh && bu komutu tekrar çalıştır"
+  fi
+  echo "==> Metro (dev-client, --clear) — telefonda uygulamayı kapat/aç"
+  echo "    Aynı Wi‑Fi’de değilsen: bash scripts/phone-dev-build.sh metro --tunnel"
+  echo "    Ana ekran ikonu için ayrıca: bash scripts/phone-demo-mac.sh ios"
+  echo ""
+  # Always clear transform cache — dogfood often sticks on an old bundle.
+  if [[ "$USE_TUNNEL" -eq 1 ]]; then
+    exec npx expo start --dev-client --clear --tunnel
+  else
+    exec npx expo start --dev-client --clear
   fi
 }
 

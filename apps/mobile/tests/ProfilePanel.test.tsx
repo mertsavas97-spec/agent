@@ -36,7 +36,7 @@ describe('ProfilePanel', () => {
     expect(screen.getByTestId('profile-screen')).toBeTruthy();
     expect(screen.getByTestId('profile-quota')).toHaveTextContent(/3 \/ 5/);
     expect(screen.getByTestId('profile-consent')).toHaveTextContent(/Aydınlatma/);
-    expect(screen.getByTestId('profile-exam')).toHaveTextContent(/YGS/);
+    expect(screen.getByTestId('profile-exam')).toHaveTextContent(/YKS/);
     expect(screen.queryByTestId('exam-mode-switcher')).toBeNull();
     expect(screen.getByTestId('profile-change-exam')).toBeTruthy();
 

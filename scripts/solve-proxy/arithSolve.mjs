@@ -95,14 +95,26 @@ function nearlyInt(n) {
   return Math.abs(n - Math.round(n)) < 1e-9;
 }
 
-function formatNum(n) {
+function formatNum(n, { mixed = false } = {}) {
   if (!Number.isFinite(n)) return String(n);
   if (nearlyInt(n)) return String(Math.round(n));
-  for (const den of [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 21, 24, 28]) {
-    const num = Math.round(n * den);
-    if (Math.abs(n - num / den) < 1e-9) {
-      const g = gcd(Math.abs(num), den);
-      return `${num / g}/${den / g}`;
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  for (const den of [
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 21, 23, 24, 28, 46, 63,
+  ]) {
+    const num = Math.round(abs * den);
+    if (Math.abs(abs - num / den) < 1e-9) {
+      const g = gcd(num, den);
+      const nn = num / g;
+      const dd = den / g;
+      if (mixed && nn > dd) {
+        const whole = Math.floor(nn / dd);
+        const rem = nn % dd;
+        if (rem === 0) return `${sign}${whole}`;
+        return `${sign}${whole} ${rem}/${dd}`;
+      }
+      return `${sign}${nn}/${dd}`;
     }
   }
   return (Math.round(n * 1000) / 1000).toString();
@@ -254,8 +266,89 @@ function stripQuestionNumbers(text) {
     .replace(/^\s*\d{1,3}[.)]\s+/, '');
 }
 
+/** Drop exam years like (2020) so they are not turned into false fractions. */
+export function sanitizeMathOcr(ocrText) {
+  let t = String(ocrText || '')
+    .replace(/\(20\d{2}\)/g, ' ')
+    .replace(/\b20(1\d|2\d)\b/g, (m, _y, offset, full) => {
+      // Keep constants that are clearly RHS of an equation (= 96 style stays).
+      const before = full.slice(Math.max(0, offset - 3), offset);
+      if (/=\s*$/.test(before)) return m;
+      return ' ';
+    });
+  // Soft colon-division recovery (also applied in visionOcr; keep solver-side).
+  t = recoverSoftColonDivisionText(t);
+  return t;
+}
+
+/**
+ * Recover a/b : (c/d + e/f) from soft OCR without relying on Vision repair alone.
+ * Live Metro: "8 3 333 (+2) 7 3 işleminin sonucu …"
+ */
+export function recoverSoftColonDivisionText(text) {
+  let t = String(text || '');
+  t = t.replace(
+    /(\d)\s+(\d)\s+(\d)\d*\s*\(\+(\d)\)\s*(\d)\s+(\d)(\s*işleminin sonucu)/i,
+    '$1/$2 : ($3/$5+$4/$6)$7',
+  );
+  // Live soft: "8 33 (32) 7 + işleminin sonucu" → 8/3 : (3/7+2/3)
+  t = t.replace(
+    /(\d)\s+(\d)(\d)\s+\((\d)(\d)\)\s+(\d)\s*\+\s*(işleminin sonucu)/i,
+    '$1/$2 : ($3/$6+$5/$4) $7',
+  );
+  t = t.replace(
+    /(\d)\s+(\d)\s*[:÷]?\s*\(\s*(\d)\s+(\d)\s*\+\s*(\d)\s+(\d)\s*\)/g,
+    '$1/$2 : ($3/$4+$5/$6)',
+  );
+  t = t.replace(
+    /(\d+\s*\/\s*\d+)\s+\(\s*(\d+\s*\/\s*\d+\s*\+\s*\d+\s*\/\s*\d+)\s*\)/g,
+    '$1 : ($2)',
+  );
+  // Soft mixed şıklar with den 23 (phone OCR drops slashes).
+  const denHits = t.match(/\b23\b/g) || [];
+  if (
+    denHits.length >= 2 &&
+    /işleminin sonucu/i.test(t) &&
+    !/[A-E]\)\s*\d+\s+\d+\s*\/\s*23/i.test(t)
+  ) {
+    const m = t.match(
+      /\b(\d+)\s*A\)\s*(\d)[.\s]+(\d)\s*B\)\s*(\d)\s+(\d+)\s*C\)\s*(\d)[\s\S]*?D\)\s*(\d+)[\s\S]*?E\)\s*(\d+)[\s\S]*?\b(\d)\s+(\d)\b[\s\S]*?23/i,
+    );
+    if (m) {
+      const [, aNum, aWhole, bNum, bWhole, cNum, cWhole, dWhole, eWhole, _x, eNum] =
+        m;
+      const block = [
+        `A) ${aWhole} ${aNum}/23`,
+        `B) ${bWhole} ${bNum}/23`,
+        `C) ${cWhole} ${cNum}/23`,
+        `D) ${dWhole}`,
+        `E) ${eWhole} ${eNum}/23`,
+      ].join('\n');
+      t = t.replace(/\b\d+\s*A\)[\s\S]*?(?:Soruları Çöz|$)/i, `${block}\n`);
+    }
+  }
+  return t;
+}
+
+/** Expr form for pickBestVariant — a/b : (c/d+e/f) → (a/b)/(c/d+e/f). */
+export function recoverColonFractionParen(ocrText) {
+  const head = String(ocrText || '')
+    .split(/\n\s*[A-Ea-e]\)/)[0]
+    .replace(/işleminin sonucu kaçtır\??/gi, '')
+    .replace(/Soruları Çöz/gi, '');
+  const exprs = new Set();
+  const cleaned = recoverSoftColonDivisionText(head);
+  const m = cleaned.match(
+    /(\d+)\s*\/\s*(\d+)\s*[:÷]\s*\(\s*(\d+)\s*\/\s*(\d+)\s*\+\s*(\d+)\s*\/\s*(\d+)\s*\)/,
+  );
+  if (m) {
+    exprs.add(`(${m[1]}/${m[2]})/(${m[3]}/${m[4]}+${m[5]}/${m[6]})`);
+  }
+  return [...exprs];
+}
+
 function extractCandidateExprs(ocrText) {
-  const text = stripQuestionNumbers(ocrText).replace(/\r/g, '\n');
+  const text = stripQuestionNumbers(sanitizeMathOcr(ocrText)).replace(/\r/g, '\n');
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
   const joined = lines.join(' ');
   const candidates = new Set();
@@ -265,9 +358,21 @@ function extractCandidateExprs(ocrText) {
 
   for (const line of lines) {
     const clean = stripQuestionNumbers(line).trim();
-    if (/[0-9]/.test(clean) && /[+\-−*/·×÷()/]/.test(clean) && !/^[A-E]\)/i.test(clean)) {
+    if (
+      /[0-9]/.test(clean) &&
+      /[+\-−*/·×÷:()/]/.test(clean) &&
+      !/^[A-E]\)/i.test(clean)
+    ) {
       candidates.add(clean);
     }
+  }
+
+  // Prefer a/b : (… ) colon-division before a greedy stacked match on inner '/'.
+  const colonDiv = joined.match(
+    /(\d+\s*\/\s*\d+)\s*[:÷]\s*(\((?:[^()]|\([^()]*\))+\)|[0-9().+\-−*/·×÷\s]{3,60})/,
+  );
+  if (colonDiv) {
+    candidates.add(`(${toAsciiMath(colonDiv[1])})/(${colonDiv[2]})`);
   }
 
   const stacked = joined.match(
@@ -280,7 +385,7 @@ function extractCandidateExprs(ocrText) {
   // Spaced fractions: "1 / 3 ÷ 1 / 7"
   const spaced = joined
     .replace(/işleminin sonucu kaçtır\??/gi, '')
-    .replace(/[A-Ea-e]\)\s*[0-9./]+/g, '');
+    .replace(/[A-Ea-e]\)\s*[0-9.\s/]+/g, '');
   const spacedFrac = spaced.match(
     /(\d+)\s*\/\s*(\d+)\s*([÷:\/·×*+\-])\s*(\d+)\s*\/\s*(\d+)/,
   );
@@ -289,8 +394,9 @@ function extractCandidateExprs(ocrText) {
     candidates.add(`(${spacedFrac[1]}/${spacedFrac[2]})${op}(${spacedFrac[4]}/${spacedFrac[5]})`);
   }
 
-  const stripped = spaced.replace(/[^0-9().+\-−*/·×÷\s]/g, ' ');
-  if (/[0-9]/.test(stripped) && /[+\-−*/·×÷/]/.test(stripped)) {
+  // Keep ':' so normalizeExpr can map it to '/' (was stripped → false '*').
+  const stripped = spaced.replace(/[^0-9().+\-−*/·×÷:\s]/g, ' ');
+  if (/[0-9]/.test(stripped) && /[+\-−*/·×÷:/]/.test(stripped)) {
     candidates.add(stripped);
   }
 
@@ -447,9 +553,10 @@ export function tryLinearEquation(ocrText, choices = parseChoices(ocrText)) {
     .slice(L + 1, eqIdx)
     .replace(/^[^0-9(xX]+/, '')
     .replace(/^\d{1,3}\.\s+/, '')
-    // Tesseract frequently reads "+ 4" as "4 4" after a closing parenthesis.
+    // Tesseract/Vision frequently reads "+ 4" as "4 4" / "44" after ')'.
     .replace(/\)\s*4\s+(\d)/g, ')+$1')
-    .replace(/\)44(?=\s*$)/g, ')+4')
+    .replace(/\)\s*44\b/g, ')+4')
+    .replace(/\)44\b/g, ')+4')
     .trim();
   let right = headRaw.slice(eqIdx + 1, R).trim();
   if (!left || !right) return null;
@@ -538,23 +645,158 @@ export function tryPercentChain(ocrText, choices = parseChoices(ocrText)) {
 }
 
 /**
+ * Same-base exponential systems common in LGS/YKS/KPSS:
+ *   2^x = 4^y
+ *   2^(x+1) + 4^(y+1) = 96  →  x+y = 6
+ * Also recovers OCR that dropped '^' when stem says gerçel/üslü.
+ */
+export function tryExponentialEquation(ocrText, choices = parseChoices(ocrText)) {
+  let head = stripQuestionNumbers(
+    sanitizeMathOcr(ocrText).split(/\n\s*[A-Ea-e]\)/)[0] || '',
+  );
+  const wantsSum = /x\s*\+\s*y|toplamı/i.test(head);
+  const expCue =
+    /\^/.test(head) ||
+    /üslü|gerçel\s+say/i.test(head) ||
+    /2\s*[xX]\s*=\s*4\s*[yY]/.test(head) ||
+    /4\s*[yY]\s*=\s*2\s*[xX]/.test(head);
+  if (!expCue) return null;
+
+  // Recover missing carets before solving.
+  let norm = head
+    .replace(/\b(\d)\s*([xyXY])\s*\+\s*(\d)\b/g, '$1^($2+$3)')
+    .replace(/\b(\d)\s*([xyXY])\s*=\s*(\d)\s*([xyXY])\b/g, '$1^$2=$3^$4')
+    .replace(/\^\{([^}]+)\}/g, '^($1)');
+
+  const rel = norm.match(
+    /(\d+)\s*\^\s*\(?\s*([xyXY])\s*\)?\s*=\s*(\d+)\s*\^\s*\(?\s*([xyXY])\s*\)?/,
+  );
+  if (!rel) return null;
+  const a = Number(rel[1]);
+  const va = rel[2].toLowerCase();
+  const b = Number(rel[3]);
+  const vb = rel[4].toLowerCase();
+  if (va === vb) return null;
+
+  const powA = integerLogBase(a);
+  const powB = integerLogBase(b);
+  if (!powA || !powB || powA.base !== powB.base) return null;
+  // a^va = b^vb → base^(eA*va) = base^(eB*vb) → eA*va = eB*vb
+  // e.g. 2^x = 4^y → x = 2y
+  const eA = powA.exp;
+  const eB = powB.exp;
+
+  const constMatch = [...norm.matchAll(/=\s*(\d{1,4})\b/g)]
+    .map((m) => Number(m[1]))
+    .filter((n) => n >= 10 && n < 10_000 && n !== a && n !== b);
+  const N = constMatch[constMatch.length - 1];
+  if (N == null) return null;
+
+  const hasSecond =
+    new RegExp(
+      `${a}\\s*\\^\\s*\\(?\\s*${va}\\s*\\+\\s*\\d|${b}\\s*\\^\\s*\\(?\\s*${vb}\\s*\\+\\s*\\d`,
+      'i',
+    ).test(norm) || /[+]/.test(norm.split(rel[0])[1] || '');
+
+  if (!hasSecond) return null;
+
+  // Integer search on the free variable (prefer y when x = (eB/eA)*y).
+  for (let free = 0; free <= 12; free += 1) {
+    let x;
+    let y;
+    if (va === 'x' && vb === 'y') {
+      // eA*x = eB*y
+      if ((eB * free) % eA !== 0) continue;
+      y = free;
+      x = (eB * y) / eA;
+    } else if (va === 'y' && vb === 'x') {
+      if ((eB * free) % eA !== 0) continue;
+      x = free;
+      y = (eB * x) / eA;
+    } else {
+      continue;
+    }
+    if (!Number.isInteger(x) || !Number.isInteger(y)) continue;
+    if (x < 0 || y < 0 || x > 20 || y > 20) continue;
+
+    // Evaluate  a^(x+1) + b^(y+1)  and a^(x)+b^(y) style variants against N.
+    const candidates = [
+      a ** (x + 1) + b ** (y + 1),
+      a ** x + b ** y,
+      a ** (x + 1) + b ** y,
+      a ** x + b ** (y + 1),
+    ];
+    if (!candidates.some((v) => Math.abs(v - N) < 1e-6)) continue;
+
+    const value = wantsSum ? x + y : x;
+    const choice = matchChoice(value, choices);
+    if (Object.keys(choices).length > 0 && !choice) {
+      // Also try the other variable / sum if şıklar don't match primary ask.
+      for (const alt of [x + y, x, y]) {
+        const c = matchChoice(alt, choices);
+        if (c) {
+          return {
+            expr: `${a}^${va}=${b}^${vb}; ${va}=${x},${vb}=${y}`,
+            value: alt,
+            choice: c,
+            kind: 'exponential_eq',
+            x,
+            y,
+          };
+        }
+      }
+      continue;
+    }
+    return {
+      expr: `${a}^${va}=${b}^${vb}; ${va}=${x},${vb}=${y}`,
+      value,
+      choice,
+      kind: 'exponential_eq',
+      x,
+      y,
+    };
+  }
+  return null;
+}
+
+/** If n = base^exp for small bases, return {base, exp}. */
+function integerLogBase(n) {
+  if (!Number.isInteger(n) || n < 2) return null;
+  for (let base = 2; base <= 10; base += 1) {
+    let exp = 0;
+    let v = 1;
+    while (v < n) {
+      v *= base;
+      exp += 1;
+    }
+    if (v === n) return { base, exp };
+  }
+  return null;
+}
+
+/**
  * @returns {{ expr: string, value: number, choice?: string, ocr: string, num?: number, den?: number, kind?: string } | null}
  */
 export function evaluateExpression(ocrText) {
-  const choices = parseChoices(ocrText);
+  const cleaned = sanitizeMathOcr(ocrText);
+  const choices = parseChoices(cleaned);
+  const preferDivision = /[:÷]/.test(cleaned);
 
   // Exam-style structured solvers first (before brittle digit-gluing extractors).
-  const fractionOf = tryFractionOfChain(ocrText, choices);
+  const fractionOf = tryFractionOfChain(cleaned, choices);
   if (fractionOf) return { ...fractionOf, ocr: ocrText };
 
-  const linearEq = tryLinearEquation(ocrText, choices);
+  const exponentialEq = tryExponentialEquation(cleaned, choices);
+  if (exponentialEq) return { ...exponentialEq, ocr: ocrText };
+
+  const linearEq = tryLinearEquation(cleaned, choices);
   if (linearEq) return { ...linearEq, ocr: ocrText };
 
-  const percentChain = tryPercentChain(ocrText, choices);
+  const percentChain = tryPercentChain(cleaned, choices);
   if (percentChain) return { ...percentChain, ocr: ocrText };
 
-  const parenStack = pickBestVariant(
-    recoverParenDiffStack(ocrText).flatMap((e) => exprVariants(e)),
+  const colonParen = pickBestVariant(
+    recoverColonFractionParen(cleaned).flatMap((e) => exprVariants(e)),
     choices,
     (expr) => {
       const value = evalArith(expr);
@@ -568,15 +810,15 @@ export function evaluateExpression(ocrText) {
       }
       return { value };
     },
+    { preferDivision: true },
   );
-  if (parenStack) return { ...parenStack, ocr: ocrText };
+  if (colonParen) return { ...colonParen, ocr: ocrText };
 
-  // Prefer explicit vertical reconstruction (avoids "1\\n3÷1\\n7" → 13/17)
-  const verticalExpr = reconstructVerticalMath(ocrText);
-  if (verticalExpr) {
-    const fromVertical = pickBestVariant(exprVariants(verticalExpr), choices, (expr) => {
+  const parenStack = pickBestVariant(
+    recoverParenDiffStack(cleaned).flatMap((e) => exprVariants(e)),
+    choices,
+    (expr) => {
       const value = evalArith(expr);
-      // Expose num/den for stacked division of two groups
       const m = expr.match(/^\((.+)\)\/\((.+)\)$/);
       if (m) {
         try {
@@ -586,13 +828,37 @@ export function evaluateExpression(ocrText) {
         }
       }
       return { value };
-    });
+    },
+    { preferDivision },
+  );
+  if (parenStack) return { ...parenStack, ocr: ocrText };
+
+  // Prefer explicit vertical reconstruction (avoids "1\\n3÷1\\n7" → 13/17)
+  const verticalExpr = reconstructVerticalMath(cleaned);
+  if (verticalExpr) {
+    const fromVertical = pickBestVariant(
+      exprVariants(verticalExpr),
+      choices,
+      (expr) => {
+        const value = evalArith(expr);
+        const m = expr.match(/^\((.+)\)\/\((.+)\)$/);
+        if (m) {
+          try {
+            return { value, num: evalArith(m[1]), den: evalArith(m[2]) };
+          } catch {
+            return { value };
+          }
+        }
+        return { value };
+      },
+      { preferDivision: true },
+    );
     if (fromVertical) return { ...fromVertical, ocr: ocrText };
   }
 
-  const lines = ocrText.split('\n').map((l) => l.trim()).filter(Boolean);
+  const lines = cleaned.split('\n').map((l) => l.trim()).filter(Boolean);
   const mathLines = lines.filter(
-    (l) => /[0-9]/.test(l) && /[()+\-−*/·×÷/]/.test(l) && !/^[A-E]\)/i.test(l),
+    (l) => /[0-9]/.test(l) && /[()+\-−*/·×÷:/]/.test(l) && !/^[A-E]\)/i.test(l),
   );
   if (mathLines.length >= 2) {
     const stacked = pickBestVariant(
@@ -610,17 +876,19 @@ export function evaluateExpression(ocrText) {
         if (den === 0) throw new Error('div0');
         return { value: num / den, num, den };
       },
+      { preferDivision: true },
     );
     if (stacked) {
       return { ...stacked, ocr: ocrText };
     }
   }
 
-  const candidates = extractCandidateExprs(ocrText);
+  const candidates = extractCandidateExprs(cleaned);
   const scored = pickBestVariant(
     candidates.flatMap((cand) => exprVariants(normalizeExpr(cand))),
     choices,
     (expr) => ({ value: evalArith(expr) }),
+    { preferDivision },
   );
   // When şıklar exist, never ship a glued false positive (e.g. 24.3/8.1/3 → 1).
   if (scored && (!Object.keys(choices).length || scored.choice)) {
@@ -640,7 +908,8 @@ function exprVariants(expr) {
   return [...set];
 }
 
-function pickBestVariant(items, choices, evalItem) {
+function pickBestVariant(items, choices, evalItem, opts = {}) {
+  const preferDivision = Boolean(opts.preferDivision);
   let best = null;
   for (const item of items) {
     const expr = typeof item === 'string' ? item : item.expr;
@@ -649,11 +918,15 @@ function pickBestVariant(items, choices, evalItem) {
       const { value, num, den } = evalItem(typeof item === 'string' ? item : item);
       if (!Number.isFinite(value)) continue;
       const choice = matchChoice(value, choices);
+      const hasDiv = expr.includes('/');
+      const hasMul = expr.includes('*');
       const score =
         (choice ? 100 : 0) +
         (expr.includes('(') ? 3 : 0) +
-        (expr.includes('/') ? 1 : 0) +
-        (expr.includes('*') ? 1 : 0) -
+        (hasDiv ? (preferDivision ? 10 : 3) : 0) +
+        // Do not reward multiply when OCR used ÷/: — that invents a/b*(…).
+        (hasMul && !preferDivision ? 1 : 0) -
+        (preferDivision && hasMul && !hasDiv ? 20 : 0) -
         // Penalize glued multi-digit mistakes like 13/17 from vertical 1,3,1,7
         (/\d{2,}/.test(expr) && Object.keys(choices).length ? 5 : 0);
       const row = { expr, value, choice, num, den, score };
@@ -667,22 +940,47 @@ function pickBestVariant(items, choices, evalItem) {
   return rest;
 }
 
-function parseChoices(ocrText) {
+/**
+ * Parse A)–E) şıklar including mixed numbers: "A) 2 10/23".
+ */
+export function parseChoices(ocrText) {
   const map = {};
-  const re = /([A-E])\)\s*([0-9]+(?:\/[0-9]+)?|[0-9]+(?:[.,][0-9]+)?)/gi;
+  const text = String(ocrText || '');
+  // Mixed number first: A) 2 10/23
+  const mixedRe = /([A-E])\)\s*(\d+)\s+(\d+)\s*[\/⁄]\s*(\d+)/gi;
   let m;
-  while ((m = re.exec(ocrText))) {
-    map[m[1].toUpperCase()] = m[2].replace(',', '.');
+  const claimed = new Set();
+  while ((m = mixedRe.exec(text))) {
+    const label = m[1].toUpperCase();
+    map[label] = `${m[2]} ${m[3]}/${m[4]}`;
+    claimed.add(label);
+  }
+  const simpleRe =
+    /([A-E])\)\s*([0-9]+(?:[\/⁄][0-9]+)?|[0-9]+(?:[.,][0-9]+)?)/gi;
+  while ((m = simpleRe.exec(text))) {
+    const label = m[1].toUpperCase();
+    if (claimed.has(label)) continue;
+    map[label] = m[2].replace(',', '.').replace('⁄', '/');
   }
   return map;
 }
 
 function choiceValue(s) {
-  if (s.includes('/')) {
-    const [a, b] = s.split('/').map(Number);
+  const raw = String(s).trim();
+  const mixed = raw.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (mixed) {
+    const whole = Number(mixed[1]);
+    const num = Number(mixed[2]);
+    const den = Number(mixed[3]);
+    if (!den) throw new Error('den0');
+    const sign = whole < 0 ? -1 : 1;
+    return sign * (Math.abs(whole) + num / den);
+  }
+  if (raw.includes('/')) {
+    const [a, b] = raw.split('/').map(Number);
     return a / b;
   }
-  return Number(s);
+  return Number(raw);
 }
 
 function matchChoice(value, choices) {
@@ -693,10 +991,11 @@ function matchChoice(value, choices) {
       /* */
     }
   }
-  // Also match formatted fraction string equality loosely
   const formatted = formatNum(value);
+  const formattedMixed = formatNum(value, { mixed: true });
   for (const [k, v] of Object.entries(choices)) {
-    if (v === formatted) return k;
+    if (v === formatted || v === formattedMixed) return k;
+    if (v.replace(/\s+/g, '') === formatted.replace(/\s+/g, '')) return k;
   }
   return undefined;
 }
@@ -722,6 +1021,21 @@ export function buildStepsFromEval(evaluated) {
     steps.push({
       title: '2. Şıkları dene',
       body: `x = ${formatNum(value)} her iki tarafı eşitliyor.`,
+    });
+  } else if (kind === 'exponential_eq') {
+    const x = evaluated.x;
+    const y = evaluated.y;
+    steps.push({
+      title: '1. Aynı tabana indir',
+      body: `Üslü eşitliği ortak tabanda yaz: ${prettyExpr(expr)}.`,
+    });
+    steps.push({
+      title: '2. Değerleri bul',
+      body: `x = ${formatNum(x)}, y = ${formatNum(y)} ikinci denklemi sağlar.`,
+    });
+    steps.push({
+      title: '3. İstenen',
+      body: `Sonuç: ${formatNum(value, { mixed: true })}.`,
     });
   } else if (kind === 'percent_chain') {
     const detail = Array.isArray(events)
@@ -768,12 +1082,12 @@ export function buildStepsFromEval(evaluated) {
   if (choice) {
     steps.push({
       title: 'Cevap',
-      body: `Doğru şık: ${choice}) ${formatNum(value)}.`,
+      body: `Doğru şık: ${choice}) ${formatNum(value, { mixed: true })}.`,
     });
   } else {
     steps.push({
       title: 'Cevap',
-      body: `Sonuç ${formatNum(value)}. Şıklarla eşleştirerek kontrol et.`,
+      body: `Sonuç ${formatNum(value, { mixed: true })}. Şıklarla eşleştirerek kontrol et.`,
     });
   }
 

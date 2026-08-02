@@ -59,7 +59,7 @@ describe('topicLessons', () => {
         subject: 'math',
         examType: 'ygs',
       }).headline,
-    ).toMatch(/YGS/);
+    ).toMatch(/YKS/);
     expect(
       buildFallbackLesson({
         topicId: 'kpss-math-x',

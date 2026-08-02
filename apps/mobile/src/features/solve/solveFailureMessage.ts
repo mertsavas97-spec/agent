@@ -41,9 +41,11 @@ export function solveFailureMessage(err: unknown): string {
   }
   if (
     code === 'functions/deadline-exceeded' ||
-    /SOLVE_TIMEOUT/i.test(message)
+    /SOLVE_TIMEOUT|SOLVE_TRIGGER_MISSING|SOLVE_RUNNING_STUCK|onSolveUploadFinalized|solve UI settle/i.test(
+      message,
+    )
   ) {
-    return 'Çözüm beklenenden uzun sürdü. Lütfen tekrar dene.';
+    return 'Çözüm sunucusu yanıt vermedi veya çok uzun sürdü. Biraz sonra tekrar dene.';
   }
   if (/403|Forbidden|permission/i.test(message) || /403|Forbidden|permission/i.test(code)) {
     return 'Çözüm servisine erişilemiyor. Lütfen biraz sonra tekrar dene.';

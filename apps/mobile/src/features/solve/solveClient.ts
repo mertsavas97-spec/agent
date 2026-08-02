@@ -9,8 +9,13 @@ import { getFirebase } from '@/src/lib/firebase';
 import { withHardTimeout } from './hardTimeout';
 import { isServerSolveUnavailable } from './localSolveFallback';
 import { callSolveQuestionViaFirestore } from './solveViaFirestore';
-import { callSolveQuestionViaProxy, isSolveProxyConfigured } from './solveViaProxy';
-import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS } from './solveTiming';
+import {
+  callSolveQuestionViaProxy,
+  diagnoseSolveProxyConfig,
+  isSolveProxyConfigured,
+  solveProxyBaseUrlForLog,
+} from './solveViaProxy';
+import { FIRESTORE_FALLBACK_MS, SOLVE_TIMEOUT_MS, SOLVE_UI_SETTLE_MS } from './solveTiming';
 
 function isInvokerBlocked(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -37,7 +42,7 @@ export type SolveClientRequest = Omit<SolveQuestionRequest, 'imagePath'> & {
   imagePath?: string;
   mimeType?: string;
   requestId: string;
-  /** Bounded local bytes for the development-only OCR proxy. */
+  /** Bounded local bytes for the development-only solve proxy (Vertex/Gemini first). */
   imageBase64?: string;
   /** Local camera/gallery URI sent as raw binary to avoid base64 expansion. */
   imageUri?: string;
@@ -53,13 +58,25 @@ export async function callSolveQuestion(
   request: SolveClientRequest,
 ): Promise<SolveQuestionResponse> {
   let proxyAttempted = false;
+  if (!isSolveProxyConfigured()) {
+    const diag = diagnoseSolveProxyConfig();
+    console.info('solve: proxy off', {
+      __DEV__: diag.dev,
+      urlSource: diag.urlSource,
+      tokenSource: diag.tokenSource,
+      metroHost: diag.metroHost,
+      hint: 'Mac: bash scripts/phone-demo-proxy-mac.sh (proxy :8787) + Metro restart',
+    });
+  }
   if (
     isSolveProxyConfigured() &&
     (request.imageUri || request.imageUrl || request.imageBase64)
   ) {
     proxyAttempted = true;
     try {
-      console.info('solve: bounded OCR proxy');
+      console.info('solve: phone proxy (Vertex/Gemini first)', {
+        base: solveProxyBaseUrlForLog(),
+      });
       request.onStage?.('ocr');
       const response = await callSolveQuestionViaProxy({
         imageUri: request.imageUri,
@@ -71,17 +88,40 @@ export async function callSolveQuestion(
         requestId: request.requestId,
         onStage: request.onStage,
       });
-      // Terminal OCR outcomes must not fall into Storage upload — that path
+      // Terminal outcomes must not fall into Storage upload — that path
       // hangs forever on flaky networks and leaves the UI stuck at ~99%.
       if (
         response.status === 'unsupported_type' ||
         (typeof response.status === 'string' &&
           response.status.startsWith('rejected'))
       ) {
-        console.info('solve: proxy terminal', response.status);
+        const meta = response as {
+          ocrPreview?: string;
+          detectedSubject?: string;
+          subject?: string;
+          gemini?: { status?: string; error?: string | null; enabled?: boolean };
+        };
+        const preview =
+          typeof meta.ocrPreview === 'string' ? meta.ocrPreview : undefined;
+        console.info('solve: proxy terminal', response.status, {
+          subject: meta.detectedSubject ?? meta.subject ?? null,
+          gemini: meta.gemini ?? null,
+          preview:
+            preview?.slice(0, 500)?.replace(/\s+/g, ' ') ||
+            '(önizleme yok — Mac’te phone-demo-proxy-mac.sh + Vertex açık mı?)',
+        });
         return normalizeTerminalProxyResponse(response, request.requestId);
       }
       if (isUsableResponse(response)) {
+        const meta = response as {
+          gemini?: { status?: string; error?: string | null; enabled?: boolean };
+          subject?: string;
+        };
+        console.info('solve: proxy solved', {
+          status: response.status,
+          subject: meta.subject ?? null,
+          gemini: meta.gemini ?? null,
+        });
         return response;
       }
       // Solved-without-answer / assisted tip — try authoritative backend below.
@@ -102,8 +142,9 @@ export async function callSolveQuestion(
   }
 
   // Primary production path needs the full solve budget; after a proxy miss keep fallback snappy.
-  const firestoreWaitMs = proxyAttempted ? FIRESTORE_FALLBACK_MS : SOLVE_TIMEOUT_MS;
+  // Cap Firestore wait so upload + solve cannot exceed SOLVE_UI_SETTLE_MS (outer UI timer).
   const uploadWaitMs = FIRESTORE_FALLBACK_MS;
+  const startedAt = Date.now();
 
   let firestoreRequest: PreparedFirestoreRequest | undefined;
   try {
@@ -114,6 +155,14 @@ export async function callSolveQuestion(
       'Storage upload',
     );
     request.onStage?.('solving');
+    const elapsed = Date.now() - startedAt;
+    const firestoreBudget = proxyAttempted
+      ? FIRESTORE_FALLBACK_MS
+      : SOLVE_TIMEOUT_MS;
+    const firestoreWaitMs = Math.max(
+      5_000,
+      Math.min(firestoreBudget, SOLVE_UI_SETTLE_MS - elapsed - 2_000),
+    );
     const firestore = await withHardTimeout(
       callSolveQuestionViaFirestore(firestoreRequest),
       firestoreWaitMs,

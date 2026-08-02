@@ -113,7 +113,7 @@ describe('MultiSolutionScreen', () => {
             examType: 'ygs',
             errorKind: 'exam_mismatch',
             errorMessage:
-              'Bu soru YGS’ye ait değil; Ehliyet sorusu gibi görünüyor. Ayarlar’dan modu değiştir veya bu fotoğrafı çıkar.',
+              'Bu soru YKS’ye ait değil; Ehliyet sorusu gibi görünüyor. Ayarlar’dan modu değiştir veya bu fotoğrafı çıkar.',
           },
         ]}
       />,
@@ -121,7 +121,7 @@ describe('MultiSolutionScreen', () => {
 
     expect(screen.getByTestId('multi-slot-error')).toBeTruthy();
     expect(screen.getByText('Seçili moda uymuyor')).toBeTruthy();
-    expect(screen.getByText(/YGS/)).toBeTruthy();
+    expect(screen.getByText(/YKS/)).toBeTruthy();
     expect(screen.getByText(/Ehliyet/)).toBeTruthy();
     expect(screen.getByText('Uymuyor')).toBeTruthy();
   });
