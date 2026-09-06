@@ -6,8 +6,21 @@ Deploy **bloklu**: `firebase login` / reauth gerekir (cloud agent’ta credentia
 
 ## Beklenen URL’ler
 
+- `https://cozbil-dev-f9583.web.app/` (Play “Geliştirici web sitesi” — AdMob app-ads.txt tarama)
+- `https://cozbil-dev-f9583.web.app/app-ads.txt`
 - `https://cozbil-dev-f9583.web.app/privacy`
 - `https://cozbil-dev-f9583.web.app/terms`
+
+## AdMob uygulama doğrulama
+
+AdMob “geliştirici web sitesi bulamadık” hatası **kod değil Play listing** eksikliğidir.
+
+1. Play Console → ÇözBil → Mağaza girişi → **Geliştirici web sitesi**  
+   `https://cozbil-dev-f9583.web.app` (tam bu kök; `/privacy` değil)
+2. Kaydet / inceleme gönder (gerekirse)
+3. Canlı doğrula: `curl -s https://cozbil-dev-f9583.web.app/app-ads.txt`  
+   → `google.com, pub-4628962707131944, DIRECT, f08c47fec0942fa0`
+4. AdMob → Uygulama → app-ads.txt sorunlarını gider → **Kontrol et / Yeniden tara**
 
 ## Owner (tek komut)
 
